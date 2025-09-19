@@ -30,7 +30,7 @@ If applicable, add screenshots or logs to help explain your problem.
 **Desktop (please complete the following information):**
 
 - OS: [e.g. Windows, macOS, Linux]
-- arkad version[e.g. 0.1.0]
+- frontend version: [e.g. 0.1.0]
 
 **Additional context**
 Add any other context about the problem here.
