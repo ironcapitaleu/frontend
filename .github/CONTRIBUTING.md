@@ -5,9 +5,9 @@ From bug reports and feature requests to documentation improvements and code, we
 
 ## How to Contribute
 
-- Report bugs via [issues](https://github.com/DeCa09/arkad/issues/new)
-- Propose features via [issues](https://github.com/DeCa09/arkad/issues/new)
-- Submit code via [pull requests](https://github.com/DeCa09/arkad/pulls)
+- Report bugs via [issues](https://github.com/ironcapital/frontend/issues/new)
+- Propose features via [issues](https://github.com/ironcapital/frontend/issues/new)
+- Submit code via [pull requests](https://github.com/ironcapital/frontend/pulls)
 
 ## Submitting Code via Pull Requests
 
