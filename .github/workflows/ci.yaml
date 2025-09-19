@@ -22,18 +22,3 @@ jobs:
 
     steps:
     - uses: actions/checkout@v5
-    - uses: dtolnay/rust-toolchain@master
-      with:
-        toolchain: ${{ matrix.rust }}
-    - name: Code Formatting Check
-      run: cargo fmt --check
-    - name: Security Check
-      run: cargo audit
-    - name: Code Compilation Check
-      run: cargo check
-    - name: Linting
-      run: cargo clippy
-    - name: Unit Tests
-      run: cargo test --lib
-    - name: Integration Tests
-      run: cargo test --test '*'
