@@ -8,7 +8,7 @@ updates:
     commit-message:
       prefix: ⬆
 
-  # Typescript / JavaScript
+  # TypeScript / JavaScript
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
