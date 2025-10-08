@@ -6,7 +6,7 @@ updates:
     schedule:
       interval: "daily"
     commit-message:
-      prefix: ⬆
+      prefix: "cicd(deps)"
 
   # TypeScript / JavaScript
   - package-ecosystem: "npm"
@@ -14,4 +14,4 @@ updates:
     schedule:
       interval: "weekly"
     commit-message:
-      prefix: ⬆
+      prefix: "build(deps)"
