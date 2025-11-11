@@ -1,0 +1,35 @@
+name: Merge Policy
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+jobs:
+  enforce-merge-policy:
+    name: Enforce Merge Policy
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-22.04]
+    
+    steps:
+
+      - name: Display Execution Context
+        run: |
+          echo "::group::Execution Context"
+          echo "GitHub Ref: ${{ github.ref }}"
+          echo "GitHub Event: ${{ github.event_name }}"
+          echo "Pull Request Source Branch: ${{ github.head_ref }}"
+          echo "Pull Request Target Branch: ${{ github.base_ref }}"
+          echo "::endgroup::"
+
+
+      - name: Validate Pull Request Source and Target Branches
+        if: github.head_ref != 'dev'
+        run: |
+          echo "::error::Pull requests to 'main' must originate from 'dev' branch"
+          echo "::error::Current source: ${{ github.head_ref }} → Target: ${{ github.base_ref }}"
+          echo "::error::Please merge to 'dev' first, then create PR from 'dev' to 'main'"
+          exit 1
