@@ -1,14 +1,18 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuthContext } from '../contexts/AuthContext';
 
 const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const { user, signOut } = useAuthContext();
 
   const navigation = [
     { name: 'Home', href: '/' },
     { name: 'Stock Screener', href: '/screener' },
     { name: 'Company Search', href: '/search' },
+    { name: 'Database (Public)', href: '/supabase-test' },
+    { name: 'Database (Private)', href: '/private-db' },
     { name: 'About', href: '/about' },
     { name: 'Contact', href: '/contact' },
   ];
@@ -44,6 +48,25 @@ const Header: React.FC = () => {
                 {item.name}
               </Link>
             ))}
+            
+            {/* Auth Button */}
+            {user ? (
+              <button
+                onClick={() => signOut()}
+                className="btn btn-glass text-sm"
+              >
+                Sign Out
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                className={`btn btn-primary text-sm ${
+                  isActive('/login') ? 'ring-2 ring-white/30' : ''
+                }`}
+              >
+                Sign In
+              </Link>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -90,6 +113,31 @@ const Header: React.FC = () => {
                   {item.name}
                 </Link>
               ))}
+              
+              {/* Mobile Auth Button */}
+              {user ? (
+                <button
+                  onClick={() => {
+                    signOut();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="px-4 py-3 rounded-lg text-left text-text-secondary hover:text-text-primary hover:bg-glass-bg transition-all duration-300"
+                >
+                  Sign Out
+                </button>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`px-4 py-3 rounded-lg transition-all duration-300 ${
+                    isActive('/login')
+                      ? 'bg-primary text-white'
+                      : 'text-text-secondary hover:text-text-primary hover:bg-glass-bg'
+                  }`}
+                >
+                  Sign In
+                </Link>
+              )}
             </div>
           </div>
         )}
