@@ -53,8 +53,8 @@ jobs:
     - name: Code Formatting Check
       run: npm run format:check
 
-    # - name: Static Type Checking
-    #   run: npx tsc --noEmit
+    - name: Linting
+      run: cargo clippy
 
     # - name: Build Check
     #   run: npm run build
