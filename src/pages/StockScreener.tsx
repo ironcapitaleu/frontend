@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from "react";
+import type React from "react";
+import { useState, useMemo } from "react";
 
 interface Stock {
 	symbol: string;
@@ -97,7 +98,7 @@ const StockScreener: React.FC = () => {
 	} | null>(null);
 
 	const filteredAndSortedStocks = useMemo(() => {
-		let filtered = mockStocks.filter((stock) => {
+		const filtered = mockStocks.filter((stock) => {
 			const matchesSearch =
 				stock.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
 				stock.name.toLowerCase().includes(searchTerm.toLowerCase());
