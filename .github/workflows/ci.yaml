@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - dev
+  push:
+    branches:
       - ci/add-initial-ci-checks # TODO: remove before merging to dev
 
 permissions:
@@ -50,7 +52,7 @@ jobs:
 
     - name: Code Formatting Check
       run: npm run format:check
-      
+
     # - name: Static Type Checking
     #   run: npx tsc --noEmit
 
