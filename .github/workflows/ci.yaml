@@ -54,7 +54,7 @@ jobs:
       run: npm run format:check
 
     - name: Linting
-      run: cargo clippy
+      run: npm run lint:check
 
     # - name: Build Check
     #   run: npm run build
