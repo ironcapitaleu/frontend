@@ -61,3 +61,6 @@ jobs:
     
     - name: Build Check
       run: npm run build
+
+    - name: Unit Tests
+      run: npm run test:ci
