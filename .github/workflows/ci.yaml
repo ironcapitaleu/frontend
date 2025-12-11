@@ -32,8 +32,8 @@ jobs:
         node-version: '22'
         cache: 'npm'
 
-    # - name: Install Dependencies
-    #   run: npm ci
+    - name: Install Dependencies
+      run: npm ci
 
     - name: Display Execution Context
       run: |
@@ -43,13 +43,22 @@ jobs:
         echo "GitHub Event: ${{ github.event_name }}"
         echo "Node.js version: $(node --version)"
         echo "npm version: $(npm --version)"
+        echo "npx version: $(npx --version)"
+        echo "TypeScript version: $(npx tsc --version)"
+        echo "biome version: $(npx biome --version)"
         echo "::endgroup::"
 
-    # - name: Code Formatting Check (Biome)
-    #   run: npx @biomejs/biome check --error-on-warnings .
+    - name: Code Formatting Check
+      run: npm run format:check
 
-    # - name: Static Type Checking
-    #   run: npx tsc --noEmit
+    - name: Linting
+      run: npm run lint:check
 
-    # - name: Build Check
-    #   run: npm run build
+    - name: Type Checking
+      run: npm run typing:check
+    
+    - name: Build Check
+      run: npm run build
+
+    - name: Unit Tests
+      run: npm run test:ci
