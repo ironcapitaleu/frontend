@@ -45,6 +45,7 @@ jobs:
         echo "npm version: $(npm --version)"
         echo "npx version: $(npx --version)"
         echo "biome version: $(npx biome --version)"
+        echo "Typescript version: $(npx tsc --version)"
         echo "::endgroup::"
 
     - name: Code Formatting Check
