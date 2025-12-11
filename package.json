@@ -22,7 +22,6 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.3.8",
-		"@eslint/js": "^9.39.1",
 		"@testing-library/dom": "^10.4.1",
 		"@testing-library/jest-dom": "^6.9.1",
 		"@testing-library/react": "^16.3.0",
@@ -31,13 +30,8 @@
 		"@types/react-dom": "^19.2.2",
 		"@vitejs/plugin-react": "^4.3.3",
 		"@vitest/coverage-v8": "^4.0.15",
-		"eslint": "^9.39.1",
-		"eslint-plugin-react-hooks": "^5.2.0",
-		"eslint-plugin-react-refresh": "^0.4.24",
-		"globals": "^16.5.0",
 		"jsdom": "^27.3.0",
 		"typescript": "~5.9.3",
-		"typescript-eslint": "^8.46.3",
 		"vite": "^7.2.2",
 		"vitest": "^4.0.15"
 	}
