@@ -67,7 +67,7 @@ This application is configured for Cloudflare Pages deployment:
 
 - Build command: `npm run build`
 - Publish directory: `dist`
-- SPA redirects configured in `_redirects`
+- SPA redirects are handled automatically by Cloudflare Pages for SPAs.
 
 ### Project Structure
 
