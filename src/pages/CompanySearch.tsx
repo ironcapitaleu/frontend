@@ -116,6 +116,7 @@ const CompanySearch: React.FC = () => {
 						onKeyPress={handleKeyPress}
 					/>
 					<button
+						type="button"
 						onClick={handleSearch}
 						disabled={isSearching || !searchTerm.trim()}
 						className="btn btn-primary"
@@ -129,6 +130,7 @@ const CompanySearch: React.FC = () => {
 									fill="none"
 									stroke="currentColor"
 									viewBox="0 0 24 24"
+									aria-hidden="true"
 								>
 									<path
 										strokeLinecap="round"
@@ -171,6 +173,7 @@ const CompanySearch: React.FC = () => {
 										fill="none"
 										stroke="currentColor"
 										viewBox="0 0 24 24"
+										aria-hidden="true"
 									>
 										<path
 											strokeLinecap="round"
@@ -316,6 +319,7 @@ const CompanySearch: React.FC = () => {
 							fill="none"
 							stroke="currentColor"
 							viewBox="0 0 24 24"
+							aria-hidden="true"
 						>
 							<path
 								strokeLinecap="round"
@@ -341,6 +345,7 @@ const CompanySearch: React.FC = () => {
 							fill="none"
 							stroke="currentColor"
 							viewBox="0 0 24 24"
+							aria-hidden="true"
 						>
 							<path
 								strokeLinecap="round"
@@ -357,18 +362,21 @@ const CompanySearch: React.FC = () => {
 					</p>
 					<div className="flex flex-wrap gap-2 justify-center">
 						<button
+							type="button"
 							onClick={() => setSearchTerm("AAPL")}
 							className="btn btn-glass text-sm"
 						>
 							Apple
 						</button>
 						<button
+							type="button"
 							onClick={() => setSearchTerm("TSLA")}
 							className="btn btn-glass text-sm"
 						>
 							Tesla
 						</button>
 						<button
+							type="button"
 							onClick={() => setSearchTerm("NVDA")}
 							className="btn btn-glass text-sm"
 						>

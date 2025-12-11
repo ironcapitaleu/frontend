@@ -49,6 +49,7 @@ const Header: React.FC = () => {
 
 					{/* Mobile menu button */}
 					<button
+						type="button"
 						onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
 						className="md:hidden p-2 rounded-lg glass hover:glass-strong transition-all duration-300"
 						aria-label="Toggle menu"

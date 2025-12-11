@@ -59,6 +59,7 @@ const ContactPage: React.FC = () => {
 								fill="none"
 								stroke="currentColor"
 								viewBox="0 0 24 24"
+								aria-hidden="true"
 							>
 								<path
 									strokeLinecap="round"
@@ -75,6 +76,7 @@ const ContactPage: React.FC = () => {
 							consultation.
 						</p>
 						<button
+							type="button"
 							onClick={() => {
 								setIsSubmitted(false);
 								setForm({
@@ -285,6 +287,7 @@ const ContactPage: React.FC = () => {
 										stroke="currentColor"
 										viewBox="0 0 24 24"
 										className="text-primary"
+										aria-hidden="true"
 									>
 										<path
 											strokeLinecap="round"
@@ -317,6 +320,7 @@ const ContactPage: React.FC = () => {
 										stroke="currentColor"
 										viewBox="0 0 24 24"
 										className="text-primary"
+										aria-hidden="true"
 									>
 										<path
 											strokeLinecap="round"
@@ -339,6 +343,7 @@ const ContactPage: React.FC = () => {
 										stroke="currentColor"
 										viewBox="0 0 24 24"
 										className="text-primary"
+										aria-hidden="true"
 									>
 										<path
 											strokeLinecap="round"
@@ -391,6 +396,7 @@ const ContactPage: React.FC = () => {
 									fill="none"
 									stroke="currentColor"
 									viewBox="0 0 24 24"
+									aria-hidden="true"
 								>
 									<path
 										strokeLinecap="round"
@@ -407,6 +413,7 @@ const ContactPage: React.FC = () => {
 									fill="none"
 									stroke="currentColor"
 									viewBox="0 0 24 24"
+									aria-hidden="true"
 								>
 									<path
 										strokeLinecap="round"
@@ -423,6 +430,7 @@ const ContactPage: React.FC = () => {
 									fill="none"
 									stroke="currentColor"
 									viewBox="0 0 24 24"
+									aria-hidden="true"
 								>
 									<path
 										strokeLinecap="round"

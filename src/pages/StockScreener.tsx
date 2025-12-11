@@ -168,8 +168,14 @@ const StockScreener: React.FC = () => {
 				<h2 className="h3 mb-4">Filters</h2>
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 					<div>
-						<label className="block text-sm font-semibold mb-2">Search</label>
+						<label
+							htmlFor="search-input"
+							className="block text-sm font-semibold mb-2"
+						>
+							Search
+						</label>
 						<input
+							id="search-input"
 							type="text"
 							placeholder="Symbol or company name"
 							className="input"
@@ -178,8 +184,14 @@ const StockScreener: React.FC = () => {
 						/>
 					</div>
 					<div>
-						<label className="block text-sm font-semibold mb-2">Sector</label>
+						<label
+							htmlFor="sector-select"
+							className="block text-sm font-semibold mb-2"
+						>
+							Sector
+						</label>
 						<select
+							id="sector-select"
 							className="input"
 							value={sectorFilter}
 							onChange={(e) => setSectorFilter(e.target.value)}
@@ -193,10 +205,14 @@ const StockScreener: React.FC = () => {
 						</select>
 					</div>
 					<div>
-						<label className="block text-sm font-semibold mb-2">
+						<label
+							htmlFor="min-price-input"
+							className="block text-sm font-semibold mb-2"
+						>
 							Min Price ($)
 						</label>
 						<input
+							id="min-price-input"
 							type="number"
 							placeholder="0"
 							className="input"
@@ -205,10 +221,14 @@ const StockScreener: React.FC = () => {
 						/>
 					</div>
 					<div>
-						<label className="block text-sm font-semibold mb-2">
+						<label
+							htmlFor="max-price-input"
+							className="block text-sm font-semibold mb-2"
+						>
 							Max Price ($)
 						</label>
 						<input
+							id="max-price-input"
 							type="number"
 							placeholder="1000"
 							className="input"
