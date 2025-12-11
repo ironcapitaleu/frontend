@@ -41,7 +41,7 @@ export default function LoginPage() {
 					navigate("/");
 				}
 			}
-		} catch (err) {
+		} catch (_err) {
 			setError("An unexpected error occurred");
 		} finally {
 			setLoading(false);
@@ -119,6 +119,7 @@ export default function LoginPage() {
 
 				<div className="mt-6 text-center">
 					<button
+						type="button"
 						onClick={() => {
 							setIsSignUp(!isSignUp);
 							setError(null);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import type { Company } from "../lib/supabase";
 import { useAuthContext } from "../contexts/AuthContext";
@@ -10,11 +10,7 @@ export default function SupabaseTestPage() {
 	const [error, setError] = useState<string | null>(null);
 	const { user } = useAuthContext();
 
-	useEffect(() => {
-		fetchCompanies();
-	}, []);
-
-	async function fetchCompanies() {
+	const fetchCompanies = useCallback(async () => {
 		try {
 			setLoading(true);
 			const { data, error } = await supabase
@@ -31,7 +27,11 @@ export default function SupabaseTestPage() {
 		} finally {
 			setLoading(false);
 		}
-	}
+	}, []);
+
+	useEffect(() => {
+		fetchCompanies();
+	}, [fetchCompanies]);
 
 	const formatMarketCap = (value: number | null) => {
 		if (!value) return "N/A";
@@ -197,6 +197,7 @@ export default function SupabaseTestPage() {
 				{/* Refresh Button */}
 				<div className="mt-8 text-center">
 					<button
+						type="button"
 						onClick={fetchCompanies}
 						disabled={loading}
 						className="btn btn-glass"

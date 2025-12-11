@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 import { useAuthContext } from "../contexts/AuthContext";
 import { Link } from "react-router-dom";
@@ -20,15 +20,7 @@ export default function PrivateDatabasePage() {
 	const [saving, setSaving] = useState(false);
 	const { user } = useAuthContext();
 
-	useEffect(() => {
-		if (user) {
-			fetchNotes();
-		} else {
-			setLoading(false);
-		}
-	}, [user]);
-
-	async function fetchNotes() {
+	const fetchNotes = useCallback(async () => {
 		try {
 			setLoading(true);
 			setError(null);
@@ -44,7 +36,15 @@ export default function PrivateDatabasePage() {
 		} finally {
 			setLoading(false);
 		}
-	}
+	}, []);
+
+	useEffect(() => {
+		if (user) {
+			fetchNotes();
+		} else {
+			setLoading(false);
+		}
+	}, [user, fetchNotes]);
 
 	async function addNote() {
 		if (!newTitle.trim() || !user) return;
@@ -163,6 +163,7 @@ export default function PrivateDatabasePage() {
 							/>
 						</div>
 						<button
+							type="button"
 							onClick={addNote}
 							disabled={saving || !newTitle.trim()}
 							className="btn btn-primary"
@@ -219,6 +220,7 @@ export default function PrivateDatabasePage() {
 											</p>
 										</div>
 										<button
+											type="button"
 											onClick={() => deleteNote(note.id)}
 											className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors text-sm"
 										>
@@ -234,6 +236,7 @@ export default function PrivateDatabasePage() {
 				{/* Refresh Button */}
 				<div className="mt-8 text-center">
 					<button
+						type="button"
 						onClick={fetchNotes}
 						disabled={loading}
 						className="btn btn-glass"
