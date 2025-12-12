@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - dev
     types: [opened, synchronize, reopened, edited]
 
 jobs:
@@ -27,7 +28,7 @@ jobs:
 
 
       - name: Reject Invalid Source Branch
-        if: github.head_ref != 'dev'
+        if: github.base_ref == 'main' && github.head_ref != 'dev'
         run: |
           echo "::error::Pull requests to 'main' must originate from 'dev' branch"
           echo "::error::Current source: ${{ github.head_ref }} → Target: ${{ github.base_ref }}"
@@ -35,7 +36,11 @@ jobs:
           exit 1
 
       - name: Confirm Valid Source Branch
-        if: github.head_ref == 'dev'
+        if: github.base_ref == 'main' && github.head_ref == 'dev'
         run: |
           echo "::notice:: Merge policy validated successfully"
           echo "Source: ${{ github.head_ref }} → Target: ${{ github.base_ref }}"
+
+      - name: Allow Dev Merge
+        if: github.base_ref == 'dev'
+        run: echo "::notice:: PR targets 'dev', merge policy check skipped."
