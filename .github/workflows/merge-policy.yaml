@@ -43,4 +43,5 @@ jobs:
 
       - name: Allow Dev Merge
         if: github.base_ref == 'dev'
-        run: echo "::notice:: PR targets 'dev', merge policy check skipped."
+        run: |
+          echo "::notice:: PR targets 'dev', merge policy check skipped."
