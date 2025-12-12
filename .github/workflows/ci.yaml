@@ -50,6 +50,9 @@ jobs:
 
     - name: Code Formatting Check
       run: npm run format:check
+    
+    - name: Security Check
+      run: npm run security:check
 
     - name: Linting
       run: npm run lint:check
