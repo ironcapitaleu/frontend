@@ -14,3 +14,11 @@
   - Unit tests (`npm run test:ci`)
   - Integration tests
   - Type checking (`npm run typing:check`)
+
+
+### Documentation
+- Public items in libraries **must include JSDoc comments** (`/** */`).
+- All implementation changes must be **reflected in documentation**, including:
+  - JSDoc comments
+  - Design documents (if applicable, e.g., mermaid diagrams)
+- **Documentation must be version controlled**.
