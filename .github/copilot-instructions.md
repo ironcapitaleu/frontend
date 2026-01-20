@@ -100,3 +100,17 @@ Error class names should follow consistent naming patterns based on the kind of 
 - Integration tests should be placed in the `tests` directory, with each test in its own file.
 
 ---
+
+### Logging
+- Use **structured logging** in application code only (not in libraries).
+- Logs must:
+  - Be formatted as **JSON**
+  - **Avoid sensitive data** (e.g., passwords, API keys, Personally Identifiable Information (PII))
+  - Include **specific fields** (see format below)
+  - Use the correct **log level**:
+    - `info`: Regular application state (e.g., "Server started", "User logged in")
+    - `debug`: Development-level details (e.g., variable values, request/response payloads)
+    - `warn`: Unexpected but non-breaking situations (e.g., deprecated API usage, retries)
+    - `error`: Critical issues (e.g., failure to connect to a database, unhandled exceptions)
+- For browser-based React apps, use `console.log`, `console.warn`, `console.error`, etc., or a lightweight logging library like `loglevel`.
+- For `Node.js` backends or `SSR`, consider libraries like `pino` or `winston` for structured JSON logging.
