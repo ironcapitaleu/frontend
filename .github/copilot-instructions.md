@@ -296,3 +296,46 @@ Refs: #123
 If you must deviate from any guideline, **include a code comment** explaining why. Consistency, safety, and clarity are the priorities in this project.
 
 ---
+
+## JavaScript/TypeScript Guidelines
+Some general guidelines to follow when writing JavaScript/TypeScript code in this project. Some of these (as well as rules that are not listed here) are enforced via linters or formatters, but it's good to gather some important ones in one place for reference. This is list is not exhaustive.
+
+### Variable Declaration
+- General rule for variable declarations:
+  - Use `const` by default
+  - Use `let` when you need to reassign
+  - Avoid `var` in modern JavaScript
+- **Declare Objects with `const`**: Declaring objects with const will prevent any accidental change of type.
+- **Declare Arrays with `const`**: Declaring arrays with const will prevent any accidental change of type.
+
+### Variable Initialization
+- **Initialize Variables**: Always initialize variables when declaring them.
+- **Don't use `new Object()`**:
+  - Use `""` instead of `new String()`
+  - Use `0` instead of `new Number()`
+  - Use `false` instead of `new Boolean()`
+  - Use `{}` instead of `new Object()`
+  - Use `[]` instead of `new Array()`
+  - Use `function (){}` instead of `new Function()`
+
+### TypeScript-Specific Guidelines
+- Use TypeScript's type system effectively: prefer interfaces and types for complex structures, use unions and intersections as needed.
+- Avoid using `any` type unless absolutely necessary; prefer more specific types.
+- Use `unknown` instead of `any` when the type is not known
+- Enable strict mode in `tsconfig.json` (`"strict": true`)
+- Use `readonly` for properties that should not be modified after initialization
+- Prefer `interface` over `type` for defining object shapes, unless using advanced type features
+
+### Miscellaneous
+- Use **arrow functions** for anonymous functions and callbacks
+- Prefer **template literals** (`` `Hello, ${name}!` ``) over string
+  concatenation (`'Hello, ' + name + '!'`)
+- Avoid global variables, avoid `new`, avoid `==`, avoid `eval()`
+- Always declare `local variables`
+- Use **async/await** for asynchronous code instead of Promises directly
+- **Declarations on Top**: Put all declarations at the top of each script or function.
+- Use **triple equals (`===`)** for comparisons to avoid type coercion issues.
+- **Avoid Number, String, and Boolean as Objects**: Always treat numbers, strings, or booleans as primitive values. Not as objects. Declaring these types as objects, slows down execution speed, and produces nasty side effects (e.g., cannot compare a String object with a string primitive), or cannot compare objects by default.
+- **Avoid using `eval()`**: The `eval()` function is used to run text as code. In almost all cases, it should not be necessary to use it. It poses serious security risk as it allows arbitrary code to be executed.
+
+---
