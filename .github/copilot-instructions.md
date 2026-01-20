@@ -113,4 +113,40 @@ Error class names should follow consistent naming patterns based on the kind of 
     - `warn`: Unexpected but non-breaking situations (e.g., deprecated API usage, retries)
     - `error`: Critical issues (e.g., failure to connect to a database, unhandled exceptions)
 - For browser-based React apps, use `console.log`, `console.warn`, `console.error`, etc., or a lightweight logging library like `loglevel`.
-- For `Node.js` backends or `SSR`, consider libraries like `pino` or `winston` for structured JSON logging.
+- For Node.js backends or SSR, consider libraries like `pino` or `winston` for structured JSON logging.
+
+
+### Structured Logging Format
+
+All structured logs must be formatted as **JSON documents** with exactly **five required fields**:
+
+- **`level`**: Log severity level
+  - Valid values: `info`, `debug`, `warn`, `error`
+- **`timestamp`**: When the event occurred
+  - Format: **ISO 8601 UTC** (e.g., `2024-10-12T14:30:00Z`)
+- **`event`**: The specific event that triggered log creation
+  - Brief, descriptive identifier for the event type
+  - Use `snake_case` singular nouns (e.g., `user_login` instead of `user_logins`)
+  - A set of predefined event names should be maintained and used consistently - likely maintained using a TypeScript `enum` or a union type for type safety
+- **`message`**: High-level information about the `event`
+  - Human-readable summary of what happened
+  - free text string explaining the `event`
+- **`context`**: Detailed contextual information
+  - Nested field that can contain arbitrary key-value pairs
+  - Additional state information needed to understand the event
+  - Include relevant variables, IDs, or environmental details
+
+**Example:**
+```json
+{
+  "level": "info",
+  "timestamp": "2024-10-12T14:30:00Z",
+  "event": "user_authentication_success",
+  "message": "User successfully authenticated",
+  "context": {
+    "user_id": "12345",
+    "session_id": "abc-xyz-789",
+    "ip_address": "192.168.1.100"
+  }
+}
+```
