@@ -298,7 +298,7 @@ If you must deviate from any guideline, **include a code comment** explaining wh
 ---
 
 ## JavaScript/TypeScript Guidelines
-Some general guidelines to follow when writing JavaScript/TypeScript code in this project. Some of these (as well as rules that are not listed here) are enforced via linters or formatters, but it's good to gather some important ones in one place for reference. This is list is not exhaustive.
+Some general guidelines to follow when writing JavaScript/TypeScript code in this project. Some of these (as well as rules that are not listed here) are enforced via linters or formatters, but it's good to gather some important ones in one place for reference.
 
 ### Variable Declaration
 - General rule for variable declarations:
