@@ -150,3 +150,68 @@ All structured logs must be formatted as **JSON documents** with exactly **five 
   }
 }
 ```
+
+---
+
+## Copilot Guidance
+
+When Copilot generates code, it should:
+- Follow existing conventions and module structure
+- Include JSDoc comments for public items
+- Generate unit tests (and integration tests if relevant)
+- Add structured logging in application code
+- Avoid logging or exposing sensitive data
+- Prefer explicit error handling with meaningful error classes (e.g., custom `Error` subclasses) over generic errors
+- Use TypeScript types/interfaces for type safety
+
+---
+
+## PR Review Guidelines
+
+### Code Quality
+- Readability and maintainability  
+- Flag duplicated code  
+- Ensure functions are focused and not overly long
+- Make sure components, hooks, and functions follow the single responsibility principle
+- Avoid side effects in functions (prefer pure functions where possible)
+- Naming of variables, components, hooks, and functions must follow **Ottinger’s Naming Rules** ([what they are](https://objectmentor.com/resources/articles/naming.htm)) (names should reveal intent, be pronounceable, avoid encodings, not be too cute, etc.)  
+- Code within files and modules must follow the **Step-Down Rule** ([see explanation](https://dzone.com/articles/the-stepdown-rule)) (functions stay on one layer of abstraction, inside a module order functions by higher-level concepts first, details later)
+
+
+### Performance
+- Flag inefficiencies (e.g., unnecessary re-renders, missing `useMemo`/`useCallback`)
+- Avoid premature optimization  
+
+### Correctness & Safety
+- Spot potential bugs and edge cases  
+- Verify sufficient error handling  (e.g., `try/catch`, error boundaries, etc.)
+- Ensure async code handles rejections properly (e.g., `await`, `.catch()`)
+
+### Security
+- Identify insecure practices (e.g., hardcoded secrets like exposed API keys)  
+- Flag outdated or vulnerable libraries (`npm run security:check`)
+- Avoid `dangerouslySetInnerHTML` or similar unsafe patterns in React components without sanitization
+
+### Style & Documentation
+- Ensure style conventions are followed  
+- Check for meaningful comments and JSDoc  
+- Suggest clearer names and documentation where needed  
+
+### Documentation Consistency
+- Cross-check code changes against `README.md`, API docs, usage guides, and inline examples  
+- Flag when function names, parameters, or behaviors change but docs are not updated  
+- Highlight outdated instructions or examples caused by code changes  
+- Ensure new features or breaking changes are properly documented  
+
+### Testing
+- Confirm sufficient test coverage  
+- Suggest missing edge cases or error condition tests 
+- Ensure React components have appropriate tests (e.g., rendering, props, state changes)  
+- Verify tests follow the **"Arrange, Define, Act, Assert"** pattern
+
+### What NOT to Do
+- Avoid nitpicks on trivial formatting  
+- Do not suggest unnecessary rewrites if code is clear and correct  
+- Do not enforce rules not listed in these guidelines  
+
+---
