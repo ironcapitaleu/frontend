@@ -79,3 +79,24 @@ Error class names should follow consistent naming patterns based on the kind of 
 - Consider using error codes or properties for programmatic handling.
 
 ---
+
+## Library Code
+
+### Testing
+- Write a **comprehensive unit test suite** for the implemented code.
+- If applicable, write **integration tests**.
+- Include **doctests** where useful.
+- Use **pretty assertions** (built-in with Vitest/Jest for readable diffs, or via libraries like `chai` with plugins) for improved readability.
+- Unit tests should follow a modified version of the  **"Arrange, Act, Assert"** pattern, that we call the **"Arrange, Define, Act, Assert"** pattern:
+  - **Arrange**: Set up the test environment (create any necessary objects, mimic dependencies, etc.)
+  - **Define**: Define the expected result (usually in a variable called `expectedResult`)
+  - **Act**: Execute the code under test and capture the result (usually in a variable called `result`)
+  - **Assert**: Verify the results (i.e., that the `result` matches the `expectedResult`)
+    - **Note**: `expect(...).toEqual()` for deep equality, `expect(...).toBe()` for strict equality, as well as `expect(...).toBeTruthy()` and `expect(...).toBeFalsy()` for boolean checks.
+- Unit tests should be placed in a file alongside the code they test, using the naming convention `[filename].test.ts` (e.g., `useAuth.test.ts` for `useAuth.ts`).
+- Unit tests should follow the `should ... when ...`naming convention for **test descriptions** (not functions!!) (i.e., the string passed to `it()` or `test()`).
+  - **Note**: Test names should be descriptive and start with `should`. Test names can be verbose, explicit but clear naming is favored over brevity.
+  - **Example**: `it('should return null when user is not authenticated', ...)` — the string ´'should return null when user is not authenticated'` is the **test name/description**.
+- Integration tests should be placed in the `tests` directory, with each test in its own file.
+
+---
