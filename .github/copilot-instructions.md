@@ -336,5 +336,6 @@ Some general guidelines to follow when writing JavaScript/TypeScript code in thi
 - Use **triple equals (`===`)** for comparisons to avoid type coercion issues.
 - **Avoid Number, String, and Boolean as Objects**: Always treat numbers, strings, or booleans as primitive values. Not as objects. Declaring these types as objects, slows down execution speed, and produces nasty side effects (e.g., cannot compare a String object with a string primitive), or cannot compare objects by default.
 - **Avoid using `eval()`**: The `eval()` function is used to run text as code. In almost all cases, it should not be necessary to use it. It poses serious security risk as it allows arbitrary code to be executed.
+- Never set `unfined` to a variable manually. Use `null` instead to indicate an empty value. As a guideline, JavaScript's `undefined` should only be used by the JavaScript engine itself. In other words, `undefined` is set naturally. Use `null` for intentional purposes, i.e., to indicate that a variable has no value for now.
 
 ---
