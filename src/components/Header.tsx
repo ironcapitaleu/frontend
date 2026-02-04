@@ -27,10 +27,10 @@ const Header: React.FC = () => {
 				<nav className="flex items-center justify-between py-6">
 					{/* Logo */}
 					<Link to="/" className="flex items-center gap-2">
-						<div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
-							<span className="text-white font-bold text-sm">IC</span>
+						<div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+							<span className="text-primary-foreground font-bold text-sm">IC</span>
 						</div>
-						<span className="text-xl font-bold text-primary">Iron Capital</span>
+						<span className="text-xl font-bold text-foreground">Iron Capital</span>
 					</Link>
 
 					{/* Desktop Navigation */}
