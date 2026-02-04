@@ -50,7 +50,6 @@ function AccordionStory({
 				return ["billing"];
 			case "all":
 				return items.map((item) => item.value);
-			case "none":
 			default:
 				return [];
 		}

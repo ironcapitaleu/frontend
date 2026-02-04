@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import type { Decorator } from "@storybook/react-vite";
 
 /**
@@ -31,7 +31,7 @@ export const DarkModeDecorator: Decorator = (Story) => (
 /**
  * Showcase grid for displaying all variants at once
  */
-export function VariantShowcase<T extends Record<string, any>>({
+export function VariantShowcase<T extends Record<string, unknown>>({
 	Component,
 	variants,
 	variantKey,
@@ -62,7 +62,7 @@ export function VariantShowcase<T extends Record<string, any>>({
 /**
  * Size comparison showcase
  */
-export function SizeShowcase<T extends Record<string, any>>({
+export function SizeShowcase<T extends Record<string, unknown>>({
 	Component,
 	sizes,
 	sizeKey,

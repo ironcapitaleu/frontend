@@ -61,7 +61,7 @@ export const Variants: Story = {
 	},
 	render: () => (
 		<VariantShowcase
-			Component={Badge as unknown as React.ComponentType<any>}
+			Component={Badge as unknown as React.ComponentType<Record<string, unknown>>}
 			variants={[...BADGE_VARIANTS]}
 			variantKey="variant"
 			baseProps={{ children: "Badge" }}

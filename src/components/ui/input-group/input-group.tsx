@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import type * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 
 function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
 	return (
+		// biome-ignore lint/a11y/useSemanticElements: div with role=group preferred over fieldset for flexible styling
 		<div
 			data-slot="input-group"
 			role="group"
@@ -49,6 +50,8 @@ function InputGroupAddon({
 	...props
 }: React.ComponentProps<"div"> & VariantProps<typeof inputGroupAddonVariants>) {
 	return (
+		// biome-ignore lint/a11y/useSemanticElements: div with role=group preferred over fieldset for flexible styling
+		// biome-ignore lint/a11y/useKeyWithClickEvents: click focuses sibling input, keyboard users use tab
 		<div
 			role="group"
 			data-slot="input-group-addon"

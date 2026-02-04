@@ -78,6 +78,7 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
 
 	return (
 		<style
+			// biome-ignore lint/security/noDangerouslySetInnerHtml: Safe - generates CSS variables from trusted config
 			dangerouslySetInnerHTML={{
 				__html: Object.entries(THEMES)
 					.map(
@@ -116,8 +117,20 @@ function ChartTooltipContent({
 	color,
 	nameKey,
 	labelKey,
-}: React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
+}: Omit<React.ComponentProps<typeof RechartsPrimitive.Tooltip>, "payload" | "active" | "label"> &
 	React.ComponentProps<"div"> & {
+		active?: boolean;
+		payload?: Array<{
+			dataKey?: string | number;
+			name?: string;
+			value?: unknown;
+			type?: string;
+			color?: string;
+			payload?: Record<string, unknown>;
+			fill?: string;
+			[key: string]: unknown;
+		}>;
+		label?: string;
 		hideLabel?: boolean;
 		hideIndicator?: boolean;
 		indicator?: "line" | "dot" | "dashed";
@@ -142,7 +155,7 @@ function ChartTooltipContent({
 		if (labelFormatter) {
 			return (
 				<div className={cn("font-medium", labelClassName)}>
-					{labelFormatter(value, payload)}
+					{(labelFormatter as (label: unknown, payload: unknown) => React.ReactNode)(value, payload)}
 				</div>
 			);
 		}
@@ -171,7 +184,7 @@ function ChartTooltipContent({
 	return (
 		<div
 			className={cn(
-				"border-border/50 bg-background gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl grid min-w-[8rem] items-start",
+				"border-border/50 bg-background gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl grid min-w-32 items-start",
 				className,
 			)}
 		>
@@ -182,7 +195,7 @@ function ChartTooltipContent({
 					.map((item, index) => {
 						const key = `${nameKey || item.name || item.dataKey || "value"}`;
 						const itemConfig = getPayloadConfigFromPayload(config, item, key);
-						const indicatorColor = color || item.payload.fill || item.color;
+						const indicatorColor = color || item.payload?.fill || item.color;
 
 						return (
 							<div
@@ -193,7 +206,7 @@ function ChartTooltipContent({
 								)}
 							>
 								{formatter && item?.value !== undefined && item.name ? (
-									formatter(item.value, item.name, item, index, item.payload)
+									(formatter as (value: unknown, name: unknown, item: unknown, index: number, payload: unknown) => React.ReactNode)(item.value, item.name, item, index, item.payload)
 								) : (
 									<>
 										{itemConfig?.icon ? (
@@ -235,9 +248,9 @@ function ChartTooltipContent({
 													{itemConfig?.label || item.name}
 												</span>
 											</div>
-											{item.value && (
+											{item.value !== undefined && item.value !== null && (
 												<span className="text-foreground font-mono font-medium tabular-nums">
-													{item.value.toLocaleString()}
+													{typeof item.value === 'number' ? item.value.toLocaleString() : String(item.value)}
 												</span>
 											)}
 										</div>
@@ -259,8 +272,17 @@ function ChartLegendContent({
 	payload,
 	verticalAlign = "bottom",
 	nameKey,
-}: React.ComponentProps<"div"> &
-	Pick<RechartsPrimitive.LegendProps, "payload" | "verticalAlign"> & {
+}: React.ComponentProps<"div"> & {
+		payload?: Array<{
+			value?: string;
+			type?: string;
+			id?: string;
+			color?: string;
+			dataKey?: string | number;
+			payload?: Record<string, unknown>;
+			[key: string]: unknown;
+		}>;
+		verticalAlign?: "top" | "bottom";
 		hideIcon?: boolean;
 		nameKey?: string;
 	}) {

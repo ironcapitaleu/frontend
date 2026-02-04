@@ -126,7 +126,7 @@ export const Search: Story = {
 	},
 };
 
-export const Number: Story = {
+export const NumberInput: Story = {
 	render: renderInput,
 	args: {
 		type: "number",

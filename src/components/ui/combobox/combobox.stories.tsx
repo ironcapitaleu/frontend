@@ -170,7 +170,10 @@ const produceData: Produce[] = [
 function groupProduce(items: Produce[]): ProduceGroup[] {
 	const groups: Record<string, Produce[]> = {};
 	for (const item of items) {
-		(groups[item.group] ??= []).push(item);
+		if (!groups[item.group]) {
+			groups[item.group] = [];
+		}
+		groups[item.group].push(item);
 	}
 	const order: ProduceGroup["value"][] = ["Fruits", "Vegetables"];
 	return order.map((value) => ({ value, items: groups[value] ?? [] }));

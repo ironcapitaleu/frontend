@@ -5,7 +5,7 @@ import {
 	TabsContent,
 	TabsList,
 	TabsTrigger,
-	tabsListVariants,
+	type tabsListVariants,
 } from "./tabs";
 
 type TabsStoryArgs = {
