@@ -19,11 +19,31 @@ export default defineConfig({
 	plugins: [react(), tailwindcss()],
 	resolve: {
 		alias: {
-			"@": path.resolve(__dirname, "./src"),
+			"@": path.resolve(dirname, "./src"),
 		},
 	},
 	test: {
+		coverage: {
+			provider: "v8",
+			reporter: ["text", "json", "html"],
+			include: ["src/**/*.{ts,tsx}"],
+			exclude: [
+				"src/**/*.test.{ts,tsx}",
+				"src/**/*.stories.{ts,tsx}",
+				"src/test/**",
+			],
+		},
 		projects: [
+			{
+				extends: true,
+				test: {
+					name: "unit",
+					include: ["src/**/*.test.{ts,tsx}"],
+					environment: "jsdom",
+					setupFiles: ["./src/test/setup.ts"],
+					globals: true,
+				},
+			},
 			{
 				extends: true,
 				plugins: [
@@ -35,6 +55,7 @@ export default defineConfig({
 				],
 				test: {
 					name: "storybook",
+					include: ["src/**/*.stories.{ts,tsx}"],
 					browser: {
 						enabled: true,
 						headless: true,
