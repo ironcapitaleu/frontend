@@ -1,10 +1,23 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
-import * as React from 'react';
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import * as React from "react";
 
-import { Input } from './input';
-import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel } from '../field';
+import { Input } from "./input";
+import {
+	Field,
+	FieldContent,
+	FieldDescription,
+	FieldGroup,
+	FieldLabel,
+} from "../field";
 
-const INPUT_TYPES = ['text', 'email', 'password', 'search', 'number', 'file'] as const;
+const INPUT_TYPES = [
+	"text",
+	"email",
+	"password",
+	"search",
+	"number",
+	"file",
+] as const;
 
 /**
  * An `Input` is a basic form element that allows users to enter or edit text or data, such as text, numbers, passwords, or email.
@@ -12,22 +25,22 @@ const INPUT_TYPES = ['text', 'email', 'password', 'search', 'number', 'file'] as
  * `Input`s are always interactive, because their main purpose is to accept user input. Even if they’re disabled or read-only, they are fundamentally designed for interaction.
  */
 const meta: Meta<typeof Input> = {
-	title: 'Components/Input',
+	title: "Components/Input",
 	component: Input,
-	tags: ['autodocs'],
+	tags: ["autodocs"],
 	args: {
-		type: 'text',
-		placeholder: 'Enter text…',
+		type: "text",
+		placeholder: "Enter text…",
 		disabled: false,
 		required: false,
-		'aria-invalid': false,
+		"aria-invalid": false,
 	},
 	argTypes: {
-		type: { control: 'select', options: INPUT_TYPES },
-		placeholder: { control: 'text' },
-		disabled: { control: 'boolean' },
-		required: { control: 'boolean' },
-		'aria-invalid': { control: 'boolean' },
+		type: { control: "select", options: INPUT_TYPES },
+		placeholder: { control: "text" },
+		disabled: { control: "boolean" },
+		required: { control: "boolean" },
+		"aria-invalid": { control: "boolean" },
 		className: { control: { disable: true } },
 		value: { control: { disable: true } },
 		defaultValue: { control: { disable: true } },
@@ -38,7 +51,7 @@ const meta: Meta<typeof Input> = {
 export default meta;
 type Story = StoryObj<typeof Input>;
 
-const renderInput: Story['render'] = (args) => {
+const renderInput: Story["render"] = (args) => {
 	const id = React.useId();
 
 	return (
@@ -47,7 +60,9 @@ const renderInput: Story['render'] = (args) => {
 				Input
 			</label>
 			<Input id={id} {...args} />
-			<p className="text-muted-foreground text-xs">Focus to see ring + invalid state.</p>
+			<p className="text-muted-foreground text-xs">
+				Focus to see ring + invalid state.
+			</p>
 		</div>
 	);
 };
@@ -70,8 +85,8 @@ export const Playground: Story = {
 export const Text: Story = {
 	render: renderInput,
 	args: {
-		type: 'text',
-		placeholder: 'Jane Doe',
+		type: "text",
+		placeholder: "Jane Doe",
 	},
 	argTypes: {
 		type: { control: { disable: true } },
@@ -81,8 +96,8 @@ export const Text: Story = {
 export const Email: Story = {
 	render: renderInput,
 	args: {
-		type: 'email',
-		placeholder: 'name@example.com',
+		type: "email",
+		placeholder: "name@example.com",
 	},
 	argTypes: {
 		type: { control: { disable: true } },
@@ -92,8 +107,8 @@ export const Email: Story = {
 export const Password: Story = {
 	render: renderInput,
 	args: {
-		type: 'password',
-		placeholder: '••••••••',
+		type: "password",
+		placeholder: "••••••••",
 	},
 	argTypes: {
 		type: { control: { disable: true } },
@@ -103,8 +118,8 @@ export const Password: Story = {
 export const Search: Story = {
 	render: renderInput,
 	args: {
-		type: 'search',
-		placeholder: 'Search…',
+		type: "search",
+		placeholder: "Search…",
 	},
 	argTypes: {
 		type: { control: { disable: true } },
@@ -114,8 +129,8 @@ export const Search: Story = {
 export const Number: Story = {
 	render: renderInput,
 	args: {
-		type: 'number',
-		placeholder: '42',
+		type: "number",
+		placeholder: "42",
 	},
 	argTypes: {
 		type: { control: { disable: true } },
@@ -135,7 +150,7 @@ export const File: Story = {
 		);
 	},
 	args: {
-		type: 'file',
+		type: "file",
 		placeholder: undefined,
 	},
 	argTypes: {
@@ -152,7 +167,7 @@ export const Disabled: Story = {
 	render: renderInput,
 	args: {
 		disabled: true,
-		placeholder: 'Disabled',
+		placeholder: "Disabled",
 	},
 	argTypes: {
 		disabled: { control: { disable: true } },
@@ -162,11 +177,11 @@ export const Disabled: Story = {
 export const Invalid: Story = {
 	render: renderInput,
 	args: {
-		'aria-invalid': true,
-		placeholder: 'Invalid value',
+		"aria-invalid": true,
+		placeholder: "Invalid value",
 	},
 	argTypes: {
-		'aria-invalid': { control: { disable: true } },
+		"aria-invalid": { control: { disable: true } },
 	},
 };
 
@@ -174,7 +189,7 @@ export const Required: Story = {
 	render: renderInput,
 	args: {
 		required: true,
-		placeholder: 'Required',
+		placeholder: "Required",
 	},
 	argTypes: {
 		required: { control: { disable: true } },
@@ -198,7 +213,9 @@ export const InField: Story = {
 						<FieldLabel htmlFor={id}>Email</FieldLabel>
 						<FieldContent>
 							<Input id={id} type="email" placeholder="name@example.com" />
-							<FieldDescription>We will never share your email.</FieldDescription>
+							<FieldDescription>
+								We will never share your email.
+							</FieldDescription>
 						</FieldContent>
 					</Field>
 				</FieldGroup>
@@ -206,4 +223,3 @@ export const InField: Story = {
 		);
 	},
 };
-

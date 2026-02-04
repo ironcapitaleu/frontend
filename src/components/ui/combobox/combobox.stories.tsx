@@ -1,5 +1,5 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
-import * as React from 'react';
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import * as React from "react";
 
 import {
 	Combobox,
@@ -16,9 +16,15 @@ import {
 	ComboboxList,
 	ComboboxValue,
 	useComboboxAnchor,
-} from './combobox';
+} from "./combobox";
 
-const frameworks = ['Next.js', 'SvelteKit', 'Nuxt.js', 'Remix', 'Astro'] as const;
+const frameworks = [
+	"Next.js",
+	"SvelteKit",
+	"Nuxt.js",
+	"Remix",
+	"Astro",
+] as const;
 
 type ComboboxStoryArgs = {
 	label: string;
@@ -31,18 +37,18 @@ type ComboboxStoryArgs = {
 };
 
 /**
- * A `Combobox` is a filterable Select. 
+ * A `Combobox` is a filterable Select.
  * A `Combobox` lets users select or search for a value from a list.
  * Use a `Combobox` when there are many options and typing or filtering is faster than scanning a static list.
  * `Combobox` components are interactive, because users must actively open the list, type to filter, and make a selection.
  */
 const meta: Meta<ComboboxStoryArgs> = {
-	title: 'Components/Combobox',
+	title: "Components/Combobox",
 	component: Combobox,
-	tags: ['autodocs'],
+	tags: ["autodocs"],
 	args: {
-		label: 'Framework',
-		placeholder: 'Select a framework',
+		label: "Framework",
+		placeholder: "Select a framework",
 		disabled: false,
 		required: false,
 		showTrigger: true,
@@ -50,14 +56,14 @@ const meta: Meta<ComboboxStoryArgs> = {
 		defaultValue: null,
 	},
 	argTypes: {
-		label: { control: 'text' },
-		placeholder: { control: 'text' },
-		disabled: { control: 'boolean' },
-		required: { control: 'boolean' },
-		showTrigger: { control: 'boolean' },
-		showClear: { control: 'boolean' },
+		label: { control: "text" },
+		placeholder: { control: "text" },
+		disabled: { control: "boolean" },
+		required: { control: "boolean" },
+		showTrigger: { control: "boolean" },
+		showClear: { control: "boolean" },
 		defaultValue: {
-			control: 'select',
+			control: "select",
 			options: [null, ...frameworks],
 		},
 	},
@@ -66,7 +72,7 @@ const meta: Meta<ComboboxStoryArgs> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const renderSingleCombobox: Story['render'] = ({
+const renderSingleCombobox: Story["render"] = ({
 	label,
 	placeholder,
 	disabled,
@@ -142,7 +148,7 @@ export const Disabled: Story = {
 type Produce = {
 	id: string;
 	label: string;
-	group: 'Fruits' | 'Vegetables';
+	group: "Fruits" | "Vegetables";
 };
 
 type ProduceGroup = {
@@ -151,14 +157,14 @@ type ProduceGroup = {
 };
 
 const produceData: Produce[] = [
-	{ id: 'fruit-apple', label: 'Apple', group: 'Fruits' },
-	{ id: 'fruit-banana', label: 'Banana', group: 'Fruits' },
-	{ id: 'fruit-mango', label: 'Mango', group: 'Fruits' },
-	{ id: 'fruit-kiwi', label: 'Kiwi', group: 'Fruits' },
-	{ id: 'veg-broccoli', label: 'Broccoli', group: 'Vegetables' },
-	{ id: 'veg-carrot', label: 'Carrot', group: 'Vegetables' },
-	{ id: 'veg-spinach', label: 'Spinach', group: 'Vegetables' },
-	{ id: 'veg-zucchini', label: 'Zucchini', group: 'Vegetables' },
+	{ id: "fruit-apple", label: "Apple", group: "Fruits" },
+	{ id: "fruit-banana", label: "Banana", group: "Fruits" },
+	{ id: "fruit-mango", label: "Mango", group: "Fruits" },
+	{ id: "fruit-kiwi", label: "Kiwi", group: "Fruits" },
+	{ id: "veg-broccoli", label: "Broccoli", group: "Vegetables" },
+	{ id: "veg-carrot", label: "Carrot", group: "Vegetables" },
+	{ id: "veg-spinach", label: "Spinach", group: "Vegetables" },
+	{ id: "veg-zucchini", label: "Zucchini", group: "Vegetables" },
 ];
 
 function groupProduce(items: Produce[]): ProduceGroup[] {
@@ -166,7 +172,7 @@ function groupProduce(items: Produce[]): ProduceGroup[] {
 	for (const item of items) {
 		(groups[item.group] ??= []).push(item);
 	}
-	const order: ProduceGroup['value'][] = ['Fruits', 'Vegetables'];
+	const order: ProduceGroup["value"][] = ["Fruits", "Vegetables"];
 	return order.map((value) => ({ value, items: groups[value] ?? [] }));
 }
 
@@ -200,7 +206,11 @@ export const Grouped: Story = {
 					<ComboboxEmpty>No produce found.</ComboboxEmpty>
 					<ComboboxList>
 						{(group: ProduceGroup) => (
-							<ComboboxGroup key={group.value} items={group.items} className="pb-2">
+							<ComboboxGroup
+								key={group.value}
+								items={group.items}
+								className="pb-2"
+							>
 								<ComboboxLabel className="bg-popover sticky top-0">
 									{group.value}
 								</ComboboxLabel>
@@ -221,13 +231,13 @@ export const Grouped: Story = {
 };
 
 const languages = [
-	'JavaScript',
-	'TypeScript',
-	'Python',
-	'Go',
-	'Rust',
-	'Swift',
-	'Ruby',
+	"JavaScript",
+	"TypeScript",
+	"Python",
+	"Go",
+	"Rust",
+	"Swift",
+	"Ruby",
 ] as const;
 
 /**
@@ -247,7 +257,7 @@ export const MultipleSelectChips: Story = {
 		const anchorRef = useComboboxAnchor();
 
 		return (
-			<Combobox items={languages} multiple defaultValue={['TypeScript']}>
+			<Combobox items={languages} multiple defaultValue={["TypeScript"]}>
 				<div className="flex flex-col gap-1">
 					<label htmlFor={id} className="text-sm font-medium">
 						Programming languages
@@ -264,7 +274,7 @@ export const MultipleSelectChips: Story = {
 									))}
 									<ComboboxChipsInput
 										id={id}
-										placeholder={value.length > 0 ? '' : 'e.g. TypeScript'}
+										placeholder={value.length > 0 ? "" : "e.g. TypeScript"}
 										aria-label="Programming languages"
 									/>
 								</React.Fragment>

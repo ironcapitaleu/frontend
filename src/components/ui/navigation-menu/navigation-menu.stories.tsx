@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import {
 	NavigationMenu,
@@ -8,43 +8,44 @@ import {
 	NavigationMenuList,
 	NavigationMenuTrigger,
 	navigationMenuTriggerStyle,
-} from './navigation-menu';
-import { cn } from '@/lib/utils';
+} from "./navigation-menu";
+import { cn } from "@/lib/utils";
 
 const components: { title: string; href: string; description: string }[] = [
 	{
-		title: 'Alert Dialog',
-		href: '#alert-dialog',
+		title: "Alert Dialog",
+		href: "#alert-dialog",
 		description:
-			'A modal dialog that interrupts the user with important content and expects a response.',
+			"A modal dialog that interrupts the user with important content and expects a response.",
 	},
 	{
-		title: 'Hover Card',
-		href: '#hover-card',
-		description: 'For sighted users to preview content available behind a link.',
-	},
-	{
-		title: 'Progress',
-		href: '#progress',
+		title: "Hover Card",
+		href: "#hover-card",
 		description:
-			'Displays an indicator showing the completion progress of a task, typically displayed as a progress bar.',
+			"For sighted users to preview content available behind a link.",
 	},
 	{
-		title: 'Scroll-area',
-		href: '#scroll-area',
-		description: 'Visually or semantically separates content.',
-	},
-	{
-		title: 'Tabs',
-		href: '#tabs',
+		title: "Progress",
+		href: "#progress",
 		description:
-			'A set of layered sections of content—known as tab panels—that are displayed one at a time.',
+			"Displays an indicator showing the completion progress of a task, typically displayed as a progress bar.",
 	},
 	{
-		title: 'Tooltip',
-		href: '#tooltip',
+		title: "Scroll-area",
+		href: "#scroll-area",
+		description: "Visually or semantically separates content.",
+	},
+	{
+		title: "Tabs",
+		href: "#tabs",
 		description:
-			'A popup that displays information related to an element when the element receives keyboard focus or the mouse hovers over it.',
+			"A set of layered sections of content—known as tab panels—that are displayed one at a time.",
+	},
+	{
+		title: "Tooltip",
+		href: "#tooltip",
+		description:
+			"A popup that displays information related to an element when the element receives keyboard focus or the mouse hovers over it.",
 	},
 ];
 
@@ -64,8 +65,8 @@ function ListItem({
 			<NavigationMenuLink
 				href={href}
 				className={cn(
-					'hover:bg-muted focus:bg-muted block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors',
-					className
+					"hover:bg-muted focus:bg-muted block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors",
+					className,
 				)}
 			>
 				<div className="text-sm font-medium leading-none">{title}</div>
@@ -90,9 +91,12 @@ function NavigationMenuDemo() {
 									href="#"
 									className="from-muted/50 to-muted flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b p-6 no-underline outline-none focus:shadow-md"
 								>
-									<div className="mb-2 mt-4 text-lg font-medium">Design System</div>
+									<div className="mb-2 mt-4 text-lg font-medium">
+										Design System
+									</div>
 									<p className="text-muted-foreground text-sm leading-tight">
-										Beautifully designed components built with Base UI and Tailwind CSS.
+										Beautifully designed components built with Base UI and
+										Tailwind CSS.
 									</p>
 								</NavigationMenuLink>
 							</li>
@@ -113,7 +117,11 @@ function NavigationMenuDemo() {
 					<NavigationMenuContent>
 						<ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
 							{components.map((component) => (
-								<ListItem key={component.title} title={component.title} href={component.href}>
+								<ListItem
+									key={component.title}
+									title={component.title}
+									href={component.href}
+								>
 									{component.description}
 								</ListItem>
 							))}
@@ -121,7 +129,10 @@ function NavigationMenuDemo() {
 					</NavigationMenuContent>
 				</NavigationMenuItem>
 				<NavigationMenuItem>
-					<NavigationMenuLink className={navigationMenuTriggerStyle()} href="#documentation">
+					<NavigationMenuLink
+						className={navigationMenuTriggerStyle()}
+						href="#documentation"
+					>
 						Documentation
 					</NavigationMenuLink>
 				</NavigationMenuItem>
@@ -135,17 +146,26 @@ function SimpleNavigationMenu() {
 		<NavigationMenu>
 			<NavigationMenuList>
 				<NavigationMenuItem>
-					<NavigationMenuLink className={navigationMenuTriggerStyle()} href="#home">
+					<NavigationMenuLink
+						className={navigationMenuTriggerStyle()}
+						href="#home"
+					>
 						Home
 					</NavigationMenuLink>
 				</NavigationMenuItem>
 				<NavigationMenuItem>
-					<NavigationMenuLink className={navigationMenuTriggerStyle()} href="#about">
+					<NavigationMenuLink
+						className={navigationMenuTriggerStyle()}
+						href="#about"
+					>
 						About
 					</NavigationMenuLink>
 				</NavigationMenuItem>
 				<NavigationMenuItem>
-					<NavigationMenuLink className={navigationMenuTriggerStyle()} href="#contact">
+					<NavigationMenuLink
+						className={navigationMenuTriggerStyle()}
+						href="#contact"
+					>
 						Contact
 					</NavigationMenuLink>
 				</NavigationMenuItem>
@@ -160,11 +180,11 @@ function SimpleNavigationMenu() {
  * `Navigation Menu`s are inherently interactive, allowing users to browse and select navigation destinations.
  */
 const meta: Meta<typeof NavigationMenuDemo> = {
-	title: 'Components/Navigation Menu',
+	title: "Components/Navigation Menu",
 	component: NavigationMenuDemo,
-	tags: ['autodocs'],
+	tags: ["autodocs"],
 	parameters: {
-		layout: 'centered',
+		layout: "centered",
 	},
 };
 
@@ -221,7 +241,10 @@ export const WithDropdown: Story = {
 					</NavigationMenuContent>
 				</NavigationMenuItem>
 				<NavigationMenuItem>
-					<NavigationMenuLink className={navigationMenuTriggerStyle()} href="#pricing">
+					<NavigationMenuLink
+						className={navigationMenuTriggerStyle()}
+						href="#pricing"
+					>
 						Pricing
 					</NavigationMenuLink>
 				</NavigationMenuItem>
@@ -330,7 +353,7 @@ export const InHeader: Story = {
 	),
 	parameters: {
 		controls: { disable: true },
-		layout: 'padded',
+		layout: "padded",
 	},
 };
 
@@ -355,7 +378,9 @@ export const WithIcons: Story = {
 									</span>
 									<div>
 										<div className="text-sm font-medium">Profile</div>
-										<p className="text-muted-foreground text-xs">Manage your account</p>
+										<p className="text-muted-foreground text-xs">
+											Manage your account
+										</p>
 									</div>
 								</NavigationMenuLink>
 							</li>
@@ -369,7 +394,9 @@ export const WithIcons: Story = {
 									</span>
 									<div>
 										<div className="text-sm font-medium">Settings</div>
-										<p className="text-muted-foreground text-xs">Configure preferences</p>
+										<p className="text-muted-foreground text-xs">
+											Configure preferences
+										</p>
 									</div>
 								</NavigationMenuLink>
 							</li>
@@ -383,7 +410,9 @@ export const WithIcons: Story = {
 									</span>
 									<div>
 										<div className="text-sm font-medium">Sign Out</div>
-										<p className="text-muted-foreground text-xs">Log out of your account</p>
+										<p className="text-muted-foreground text-xs">
+											Log out of your account
+										</p>
 									</div>
 								</NavigationMenuLink>
 							</li>

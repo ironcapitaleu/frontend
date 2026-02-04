@@ -1,30 +1,45 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
-import type { ComponentProps } from 'react';
-import * as React from 'react';
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { ComponentProps } from "react";
+import * as React from "react";
 
-import { VariantShowcase, SizeShowcase } from '../../../../.storybook/utils/showcaseDecorators';
-import { BoldIcon, ItalicIcon, UnderlineIcon, BookmarkIcon } from 'lucide-react';
+import {
+	VariantShowcase,
+	SizeShowcase,
+} from "../../../../.storybook/utils/showcaseDecorators";
+import {
+	BoldIcon,
+	ItalicIcon,
+	UnderlineIcon,
+	BookmarkIcon,
+} from "lucide-react";
 
-import { Toggle } from './toggle';
+import { Toggle } from "./toggle";
 
-type ToggleVariant = 'default' | 'outline';
-type ToggleSize = 'sm' | 'default' | 'lg';
+type ToggleVariant = "default" | "outline";
+type ToggleSize = "sm" | "default" | "lg";
 
-const TOGGLE_VARIANTS = ['default', 'outline'] as const satisfies readonly ToggleVariant[];
-const TOGGLE_SIZES = ['sm', 'default', 'lg'] as const satisfies readonly ToggleSize[];
+const TOGGLE_VARIANTS = [
+	"default",
+	"outline",
+] as const satisfies readonly ToggleVariant[];
+const TOGGLE_SIZES = [
+	"sm",
+	"default",
+	"lg",
+] as const satisfies readonly ToggleSize[];
 
 type ToggleStoryArgs = ComponentProps<typeof Toggle> & {
 	label: string;
-	icon: 'none' | 'bold' | 'italic' | 'underline' | 'bookmark';
+	icon: "none" | "bold" | "italic" | "underline" | "bookmark";
 };
 
 function ToggleStory({ label, icon, ...props }: ToggleStoryArgs) {
 	return (
-		<Toggle {...props} aria-label={!label ? 'Toggle' : undefined}>
-			{icon === 'bold' ? <BoldIcon /> : null}
-			{icon === 'italic' ? <ItalicIcon /> : null}
-			{icon === 'underline' ? <UnderlineIcon /> : null}
-			{icon === 'bookmark' ? (
+		<Toggle {...props} aria-label={!label ? "Toggle" : undefined}>
+			{icon === "bold" ? <BoldIcon /> : null}
+			{icon === "italic" ? <ItalicIcon /> : null}
+			{icon === "underline" ? <UnderlineIcon /> : null}
+			{icon === "bookmark" ? (
 				<BookmarkIcon className="transition-colors group-data-[state=on]/toggle:fill-current group-data-[state=on]/toggle:stroke-current" />
 			) : null}
 			{label}
@@ -38,30 +53,30 @@ function ToggleStory({ label, icon, ...props }: ToggleStoryArgs) {
  * A `Toggle` is inherently interactive, as users have to actively switch between `on` and `off` states.
  */
 const meta: Meta<ToggleStoryArgs> = {
-	title: 'Components/Toggle',
+	title: "Components/Toggle",
 	component: ToggleStory,
-	tags: ['autodocs'],
+	tags: ["autodocs"],
 	parameters: {
-		layout: 'padded',
+		layout: "padded",
 	},
 	args: {
-		label: '',
-		icon: 'bold',
-		variant: 'default',
-		size: 'default',
+		label: "",
+		icon: "bold",
+		variant: "default",
+		size: "default",
 		disabled: false,
 		defaultPressed: false,
 	},
 	argTypes: {
-		label: { control: 'text' },
+		label: { control: "text" },
 		icon: {
-			control: 'inline-radio',
-			options: ['none', 'bold', 'italic', 'underline', 'bookmark'],
+			control: "inline-radio",
+			options: ["none", "bold", "italic", "underline", "bookmark"],
 		},
-		variant: { control: 'select', options: TOGGLE_VARIANTS },
-		size: { control: 'select', options: TOGGLE_SIZES },
-		disabled: { control: 'boolean' },
-		defaultPressed: { control: 'boolean' },
+		variant: { control: "select", options: TOGGLE_VARIANTS },
+		size: { control: "select", options: TOGGLE_SIZES },
+		disabled: { control: "boolean" },
+		defaultPressed: { control: "boolean" },
 		pressed: { control: { disable: true } },
 		onPressedChange: { control: { disable: true } },
 		children: { control: { disable: true } },
@@ -97,7 +112,7 @@ export const AllVariants: Story = {
 				Component={ToggleStory}
 				variants={[...TOGGLE_VARIANTS]}
 				variantKey="variant"
-				baseProps={{ label: '', icon: 'bold' }}
+				baseProps={{ label: "", icon: "bold" }}
 			/>
 		</div>
 	),
@@ -106,9 +121,9 @@ export const AllVariants: Story = {
 export const Default: Story = {
 	render: (args) => <ToggleStory {...args} />,
 	args: {
-		variant: 'default',
-		label: '',
-		icon: 'bold',
+		variant: "default",
+		label: "",
+		icon: "bold",
 	},
 	argTypes: {
 		variant: { control: { disable: true } },
@@ -118,9 +133,9 @@ export const Default: Story = {
 export const Outline: Story = {
 	render: (args) => <ToggleStory {...args} />,
 	args: {
-		variant: 'outline',
-		label: '',
-		icon: 'italic',
+		variant: "outline",
+		label: "",
+		icon: "italic",
 	},
 	argTypes: {
 		variant: { control: { disable: true } },
@@ -130,9 +145,9 @@ export const Outline: Story = {
 export const WithText: Story = {
 	render: (args) => <ToggleStory {...args} />,
 	args: {
-		variant: 'default',
-		label: 'Bold',
-		icon: 'bold',
+		variant: "default",
+		label: "Bold",
+		icon: "bold",
 	},
 	argTypes: {
 		variant: { control: { disable: true } },
@@ -170,7 +185,7 @@ export const AllSizes: Story = {
 				Component={ToggleStory}
 				sizes={[...TOGGLE_SIZES]}
 				sizeKey="size"
-				baseProps={{ label: '', icon: 'bold' }}
+				baseProps={{ label: "", icon: "bold" }}
 			/>
 		</div>
 	),
@@ -179,9 +194,9 @@ export const AllSizes: Story = {
 export const Small: Story = {
 	render: (args) => <ToggleStory {...args} />,
 	args: {
-		size: 'sm',
-		label: '',
-		icon: 'italic',
+		size: "sm",
+		label: "",
+		icon: "italic",
 	},
 	argTypes: {
 		size: { control: { disable: true } },
@@ -191,9 +206,9 @@ export const Small: Story = {
 export const Large: Story = {
 	render: (args) => <ToggleStory {...args} />,
 	args: {
-		size: 'lg',
-		label: '',
-		icon: 'italic',
+		size: "lg",
+		label: "",
+		icon: "italic",
 	},
 	argTypes: {
 		size: { control: { disable: true } },
@@ -207,9 +222,9 @@ export const Large: Story = {
 export const Disabled: Story = {
 	render: (args) => <ToggleStory {...args} />,
 	args: {
-		label: '',
+		label: "",
 		disabled: true,
-		icon: 'underline',
+		icon: "underline",
 	},
 	argTypes: {
 		disabled: { control: { disable: true } },
@@ -257,7 +272,8 @@ export const Controlled: Story = {
 				</div>
 
 				<p className="text-sm text-muted-foreground">
-					State: Bold {String(bold)}, Italic {String(italic)}, Underline {String(underline)}
+					State: Bold {String(bold)}, Italic {String(italic)}, Underline{" "}
+					{String(underline)}
 				</p>
 			</div>
 		);

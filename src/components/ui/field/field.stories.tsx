@@ -1,6 +1,6 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
-import type { ComponentProps } from 'react';
-import * as React from 'react';
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { ComponentProps } from "react";
+import * as React from "react";
 
 import {
 	Field,
@@ -12,9 +12,9 @@ import {
 	FieldLegend,
 	FieldSeparator,
 	FieldSet,
-} from './field';
-import { Input } from '../input';
-import { Textarea } from '../textarea';
+} from "./field";
+import { Input } from "../input";
+import { Textarea } from "../textarea";
 
 type FieldStoryArgs = ComponentProps<typeof Field> & {
 	label: string;
@@ -23,7 +23,7 @@ type FieldStoryArgs = ComponentProps<typeof Field> & {
 	required: boolean;
 	disabled: boolean;
 	invalid: boolean;
-	errorMode: 'none' | 'single' | 'multiple' | 'custom';
+	errorMode: "none" | "single" | "multiple" | "custom";
 };
 
 /**
@@ -32,34 +32,34 @@ type FieldStoryArgs = ComponentProps<typeof Field> & {
  * Use a `Field` whenever users need to provide or edit information directly, such as in forms, search bars, login forms, or settings.
  */
 const meta: Meta<FieldStoryArgs> = {
-	title: 'Components/Field',
+	title: "Components/Field",
 	component: Field,
-	tags: ['autodocs'],
+	tags: ["autodocs"],
 	args: {
-		label: 'Email',
-		description: 'We will never share your email.',
-		placeholder: 'name@example.com',
+		label: "Email",
+		description: "We will never share your email.",
+		placeholder: "name@example.com",
 		required: false,
 		disabled: false,
 		invalid: false,
-		errorMode: 'none',
-		orientation: 'vertical',
+		errorMode: "none",
+		orientation: "vertical",
 	},
 	argTypes: {
-		label: { control: 'text' },
-		description: { control: 'text' },
-		placeholder: { control: 'text' },
-		required: { control: 'boolean' },
-		disabled: { control: 'boolean' },
-		invalid: { control: 'boolean' },
+		label: { control: "text" },
+		description: { control: "text" },
+		placeholder: { control: "text" },
+		required: { control: "boolean" },
+		disabled: { control: "boolean" },
+		invalid: { control: "boolean" },
 		errorMode: {
-			control: 'inline-radio',
-			options: ['none', 'single', 'multiple', 'custom'],
+			control: "inline-radio",
+			options: ["none", "single", "multiple", "custom"],
 		},
 		orientation: {
-			control: 'inline-radio',
-			options: ['vertical', 'horizontal', 'responsive'],
-			description: 'Layout orientation for label/content',
+			control: "inline-radio",
+			options: ["vertical", "horizontal", "responsive"],
+			description: "Layout orientation for label/content",
 		},
 		children: { control: { disable: true } },
 		className: { control: { disable: true } },
@@ -69,7 +69,7 @@ const meta: Meta<FieldStoryArgs> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const renderField: Story['render'] = ({
+const renderField: Story["render"] = ({
 	label,
 	description,
 	placeholder,
@@ -82,10 +82,13 @@ const renderField: Story['render'] = ({
 	const id = React.useId();
 
 	const errors =
-		errorMode === 'multiple'
-			? [{ message: 'Email is required.' }, { message: 'Must be a valid email address.' }]
-			: errorMode === 'single'
-				? [{ message: 'Please enter a valid email address.' }]
+		errorMode === "multiple"
+			? [
+					{ message: "Email is required." },
+					{ message: "Must be a valid email address." },
+				]
+			: errorMode === "single"
+				? [{ message: "Please enter a valid email address." }]
 				: undefined;
 
 	return (
@@ -107,10 +110,12 @@ const renderField: Story['render'] = ({
 							placeholder={placeholder}
 							disabled={disabled}
 							required={required}
-							aria-invalid={invalid || errorMode !== 'none'}
+							aria-invalid={invalid || errorMode !== "none"}
 						/>
-						{description ? <FieldDescription>{description}</FieldDescription> : null}
-						{errorMode === 'custom' ? (
+						{description ? (
+							<FieldDescription>{description}</FieldDescription>
+						) : null}
+						{errorMode === "custom" ? (
 							<FieldError>Custom error message goes here.</FieldError>
 						) : (
 							<FieldError errors={errors} />
@@ -140,7 +145,7 @@ export const Playground: Story = {
 export const Vertical: Story = {
 	render: renderField,
 	args: {
-		orientation: 'vertical',
+		orientation: "vertical",
 	},
 	argTypes: {
 		orientation: { control: { disable: true } },
@@ -150,7 +155,7 @@ export const Vertical: Story = {
 export const Horizontal: Story = {
 	render: renderField,
 	args: {
-		orientation: 'horizontal',
+		orientation: "horizontal",
 	},
 	argTypes: {
 		orientation: { control: { disable: true } },
@@ -160,7 +165,7 @@ export const Horizontal: Story = {
 export const Responsive: Story = {
 	render: renderField,
 	args: {
-		orientation: 'responsive',
+		orientation: "responsive",
 	},
 	argTypes: {
 		orientation: { control: { disable: true } },
@@ -185,7 +190,7 @@ export const InvalidSingleError: Story = {
 	render: renderField,
 	args: {
 		invalid: true,
-		errorMode: 'single',
+		errorMode: "single",
 	},
 	argTypes: {
 		invalid: { control: { disable: true } },
@@ -197,7 +202,7 @@ export const MultipleErrors: Story = {
 	render: renderField,
 	args: {
 		invalid: true,
-		errorMode: 'multiple',
+		errorMode: "multiple",
 	},
 	argTypes: {
 		invalid: { control: { disable: true } },
@@ -258,7 +263,8 @@ export const FieldSetWithLegend: Story = {
 				<FieldSet>
 					<FieldLegend>Contact</FieldLegend>
 					<FieldDescription>
-						This section is grouped using a semantic <code>{'<fieldset>'}</code>.
+						This section is grouped using a semantic <code>{"<fieldset>"}</code>
+						.
 					</FieldDescription>
 					<FieldGroup>
 						<Field>

@@ -1,22 +1,25 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { Meta, StoryObj } from "@storybook/react-vite";
 
-import { Separator } from './separator';
+import { Separator } from "./separator";
 
 /**
  * A `Separator` is a visual element that divides or groups content within a UI, typically using a line, space, or subtle visual cue.
  * Use a `Separator` whenever you want to organize content, create visual hierarchy, or distinguish sections without adding functional controls. Examples: dividing menu items, form sections, or card content.
  * A `Separator` is non-interactive, as it serves only a visual or structural purpose and doesn’t accept user input or trigger actions.
- * 
+ *
  */
 const meta: Meta<typeof Separator> = {
-	title: 'Components/Separator',
+	title: "Components/Separator",
 	component: Separator,
-	tags: ['autodocs'],
+	tags: ["autodocs"],
 	args: {
-		orientation: 'horizontal',
+		orientation: "horizontal",
 	},
 	argTypes: {
-		orientation: { control: 'inline-radio', options: ['horizontal', 'vertical'] },
+		orientation: {
+			control: "inline-radio",
+			options: ["horizontal", "vertical"],
+		},
 		className: { control: { disable: true } },
 	},
 };
@@ -24,8 +27,8 @@ const meta: Meta<typeof Separator> = {
 export default meta;
 type Story = StoryObj<typeof Separator>;
 
-const renderSeparator: Story['render'] = (args) => {
-	if (args.orientation === 'vertical') {
+const renderSeparator: Story["render"] = (args) => {
+	if (args.orientation === "vertical") {
 		return (
 			<div className="max-w-md">
 				<div className="bg-muted border-border flex h-20 items-stretch rounded-lg border p-4">
@@ -76,7 +79,7 @@ export const Playground: Story = {
 export const Horizontal: Story = {
 	render: renderSeparator,
 	args: {
-		orientation: 'horizontal',
+		orientation: "horizontal",
 	},
 	argTypes: {
 		orientation: { control: { disable: true } },
@@ -86,7 +89,7 @@ export const Horizontal: Story = {
 export const Vertical: Story = {
 	render: renderSeparator,
 	args: {
-		orientation: 'vertical',
+		orientation: "vertical",
 	},
 	argTypes: {
 		orientation: { control: { disable: true } },
@@ -110,7 +113,7 @@ export const InToolbar: Story = {
 				<button className="hover:bg-accent rounded px-2 py-1 text-sm transition-colors">
 					Copy
 				</button>
-					<Separator orientation="vertical" className="mx-2 h-5 self-center" />
+				<Separator orientation="vertical" className="mx-2 h-5 self-center" />
 				<button className="hover:bg-accent rounded px-2 py-1 text-sm transition-colors">
 					Paste
 				</button>

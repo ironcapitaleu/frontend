@@ -1,5 +1,34 @@
-import type React from "react";
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
+
+import { ArrowDown, ArrowUp, ArrowUpDown, Filter, Search } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 
 interface Stock {
 	symbol: string;
@@ -14,7 +43,6 @@ interface Stock {
 	sector: string;
 }
 
-// Mock data for demonstration
 const mockStocks: Stock[] = [
 	{
 		symbol: "AAPL",
@@ -87,7 +115,79 @@ const mockStocks: Stock[] = [
 	},
 ];
 
-const StockScreener: React.FC = () => {
+function formatNumber(num: number): string {
+	if (num >= 1e12) return `${(num / 1e12).toFixed(2)}T`;
+	if (num >= 1e9) return `${(num / 1e9).toFixed(2)}B`;
+	if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
+	if (num >= 1e3) return `${(num / 1e3).toFixed(2)}K`;
+	return num.toLocaleString();
+}
+
+interface SortableHeaderProps {
+	label: string;
+	sortKey: keyof Stock;
+	currentSortKey: keyof Stock | null;
+	direction: "asc" | "desc" | null;
+	onSort: (key: keyof Stock) => void;
+}
+
+function SortableHeader({
+	label,
+	sortKey,
+	currentSortKey,
+	direction,
+	onSort,
+}: SortableHeaderProps) {
+	const isActive = currentSortKey === sortKey;
+
+	return (
+		<TableHead>
+			<Button variant="ghost" onClick={() => onSort(sortKey)}>
+				{label}
+				{isActive && direction === "asc" && <ArrowUp />}
+				{isActive && direction === "desc" && <ArrowDown />}
+				{!isActive && <ArrowUpDown />}
+			</Button>
+		</TableHead>
+	);
+}
+
+interface StockRowProps {
+	stock: Stock;
+}
+
+function StockRow({ stock }: StockRowProps) {
+	const isPositive = stock.change >= 0;
+
+	return (
+		<TableRow>
+			<TableCell>
+				<Badge variant="secondary">{stock.symbol}</Badge>
+			</TableCell>
+			<TableCell>{stock.name}</TableCell>
+			<TableCell>${stock.price.toFixed(2)}</TableCell>
+			<TableCell>
+				<div>
+					<span>
+						{isPositive ? "+" : ""}${stock.change.toFixed(2)}
+					</span>
+					<span>
+						({isPositive ? "+" : ""}
+						{stock.changePercent.toFixed(2)}%)
+					</span>
+				</div>
+			</TableCell>
+			<TableCell>{formatNumber(stock.volume)}</TableCell>
+			<TableCell>${formatNumber(stock.marketCap)}</TableCell>
+			<TableCell>{stock.peRatio ? stock.peRatio.toFixed(1) : "-"}</TableCell>
+			<TableCell>
+				<Badge variant="outline">{stock.sector}</Badge>
+			</TableCell>
+		</TableRow>
+	);
+}
+
+function StockScreener() {
 	const [searchTerm, setSearchTerm] = useState("");
 	const [sectorFilter, setSectorFilter] = useState("");
 	const [priceMin, setPriceMin] = useState("");
@@ -97,14 +197,18 @@ const StockScreener: React.FC = () => {
 		direction: "asc" | "desc";
 	} | null>(null);
 
+	const sectors = [...new Set(mockStocks.map((stock) => stock.sector))];
+
 	const filteredAndSortedStocks = useMemo(() => {
 		const filtered = mockStocks.filter((stock) => {
 			const matchesSearch =
 				stock.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
 				stock.name.toLowerCase().includes(searchTerm.toLowerCase());
 			const matchesSector = !sectorFilter || stock.sector === sectorFilter;
-			const matchesPriceMin = !priceMin || stock.price >= parseFloat(priceMin);
-			const matchesPriceMax = !priceMax || stock.price <= parseFloat(priceMax);
+			const matchesPriceMin =
+				!priceMin || stock.price >= Number.parseFloat(priceMin);
+			const matchesPriceMax =
+				!priceMax || stock.price <= Number.parseFloat(priceMax);
 
 			return (
 				matchesSearch && matchesSector && matchesPriceMin && matchesPriceMax
@@ -143,235 +247,188 @@ const StockScreener: React.FC = () => {
 		setSortConfig({ key, direction });
 	};
 
-	const formatNumber = (num: number) => {
-		if (num >= 1e12) return `${(num / 1e12).toFixed(2)}T`;
-		if (num >= 1e9) return `${(num / 1e9).toFixed(2)}B`;
-		if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
-		if (num >= 1e3) return `${(num / 1e3).toFixed(2)}K`;
-		return num.toLocaleString();
+	const clearFilters = () => {
+		setSearchTerm("");
+		setSectorFilter("");
+		setPriceMin("");
+		setPriceMax("");
 	};
 
-	const sectors = [...new Set(mockStocks.map((stock) => stock.sector))];
-
 	return (
-		<div className="container py-8">
-			<div className="mb-8">
-				<h1 className="h1 mb-4">Stock Screener</h1>
-				<p className="text-secondary body-large">
+		<main>
+			<section>
+				<h1>Stock Screener</h1>
+				<p>
 					Discover investment opportunities with our advanced stock screening
 					tools
 				</p>
-			</div>
+			</section>
 
-			{/* Filters */}
-			<div className="glass p-6 rounded-xl mb-8">
-				<h2 className="h3 mb-4">Filters</h2>
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-					<div>
-						<label
-							htmlFor="search-input"
-							className="block text-sm font-semibold mb-2"
-						>
-							Search
-						</label>
-						<input
-							id="search-input"
-							type="text"
-							placeholder="Symbol or company name"
-							className="input"
-							value={searchTerm}
-							onChange={(e) => setSearchTerm(e.target.value)}
-						/>
-					</div>
-					<div>
-						<label
-							htmlFor="sector-select"
-							className="block text-sm font-semibold mb-2"
-						>
-							Sector
-						</label>
-						<select
-							id="sector-select"
-							className="input"
-							value={sectorFilter}
-							onChange={(e) => setSectorFilter(e.target.value)}
-						>
-							<option value="">All Sectors</option>
-							{sectors.map((sector) => (
-								<option key={sector} value={sector}>
-									{sector}
-								</option>
-							))}
-						</select>
-					</div>
-					<div>
-						<label
-							htmlFor="min-price-input"
-							className="block text-sm font-semibold mb-2"
-						>
-							Min Price ($)
-						</label>
-						<input
-							id="min-price-input"
-							type="number"
-							placeholder="0"
-							className="input"
-							value={priceMin}
-							onChange={(e) => setPriceMin(e.target.value)}
-						/>
-					</div>
-					<div>
-						<label
-							htmlFor="max-price-input"
-							className="block text-sm font-semibold mb-2"
-						>
-							Max Price ($)
-						</label>
-						<input
-							id="max-price-input"
-							type="number"
-							placeholder="1000"
-							className="input"
-							value={priceMax}
-							onChange={(e) => setPriceMax(e.target.value)}
-						/>
-					</div>
-				</div>
-			</div>
+			<Separator />
 
-			{/* Results */}
-			<div className="glass rounded-xl overflow-hidden">
-				<div className="p-6 border-b border-glass-border">
-					<h2 className="h3">
-						Results ({filteredAndSortedStocks.length} stocks)
-					</h2>
-				</div>
+			<section>
+				<Card>
+					<CardHeader>
+						<CardTitle>
+							<Filter />
+							Filters
+						</CardTitle>
+						<CardDescription>
+							Narrow down stocks by search, sector, and price range
+						</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<div>
+							<div>
+								<Label htmlFor="search">Search</Label>
+								<div>
+									<Search />
+									<Input
+										id="search"
+										type="text"
+										placeholder="Symbol or company name"
+										value={searchTerm}
+										onChange={(e) => setSearchTerm(e.target.value)}
+									/>
+								</div>
+							</div>
 
-				<div className="overflow-x-auto">
-					<table className="w-full">
-						<thead>
-							<tr className="border-b border-glass-border">
-								<th
-									className="text-left p-4 cursor-pointer hover:bg-glass-bg transition-colors"
-									onClick={() => handleSort("symbol")}
+							<div>
+								<Label htmlFor="sector">Sector</Label>
+								<Select
+									value={sectorFilter}
+									onValueChange={(value) => setSectorFilter(value ?? "")}
 								>
-									Symbol{" "}
-									{sortConfig?.key === "symbol" &&
-										(sortConfig.direction === "asc" ? "↑" : "↓")}
-								</th>
-								<th
-									className="text-left p-4 cursor-pointer hover:bg-glass-bg transition-colors"
-									onClick={() => handleSort("name")}
-								>
-									Company{" "}
-									{sortConfig?.key === "name" &&
-										(sortConfig.direction === "asc" ? "↑" : "↓")}
-								</th>
-								<th
-									className="text-left p-4 cursor-pointer hover:bg-glass-bg transition-colors"
-									onClick={() => handleSort("price")}
-								>
-									Price{" "}
-									{sortConfig?.key === "price" &&
-										(sortConfig.direction === "asc" ? "↑" : "↓")}
-								</th>
-								<th
-									className="text-left p-4 cursor-pointer hover:bg-glass-bg transition-colors"
-									onClick={() => handleSort("change")}
-								>
-									Change{" "}
-									{sortConfig?.key === "change" &&
-										(sortConfig.direction === "asc" ? "↑" : "↓")}
-								</th>
-								<th
-									className="text-left p-4 cursor-pointer hover:bg-glass-bg transition-colors"
-									onClick={() => handleSort("volume")}
-								>
-									Volume{" "}
-									{sortConfig?.key === "volume" &&
-										(sortConfig.direction === "asc" ? "↑" : "↓")}
-								</th>
-								<th
-									className="text-left p-4 cursor-pointer hover:bg-glass-bg transition-colors"
-									onClick={() => handleSort("marketCap")}
-								>
-									Market Cap{" "}
-									{sortConfig?.key === "marketCap" &&
-										(sortConfig.direction === "asc" ? "↑" : "↓")}
-								</th>
-								<th
-									className="text-left p-4 cursor-pointer hover:bg-glass-bg transition-colors"
-									onClick={() => handleSort("peRatio")}
-								>
-									P/E Ratio{" "}
-									{sortConfig?.key === "peRatio" &&
-										(sortConfig.direction === "asc" ? "↑" : "↓")}
-								</th>
-								<th className="text-left p-4">Sector</th>
-							</tr>
-						</thead>
-						<tbody>
-							{filteredAndSortedStocks.map((stock) => (
-								<tr
-									key={stock.symbol}
-									className="border-b border-glass-border hover:bg-glass-bg transition-colors"
-								>
-									<td className="p-4">
-										<span className="font-bold text-primary">
-											{stock.symbol}
-										</span>
-									</td>
-									<td className="p-4">
-										<span className="text-primary">{stock.name}</span>
-									</td>
-									<td className="p-4">
-										<span className="font-semibold">
-											${stock.price.toFixed(2)}
-										</span>
-									</td>
-									<td className="p-4">
-										<div className="flex flex-col">
-											<span
-												className={`font-semibold ${stock.change >= 0 ? "text-green-400" : "text-red-400"}`}
-											>
-												{stock.change >= 0 ? "+" : ""}${stock.change.toFixed(2)}
-											</span>
-											<span
-												className={`text-sm ${stock.change >= 0 ? "text-green-400" : "text-red-400"}`}
-											>
-												({stock.changePercent >= 0 ? "+" : ""}
-												{stock.changePercent.toFixed(2)}%)
-											</span>
-										</div>
-									</td>
-									<td className="p-4">
-										<span className="text-secondary">
-											{formatNumber(stock.volume)}
-										</span>
-									</td>
-									<td className="p-4">
-										<span className="text-secondary">
-											${formatNumber(stock.marketCap)}
-										</span>
-									</td>
-									<td className="p-4">
-										<span className="text-secondary">
-											{stock.peRatio ? stock.peRatio.toFixed(1) : "-"}
-										</span>
-									</td>
-									<td className="p-4">
-										<span className="text-xs px-2 py-1 rounded-full bg-glass-bg border border-glass-border">
-											{stock.sector}
-										</span>
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
-			</div>
-		</div>
+									<SelectTrigger id="sector">
+										<SelectValue placeholder="All Sectors" />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="">All Sectors</SelectItem>
+										{sectors.map((sector) => (
+											<SelectItem key={sector} value={sector}>
+												{sector}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+
+							<div>
+								<Label htmlFor="min-price">Min Price ($)</Label>
+								<Input
+									id="min-price"
+									type="number"
+									placeholder="0"
+									value={priceMin}
+									onChange={(e) => setPriceMin(e.target.value)}
+								/>
+							</div>
+
+							<div>
+								<Label htmlFor="max-price">Max Price ($)</Label>
+								<Input
+									id="max-price"
+									type="number"
+									placeholder="1000"
+									value={priceMax}
+									onChange={(e) => setPriceMax(e.target.value)}
+								/>
+							</div>
+						</div>
+
+						<Button variant="outline" onClick={clearFilters}>
+							Clear Filters
+						</Button>
+					</CardContent>
+				</Card>
+			</section>
+
+			<section>
+				<Card>
+					<CardHeader>
+						<CardTitle>
+							Results
+							<Badge variant="secondary">
+								{filteredAndSortedStocks.length} stocks
+							</Badge>
+						</CardTitle>
+					</CardHeader>
+					<CardContent>
+						<Table>
+							<TableHeader>
+								<TableRow>
+									<SortableHeader
+										label="Symbol"
+										sortKey="symbol"
+										currentSortKey={sortConfig?.key ?? null}
+										direction={sortConfig?.direction ?? null}
+										onSort={handleSort}
+									/>
+									<SortableHeader
+										label="Company"
+										sortKey="name"
+										currentSortKey={sortConfig?.key ?? null}
+										direction={sortConfig?.direction ?? null}
+										onSort={handleSort}
+									/>
+									<SortableHeader
+										label="Price"
+										sortKey="price"
+										currentSortKey={sortConfig?.key ?? null}
+										direction={sortConfig?.direction ?? null}
+										onSort={handleSort}
+									/>
+									<SortableHeader
+										label="Change"
+										sortKey="change"
+										currentSortKey={sortConfig?.key ?? null}
+										direction={sortConfig?.direction ?? null}
+										onSort={handleSort}
+									/>
+									<SortableHeader
+										label="Volume"
+										sortKey="volume"
+										currentSortKey={sortConfig?.key ?? null}
+										direction={sortConfig?.direction ?? null}
+										onSort={handleSort}
+									/>
+									<SortableHeader
+										label="Market Cap"
+										sortKey="marketCap"
+										currentSortKey={sortConfig?.key ?? null}
+										direction={sortConfig?.direction ?? null}
+										onSort={handleSort}
+									/>
+									<SortableHeader
+										label="P/E Ratio"
+										sortKey="peRatio"
+										currentSortKey={sortConfig?.key ?? null}
+										direction={sortConfig?.direction ?? null}
+										onSort={handleSort}
+									/>
+									<TableHead>Sector</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{filteredAndSortedStocks.map((stock) => (
+									<StockRow key={stock.symbol} stock={stock} />
+								))}
+							</TableBody>
+						</Table>
+
+						{filteredAndSortedStocks.length === 0 && (
+							<div>
+								<p>No stocks match your current filters</p>
+								<Button variant="outline" onClick={clearFilters}>
+									Clear Filters
+								</Button>
+							</div>
+						)}
+					</CardContent>
+				</Card>
+			</section>
+		</main>
 	);
-};
+}
 
 export default StockScreener;

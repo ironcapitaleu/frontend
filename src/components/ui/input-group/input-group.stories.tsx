@@ -1,6 +1,6 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
-import * as React from 'react';
-import { MailIcon, SearchIcon, XIcon, AlertCircleIcon } from 'lucide-react';
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import * as React from "react";
+import { MailIcon, SearchIcon, XIcon, AlertCircleIcon } from "lucide-react";
 
 import {
 	InputGroup,
@@ -9,21 +9,21 @@ import {
 	InputGroupInput,
 	InputGroupText,
 	InputGroupTextarea,
-} from './input-group';
+} from "./input-group";
 
 const ADDON_ALIGNMENTS = [
-	'inline-start',
-	'inline-end',
-	'block-start',
-	'block-end',
+	"inline-start",
+	"inline-end",
+	"block-start",
+	"block-end",
 ] as const;
 
-const INPUT_GROUP_BUTTON_SIZES = ['xs', 'sm', 'icon-xs', 'icon-sm'] as const;
+const INPUT_GROUP_BUTTON_SIZES = ["xs", "sm", "icon-xs", "icon-sm"] as const;
 
 type InputGroupStoryArgs = {
 	label: string;
 	placeholder: string;
-	control: 'input' | 'textarea';
+	control: "input" | "textarea";
 	addonAlign: (typeof ADDON_ALIGNMENTS)[number];
 	showLeadingAddon: boolean;
 	showTrailingButton: boolean;
@@ -39,38 +39,38 @@ type InputGroupStoryArgs = {
  * `InputGroup`s are interactive, because their primary purpose is to let the user interact with the contained inputs or controls. The group itself is a container, but the components inside are interactive.
  */
 const meta: Meta<InputGroupStoryArgs> = {
-	title: 'Components/InputGroup',
-	tags: ['autodocs'],
+	title: "Components/InputGroup",
+	tags: ["autodocs"],
 	args: {
-		label: 'Email',
-		placeholder: 'name@example.com',
-		control: 'input',
-		addonAlign: 'inline-start',
+		label: "Email",
+		placeholder: "name@example.com",
+		control: "input",
+		addonAlign: "inline-start",
 		showLeadingAddon: true,
 		showTrailingButton: true,
-		buttonSize: 'icon-xs',
+		buttonSize: "icon-xs",
 		disabled: false,
 		invalid: false,
 		withKbdHint: false,
 	},
 	argTypes: {
-		label: { control: 'text' },
-		placeholder: { control: 'text' },
-		control: { control: 'inline-radio', options: ['input', 'textarea'] },
-		addonAlign: { control: 'inline-radio', options: ADDON_ALIGNMENTS },
-		showLeadingAddon: { control: 'boolean' },
-		showTrailingButton: { control: 'boolean' },
-		buttonSize: { control: 'select', options: INPUT_GROUP_BUTTON_SIZES },
-		disabled: { control: 'boolean' },
-		invalid: { control: 'boolean' },
-		withKbdHint: { control: 'boolean' },
+		label: { control: "text" },
+		placeholder: { control: "text" },
+		control: { control: "inline-radio", options: ["input", "textarea"] },
+		addonAlign: { control: "inline-radio", options: ADDON_ALIGNMENTS },
+		showLeadingAddon: { control: "boolean" },
+		showTrailingButton: { control: "boolean" },
+		buttonSize: { control: "select", options: INPUT_GROUP_BUTTON_SIZES },
+		disabled: { control: "boolean" },
+		invalid: { control: "boolean" },
+		withKbdHint: { control: "boolean" },
 	},
 };
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const renderInputGroup: Story['render'] = ({
+const renderInputGroup: Story["render"] = ({
 	label,
 	placeholder,
 	control,
@@ -94,13 +94,13 @@ const renderInputGroup: Story['render'] = ({
 					<InputGroupAddon align={addonAlign}>
 						<InputGroupText>
 							{invalid ? <AlertCircleIcon /> : <MailIcon />}
-							{addonAlign.startsWith('block') ? 'Contact' : null}
+							{addonAlign.startsWith("block") ? "Contact" : null}
 							{withKbdHint ? <kbd>⌘K</kbd> : null}
 						</InputGroupText>
 					</InputGroupAddon>
 				) : null}
 
-				{control === 'textarea' ? (
+				{control === "textarea" ? (
 					<InputGroupTextarea
 						id={id}
 						disabled={disabled}
@@ -154,10 +154,10 @@ export const Playground: Story = {
 export const InlineStartAddon: Story = {
 	render: renderInputGroup,
 	args: {
-		addonAlign: 'inline-start',
-		control: 'input',
-		label: 'Search',
-		placeholder: 'Search…',
+		addonAlign: "inline-start",
+		control: "input",
+		label: "Search",
+		placeholder: "Search…",
 	},
 	argTypes: {
 		addonAlign: { control: { disable: true } },
@@ -168,10 +168,10 @@ export const InlineStartAddon: Story = {
 export const InlineEndAddon: Story = {
 	render: renderInputGroup,
 	args: {
-		addonAlign: 'inline-end',
-		control: 'input',
-		label: 'Search',
-		placeholder: 'Search…',
+		addonAlign: "inline-end",
+		control: "input",
+		label: "Search",
+		placeholder: "Search…",
 	},
 	argTypes: {
 		addonAlign: { control: { disable: true } },
@@ -182,10 +182,10 @@ export const InlineEndAddon: Story = {
 export const BlockStartAddon: Story = {
 	render: renderInputGroup,
 	args: {
-		addonAlign: 'block-start',
-		control: 'textarea',
-		label: 'Message',
-		placeholder: 'Write a message…',
+		addonAlign: "block-start",
+		control: "textarea",
+		label: "Message",
+		placeholder: "Write a message…",
 		showTrailingButton: false,
 	},
 	argTypes: {
@@ -198,10 +198,10 @@ export const BlockStartAddon: Story = {
 export const BlockEndAddon: Story = {
 	render: renderInputGroup,
 	args: {
-		addonAlign: 'block-end',
-		control: 'textarea',
-		label: 'Message',
-		placeholder: 'Write a message…',
+		addonAlign: "block-end",
+		control: "textarea",
+		label: "Message",
+		placeholder: "Write a message…",
 		showTrailingButton: false,
 	},
 	argTypes: {
@@ -219,7 +219,7 @@ export const Disabled: Story = {
 	render: renderInputGroup,
 	args: {
 		disabled: true,
-		label: 'Email',
+		label: "Email",
 	},
 	argTypes: {
 		disabled: { control: { disable: true } },
@@ -230,8 +230,8 @@ export const Invalid: Story = {
 	render: renderInputGroup,
 	args: {
 		invalid: true,
-		label: 'Email',
-		placeholder: 'name@example.com',
+		label: "Email",
+		placeholder: "name@example.com",
 	},
 	argTypes: {
 		invalid: { control: { disable: true } },
@@ -275,4 +275,3 @@ export const SearchWithShortcut: Story = {
 // ==========================================
 // ADDITIONAL EXAMPLES
 // ==========================================
-

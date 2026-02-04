@@ -1,12 +1,15 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
-import type { ComponentProps } from 'react';
-import { AlertCircleIcon } from 'lucide-react';
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { ComponentProps } from "react";
+import { AlertCircleIcon } from "lucide-react";
 
-import { Alert, AlertAction, AlertDescription, AlertTitle } from './alert';
-import { Button, BUTTON_VARIANTS } from '../button';
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "./alert";
+import { Button, BUTTON_VARIANTS } from "../button";
 
-type AlertVariant = 'default' | 'destructive';
-const ALERT_VARIANTS = ['default', 'destructive'] as const satisfies readonly AlertVariant[];
+type AlertVariant = "default" | "destructive";
+const ALERT_VARIANTS = [
+	"default",
+	"destructive",
+] as const satisfies readonly AlertVariant[];
 
 type AlertStoryArgs = ComponentProps<typeof Alert> & {
 	title: string;
@@ -61,31 +64,31 @@ function AlertStory({
  * An `Alert` is generally non-interactive, but it may include interactive elements like dismiss buttons or action links when user response is needed.
  */
 const meta: Meta<typeof AlertStory> = {
-	title: 'Components/Alert',
+	title: "Components/Alert",
 	component: AlertStory,
-	tags: ['autodocs'],
+	tags: ["autodocs"],
 	parameters: {
-		layout: 'padded',
+		layout: "padded",
 	},
 	args: {
-		variant: 'default',
-		title: 'Heads up!',
-		description: 'This is an alert with some additional context.',
+		variant: "default",
+		title: "Heads up!",
+		description: "This is an alert with some additional context.",
 		showIcon: true,
 		showAction: false,
-		actionLabel: 'Undo',
-		actionVariant: 'outline',
+		actionLabel: "Undo",
+		actionVariant: "outline",
 		showLink: false,
 	},
 	argTypes: {
-		variant: { control: 'select', options: ALERT_VARIANTS },
-		title: { control: 'text' },
-		description: { control: 'text' },
-		showIcon: { control: 'boolean' },
-		showAction: { control: 'boolean' },
-		actionLabel: { control: 'text' },
-		actionVariant: { control: 'select', options: BUTTON_VARIANTS },
-		showLink: { control: 'boolean' },
+		variant: { control: "select", options: ALERT_VARIANTS },
+		title: { control: "text" },
+		description: { control: "text" },
+		showIcon: { control: "boolean" },
+		showAction: { control: "boolean" },
+		actionLabel: { control: "text" },
+		actionVariant: { control: "select", options: BUTTON_VARIANTS },
+		showLink: { control: "boolean" },
 		children: { control: { disable: true } },
 		className: { control: { disable: true } },
 	},
@@ -112,9 +115,9 @@ export const Playground: Story = {
 export const Default: Story = {
 	render: (args) => <AlertStory {...args} />,
 	args: {
-		variant: 'default',
-		title: 'Heads up!',
-		description: 'This is the default alert variant.',
+		variant: "default",
+		title: "Heads up!",
+		description: "This is the default alert variant.",
 		showIcon: true,
 		showAction: false,
 		showLink: false,
@@ -127,9 +130,10 @@ export const Default: Story = {
 export const Destructive: Story = {
 	render: (args) => <AlertStory {...args} />,
 	args: {
-		variant: 'destructive',
-		title: 'Something went wrong',
-		description: 'There was a problem processing your request. Please try again.',
+		variant: "destructive",
+		title: "Something went wrong",
+		description:
+			"There was a problem processing your request. Please try again.",
 		showIcon: true,
 		showAction: false,
 		showLink: false,
@@ -142,9 +146,9 @@ export const Destructive: Story = {
 export const WithoutIcon: Story = {
 	render: (args) => <AlertStory {...args} />,
 	args: {
-		variant: 'default',
-		title: 'Notice',
-		description: 'This alert renders without an icon.',
+		variant: "default",
+		title: "Notice",
+		description: "This alert renders without an icon.",
 		showIcon: false,
 	},
 	argTypes: {
@@ -153,8 +157,6 @@ export const WithoutIcon: Story = {
 	},
 };
 
-
-
 // ==========================================
 // WITH INTERACTIVITY ELEMENT EXAMPLES
 // ==========================================
@@ -162,13 +164,13 @@ export const WithoutIcon: Story = {
 export const WithAction: Story = {
 	render: (args) => <AlertStory {...args} />,
 	args: {
-		variant: 'default',
-		title: 'Update available',
-		description: 'A new version is ready. You can apply it now or later.',
+		variant: "default",
+		title: "Update available",
+		description: "A new version is ready. You can apply it now or later.",
 		showIcon: true,
 		showAction: true,
-		actionLabel: 'Update',
-		actionVariant: 'default',
+		actionLabel: "Update",
+		actionVariant: "default",
 	},
 	argTypes: {
 		variant: { control: { disable: true } },
@@ -178,9 +180,9 @@ export const WithAction: Story = {
 export const WithLink: Story = {
 	render: (args) => <AlertStory {...args} />,
 	args: {
-		variant: 'default',
-		title: 'FYI',
-		description: 'This alert includes a link inside the description.',
+		variant: "default",
+		title: "FYI",
+		description: "This alert includes a link inside the description.",
 		showIcon: true,
 		showLink: true,
 	},
@@ -189,7 +191,6 @@ export const WithLink: Story = {
 		showLink: { control: { disable: true } },
 	},
 };
-
 
 // ==========================================
 // ADDITIONAL EXAMPLES

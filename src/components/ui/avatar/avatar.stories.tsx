@@ -1,30 +1,42 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
-import type { ComponentProps } from 'react';
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { ComponentProps } from "react";
 
-import { Avatar, AvatarFallback, AvatarImage } from './avatar';
+import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
 
-type AvatarSize = 'sm' | 'md' | 'lg' | 'xl';
+type AvatarSize = "sm" | "md" | "lg" | "xl";
 
 type AvatarStoryArgs = {
 	size: AvatarSize;
 	src?: string;
 	alt: string;
 	fallback: string;
-} & Omit<ComponentProps<typeof Avatar>, 'children'>;
+} & Omit<ComponentProps<typeof Avatar>, "children">;
 
-const AVATAR_SIZES = ['sm', 'md', 'lg', 'xl'] as const satisfies readonly AvatarSize[];
+const AVATAR_SIZES = [
+	"sm",
+	"md",
+	"lg",
+	"xl",
+] as const satisfies readonly AvatarSize[];
 
 const sizeClasses: Record<AvatarSize, { container: string; text: string }> = {
-	sm: { container: 'size-8', text: 'text-xs' },
-	md: { container: 'size-10', text: 'text-sm' },
-	lg: { container: 'size-14', text: 'text-lg' },
-	xl: { container: 'size-20', text: 'text-2xl' },
+	sm: { container: "size-8", text: "text-xs" },
+	md: { container: "size-10", text: "text-sm" },
+	lg: { container: "size-14", text: "text-lg" },
+	xl: { container: "size-20", text: "text-2xl" },
 };
 
-function AvatarStory({ size, src, alt, fallback, className, ...props }: AvatarStoryArgs) {
+function AvatarStory({
+	size,
+	src,
+	alt,
+	fallback,
+	className,
+	...props
+}: AvatarStoryArgs) {
 	const { container, text } = sizeClasses[size];
 	return (
-		<Avatar className={`${container} ${className ?? ''}`} {...props}>
+		<Avatar className={`${container} ${className ?? ""}`} {...props}>
 			{src ? <AvatarImage src={src} alt={alt} className="grayscale" /> : null}
 			<AvatarFallback className={text}>{fallback}</AvatarFallback>
 		</Avatar>
@@ -37,20 +49,20 @@ function AvatarStory({ size, src, alt, fallback, className, ...props }: AvatarSt
  * An `Avatar` is not inherently interactive, but it can become interactive when used as a click target for actions like opening a profile or menu.
  */
 const meta: Meta<AvatarStoryArgs> = {
-	title: 'Components/Avatar',
+	title: "Components/Avatar",
 	component: AvatarStory,
-	tags: ['autodocs'],
+	tags: ["autodocs"],
 	args: {
-		size: 'md',
-		src: 'https://picsum.photos/seed/DDog97/128',
-		alt: 'DDog97 avatar',
-		fallback: 'D',
+		size: "md",
+		src: "https://picsum.photos/seed/DDog97/128",
+		alt: "DDog97 avatar",
+		fallback: "D",
 	},
 	argTypes: {
-		size: { control: 'select', options: AVATAR_SIZES },
-		src: { control: 'text' },
-		alt: { control: 'text' },
-		fallback: { control: 'text' },
+		size: { control: "select", options: AVATAR_SIZES },
+		src: { control: "text" },
+		alt: { control: "text" },
+		fallback: { control: "text" },
 	},
 };
 
@@ -141,16 +153,16 @@ export const Shapes: Story = {
 		<div className="flex items-center gap-6">
 			{/* Rounded Full (Default) */}
 			<AvatarStory size="lg" fallback="RF" alt="RF" />
-			
+
 			{/* Rounded Small */}
 			<AvatarStory size="lg" fallback="RS" alt="RS" className="rounded-sm" />
-			
+
 			{/* Rounded Medium */}
 			<AvatarStory size="lg" fallback="RM" alt="RM" className="rounded-md" />
-			
+
 			{/* Rounded Large */}
 			<AvatarStory size="lg" fallback="RL" alt="RL" className="rounded-lg" />
-			
+
 			{/* Rounded Square */}
 			<AvatarStory size="lg" fallback="SQ" alt="SQ" className="rounded-none" />
 		</div>
@@ -170,9 +182,24 @@ export const Group: Story = {
 	},
 	render: () => (
 		<div className="flex items-center -space-x-2 *:ring-2 *:ring-background">
-			<AvatarStory size="md" src="https://picsum.photos/seed/DDog97/128" alt="DDog97" fallback="D" />
-			<AvatarStory size="md" src="https://picsum.photos/seed/Elecdashi/128" alt="Elecdashi" fallback="E" />
-			<AvatarStory size="md" src="https://picsum.photos/seed/deca09/128" alt="deca09" fallback="D" />
+			<AvatarStory
+				size="md"
+				src="https://picsum.photos/seed/DDog97/128"
+				alt="DDog97"
+				fallback="D"
+			/>
+			<AvatarStory
+				size="md"
+				src="https://picsum.photos/seed/Elecdashi/128"
+				alt="Elecdashi"
+				fallback="E"
+			/>
+			<AvatarStory
+				size="md"
+				src="https://picsum.photos/seed/deca09/128"
+				alt="deca09"
+				fallback="D"
+			/>
 			<Avatar className={sizeClasses.md.container}>
 				<AvatarFallback className={sizeClasses.md.text}>+3</AvatarFallback>
 			</Avatar>
@@ -200,7 +227,7 @@ export const Interactive: Story = {
 				fallback="CL"
 				alt="Clickable avatar"
 				className="cursor-pointer hover:opacity-80 transition-opacity"
-				onClick={() => alert('Avatar clicked!')}
+				onClick={() => alert("Avatar clicked!")}
 				title="Click me"
 			/>
 
@@ -208,7 +235,7 @@ export const Interactive: Story = {
 			<button
 				type="button"
 				className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-				onClick={() => alert('Button wrapper clicked!')}
+				onClick={() => alert("Button wrapper clicked!")}
 				title="Click wrapper"
 			>
 				<AvatarStory size="md" fallback="BT" alt="Button wrapped avatar" />

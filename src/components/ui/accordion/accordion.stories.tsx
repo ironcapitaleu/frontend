@@ -1,86 +1,85 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from './accordion';
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
+} from "./accordion";
 
 type AccordionStoryArgs = {
-  multiple: boolean;
-  orientation: 'vertical' | 'horizontal';
-  defaultOpen: 'none' | 'first' | 'second' | 'all';
-  disabled: boolean;
-  disableSecondItem: boolean;
-  keepMounted: boolean;
+	multiple: boolean;
+	orientation: "vertical" | "horizontal";
+	defaultOpen: "none" | "first" | "second" | "all";
+	disabled: boolean;
+	disableSecondItem: boolean;
+	keepMounted: boolean;
 };
 
-
 function AccordionStory({
-  multiple,
-  orientation,
-  defaultOpen,
-  disabled,
-  disableSecondItem,
-  keepMounted,
+	multiple,
+	orientation,
+	defaultOpen,
+	disabled,
+	disableSecondItem,
+	keepMounted,
 }: AccordionStoryArgs) {
-  const items = [
-    {
-      value: 'account',
-      title: 'Account',
-      body: 'Manage profile details like name, email, and connected accounts.',
-    },
-    {
-      value: 'billing',
-      title: 'Billing',
-      body: 'View invoices, update payment method, and manage your subscription.',
-    },
-    {
-      value: 'security',
-      title: 'Security',
-      body: 'Update password, configure 2FA, and view recent sign-in activity.',
-    },
-  ] as const;
+	const items = [
+		{
+			value: "account",
+			title: "Account",
+			body: "Manage profile details like name, email, and connected accounts.",
+		},
+		{
+			value: "billing",
+			title: "Billing",
+			body: "View invoices, update payment method, and manage your subscription.",
+		},
+		{
+			value: "security",
+			title: "Security",
+			body: "Update password, configure 2FA, and view recent sign-in activity.",
+		},
+	] as const;
 
-  const defaultValue = (() => {
-    switch (defaultOpen) {
-      case 'first':
-        return ['account'];
-      case 'second':
-        return ['billing'];
-      case 'all':
-        return items.map((item) => item.value);
-      case 'none':
-      default:
-        return [];
-    }
-  })();
+	const defaultValue = (() => {
+		switch (defaultOpen) {
+			case "first":
+				return ["account"];
+			case "second":
+				return ["billing"];
+			case "all":
+				return items.map((item) => item.value);
+			case "none":
+			default:
+				return [];
+		}
+	})();
 
-  return (
-    <div className="max-w-xl">
-      <Accordion
-        multiple={multiple}
-        orientation={orientation}
-        defaultValue={defaultValue}
-        disabled={disabled}
-        keepMounted={keepMounted}
-      >
-        {items.map((item, index) => (
-          <AccordionItem
-            key={item.value}
-            value={item.value}
-            disabled={disableSecondItem && index === 1}
-          >
-            <AccordionTrigger>{item.title}</AccordionTrigger>
-            <AccordionContent>
-              <p>{item.body}</p>
-            </AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
-    </div>
-  );
+	return (
+		<div className="max-w-xl">
+			<Accordion
+				multiple={multiple}
+				orientation={orientation}
+				defaultValue={defaultValue}
+				disabled={disabled}
+				keepMounted={keepMounted}
+			>
+				{items.map((item, index) => (
+					<AccordionItem
+						key={item.value}
+						value={item.value}
+						disabled={disableSecondItem && index === 1}
+					>
+						<AccordionTrigger>{item.title}</AccordionTrigger>
+						<AccordionContent>
+							<p>{item.body}</p>
+						</AccordionContent>
+					</AccordionItem>
+				))}
+			</Accordion>
+		</div>
+	);
 }
 
 /**
@@ -89,25 +88,31 @@ function AccordionStory({
  * An `Accordion` is interactive, since users actively expand and collapse sections to view content.
  */
 const meta: Meta<typeof AccordionStory> = {
-  title: 'Components/Accordion',
-  component: AccordionStory,
-  tags: ['autodocs'],
-  args: {
-    multiple: false,
-    orientation: 'vertical',
-    defaultOpen: 'none',
-    disabled: false,
-    disableSecondItem: false,
-    keepMounted: false,
-  },
-  argTypes: {
-    multiple: { control: 'boolean' },
-    orientation: { control: 'inline-radio', options: ['vertical', 'horizontal'] },
-    defaultOpen: { control: 'inline-radio', options: ['none', 'first', 'second', 'all'] },
-    disabled: { control: 'boolean' },
-    disableSecondItem: { control: 'boolean' },
-    keepMounted: { control: 'boolean' },
-  },
+	title: "Components/Accordion",
+	component: AccordionStory,
+	tags: ["autodocs"],
+	args: {
+		multiple: false,
+		orientation: "vertical",
+		defaultOpen: "none",
+		disabled: false,
+		disableSecondItem: false,
+		keepMounted: false,
+	},
+	argTypes: {
+		multiple: { control: "boolean" },
+		orientation: {
+			control: "inline-radio",
+			options: ["vertical", "horizontal"],
+		},
+		defaultOpen: {
+			control: "inline-radio",
+			options: ["none", "first", "second", "all"],
+		},
+		disabled: { control: "boolean" },
+		disableSecondItem: { control: "boolean" },
+		keepMounted: { control: "boolean" },
+	},
 };
 
 export default meta;
@@ -123,7 +128,7 @@ type Story = StoryObj<typeof meta>;
 // ==========================================
 
 export const Playground: Story = {
-  render: (args) => <AccordionStory {...args} />,
+	render: (args) => <AccordionStory {...args} />,
 };
 
 // ==========================================
@@ -134,28 +139,28 @@ export const Playground: Story = {
  * Single open item (default behavior).
  */
 export const Default: Story = {
-  parameters: {
-    controls: { disable: true },
-  },
-  render: (args) => <AccordionStory {...args} />,
-  args: {
-    multiple: false,
-    defaultOpen: 'first',
-  },
+	parameters: {
+		controls: { disable: true },
+	},
+	render: (args) => <AccordionStory {...args} />,
+	args: {
+		multiple: false,
+		defaultOpen: "first",
+	},
 };
 
 /**
  * Multiple items can be open at the same time.
  */
 export const Multiple: Story = {
-  parameters: {
-    controls: { disable: true },
-  },
-  render: (args) => <AccordionStory {...args} />,
-  args: {
-    multiple: true,
-    defaultOpen: 'all',
-  },
+	parameters: {
+		controls: { disable: true },
+	},
+	render: (args) => <AccordionStory {...args} />,
+	args: {
+		multiple: true,
+		defaultOpen: "all",
+	},
 };
 
 // ==========================================
@@ -166,28 +171,28 @@ export const Multiple: Story = {
  * Disables only the second item.
  */
 export const DisabledItem: Story = {
-  parameters: {
-    controls: { disable: true },
-  },
-  render: (args) => <AccordionStory {...args} />,
-  args: {
-    disableSecondItem: true,
-    defaultOpen: 'none',
-  },
+	parameters: {
+		controls: { disable: true },
+	},
+	render: (args) => <AccordionStory {...args} />,
+	args: {
+		disableSecondItem: true,
+		defaultOpen: "none",
+	},
 };
 
 /**
  * Disables the entire accordion.
  */
 export const Disabled: Story = {
-  parameters: {
-    controls: { disable: true },
-  },
-  render: (args) => <AccordionStory {...args} />,
-  args: {
-    disabled: true,
-    defaultOpen: 'none',
-  },
+	parameters: {
+		controls: { disable: true },
+	},
+	render: (args) => <AccordionStory {...args} />,
+	args: {
+		disabled: true,
+		defaultOpen: "none",
+	},
 };
 
 // ==========================================
@@ -198,14 +203,14 @@ export const Disabled: Story = {
  * Orientation changes keyboard navigation behavior.
  */
 export const Horizontal: Story = {
-  parameters: {
-    controls: { disable: true },
-  },
-  render: (args) => <AccordionStory {...args} />,
-  args: {
-    orientation: 'horizontal',
-    defaultOpen: 'none',
-  },
+	parameters: {
+		controls: { disable: true },
+	},
+	render: (args) => <AccordionStory {...args} />,
+	args: {
+		orientation: "horizontal",
+		defaultOpen: "none",
+	},
 };
 
 // ==========================================

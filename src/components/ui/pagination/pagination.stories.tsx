@@ -1,5 +1,5 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
-import * as React from 'react';
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import * as React from "react";
 
 import {
 	Pagination,
@@ -9,7 +9,7 @@ import {
 	PaginationLink,
 	PaginationNext,
 	PaginationPrevious,
-} from './pagination';
+} from "./pagination";
 
 // Shared hook for pagination logic
 function usePagination(totalPages: number, initialPage = 1) {
@@ -23,7 +23,7 @@ function usePagination(totalPages: number, initialPage = 1) {
 	const goToNext = () => goToPage(currentPage + 1);
 
 	const getVisiblePages = () => {
-		const pages: (number | 'ellipsis-start' | 'ellipsis-end')[] = [];
+		const pages: (number | "ellipsis-start" | "ellipsis-end")[] = [];
 
 		if (totalPages <= 7) {
 			return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -32,7 +32,7 @@ function usePagination(totalPages: number, initialPage = 1) {
 		pages.push(1);
 
 		if (currentPage > 3) {
-			pages.push('ellipsis-start');
+			pages.push("ellipsis-start");
 		}
 
 		const start = Math.max(2, currentPage - 1);
@@ -43,7 +43,7 @@ function usePagination(totalPages: number, initialPage = 1) {
 		}
 
 		if (currentPage < totalPages - 2) {
-			pages.push('ellipsis-end');
+			pages.push("ellipsis-end");
 		}
 
 		pages.push(totalPages);
@@ -64,8 +64,15 @@ function usePagination(totalPages: number, initialPage = 1) {
 }
 
 function PaginationDemo() {
-	const { currentPage, goToPage, goToPrevious, goToNext, getVisiblePages, isFirstPage, isLastPage } =
-		usePagination(10);
+	const {
+		currentPage,
+		goToPage,
+		goToPrevious,
+		goToNext,
+		getVisiblePages,
+		isFirstPage,
+		isLastPage,
+	} = usePagination(10);
 
 	return (
 		<Pagination>
@@ -77,11 +84,11 @@ function PaginationDemo() {
 							e.preventDefault();
 							goToPrevious();
 						}}
-						className={isFirstPage ? 'pointer-events-none opacity-50' : ''}
+						className={isFirstPage ? "pointer-events-none opacity-50" : ""}
 					/>
 				</PaginationItem>
 				{getVisiblePages().map((page) =>
-					typeof page === 'string' ? (
+					typeof page === "string" ? (
 						<PaginationItem key={page}>
 							<PaginationEllipsis />
 						</PaginationItem>
@@ -98,7 +105,7 @@ function PaginationDemo() {
 								{page}
 							</PaginationLink>
 						</PaginationItem>
-					)
+					),
 				)}
 				<PaginationItem>
 					<PaginationNext
@@ -107,7 +114,7 @@ function PaginationDemo() {
 							e.preventDefault();
 							goToNext();
 						}}
-						className={isLastPage ? 'pointer-events-none opacity-50' : ''}
+						className={isLastPage ? "pointer-events-none opacity-50" : ""}
 					/>
 				</PaginationItem>
 			</PaginationContent>
@@ -121,11 +128,11 @@ function PaginationDemo() {
  * `Pagination` is inherently interactive, allowing users to navigate between pages.
  */
 const meta: Meta<typeof PaginationDemo> = {
-	title: 'Components/Pagination',
+	title: "Components/Pagination",
 	component: PaginationDemo,
-	tags: ['autodocs'],
+	tags: ["autodocs"],
 	parameters: {
-		layout: 'centered',
+		layout: "centered",
 	},
 };
 
@@ -153,8 +160,14 @@ export const Playground: Story = {
  */
 export const Simple: Story = {
 	render: () => {
-		const { currentPage, totalPages, goToPrevious, goToNext, isFirstPage, isLastPage } =
-			usePagination(10);
+		const {
+			currentPage,
+			totalPages,
+			goToPrevious,
+			goToNext,
+			isFirstPage,
+			isLastPage,
+		} = usePagination(10);
 
 		return (
 			<div className="space-y-4">
@@ -167,7 +180,7 @@ export const Simple: Story = {
 									e.preventDefault();
 									goToPrevious();
 								}}
-								className={isFirstPage ? 'pointer-events-none opacity-50' : ''}
+								className={isFirstPage ? "pointer-events-none opacity-50" : ""}
 							/>
 						</PaginationItem>
 						<PaginationItem>
@@ -177,7 +190,7 @@ export const Simple: Story = {
 									e.preventDefault();
 									goToNext();
 								}}
-								className={isLastPage ? 'pointer-events-none opacity-50' : ''}
+								className={isLastPage ? "pointer-events-none opacity-50" : ""}
 							/>
 						</PaginationItem>
 					</PaginationContent>
@@ -235,8 +248,15 @@ export const NumbersOnly: Story = {
  */
 export const WithEllipsis: Story = {
 	render: () => {
-		const { currentPage, goToPage, goToPrevious, goToNext, getVisiblePages, isFirstPage, isLastPage } =
-			usePagination(10, 5);
+		const {
+			currentPage,
+			goToPage,
+			goToPrevious,
+			goToNext,
+			getVisiblePages,
+			isFirstPage,
+			isLastPage,
+		} = usePagination(10, 5);
 
 		return (
 			<Pagination>
@@ -248,11 +268,11 @@ export const WithEllipsis: Story = {
 								e.preventDefault();
 								goToPrevious();
 							}}
-							className={isFirstPage ? 'pointer-events-none opacity-50' : ''}
+							className={isFirstPage ? "pointer-events-none opacity-50" : ""}
 						/>
 					</PaginationItem>
 					{getVisiblePages().map((page) =>
-						typeof page === 'string' ? (
+						typeof page === "string" ? (
 							<PaginationItem key={page}>
 								<PaginationEllipsis />
 							</PaginationItem>
@@ -269,7 +289,7 @@ export const WithEllipsis: Story = {
 									{page}
 								</PaginationLink>
 							</PaginationItem>
-						)
+						),
 					)}
 					<PaginationItem>
 						<PaginationNext
@@ -278,7 +298,7 @@ export const WithEllipsis: Story = {
 								e.preventDefault();
 								goToNext();
 							}}
-							className={isLastPage ? 'pointer-events-none opacity-50' : ''}
+							className={isLastPage ? "pointer-events-none opacity-50" : ""}
 						/>
 					</PaginationItem>
 				</PaginationContent>
@@ -295,8 +315,15 @@ export const WithEllipsis: Story = {
  */
 export const FirstPage: Story = {
 	render: () => {
-		const { currentPage, goToPage, goToPrevious, goToNext, getVisiblePages, isFirstPage, isLastPage } =
-			usePagination(10, 1);
+		const {
+			currentPage,
+			goToPage,
+			goToPrevious,
+			goToNext,
+			getVisiblePages,
+			isFirstPage,
+			isLastPage,
+		} = usePagination(10, 1);
 
 		return (
 			<Pagination>
@@ -308,11 +335,11 @@ export const FirstPage: Story = {
 								e.preventDefault();
 								goToPrevious();
 							}}
-							className={isFirstPage ? 'pointer-events-none opacity-50' : ''}
+							className={isFirstPage ? "pointer-events-none opacity-50" : ""}
 						/>
 					</PaginationItem>
 					{getVisiblePages().map((page) =>
-						typeof page === 'string' ? (
+						typeof page === "string" ? (
 							<PaginationItem key={page}>
 								<PaginationEllipsis />
 							</PaginationItem>
@@ -329,7 +356,7 @@ export const FirstPage: Story = {
 									{page}
 								</PaginationLink>
 							</PaginationItem>
-						)
+						),
 					)}
 					<PaginationItem>
 						<PaginationNext
@@ -338,7 +365,7 @@ export const FirstPage: Story = {
 								e.preventDefault();
 								goToNext();
 							}}
-							className={isLastPage ? 'pointer-events-none opacity-50' : ''}
+							className={isLastPage ? "pointer-events-none opacity-50" : ""}
 						/>
 					</PaginationItem>
 				</PaginationContent>
@@ -355,8 +382,15 @@ export const FirstPage: Story = {
  */
 export const LastPage: Story = {
 	render: () => {
-		const { currentPage, goToPage, goToPrevious, goToNext, getVisiblePages, isFirstPage, isLastPage } =
-			usePagination(10, 10);
+		const {
+			currentPage,
+			goToPage,
+			goToPrevious,
+			goToNext,
+			getVisiblePages,
+			isFirstPage,
+			isLastPage,
+		} = usePagination(10, 10);
 
 		return (
 			<Pagination>
@@ -368,11 +402,11 @@ export const LastPage: Story = {
 								e.preventDefault();
 								goToPrevious();
 							}}
-							className={isFirstPage ? 'pointer-events-none opacity-50' : ''}
+							className={isFirstPage ? "pointer-events-none opacity-50" : ""}
 						/>
 					</PaginationItem>
 					{getVisiblePages().map((page) =>
-						typeof page === 'string' ? (
+						typeof page === "string" ? (
 							<PaginationItem key={page}>
 								<PaginationEllipsis />
 							</PaginationItem>
@@ -389,7 +423,7 @@ export const LastPage: Story = {
 									{page}
 								</PaginationLink>
 							</PaginationItem>
-						)
+						),
 					)}
 					<PaginationItem>
 						<PaginationNext
@@ -398,7 +432,7 @@ export const LastPage: Story = {
 								e.preventDefault();
 								goToNext();
 							}}
-							className={isLastPage ? 'pointer-events-none opacity-50' : ''}
+							className={isLastPage ? "pointer-events-none opacity-50" : ""}
 						/>
 					</PaginationItem>
 				</PaginationContent>
@@ -419,8 +453,16 @@ export const LastPage: Story = {
  */
 export const Controlled: Story = {
 	render: () => {
-		const { currentPage, totalPages, goToPage, goToPrevious, goToNext, getVisiblePages, isFirstPage, isLastPage } =
-			usePagination(10);
+		const {
+			currentPage,
+			totalPages,
+			goToPage,
+			goToPrevious,
+			goToNext,
+			getVisiblePages,
+			isFirstPage,
+			isLastPage,
+		} = usePagination(10);
 
 		return (
 			<div className="space-y-4">
@@ -433,11 +475,11 @@ export const Controlled: Story = {
 									e.preventDefault();
 									goToPrevious();
 								}}
-								className={isFirstPage ? 'pointer-events-none opacity-50' : ''}
+								className={isFirstPage ? "pointer-events-none opacity-50" : ""}
 							/>
 						</PaginationItem>
 						{getVisiblePages().map((page) =>
-							typeof page === 'string' ? (
+							typeof page === "string" ? (
 								<PaginationItem key={page}>
 									<PaginationEllipsis />
 								</PaginationItem>
@@ -454,7 +496,7 @@ export const Controlled: Story = {
 										{page}
 									</PaginationLink>
 								</PaginationItem>
-							)
+							),
 						)}
 						<PaginationItem>
 							<PaginationNext
@@ -463,7 +505,7 @@ export const Controlled: Story = {
 									e.preventDefault();
 									goToNext();
 								}}
-								className={isLastPage ? 'pointer-events-none opacity-50' : ''}
+								className={isLastPage ? "pointer-events-none opacity-50" : ""}
 							/>
 						</PaginationItem>
 					</PaginationContent>
@@ -488,8 +530,15 @@ export const Controlled: Story = {
  */
 export const WithItemCount: Story = {
 	render: () => {
-		const { currentPage, goToPage, goToPrevious, goToNext, getVisiblePages, isFirstPage, isLastPage } =
-			usePagination(10, 3);
+		const {
+			currentPage,
+			goToPage,
+			goToPrevious,
+			goToNext,
+			getVisiblePages,
+			isFirstPage,
+			isLastPage,
+		} = usePagination(10, 3);
 
 		const itemsPerPage = 10;
 		const totalItems = 97;
@@ -507,11 +556,11 @@ export const WithItemCount: Story = {
 									e.preventDefault();
 									goToPrevious();
 								}}
-								className={isFirstPage ? 'pointer-events-none opacity-50' : ''}
+								className={isFirstPage ? "pointer-events-none opacity-50" : ""}
 							/>
 						</PaginationItem>
 						{getVisiblePages().map((page) =>
-							typeof page === 'string' ? (
+							typeof page === "string" ? (
 								<PaginationItem key={page}>
 									<PaginationEllipsis />
 								</PaginationItem>
@@ -528,7 +577,7 @@ export const WithItemCount: Story = {
 										{page}
 									</PaginationLink>
 								</PaginationItem>
-							)
+							),
 						)}
 						<PaginationItem>
 							<PaginationNext
@@ -537,7 +586,7 @@ export const WithItemCount: Story = {
 									e.preventDefault();
 									goToNext();
 								}}
-								className={isLastPage ? 'pointer-events-none opacity-50' : ''}
+								className={isLastPage ? "pointer-events-none opacity-50" : ""}
 							/>
 						</PaginationItem>
 					</PaginationContent>

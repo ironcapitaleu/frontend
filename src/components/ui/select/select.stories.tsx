@@ -1,42 +1,42 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
-import * as React from 'react';
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import * as React from "react";
 
 import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectLabel,
-    SelectSeparator,
-    SelectTrigger,
-    SelectValue,
-} from './select';
-import { Field, FieldGroup, FieldLabel } from '../field';
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectLabel,
+	SelectSeparator,
+	SelectTrigger,
+	SelectValue,
+} from "./select";
+import { Field, FieldGroup, FieldLabel } from "../field";
 
-const ROLE_VALUES = ['admin', 'editor', 'viewer', 'billing'] as const;
+const ROLE_VALUES = ["admin", "editor", "viewer", "billing"] as const;
 type RoleValue = (typeof ROLE_VALUES)[number];
 
 type RoleItem = {
-    value: RoleValue;
-    label: string;
-    group: 'Team' | 'Access';
-    disabled?: boolean;
+	value: RoleValue;
+	label: string;
+	group: "Team" | "Access";
+	disabled?: boolean;
 };
 
 const ROLE_ITEMS: RoleItem[] = [
-    { value: 'admin', label: 'Admin', group: 'Access' },
-    { value: 'editor', label: 'Editor', group: 'Team' },
-    { value: 'viewer', label: 'Viewer', group: 'Team' },
-    { value: 'billing', label: 'Billing', group: 'Access' },
+	{ value: "admin", label: "Admin", group: "Access" },
+	{ value: "editor", label: "Editor", group: "Team" },
+	{ value: "viewer", label: "Viewer", group: "Team" },
+	{ value: "billing", label: "Billing", group: "Access" },
 ];
 
 type SelectStoryArgs = {
-    label: string;
-    placeholder: string;
-    size: 'default' | 'sm';
-    disabled: boolean;
-    invalid: boolean;
-    defaultValue: RoleValue | null;
+	label: string;
+	placeholder: string;
+	size: "default" | "sm";
+	disabled: boolean;
+	invalid: boolean;
+	defaultValue: RoleValue | null;
 };
 
 /**
@@ -45,88 +45,95 @@ type SelectStoryArgs = {
  * A `Select` is interactive, because users must actively open the list and make a selection.
  */
 const meta: Meta<SelectStoryArgs> = {
-    title: 'Components/Select',
-    component: Select,
-    tags: ['autodocs'],
-    args: {
-        label: 'Role',
-        placeholder: 'Select a role',
-        size: 'default',
-        disabled: false,
-        invalid: false,
-        defaultValue: null,
-    },
-    argTypes: {
-        label: { control: 'text' },
-        placeholder: { control: 'text' },
-        size: { control: 'inline-radio', options: ['default', 'sm'] },
-        disabled: { control: 'boolean' },
-        invalid: { control: 'boolean' },
-        defaultValue: { control: 'select', options: [null, ...ROLE_VALUES] },
-    },
+	title: "Components/Select",
+	component: Select,
+	tags: ["autodocs"],
+	args: {
+		label: "Role",
+		placeholder: "Select a role",
+		size: "default",
+		disabled: false,
+		invalid: false,
+		defaultValue: null,
+	},
+	argTypes: {
+		label: { control: "text" },
+		placeholder: { control: "text" },
+		size: { control: "inline-radio", options: ["default", "sm"] },
+		disabled: { control: "boolean" },
+		invalid: { control: "boolean" },
+		defaultValue: { control: "select", options: [null, ...ROLE_VALUES] },
+	},
 };
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-function renderSelectPrompt(value: unknown, placeholder: string): React.ReactNode {
-    if (value == null || value === '') {
-        return placeholder;
-    }
+function renderSelectPrompt(
+	value: unknown,
+	placeholder: string,
+): React.ReactNode {
+	if (value == null || value === "") {
+		return placeholder;
+	}
 
-    if (typeof value === 'string') {
-        return ROLE_ITEMS.find((item) => item.value === value)?.label ?? value;
-    }
+	if (typeof value === "string") {
+		return ROLE_ITEMS.find((item) => item.value === value)?.label ?? value;
+	}
 
-    if (typeof value === 'object' && value && 'label' in value) {
-        const label = (value as { label?: unknown }).label;
-        return typeof label === 'string' ? label : placeholder;
-    }
+	if (typeof value === "object" && value && "label" in value) {
+		const label = (value as { label?: unknown }).label;
+		return typeof label === "string" ? label : placeholder;
+	}
 
-    return String(value);
+	return String(value);
 }
 
-const renderSelect: Story['render'] = ({
-    label,
-    placeholder,
-    size,
-    disabled,
-    invalid,
-    defaultValue,
+const renderSelect: Story["render"] = ({
+	label,
+	placeholder,
+	size,
+	disabled,
+	invalid,
+	defaultValue,
 }) => {
-    const id = React.useId();
+	const id = React.useId();
 
-    return (
-        <Select items={ROLE_ITEMS} defaultValue={defaultValue}>
-            <div className="flex max-w-sm flex-col gap-1">
-                <label htmlFor={id} className="text-sm font-medium">
-                    {label}
-                </label>
+	return (
+		<Select items={ROLE_ITEMS} defaultValue={defaultValue}>
+			<div className="flex max-w-sm flex-col gap-1">
+				<label htmlFor={id} className="text-sm font-medium">
+					{label}
+				</label>
 
-                <SelectTrigger
-                    id={id}
-                    size={size}
-                    disabled={disabled}
-                    aria-invalid={invalid || undefined}
-                    className="w-72 max-w-full"
-                >
-                    <SelectValue>
-                        {(value: unknown) => renderSelectPrompt(value, placeholder)}
-                    </SelectValue>
-                </SelectTrigger>
+				<SelectTrigger
+					id={id}
+					size={size}
+					disabled={disabled}
+					aria-invalid={invalid || undefined}
+					className="w-72 max-w-full"
+				>
+					<SelectValue>
+						{(value: unknown) => renderSelectPrompt(value, placeholder)}
+					</SelectValue>
+				</SelectTrigger>
 
-                <SelectContent>
-                    <SelectGroup>
-                        {ROLE_ITEMS.map((item) => (
-                            <SelectItem key={item.value} value={item.value} disabled={item.disabled}>
-                                {item.label}
-                            </SelectItem>
-                        ))}
-                    </SelectGroup>
-                </SelectContent>
-            </div>
-        </Select>
-    );
+				<SelectContent>
+					<SelectGroup>
+						{ROLE_ITEMS.map((item) => (
+							<SelectItem
+								key={item.value}
+								value={item.value}
+								disabled={item.disabled}
+							>
+								{item.label}
+							</SelectItem>
+						))}
+					</SelectGroup>
+				</SelectContent>
+			</div>
+		</Select>
+	);
 };
 
 // ==========================================
@@ -137,7 +144,7 @@ const renderSelect: Story['render'] = ({
  * Interactive playground for Select.
  */
 export const Playground: Story = {
-    render: renderSelect,
+	render: renderSelect,
 };
 
 // ==========================================
@@ -145,25 +152,25 @@ export const Playground: Story = {
 // ==========================================
 
 export const DefaultSize: Story = {
-    render: renderSelect,
-    args: {
-        size: 'default',
-        defaultValue: 'editor',
-    },
-    argTypes: {
-        size: { control: { disable: true } },
-    },
+	render: renderSelect,
+	args: {
+		size: "default",
+		defaultValue: "editor",
+	},
+	argTypes: {
+		size: { control: { disable: true } },
+	},
 };
 
 export const Small: Story = {
-    render: renderSelect,
-    args: {
-        size: 'sm',
-        defaultValue: 'editor',
-    },
-    argTypes: {
-        size: { control: { disable: true } },
-    },
+	render: renderSelect,
+	args: {
+		size: "sm",
+		defaultValue: "editor",
+	},
+	argTypes: {
+		size: { control: { disable: true } },
+	},
 };
 
 // ==========================================
@@ -171,35 +178,35 @@ export const Small: Story = {
 // ==========================================
 
 export const Disabled: Story = {
-    render: renderSelect,
-    args: {
-        disabled: true,
-        defaultValue: null,
-    },
-    argTypes: {
-        disabled: { control: { disable: true } },
-    },
+	render: renderSelect,
+	args: {
+		disabled: true,
+		defaultValue: null,
+	},
+	argTypes: {
+		disabled: { control: { disable: true } },
+	},
 };
 
 export const Invalid: Story = {
-    render: renderSelect,
-    args: {
-        invalid: true,
-        defaultValue: null,
-    },
-    argTypes: {
-        invalid: { control: { disable: true } },
-    },
+	render: renderSelect,
+	args: {
+		invalid: true,
+		defaultValue: null,
+	},
+	argTypes: {
+		invalid: { control: { disable: true } },
+	},
 };
 
 export const WithValue: Story = {
-    render: renderSelect,
-    args: {
-        defaultValue: 'admin',
-    },
-    argTypes: {
-        defaultValue: { control: { disable: true } },
-    },
+	render: renderSelect,
+	args: {
+		defaultValue: "admin",
+	},
+	argTypes: {
+		defaultValue: { control: { disable: true } },
+	},
 };
 
 // ==========================================
@@ -207,92 +214,96 @@ export const WithValue: Story = {
 // ==========================================
 
 export const Grouped: Story = {
-    parameters: {
-        controls: { disable: true },
-    },
-    render: () => {
-        const id = React.useId();
+	parameters: {
+		controls: { disable: true },
+	},
+	render: () => {
+		const id = React.useId();
 
-        const team = ROLE_ITEMS.filter((i) => i.group === 'Team');
-        const access = ROLE_ITEMS.filter((i) => i.group === 'Access');
+		const team = ROLE_ITEMS.filter((i) => i.group === "Team");
+		const access = ROLE_ITEMS.filter((i) => i.group === "Access");
 
-        return (
-            <Select items={ROLE_ITEMS} defaultValue={null}>
-                <div className="flex max-w-sm flex-col gap-1">
-                    <label htmlFor={id} className="text-sm font-medium">
-                        Role
-                    </label>
+		return (
+			<Select items={ROLE_ITEMS} defaultValue={null}>
+				<div className="flex max-w-sm flex-col gap-1">
+					<label htmlFor={id} className="text-sm font-medium">
+						Role
+					</label>
 
-                    <SelectTrigger id={id} className="w-72 max-w-full">
+					<SelectTrigger id={id} className="w-72 max-w-full">
 						<SelectValue>
-							{(value: unknown) => renderSelectPrompt(value, 'Select a role')}
+							{(value: unknown) => renderSelectPrompt(value, "Select a role")}
 						</SelectValue>
-                    </SelectTrigger>
+					</SelectTrigger>
 
-                    <SelectContent>
-                        <SelectGroup>
-                            <SelectLabel>Team</SelectLabel>
-                            {team.map((item) => (
-                                <SelectItem key={item.value} value={item.value}>
-                                    {item.label}
-                                </SelectItem>
-                            ))}
-                        </SelectGroup>
+					<SelectContent>
+						<SelectGroup>
+							<SelectLabel>Team</SelectLabel>
+							{team.map((item) => (
+								<SelectItem key={item.value} value={item.value}>
+									{item.label}
+								</SelectItem>
+							))}
+						</SelectGroup>
 
-                        <SelectSeparator />
+						<SelectSeparator />
 
-                        <SelectGroup>
-                            <SelectLabel>Access</SelectLabel>
-                            {access.map((item) => (
-                                <SelectItem key={item.value} value={item.value}>
-                                    {item.label}
-                                </SelectItem>
-                            ))}
-                        </SelectGroup>
-                    </SelectContent>
-                </div>
-            </Select>
-        );
-    },
+						<SelectGroup>
+							<SelectLabel>Access</SelectLabel>
+							{access.map((item) => (
+								<SelectItem key={item.value} value={item.value}>
+									{item.label}
+								</SelectItem>
+							))}
+						</SelectGroup>
+					</SelectContent>
+				</div>
+			</Select>
+		);
+	},
 };
 
 export const WithDisabledItem: Story = {
-    parameters: {
-        controls: { disable: true },
-    },
-    render: () => {
-        const id = React.useId();
+	parameters: {
+		controls: { disable: true },
+	},
+	render: () => {
+		const id = React.useId();
 
-        const items: RoleItem[] = ROLE_ITEMS.map((item) =>
-            item.value === 'billing' ? { ...item, disabled: true } : item
-        );
+		const items: RoleItem[] = ROLE_ITEMS.map((item) =>
+			item.value === "billing" ? { ...item, disabled: true } : item,
+		);
 
-        return (
-            <Select items={items} defaultValue={null}>
-                <div className="flex max-w-sm flex-col gap-1">
-                    <label htmlFor={id} className="text-sm font-medium">
-                        Role
-                    </label>
+		return (
+			<Select items={items} defaultValue={null}>
+				<div className="flex max-w-sm flex-col gap-1">
+					<label htmlFor={id} className="text-sm font-medium">
+						Role
+					</label>
 
-                    <SelectTrigger id={id} className="w-72 max-w-full">
+					<SelectTrigger id={id} className="w-72 max-w-full">
 						<SelectValue>
-							{(value: unknown) => renderSelectPrompt(value, 'Select a role')}
+							{(value: unknown) => renderSelectPrompt(value, "Select a role")}
 						</SelectValue>
-                    </SelectTrigger>
+					</SelectTrigger>
 
-                    <SelectContent>
-                        <SelectGroup>
-                            {items.map((item) => (
-                                <SelectItem key={item.value} value={item.value} disabled={item.disabled}>
-                                    {item.label}
-                                </SelectItem>
-                            ))}
-                        </SelectGroup>
-                    </SelectContent>
-                </div>
-            </Select>
-        );
-    },
+					<SelectContent>
+						<SelectGroup>
+							{items.map((item) => (
+								<SelectItem
+									key={item.value}
+									value={item.value}
+									disabled={item.disabled}
+								>
+									{item.label}
+								</SelectItem>
+							))}
+						</SelectGroup>
+					</SelectContent>
+				</div>
+			</Select>
+		);
+	},
 };
 
 // ==========================================
@@ -300,32 +311,32 @@ export const WithDisabledItem: Story = {
 // ==========================================
 
 export const InField: Story = {
-    parameters: {
-        controls: { disable: true },
-    },
-    render: () => (
-        <div className="max-w-xl">
-            <FieldGroup>
-                <Field>
-                    <FieldLabel>Role</FieldLabel>
-                    <Select items={ROLE_ITEMS} defaultValue={null}>
-                        <SelectTrigger className="w-72 max-w-full">
-                            <SelectValue>
-                                {(value: unknown) => renderSelectPrompt(value, 'Select a role')}
-                            </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectGroup>
-                                {ROLE_ITEMS.map((item) => (
-                                    <SelectItem key={item.value} value={item.value}>
-                                        {item.label}
-                                    </SelectItem>
-                                ))}
-                            </SelectGroup>
-                        </SelectContent>
-                    </Select>
-                </Field>
-            </FieldGroup>
-        </div>
-    ),
+	parameters: {
+		controls: { disable: true },
+	},
+	render: () => (
+		<div className="max-w-xl">
+			<FieldGroup>
+				<Field>
+					<FieldLabel>Role</FieldLabel>
+					<Select items={ROLE_ITEMS} defaultValue={null}>
+						<SelectTrigger className="w-72 max-w-full">
+							<SelectValue>
+								{(value: unknown) => renderSelectPrompt(value, "Select a role")}
+							</SelectValue>
+						</SelectTrigger>
+						<SelectContent>
+							<SelectGroup>
+								{ROLE_ITEMS.map((item) => (
+									<SelectItem key={item.value} value={item.value}>
+										{item.label}
+									</SelectItem>
+								))}
+							</SelectGroup>
+						</SelectContent>
+					</Select>
+				</Field>
+			</FieldGroup>
+		</div>
+	),
 };

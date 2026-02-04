@@ -1,5 +1,5 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
-import * as React from 'react';
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import * as React from "react";
 
 import {
 	Menubar,
@@ -18,7 +18,7 @@ import {
 	MenubarSubContent,
 	MenubarSubTrigger,
 	MenubarTrigger,
-} from './menubar';
+} from "./menubar";
 import {
 	FileIcon,
 	FolderIcon,
@@ -49,7 +49,7 @@ import {
 	HelpCircleIcon,
 	BookOpenIcon,
 	MessageCircleIcon,
-} from 'lucide-react';
+} from "lucide-react";
 
 type MenubarStoryArgs = {
 	showFileMenu: boolean;
@@ -71,7 +71,9 @@ function MenubarStory({
 		statusBar: false,
 		minimap: true,
 	});
-	const [theme, setTheme] = React.useState<'light' | 'dark' | 'system'>('light');
+	const [theme, setTheme] = React.useState<"light" | "dark" | "system">(
+		"light",
+	);
 
 	return (
 		<Menubar>
@@ -208,7 +210,10 @@ function MenubarStory({
 							<MenubarCheckboxItem
 								checked={toggles.statusBar}
 								onCheckedChange={(checked) =>
-									setToggles((prev) => ({ ...prev, statusBar: checked === true }))
+									setToggles((prev) => ({
+										...prev,
+										statusBar: checked === true,
+									}))
 								}
 							>
 								{showIcons && <LayoutIcon />}
@@ -284,11 +289,11 @@ function MenubarStory({
  * It is inherently interactive, as users actively open menus and select options.
  */
 const meta: Meta<MenubarStoryArgs> = {
-	title: 'Components/Menubar',
+	title: "Components/Menubar",
 	component: MenubarStory,
-	tags: ['autodocs'],
+	tags: ["autodocs"],
 	parameters: {
-		layout: 'centered',
+		layout: "centered",
 	},
 	args: {
 		showFileMenu: true,
@@ -298,11 +303,14 @@ const meta: Meta<MenubarStoryArgs> = {
 		showShortcuts: true,
 	},
 	argTypes: {
-		showFileMenu: { control: 'boolean', description: 'Show the File menu' },
-		showEditMenu: { control: 'boolean', description: 'Show the Edit menu' },
-		showViewMenu: { control: 'boolean', description: 'Show the View menu' },
-		showIcons: { control: 'boolean', description: 'Show icons in menu items' },
-		showShortcuts: { control: 'boolean', description: 'Show keyboard shortcuts' },
+		showFileMenu: { control: "boolean", description: "Show the File menu" },
+		showEditMenu: { control: "boolean", description: "Show the Edit menu" },
+		showViewMenu: { control: "boolean", description: "Show the View menu" },
+		showIcons: { control: "boolean", description: "Show icons in menu items" },
+		showShortcuts: {
+			control: "boolean",
+			description: "Show keyboard shortcuts",
+		},
 	},
 };
 
@@ -500,7 +508,10 @@ export const WithCheckboxItems: Story = {
 							<MenubarCheckboxItem
 								checked={toggles.statusBar}
 								onCheckedChange={(checked) =>
-									setToggles((prev) => ({ ...prev, statusBar: checked === true }))
+									setToggles((prev) => ({
+										...prev,
+										statusBar: checked === true,
+									}))
 								}
 							>
 								Show Status Bar
@@ -526,7 +537,9 @@ export const WithRadioItems: Story = {
 		controls: { disable: true },
 	},
 	render: () => {
-		const [theme, setTheme] = React.useState<'light' | 'dark' | 'system'>('light');
+		const [theme, setTheme] = React.useState<"light" | "dark" | "system">(
+			"light",
+		);
 
 		return (
 			<Menubar>
@@ -658,7 +671,9 @@ export const CodeEditorMenubar: Story = {
 			lineNumbers: true,
 			minimap: false,
 		});
-		const [theme, setTheme] = React.useState<'light' | 'dark' | 'system'>('dark');
+		const [theme, setTheme] = React.useState<"light" | "dark" | "system">(
+			"dark",
+		);
 
 		return (
 			<Menubar>
@@ -726,7 +741,10 @@ export const CodeEditorMenubar: Story = {
 							<MenubarCheckboxItem
 								checked={toggles.wordWrap}
 								onCheckedChange={(checked) =>
-									setToggles((prev) => ({ ...prev, wordWrap: checked === true }))
+									setToggles((prev) => ({
+										...prev,
+										wordWrap: checked === true,
+									}))
 								}
 							>
 								Word Wrap
@@ -734,7 +752,10 @@ export const CodeEditorMenubar: Story = {
 							<MenubarCheckboxItem
 								checked={toggles.lineNumbers}
 								onCheckedChange={(checked) =>
-									setToggles((prev) => ({ ...prev, lineNumbers: checked === true }))
+									setToggles((prev) => ({
+										...prev,
+										lineNumbers: checked === true,
+									}))
 								}
 							>
 								Line Numbers

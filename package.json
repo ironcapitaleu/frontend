@@ -16,10 +16,10 @@
 		"security:check": "npm audit --audit-level=high",
 		"security:fix": "npm audit fix --force",
 		"storybook": "storybook dev -p 6006",
-    	"build-storybook": "storybook build",
-    	"install:playwright": "npx playwright install",
-    	"setup": "npm install && npx playwright install",
-    	"test:storybook": "vitest --run --project storybook",
+		"build-storybook": "storybook build",
+		"install:playwright": "npx playwright install",
+		"setup": "npm install && npx playwright install",
+		"test:storybook": "vitest --run --project storybook",
 		"preview": "vite preview"
 	},
 	"dependencies": {

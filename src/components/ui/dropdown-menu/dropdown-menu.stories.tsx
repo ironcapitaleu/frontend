@@ -1,5 +1,5 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
-import * as React from 'react';
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import * as React from "react";
 
 import {
 	DropdownMenu,
@@ -17,8 +17,8 @@ import {
 	DropdownMenuSubContent,
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
-} from './dropdown-menu';
-import { Button, BUTTON_SIZES, BUTTON_VARIANTS } from '../button';
+} from "./dropdown-menu";
+import { Button, BUTTON_SIZES, BUTTON_VARIANTS } from "../button";
 import {
 	MoreVerticalIcon,
 	FileIcon,
@@ -37,14 +37,14 @@ import {
 	MonitorIcon,
 	UserIcon,
 	LogOutIcon,
-} from 'lucide-react';
+} from "lucide-react";
 
 type DropdownMenuStoryArgs = {
 	triggerLabel: string;
 	triggerVariant: (typeof BUTTON_VARIANTS)[number];
 	triggerSize: (typeof BUTTON_SIZES)[number];
-	contentAlign: 'start' | 'center' | 'end';
-	contentSide: 'top' | 'right' | 'bottom' | 'left';
+	contentAlign: "start" | "center" | "end";
+	contentSide: "top" | "right" | "bottom" | "left";
 	sideOffset: number;
 };
 
@@ -54,30 +54,36 @@ type DropdownMenuStoryArgs = {
  * It is inherently interactive, because users must actively open the menu and make a selection.
  */
 const meta: Meta<DropdownMenuStoryArgs> = {
-	title: 'Components/DropdownMenu',
-	tags: ['autodocs'],
+	title: "Components/DropdownMenu",
+	tags: ["autodocs"],
 	args: {
-		triggerLabel: 'More options',
-		triggerVariant: 'ghost',
-		triggerSize: 'icon',
-		contentAlign: 'end',
-		contentSide: 'bottom',
+		triggerLabel: "More options",
+		triggerVariant: "ghost",
+		triggerSize: "icon",
+		contentAlign: "end",
+		contentSide: "bottom",
 		sideOffset: 4,
 	},
 	argTypes: {
-		triggerLabel: { control: 'text' },
-		triggerVariant: { control: 'select', options: BUTTON_VARIANTS },
-		triggerSize: { control: 'select', options: BUTTON_SIZES },
-		contentAlign: { control: 'inline-radio', options: ['start', 'center', 'end'] },
-		contentSide: { control: 'inline-radio', options: ['top', 'right', 'bottom', 'left'] },
-		sideOffset: { control: { type: 'number', min: 0, max: 24, step: 1 } },
+		triggerLabel: { control: "text" },
+		triggerVariant: { control: "select", options: BUTTON_VARIANTS },
+		triggerSize: { control: "select", options: BUTTON_SIZES },
+		contentAlign: {
+			control: "inline-radio",
+			options: ["start", "center", "end"],
+		},
+		contentSide: {
+			control: "inline-radio",
+			options: ["top", "right", "bottom", "left"],
+		},
+		sideOffset: { control: { type: "number", min: 0, max: 24, step: 1 } },
 	},
 };
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const renderMenu: Story['render'] = ({
+const renderMenu: Story["render"] = ({
 	triggerLabel,
 	triggerVariant,
 	triggerSize,
@@ -89,11 +95,15 @@ const renderMenu: Story['render'] = ({
 		sidebar: true,
 		statusBar: false,
 	});
-	const [theme, setTheme] = React.useState<'light' | 'dark' | 'system'>('light');
+	const [theme, setTheme] = React.useState<"light" | "dark" | "system">(
+		"light",
+	);
 
 	return (
 		<DropdownMenu>
-			<DropdownMenuTrigger render={<Button variant={triggerVariant} size={triggerSize} />}>
+			<DropdownMenuTrigger
+				render={<Button variant={triggerVariant} size={triggerSize} />}
+			>
 				<MoreVerticalIcon />
 				<span className="sr-only">{triggerLabel}</span>
 			</DropdownMenuTrigger>
@@ -205,7 +215,10 @@ const renderMenu: Story['render'] = ({
 							<DropdownMenuSubContent>
 								<DropdownMenuGroup>
 									<DropdownMenuLabel>Appearance</DropdownMenuLabel>
-									<DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
+									<DropdownMenuRadioGroup
+										value={theme}
+										onValueChange={setTheme}
+									>
 										<DropdownMenuRadioItem value="light">
 											<SunIcon />
 											Light
@@ -259,7 +272,7 @@ export const Playground: Story = {
 export const AlignStart: Story = {
 	render: renderMenu,
 	args: {
-		contentAlign: 'start',
+		contentAlign: "start",
 	},
 	argTypes: {
 		contentAlign: { control: { disable: true } },
@@ -269,7 +282,7 @@ export const AlignStart: Story = {
 export const AlignEnd: Story = {
 	render: renderMenu,
 	args: {
-		contentAlign: 'end',
+		contentAlign: "end",
 	},
 	argTypes: {
 		contentAlign: { control: { disable: true } },
@@ -286,7 +299,9 @@ export const Simple: Story = {
 	},
 	render: () => (
 		<DropdownMenu>
-			<DropdownMenuTrigger render={<Button variant="outline" size="default" />}>Open menu</DropdownMenuTrigger>
+			<DropdownMenuTrigger render={<Button variant="outline" size="default" />}>
+				Open menu
+			</DropdownMenuTrigger>
 			<DropdownMenuContent className="w-44">
 				<DropdownMenuItem>Profile</DropdownMenuItem>
 				<DropdownMenuItem>Settings</DropdownMenuItem>
@@ -303,7 +318,9 @@ export const WithInsetItems: Story = {
 	},
 	render: () => (
 		<DropdownMenu>
-			<DropdownMenuTrigger render={<Button variant="outline" size="default" />}>Inset items</DropdownMenuTrigger>
+			<DropdownMenuTrigger render={<Button variant="outline" size="default" />}>
+				Inset items
+			</DropdownMenuTrigger>
 			<DropdownMenuContent className="w-48">
 				<DropdownMenuGroup>
 					<DropdownMenuLabel inset>Account</DropdownMenuLabel>

@@ -1,6 +1,6 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
-import type { ComponentProps } from 'react';
-import * as React from 'react';
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { ComponentProps } from "react";
+import * as React from "react";
 
 import {
 	BoldIcon,
@@ -13,15 +13,22 @@ import {
 	BookmarkIcon,
 	HeartIcon,
 	StarIcon,
-} from 'lucide-react';
+} from "lucide-react";
 
-import { ToggleGroup, ToggleGroupItem } from './toggle-group';
+import { ToggleGroup, ToggleGroupItem } from "./toggle-group";
 
-type ToggleGroupVariant = 'default' | 'outline';
-type ToggleGroupSize = 'sm' | 'default' | 'lg';
+type ToggleGroupVariant = "default" | "outline";
+type ToggleGroupSize = "sm" | "default" | "lg";
 
-const TOGGLE_GROUP_VARIANTS = ['default', 'outline'] as const satisfies readonly ToggleGroupVariant[];
-const TOGGLE_GROUP_SIZES = ['sm', 'default', 'lg'] as const satisfies readonly ToggleGroupSize[];
+const TOGGLE_GROUP_VARIANTS = [
+	"default",
+	"outline",
+] as const satisfies readonly ToggleGroupVariant[];
+const TOGGLE_GROUP_SIZES = [
+	"sm",
+	"default",
+	"lg",
+] as const satisfies readonly ToggleGroupSize[];
 
 type ToggleGroupStoryArgs = ComponentProps<typeof ToggleGroup> & {
 	variant: ToggleGroupVariant;
@@ -30,9 +37,21 @@ type ToggleGroupStoryArgs = ComponentProps<typeof ToggleGroup> & {
 	disabled: boolean;
 };
 
-function ToggleGroupStory({ variant, size, multiple, disabled, ...props }: ToggleGroupStoryArgs) {
+function ToggleGroupStory({
+	variant,
+	size,
+	multiple,
+	disabled,
+	...props
+}: ToggleGroupStoryArgs) {
 	return (
-		<ToggleGroup {...props} variant={variant} size={size} multiple={multiple} disabled={disabled}>
+		<ToggleGroup
+			{...props}
+			variant={variant}
+			size={size}
+			multiple={multiple}
+			disabled={disabled}
+		>
 			<ToggleGroupItem value="bold" aria-label="Toggle bold">
 				<BoldIcon />
 			</ToggleGroupItem>
@@ -52,27 +71,30 @@ function ToggleGroupStory({ variant, size, multiple, disabled, ...props }: Toggl
  * `Toggle Group`s are inherently interactive elements, as users actively select or deselect options within the group.
  */
 const meta: Meta<ToggleGroupStoryArgs> = {
-	title: 'Components/Toggle Group',
+	title: "Components/Toggle Group",
 	component: ToggleGroupStory,
-	tags: ['autodocs'],
+	tags: ["autodocs"],
 	parameters: {
-		layout: 'padded',
+		layout: "padded",
 	},
 	args: {
-		variant: 'default',
-		size: 'default',
+		variant: "default",
+		size: "default",
 		multiple: true,
 		disabled: false,
 		spacing: 0,
-		orientation: 'horizontal',
+		orientation: "horizontal",
 	},
 	argTypes: {
-		variant: { control: 'select', options: TOGGLE_GROUP_VARIANTS },
-		size: { control: 'select', options: TOGGLE_GROUP_SIZES },
-		multiple: { control: 'boolean' },
-		disabled: { control: 'boolean' },
-		spacing: { control: { type: 'range', min: 0, max: 4, step: 1 } },
-		orientation: { control: 'inline-radio', options: ['horizontal', 'vertical'] },
+		variant: { control: "select", options: TOGGLE_GROUP_VARIANTS },
+		size: { control: "select", options: TOGGLE_GROUP_SIZES },
+		multiple: { control: "boolean" },
+		disabled: { control: "boolean" },
+		spacing: { control: { type: "range", min: 0, max: 4, step: 1 } },
+		orientation: {
+			control: "inline-radio",
+			options: ["horizontal", "vertical"],
+		},
 		children: { control: { disable: true } },
 		className: { control: { disable: true } },
 	},
@@ -99,7 +121,7 @@ export const Playground: Story = {
 export const Default: Story = {
 	render: (args) => <ToggleGroupStory {...args} />,
 	args: {
-		variant: 'default',
+		variant: "default",
 	},
 	argTypes: {
 		variant: { control: { disable: true } },
@@ -109,7 +131,7 @@ export const Default: Story = {
 export const Outline: Story = {
 	render: (args) => <ToggleGroupStory {...args} />,
 	args: {
-		variant: 'outline',
+		variant: "outline",
 	},
 	argTypes: {
 		variant: { control: { disable: true } },
@@ -123,7 +145,7 @@ export const Outline: Story = {
 export const Small: Story = {
 	render: (args) => <ToggleGroupStory {...args} />,
 	args: {
-		size: 'sm',
+		size: "sm",
 	},
 	argTypes: {
 		size: { control: { disable: true } },
@@ -133,7 +155,7 @@ export const Small: Story = {
 export const Large: Story = {
 	render: (args) => <ToggleGroupStory {...args} />,
 	args: {
-		size: 'lg',
+		size: "lg",
 	},
 	argTypes: {
 		size: { control: { disable: true } },
@@ -192,8 +214,8 @@ export const Multiple: Story = {
 export const Vertical: Story = {
 	render: (args) => <ToggleGroupStory {...args} />,
 	args: {
-		orientation: 'vertical',
-		variant: 'outline',
+		orientation: "vertical",
+		variant: "outline",
 	},
 	argTypes: {
 		orientation: { control: { disable: true } },
@@ -208,7 +230,7 @@ export const WithSpacing: Story = {
 	render: (args) => <ToggleGroupStory {...args} />,
 	args: {
 		spacing: 1,
-		variant: 'outline',
+		variant: "outline",
 	},
 	argTypes: {
 		spacing: { control: { disable: true } },
@@ -269,7 +291,7 @@ export const FilledIcons: Story = {
 
 export const Controlled: Story = {
 	render: () => {
-		const [value, setValue] = React.useState<string[]>(['bold']);
+		const [value, setValue] = React.useState<string[]>(["bold"]);
 
 		return (
 			<div className="max-w-xl space-y-3">
@@ -291,7 +313,7 @@ export const Controlled: Story = {
 				</ToggleGroup>
 
 				<p className="text-sm text-muted-foreground">
-					Selected: {value.length > 0 ? value.join(', ') : 'none'}
+					Selected: {value.length > 0 ? value.join(", ") : "none"}
 				</p>
 			</div>
 		);
