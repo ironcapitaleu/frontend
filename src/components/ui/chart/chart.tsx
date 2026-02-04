@@ -117,7 +117,10 @@ function ChartTooltipContent({
 	color,
 	nameKey,
 	labelKey,
-}: Omit<React.ComponentProps<typeof RechartsPrimitive.Tooltip>, "payload" | "active" | "label"> &
+}: Omit<
+	React.ComponentProps<typeof RechartsPrimitive.Tooltip>,
+	"payload" | "active" | "label"
+> &
 	React.ComponentProps<"div"> & {
 		active?: boolean;
 		payload?: Array<{
@@ -155,7 +158,12 @@ function ChartTooltipContent({
 		if (labelFormatter) {
 			return (
 				<div className={cn("font-medium", labelClassName)}>
-					{(labelFormatter as (label: unknown, payload: unknown) => React.ReactNode)(value, payload)}
+					{(
+						labelFormatter as (
+							label: unknown,
+							payload: unknown,
+						) => React.ReactNode
+					)(value, payload)}
 				</div>
 			);
 		}
@@ -206,7 +214,15 @@ function ChartTooltipContent({
 								)}
 							>
 								{formatter && item?.value !== undefined && item.name ? (
-									(formatter as (value: unknown, name: unknown, item: unknown, index: number, payload: unknown) => React.ReactNode)(item.value, item.name, item, index, item.payload)
+									(
+										formatter as (
+											value: unknown,
+											name: unknown,
+											item: unknown,
+											index: number,
+											payload: unknown,
+										) => React.ReactNode
+									)(item.value, item.name, item, index, item.payload)
 								) : (
 									<>
 										{itemConfig?.icon ? (
@@ -250,7 +266,9 @@ function ChartTooltipContent({
 											</div>
 											{item.value !== undefined && item.value !== null && (
 												<span className="text-foreground font-mono font-medium tabular-nums">
-													{typeof item.value === 'number' ? item.value.toLocaleString() : String(item.value)}
+													{typeof item.value === "number"
+														? item.value.toLocaleString()
+														: String(item.value)}
 												</span>
 											)}
 										</div>
@@ -273,19 +291,19 @@ function ChartLegendContent({
 	verticalAlign = "bottom",
 	nameKey,
 }: React.ComponentProps<"div"> & {
-		payload?: Array<{
-			value?: string;
-			type?: string;
-			id?: string;
-			color?: string;
-			dataKey?: string | number;
-			payload?: Record<string, unknown>;
-			[key: string]: unknown;
-		}>;
-		verticalAlign?: "top" | "bottom";
-		hideIcon?: boolean;
-		nameKey?: string;
-	}) {
+	payload?: Array<{
+		value?: string;
+		type?: string;
+		id?: string;
+		color?: string;
+		dataKey?: string | number;
+		payload?: Record<string, unknown>;
+		[key: string]: unknown;
+	}>;
+	verticalAlign?: "top" | "bottom";
+	hideIcon?: boolean;
+	nameKey?: string;
+}) {
 	const { config } = useChart();
 
 	if (!payload?.length) {

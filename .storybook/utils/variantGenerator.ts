@@ -9,7 +9,11 @@ export function extractVariants<T extends (...args: unknown[]) => unknown>(
 ): Record<string, string[]> {
 	// Access the CVA config through the function's toString or stored metadata
 	// This is a runtime extraction approach
-	const config = (cvaFunction as unknown as { config?: { variants?: Record<string, Record<string, unknown>> } }).config;
+	const config = (
+		cvaFunction as unknown as {
+			config?: { variants?: Record<string, Record<string, unknown>> };
+		}
+	).config;
 
 	if (!config?.variants) {
 		return {};

@@ -42,7 +42,9 @@ function AlertStory({
 					<p>{description}</p>
 					{showLink ? (
 						<p>
-							<button type="button" className="underline">Learn more</button>
+							<button type="button" className="underline">
+								Learn more
+							</button>
 						</p>
 					) : null}
 				</AlertDescription>

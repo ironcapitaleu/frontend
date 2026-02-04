@@ -107,14 +107,23 @@ export const InToolbar: Story = {
 	render: () => (
 		<div>
 			<div className="bg-muted border-border inline-flex h-10 w-auto items-center gap-1 rounded-lg border px-2">
-				<button type="button" className="hover:bg-accent rounded px-2 py-1 text-sm transition-colors">
+				<button
+					type="button"
+					className="hover:bg-accent rounded px-2 py-1 text-sm transition-colors"
+				>
 					Cut
 				</button>
-				<button type="button" className="hover:bg-accent rounded px-2 py-1 text-sm transition-colors">
+				<button
+					type="button"
+					className="hover:bg-accent rounded px-2 py-1 text-sm transition-colors"
+				>
 					Copy
 				</button>
 				<Separator orientation="vertical" className="mx-2 h-5 self-center" />
-				<button type="button" className="hover:bg-accent rounded px-2 py-1 text-sm transition-colors">
+				<button
+					type="button"
+					className="hover:bg-accent rounded px-2 py-1 text-sm transition-colors"
+				>
 					Paste
 				</button>
 			</div>
