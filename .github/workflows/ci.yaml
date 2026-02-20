@@ -33,7 +33,9 @@ jobs:
         cache: 'npm'
 
     - name: Install Dependencies
-      run: npm ci
+      run: |
+        npm ci
+        npm run install:playwright
 
     - name: Display Execution Context
       run: |
@@ -65,3 +67,6 @@ jobs:
 
     - name: Unit Tests
       run: npm run test:ci
+
+    - name: UI Component Testing
+      run: npm run test:storybook

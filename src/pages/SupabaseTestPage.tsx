@@ -1,10 +1,209 @@
-import { useEffect, useState, useCallback } from "react";
-import { supabase } from "../lib/supabase";
-import type { Company } from "../lib/supabase";
-import { useAuthContext } from "../contexts/AuthContext";
+import { useCallback, useEffect, useState } from "react";
+
 import { Link } from "react-router-dom";
 
-export default function SupabaseTestPage() {
+import {
+	AlertCircle,
+	CheckCircle,
+	Database,
+	RefreshCw,
+	XCircle,
+} from "lucide-react";
+
+import { useAuthContext } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
+import type { Company } from "@/lib/supabase";
+
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
+
+function formatMarketCap(value: number | null): string {
+	if (!value) return "N/A";
+	if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
+	if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
+	if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
+	return `$${value}`;
+}
+
+interface AuthStatusCardProps {
+	email: string | null;
+}
+
+function AuthStatusCard({ email }: AuthStatusCardProps) {
+	const isLoggedIn = Boolean(email);
+
+	return (
+		<Card>
+			<CardHeader>
+				<CardTitle>Authentication Status</CardTitle>
+			</CardHeader>
+			<CardContent>
+				{isLoggedIn ? (
+					<div>
+						<CheckCircle />
+						<div>
+							<p>Logged in as:</p>
+							<p>{email}</p>
+						</div>
+					</div>
+				) : (
+					<div>
+						<AlertCircle />
+						<div>
+							<p>Not logged in</p>
+							<p>
+								<Link to="/login">Sign in</Link> to access protected features
+							</p>
+						</div>
+					</div>
+				)}
+			</CardContent>
+		</Card>
+	);
+}
+
+interface DatabaseStatusCardProps {
+	loading: boolean;
+	error: string | null;
+	companyCount: number;
+}
+
+function DatabaseStatusCard({
+	loading,
+	error,
+	companyCount,
+}: DatabaseStatusCardProps) {
+	return (
+		<Card>
+			<CardHeader>
+				<CardTitle>
+					<Database />
+					Database Connection
+				</CardTitle>
+			</CardHeader>
+			<CardContent>
+				{loading && (
+					<div>
+						<RefreshCw />
+						<span>Connecting to Supabase...</span>
+					</div>
+				)}
+
+				{error && (
+					<Alert variant="destructive">
+						<XCircle />
+						<AlertTitle>Connection Error</AlertTitle>
+						<AlertDescription>
+							{error}
+							<br />
+							Make sure you've created the "companies" table in Supabase and set
+							up RLS policies.
+						</AlertDescription>
+					</Alert>
+				)}
+
+				{!loading && !error && (
+					<div>
+						<CheckCircle />
+						<span>Connected! Found {companyCount} companies.</span>
+					</div>
+				)}
+			</CardContent>
+		</Card>
+	);
+}
+
+interface CompanyRowProps {
+	company: Company;
+}
+
+function CompanyRow({ company }: CompanyRowProps) {
+	const changePercent = company.change_percent || 0;
+	const isPositive = changePercent >= 0;
+
+	return (
+		<TableRow>
+			<TableCell>{company.name}</TableCell>
+			<TableCell>
+				<Badge variant="secondary">{company.symbol}</Badge>
+			</TableCell>
+			<TableCell>{company.sector || "N/A"}</TableCell>
+			<TableCell>${company.price?.toFixed(2) || "N/A"}</TableCell>
+			<TableCell>{formatMarketCap(company.market_cap)}</TableCell>
+			<TableCell>
+				<Badge variant={isPositive ? "default" : "destructive"}>
+					{isPositive ? "+" : ""}
+					{changePercent.toFixed(2)}%
+				</Badge>
+			</TableCell>
+		</TableRow>
+	);
+}
+
+interface CompaniesTableProps {
+	companies: Company[];
+}
+
+function CompaniesTable({ companies }: CompaniesTableProps) {
+	return (
+		<Card>
+			<CardHeader>
+				<CardTitle>Companies from Supabase</CardTitle>
+				<CardDescription>Live data fetched from your database</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<Table>
+					<TableHeader>
+						<TableRow>
+							<TableHead>Company</TableHead>
+							<TableHead>Symbol</TableHead>
+							<TableHead>Sector</TableHead>
+							<TableHead>Price</TableHead>
+							<TableHead>Market Cap</TableHead>
+							<TableHead>Change</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{companies.map((company) => (
+							<CompanyRow key={company.id} company={company} />
+						))}
+					</TableBody>
+				</Table>
+			</CardContent>
+		</Card>
+	);
+}
+
+function EmptyState() {
+	return (
+		<Card>
+			<CardContent>
+				<Database />
+				<p>No companies found in the database.</p>
+				<p>Run the SQL commands from the setup guide to add sample data.</p>
+			</CardContent>
+		</Card>
+	);
+}
+
+function SupabaseTestPage() {
 	const [companies, setCompanies] = useState<Company[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -33,179 +232,47 @@ export default function SupabaseTestPage() {
 		fetchCompanies();
 	}, [fetchCompanies]);
 
-	const formatMarketCap = (value: number | null) => {
-		if (!value) return "N/A";
-		if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
-		if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
-		if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
-		return `$${value}`;
-	};
-
 	return (
-		<div className="container py-16">
-			<div className="max-w-4xl mx-auto">
-				{/* Header */}
-				<div className="mb-8">
-					<h1 className="h1 mb-2">Supabase Integration Test</h1>
-					<p className="text-secondary body-large">
-						This page fetches live data from your Supabase database.
-					</p>
-				</div>
+		<main>
+			<section>
+				<h1>Supabase Integration Test</h1>
+				<p>This page fetches live data from your Supabase database.</p>
+			</section>
 
-				{/* Auth Status Card */}
-				<div className="glass p-6 mb-8">
-					<h2 className="h3 mb-4">Authentication Status</h2>
-					{user ? (
-						<div className="flex items-center gap-4">
-							<div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
-								<span className="text-green-400 text-xl">✓</span>
-							</div>
-							<div>
-								<p className="font-semibold">Logged in as:</p>
-								<p className="text-secondary">{user.email}</p>
-							</div>
-						</div>
-					) : (
-						<div className="flex items-center gap-4">
-							<div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
-								<span className="text-yellow-400 text-xl">!</span>
-							</div>
-							<div>
-								<p className="font-semibold">Not logged in</p>
-								<p className="text-secondary">
-									<Link to="/login" className="text-primary hover:underline">
-										Sign in
-									</Link>{" "}
-									to access protected features
-								</p>
-							</div>
-						</div>
-					)}
-				</div>
+			<Separator />
 
-				{/* Database Status Card */}
-				<div className="glass p-6 mb-8">
-					<h2 className="h3 mb-4">Database Connection</h2>
-					{loading ? (
-						<div className="flex items-center gap-3">
-							<div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-							<span className="text-secondary">Connecting to Supabase...</span>
-						</div>
-					) : error ? (
-						<div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg">
-							<p className="font-semibold">Connection Error</p>
-							<p className="text-sm mt-1">{error}</p>
-							<p className="text-sm mt-2 text-red-300">
-								Make sure you've created the "companies" table in Supabase and
-								set up RLS policies.
-							</p>
-						</div>
-					) : (
-						<div className="flex items-center gap-3">
-							<div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-								<span className="text-white text-sm">✓</span>
-							</div>
-							<span className="text-green-400">
-								Connected! Found {companies.length} companies.
-							</span>
-						</div>
-					)}
-				</div>
+			<section>
+				<AuthStatusCard email={user?.email ?? null} />
+			</section>
 
-				{/* Companies Table */}
-				{!loading && !error && companies.length > 0 && (
-					<div className="glass overflow-hidden">
-						<div className="p-6 border-b border-glass-border">
-							<h2 className="h3">Companies from Supabase</h2>
-							<p className="text-secondary text-sm mt-1">
-								Live data fetched from your database
-							</p>
-						</div>
-						<div className="overflow-x-auto">
-							<table className="w-full">
-								<thead>
-									<tr className="border-b border-glass-border">
-										<th className="px-6 py-4 text-left text-sm font-semibold">
-											Company
-										</th>
-										<th className="px-6 py-4 text-left text-sm font-semibold">
-											Symbol
-										</th>
-										<th className="px-6 py-4 text-left text-sm font-semibold">
-											Sector
-										</th>
-										<th className="px-6 py-4 text-right text-sm font-semibold">
-											Price
-										</th>
-										<th className="px-6 py-4 text-right text-sm font-semibold">
-											Market Cap
-										</th>
-										<th className="px-6 py-4 text-right text-sm font-semibold">
-											Change
-										</th>
-									</tr>
-								</thead>
-								<tbody>
-									{companies.map((company) => (
-										<tr
-											key={company.id}
-											className="border-b border-glass-border hover:bg-glass-bg transition-colors"
-										>
-											<td className="px-6 py-4 font-medium">{company.name}</td>
-											<td className="px-6 py-4 text-primary font-mono">
-												{company.symbol}
-											</td>
-											<td className="px-6 py-4 text-secondary">
-												{company.sector || "N/A"}
-											</td>
-											<td className="px-6 py-4 text-right font-mono">
-												${company.price?.toFixed(2) || "N/A"}
-											</td>
-											<td className="px-6 py-4 text-right text-secondary">
-												{formatMarketCap(company.market_cap)}
-											</td>
-											<td
-												className={`px-6 py-4 text-right font-mono ${
-													(company.change_percent || 0) >= 0
-														? "text-green-400"
-														: "text-red-400"
-												}`}
-											>
-												{(company.change_percent || 0) >= 0 ? "+" : ""}
-												{company.change_percent?.toFixed(2) || "0.00"}%
-											</td>
-										</tr>
-									))}
-								</tbody>
-							</table>
-						</div>
-					</div>
-				)}
+			<section>
+				<DatabaseStatusCard
+					loading={loading}
+					error={error}
+					companyCount={companies.length}
+				/>
+			</section>
 
-				{/* Empty State */}
-				{!loading && !error && companies.length === 0 && (
-					<div className="glass p-12 text-center">
-						<p className="text-secondary mb-4">
-							No companies found in the database.
-						</p>
-						<p className="text-sm text-tertiary">
-							Run the SQL commands from the setup guide to add sample data.
-						</p>
-					</div>
-				)}
+			{!loading && !error && companies.length > 0 && (
+				<section>
+					<CompaniesTable companies={companies} />
+				</section>
+			)}
 
-				{/* Refresh Button */}
-				<div className="mt-8 text-center">
-					<button
-						type="button"
-						onClick={fetchCompanies}
-						disabled={loading}
-						className="btn btn-glass"
-					>
-						{loading ? "Refreshing..." : "Refresh Data"}
-					</button>
-				</div>
-			</div>
-		</div>
+			{!loading && !error && companies.length === 0 && (
+				<section>
+					<EmptyState />
+				</section>
+			)}
+
+			<section>
+				<Button variant="outline" onClick={fetchCompanies} disabled={loading}>
+					<RefreshCw />
+					{loading ? "Refreshing..." : "Refresh Data"}
+				</Button>
+			</section>
+		</main>
 	);
 }
+
+export default SupabaseTestPage;
