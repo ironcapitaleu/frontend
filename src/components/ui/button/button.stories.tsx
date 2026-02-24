@@ -5,12 +5,13 @@ import {
 	VariantShowcase,
 	SizeShowcase,
 } from "../../../../.storybook/utils/showcaseDecorators";
+
+import { Button } from "./button";
 import {
-	Button,
 	BUTTON_VARIANTS,
 	BUTTON_TEXT_SIZES,
 	BUTTON_ICON_SIZES,
-} from "./button";
+} from "./variants";
 
 /**
   A `Button` is an interactive control used to trigger actions. Use them for primary/secondary/destructive actions (including icon-only buttons).
