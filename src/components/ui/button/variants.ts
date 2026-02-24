@@ -36,3 +36,30 @@ export const buttonVariants = cva(
 		},
 	},
 );
+
+/** A constant describing all available variants of the Button component. */
+export const BUTTON_VARIANTS = [
+	"default",
+	"destructive",
+	"outline",
+	"secondary",
+	"ghost",
+	"link",
+] as const;
+
+/** A constant containing all sizes available for buttons with text content (non-icon buttons). */
+export const BUTTON_TEXT_SIZES = ["xs", "sm", "default", "lg"] as const;
+
+/** A constant containing all sizes available for buttons with icon content. */
+export const BUTTON_ICON_SIZES = [
+	"icon-xs",
+	"icon-sm",
+	"icon",
+	"icon-lg",
+] as const;
+
+/** A constant containing all sizes available for all types of buttons. */
+export const BUTTON_SIZES = [
+	...BUTTON_TEXT_SIZES,
+	...BUTTON_ICON_SIZES,
+] as const;

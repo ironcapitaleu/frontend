@@ -20,24 +20,3 @@ function Button({
 }
 
 export { Button };
-
-// Export variant keys for Storybook
-export const BUTTON_VARIANTS = [
-	"default",
-	"destructive",
-	"outline",
-	"secondary",
-	"ghost",
-	"link",
-] as const;
-export const BUTTON_TEXT_SIZES = ["xs", "sm", "default", "lg"] as const;
-export const BUTTON_ICON_SIZES = [
-	"icon-xs",
-	"icon-sm",
-	"icon",
-	"icon-lg",
-] as const;
-export const BUTTON_SIZES = [
-	...BUTTON_TEXT_SIZES,
-	...BUTTON_ICON_SIZES,
-] as const;
