@@ -8,6 +8,7 @@ import {
 	accordionPanelStyles,
 	accordionRootStyles,
 	accordionTriggerStyles,
+	accordionTriggerIconStyles,
 } from "./variants";
 
 /** This component defines the `Accordion` element. It defines a stack of collapsible items.*/
@@ -50,7 +51,7 @@ function AccordionTrigger({
 				{/* No pointer events, non-shrinkable, rotates 180° on expand with smooth transition */}
 				<ChevronDownIcon
 					data-slot="accordion-trigger-icon"
-					className="pointer-events-none shrink-0 transition-transform duration-200 group-aria-expanded/accordion-trigger:rotate-180"
+					className={accordionTriggerIconStyles}
 				/>
 			</AccordionPrimitive.Trigger>
 		</AccordionPrimitive.Header>
