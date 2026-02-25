@@ -1,28 +1,38 @@
-import { Accordion as AccordionPrimitive } from "@base-ui/react/accordion";
-
-import { cn } from "@/lib/utils";
 import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 
+import { cn } from "@/lib/utils";
+import { Accordion as AccordionPrimitive } from "@base-ui/react/accordion";
+import {
+	accordionContentStyles,
+	accordionItemStyles,
+	accordionPanelStyles,
+	accordionRootStyles,
+	accordionTriggerStyles,
+} from "./variants";
+
+/** This component defines the `Accordion` element. It defines a stack of collapsible items.*/
 function Accordion({ className, ...props }: AccordionPrimitive.Root.Props) {
 	return (
 		<AccordionPrimitive.Root
 			data-slot="accordion"
-			className={cn("flex w-full flex-col", className)}
+			className={cn(accordionRootStyles, className)}
 			{...props}
 		/>
 	);
 }
 
+/** This component defines a single item within an `Accordion` container. It contains components such as the `trigger`, `header`, and `content` (as well as any icons) that make up an `AccordionItem`. */
 function AccordionItem({ className, ...props }: AccordionPrimitive.Item.Props) {
 	return (
 		<AccordionPrimitive.Item
 			data-slot="accordion-item"
-			className={cn("not-last:border-b", className)}
+			className={cn(accordionItemStyles, className)}
 			{...props}
 		/>
 	);
 }
 
+/** An `AccordionTrigger` is an interactive component that defines a button that is used to open and close the corresponding content panel. It renders an interactive `<button>` element. */
 function AccordionTrigger({
 	className,
 	children,
@@ -32,10 +42,7 @@ function AccordionTrigger({
 		<AccordionPrimitive.Header className="flex">
 			<AccordionPrimitive.Trigger
 				data-slot="accordion-trigger"
-				className={cn(
-					"focus-visible:ring-ring/50 focus-visible:border-ring focus-visible:after:border-ring **:data-[slot=accordion-trigger-icon]:text-muted-foreground rounded-lg py-2.5 text-left text-sm font-medium hover:underline focus-visible:ring-[3px] **:data-[slot=accordion-trigger-icon]:ml-auto **:data-[slot=accordion-trigger-icon]:size-4 group/accordion-trigger relative flex flex-1 items-start justify-between border border-transparent transition-all outline-none disabled:pointer-events-none disabled:opacity-50",
-					className,
-				)}
+				className={cn(accordionTriggerStyles, className)}
 				{...props}
 			>
 				{children}
@@ -52,6 +59,7 @@ function AccordionTrigger({
 	);
 }
 
+/** This component defines the collapsible (hidable) content of an `AccordionItem`. It can be revealed or hidden by interacting with the `AccordionTrigger`.*/
 function AccordionContent({
 	className,
 	children,
@@ -60,17 +68,10 @@ function AccordionContent({
 	return (
 		<AccordionPrimitive.Panel
 			data-slot="accordion-content"
-			className="data-open:animate-accordion-down data-closed:animate-accordion-up text-sm overflow-hidden"
+			className={accordionPanelStyles}
 			{...props}
 		>
-			<div
-				className={cn(
-					"pt-0 pb-2.5 [&_a]:hover:text-foreground h-(--accordion-panel-height) data-ending-style:h-0 data-starting-style:h-0 [&_a]:underline [&_a]:underline-offset-3 [&_p:not(:last-child)]:mb-4",
-					className,
-				)}
-			>
-				{children}
-			</div>
+			<div className={cn(accordionContentStyles, className)}>{children}</div>
 		</AccordionPrimitive.Panel>
 	);
 }
