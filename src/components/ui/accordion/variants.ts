@@ -17,4 +17,5 @@ export const accordionPanelStyles =
  * Note: `className` from `AccordionContent` is applied here, not on the panel root,
  * to allow overriding the content padding and layout without affecting the animation wrapper.
  */
-export const accordionContentStyles = "pt-0 pb-2.5 [&_a]:hover:text-foreground h-(--accordion-panel-height) data-ending-style:h-0 data-starting-style:h-0 [&_a]:underline [&_a]:underline-offset-3 [&_p:not(:last-child)]:mb-4";
+export const accordionContentStyles =
+	"pt-0 pb-2.5 [&_a]:hover:text-foreground h-(--accordion-panel-height) data-ending-style:h-0 data-starting-style:h-0 [&_a]:underline [&_a]:underline-offset-3 [&_p:not(:last-child)]:mb-4";
