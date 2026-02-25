@@ -1,4 +1,4 @@
-import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
+import { ChevronDownIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Accordion as AccordionPrimitive } from "@base-ui/react/accordion";
@@ -46,14 +46,13 @@ function AccordionTrigger({
 				{...props}
 			>
 				{children}
-				<ChevronDownIcon
-					data-slot="accordion-trigger-icon"
-					className="pointer-events-none shrink-0 group-aria-expanded/accordion-trigger:hidden"
-				/>
-				<ChevronUpIcon
-					data-slot="accordion-trigger-icon"
-					className="pointer-events-none hidden shrink-0 group-aria-expanded/accordion-trigger:inline"
-				/>
+                
+				{/* No pointer events, non-shrinkable, rotates 180° on expand with smooth transition */}
+                <ChevronDownIcon
+                    data-slot="accordion-trigger-icon"
+                    className="pointer-events-none shrink-0 transition-transform duration-200 group-aria-expanded/accordion-trigger:rotate-180"
+                />
+			
 			</AccordionPrimitive.Trigger>
 		</AccordionPrimitive.Header>
 	);
