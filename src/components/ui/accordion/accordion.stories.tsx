@@ -16,6 +16,26 @@ type AccordionStoryArgs = {
 	keepMounted: boolean;
 };
 
+/** Default set of accordion items used in the stories. */
+const ACCORDION_ITEMS = [
+	{
+		value: "account",
+		title: "Account",
+		body: "Manage profile details like name, email, and connected accounts.",
+	},
+	{
+		value: "billing",
+		title: "Billing",
+		body: "View invoices, update payment method, and manage your subscription.",
+	},
+	{
+		value: "security",
+		title: "Security",
+		body: "Update password, configure 2FA, and view recent sign-in activity.",
+	},
+] as const;
+
+
 function AccordionStory({
 	multiple,
 	orientation,
@@ -24,23 +44,7 @@ function AccordionStory({
 	disableSecondItem,
 	keepMounted,
 }: AccordionStoryArgs) {
-	const items = [
-		{
-			value: "account",
-			title: "Account",
-			body: "Manage profile details like name, email, and connected accounts.",
-		},
-		{
-			value: "billing",
-			title: "Billing",
-			body: "View invoices, update payment method, and manage your subscription.",
-		},
-		{
-			value: "security",
-			title: "Security",
-			body: "Update password, configure 2FA, and view recent sign-in activity.",
-		},
-	] as const;
+	const items = ACCORDION_ITEMS;
 
 	const defaultValue = (() => {
 		switch (defaultOpen) {
