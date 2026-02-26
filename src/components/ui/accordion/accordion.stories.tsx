@@ -118,7 +118,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /**
- * Interactive playground for the Accordion component.
+ * Interactive playground for the `Accordion` component.
  * Use the controls to explore single vs multiple, default open state, and disabled behavior.
  */
 

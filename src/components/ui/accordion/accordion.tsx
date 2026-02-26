@@ -11,7 +11,7 @@ import {
 	accordionTriggerIconStyles,
 } from "./variants";
 
-/** This component defines the `Accordion` element. It defines a stack of collapsible items.*/
+/** `Accordion` root element. It defines a stack of collapsible items.*/
 function Accordion({ className, ...props }: AccordionPrimitive.Root.Props) {
 	return (
 		<AccordionPrimitive.Root
@@ -22,7 +22,7 @@ function Accordion({ className, ...props }: AccordionPrimitive.Root.Props) {
 	);
 }
 
-/** This component defines a single item within an `Accordion` container. It contains components such as the `trigger`, `header`, and `content` (as well as any icons) that make up an `AccordionItem`. */
+/** `AccordionItem` element. It defines a single item within an `Accordion` container. It contains components such as the `trigger`, `header`, and `content` (as well as any icons) that make up an `AccordionItem`. */
 function AccordionItem({ className, ...props }: AccordionPrimitive.Item.Props) {
 	return (
 		<AccordionPrimitive.Item
@@ -33,7 +33,7 @@ function AccordionItem({ className, ...props }: AccordionPrimitive.Item.Props) {
 	);
 }
 
-/** An `AccordionTrigger` is an interactive component that defines a button that is used to open and close the corresponding content panel. It renders an interactive `<button>` element. */
+/** `AccordionTrigger` is an interactive component that defines a button that is used to open and close the corresponding content panel. It renders an interactive `<button>` element. */
 function AccordionTrigger({
 	className,
 	children,
@@ -58,7 +58,7 @@ function AccordionTrigger({
 	);
 }
 
-/** This component defines the collapsible (hidable) content of an `AccordionItem`. It can be revealed or hidden by interacting with the `AccordionTrigger`.*/
+/** `AccordionContent` defines the collapsible (hidable) content inside an `AccordionItem`. It can be revealed or hidden by interacting with the `AccordionTrigger`.*/
 function AccordionContent({
 	className,
 	children,
