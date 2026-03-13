@@ -172,6 +172,6 @@
 	}
 	p {
 		line-height: 1.6; /* 1.65 times the font size. Improves readability by increasing line height. */
-		max-width: 40rem; /* Limit line length for better readability. Should be around 40-75 characters per line. */
+		max-width: 65ch; /* Limit line length to 65 characters for better readability. */
 	}
 }
