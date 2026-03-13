@@ -156,7 +156,7 @@
 		@apply border-border outline-ring/50;
 	}
 	html {
-		@apply font-serif text-18;
+		@apply font-sans-serif text-18;
 	}
 	body {
 		@apply font-sans-serif text-18 bg-background text-foreground;
