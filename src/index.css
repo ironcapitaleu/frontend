@@ -171,7 +171,9 @@
 		@apply font-serif text-18;
 	}
 	p {
+		@apply font-sans-serif text-18;
 		line-height: 1.6; /* 1.6 times the font size. Improves readability by increasing line height. */
 		max-width: 65ch; /* Limit line length to 65 characters for better readability. */
+		text-align: justify; /* Make text fill the container width (except the last line). */
 	}
 }
