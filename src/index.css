@@ -1,3 +1,4 @@
+@import "@fontsource-variable/roboto-mono";
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -78,7 +79,7 @@
 	/* Define text fonts */
 	--font-serif: "Times New Roman", "Times", "Georgia", serif; /* Use for titles. */
 	--font-sans-serif: "Arial", "Helvetica", "Verdana", "sans-serif"; /* Use for body text. */
-	--font-monospace: "Courier New", Courier, monospace; /* Use for code blocks. */
+	--font-monospace: "Roboto Mono Variable", "Courier New", Courier, monospace; /* Use for code blocks. */
 	--font-cursive: "Comic Sans MS", "Monotype Corsiva", serif; /* Optionally, use for decorative text. */
 	--font-fantasy: "Impact", "Haettenschweiler", serif; /* Optionally, use for decorative text. */
 	
@@ -160,7 +161,7 @@
 		@apply font-sans-serif text-18 bg-background text-foreground;
 	}
 	h1 {
-		@apply font-serif text-36;
+		@apply font-mono text-36;
 	}
 	h2 {
 		@apply font-serif text-24;
