@@ -1,4 +1,5 @@
-@import "@fontsource-variable/roboto-mono";
+@import "@fontsource-variable/roboto-mono"; /* For monospace text, e.g., code blocks */
+@import "@fontsource-variable/inter"; /* For sans-serif text, e.g., body text */
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -78,7 +79,7 @@
 @theme inline {
 	/* Define text fonts */
 	--font-serif: "Times New Roman", "Times", "Georgia", serif; /* Use for titles. */
-	--font-sans-serif: "Arial", "Helvetica", "Verdana", "sans-serif"; /* Use for body text. */
+	--font-sans-serif: "Inter Variable", "Arial", "Helvetica", "Verdana", "sans-serif"; /* Use for body text. */
 	--font-monospace: "Roboto Mono Variable", "Courier New", Courier, monospace; /* Use for code blocks. */
 	--font-cursive: "Comic Sans MS", "Monotype Corsiva", serif; /* Optionally, use for decorative text. */
 	--font-fantasy: "Impact", "Haettenschweiler", serif; /* Optionally, use for decorative text. */
@@ -155,18 +156,22 @@
 		@apply border-border outline-ring/50;
 	}
 	html {
-		@apply font-serif;
+		@apply font-serif text-18;
 	}
 	body {
 		@apply font-sans-serif text-18 bg-background text-foreground;
 	}
 	h1 {
-		@apply font-mono text-36;
+		@apply font-serif text-36;
 	}
 	h2 {
 		@apply font-serif text-24;
 	}
 	h3 {
 		@apply font-serif text-18;
+	}
+	p {
+		line-height: 1.6; /* 1.65 times the font size. Improves readability by increasing line height. */
+		max-width: 40rem; /* Limit line length for better readability. Should be around 40-75 characters per line. */
 	}
 }
