@@ -9,7 +9,7 @@ function SearchBar() {
 			<Input
 				type="search"
 				placeholder="Search companies, tickers, funds…"
-				className="h-12 pl-10 pr-4 text-xl! rounded-xl"
+				className="h-12 pl-10 pr-4 text-18! rounded-xl"
 				aria-label="Search"
 			/>
 		</div>
