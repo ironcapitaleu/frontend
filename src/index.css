@@ -170,10 +170,110 @@
 	h3 {
 		@apply font-serif text-18;
 	}
+	
 	p {
 		@apply font-sans-serif text-18;
 		line-height: 1.6; /* 1.6 times the font size. Improves readability by increasing line height. */
 		max-width: 65ch; /* Limit line length to 65 characters for better readability. */
 		text-align: justify; /* Make text fill the container width (except the last line). */
 	}
+
+	a {
+		color: inherit; /* Inherit text color for links from parent element. */
+	}
+
+}
+
+/* ── GlowNavBar ─────────────────────────────────────────── */
+.glow-nav {
+	display: flex;
+	position: relative;
+	gap: 25px;
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+.glow-nav-item {
+	position: relative;
+	width: 60px;
+	height: 60px;
+	background: white;
+	box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+	border-radius: 60px;
+	border: none;
+	cursor: pointer;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	transition: 0.5s;
+}
+
+.glow-nav-item::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: 60px;
+	background: linear-gradient(45deg, var(--glow-from), var(--glow-to));
+	opacity: 0;
+	transition: 0.5s;
+}
+
+.glow-nav-item::after {
+	content: "";
+	position: absolute;
+	top: 10px;
+	width: 100%;
+	height: 100%;
+	border-radius: 60px;
+	background: linear-gradient(45deg, var(--glow-from), var(--glow-to));
+	transition: 0.5s;
+	filter: blur(15px);
+	z-index: -1;
+	opacity: 0;
+}
+
+.glow-nav-item:hover {
+	width: 180px;
+	box-shadow: 0 10px 25px rgba(0, 0, 0, 0);
+}
+
+.glow-nav-item:hover::before {
+	opacity: 1;
+}
+
+.glow-nav-item:hover::after {
+	opacity: 0.5;
+}
+
+.glow-nav-icon {
+	position: absolute;
+	color: #777;
+	transition: 0.5s;
+	transition-delay: 0.25s;
+	z-index: 1;
+}
+
+.glow-nav-item:hover .glow-nav-icon {
+	transform: scale(0);
+	color: #fff;
+	transition-delay: 0s;
+}
+
+.glow-nav-title {
+	position: absolute;
+	color: #fff;
+	font-family: var(--font-sans-serif);
+	font-size: 1.1em;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	transform: scale(0);
+	transition: 0.5s;
+	transition-delay: 0s;
+	z-index: 1;
+}
+
+.glow-nav-item:hover .glow-nav-title {
+	transform: scale(1);
+	transition-delay: 0.25s;
 }
