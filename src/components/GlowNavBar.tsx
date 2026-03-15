@@ -1,4 +1,11 @@
-import { Camera, Heart, Home, Share2, Video, type LucideIcon } from "lucide-react";
+import {
+	Camera,
+	Heart,
+	Home,
+	Share2,
+	Video,
+	type LucideIcon,
+} from "lucide-react";
 
 interface GlowNavItem {
 	icon: LucideIcon;

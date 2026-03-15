@@ -10,6 +10,7 @@ import PrivateDatabasePage from "./pages/PrivateDatabasePage";
 import SupabaseTestPage from "./pages/SupabaseTestPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import HomePageV2 from "./pages/HomePageV2";
+import NotFoundPage from "./pages/NotFoundPage";
 
 function App() {
 	return (
@@ -26,7 +27,8 @@ function App() {
 						<Route path="/private" element={<PrivateDatabasePage />} />
 						<Route path="/supabase" element={<SupabaseTestPage />} />
 					</Route>
-					<Route path="/v2" element={<HomePageV2 />} />
+					<Route path="/v2" element={<HomePageV2 />} />{" "}
+					<Route path="*" element={<NotFoundPage />} />{" "}
 				</Routes>
 			</Router>
 		</AuthProvider>

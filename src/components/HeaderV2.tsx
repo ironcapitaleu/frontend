@@ -11,7 +11,10 @@ function HeaderV2() {
 	return (
 		<header className="border-b border-border">
 			<div className="max-w-6xl mx-auto px-4">
-				<nav aria-label="Main navigation" className="flex items-center justify-between h-16">
+				<nav
+					aria-label="Main navigation"
+					className="flex items-center justify-between h-16"
+				>
 					<Link to="/" aria-label="Iron Capital home">
 						<img
 							src="/icon.svg"

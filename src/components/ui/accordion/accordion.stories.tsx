@@ -35,7 +35,6 @@ const ACCORDION_ITEMS = [
 	},
 ] as const;
 
-
 function AccordionStory({
 	multiple,
 	orientation,
