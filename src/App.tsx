@@ -21,14 +21,14 @@ function App() {
 						<Route index element={<HomePage />} />
 						<Route path="/screener" element={<StockScreener />} />
 						<Route path="/search" element={<CompanySearch />} />
-						<Route path="/about" element={<AboutPage />} />
 						<Route path="/contact" element={<ContactPage />} />
 						<Route path="/login" element={<LoginPage />} />
 						<Route path="/private" element={<PrivateDatabasePage />} />
 						<Route path="/supabase" element={<SupabaseTestPage />} />
 					</Route>
-					<Route path="/v2" element={<HomePageV2 />} />{" "}
-					<Route path="*" element={<NotFoundPage />} />{" "}
+					<Route path="/v2" element={<HomePageV2 />} />
+					<Route path="/about" element={<AboutPage />} />
+					<Route path="*" element={<NotFoundPage />} />
 				</Routes>
 			</Router>
 		</AuthProvider>

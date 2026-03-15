@@ -1,5 +1,12 @@
 @import "@fontsource-variable/roboto-mono"; /* For monospace text, e.g., code blocks */
 @import "@fontsource-variable/inter"; /* For sans-serif text, e.g., body text */
+
+/* classic font choices for refined, editorial design */
+@import "@fontsource-variable/playfair-display"; /* For editorial headings */
+@import "@fontsource-variable/playfair-display/wght-italic.css"; /* Italic variant */
+@import "@fontsource-variable/cormorant"; /* For refined, classical display text */
+@import "@fontsource-variable/cormorant/wght-italic.css"; /* Italic variant */
+
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -83,6 +90,9 @@
 		"Inter Variable", "Arial", "Helvetica", "Verdana", "sans-serif"; /* Use for body text. */
 	--font-monospace:
 		"Roboto Mono Variable", "Courier New", Courier, monospace; /* Use for code blocks. */
+	--font-classic:
+		"Playfair Display Variable", "Cormorant Variable",
+		"Playfair Display Variable", serif; /* For refined, classical display text. */
 	--font-cursive:
 		"Comic Sans MS", "Monotype Corsiva", serif; /* Optionally, use for decorative text. */
 	--font-fantasy:
