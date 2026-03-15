@@ -2,12 +2,12 @@ import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import Footer from "@/components/Footer";
-import HeaderV2 from "@/components/HeaderV2";
+import Header from "@/components/Header";
 
 function NotFoundPage() {
 	return (
 		<div className="min-h-screen flex flex-col">
-			<HeaderV2 />
+			<Header />
 			<main className="flex-1 flex items-center justify-center px-4">
 				<section className="flex flex-col items-center text-center max-w-2xl mx-auto">
 					<span className="text-8xl md:text-[120px] font-serif font-bold text-foreground/10 mb-4 select-none">

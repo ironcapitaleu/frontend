@@ -1,5 +1,5 @@
 import Footer from "@/components/Footer";
-import HeaderV2 from "@/components/HeaderV2";
+import Header from "@/components/Header";
 
 function StatementSection() {
 	return (
@@ -67,7 +67,7 @@ function CapabilitiesSection() {
 function AboutPage() {
 	return (
 		<div className="min-h-screen flex flex-col">
-			<HeaderV2 />
+			<Header />
 			<main className="flex-1 flex flex-col">
 				<StatementSection />
 				<PhilosophySection />
