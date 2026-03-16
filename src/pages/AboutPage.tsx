@@ -1,6 +1,3 @@
-import Footer from "@/components/Footer";
-import Header from "@/components/Header";
-
 function StatementSection() {
 	return (
 		<section className="flex flex-col items-center justify-center px-6 py-24 text-center">
@@ -90,16 +87,12 @@ function MethodSection() {
 
 function AboutPage() {
 	return (
-		<div className="min-h-screen flex flex-col">
-			<Header />
-			<main className="flex-1 flex flex-col">
-				<StatementSection />
-				<PhilosophySection />
-				<SecurityAnalysisSection />
-				<MethodSection />
-			</main>
-			<Footer />
-		</div>
+		<>
+			<StatementSection />
+			<PhilosophySection />
+			<SecurityAnalysisSection />
+			<MethodSection />
+		</>
 	);
 }
 

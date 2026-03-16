@@ -6,7 +6,6 @@ import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
 import LoginPage from "./pages/LoginPage";
 import PrivateDatabasePage from "./pages/PrivateDatabasePage";
-import SupabaseTestPage from "./pages/SupabaseTestPage";
 import { AuthProvider } from "./contexts/AuthContext";
 import HomePage from "./pages/HomePage";
 import NotFoundPage from "./pages/NotFoundPage";
@@ -22,11 +21,10 @@ function App() {
 						<Route path="/search" element={<CompanySearch />} />
 						<Route path="/contact" element={<ContactPage />} />
 						<Route path="/login" element={<LoginPage />} />
+						<Route path="/about" element={<AboutPage />} />
 						<Route path="/private" element={<PrivateDatabasePage />} />
-						<Route path="/supabase" element={<SupabaseTestPage />} />
+						<Route path="*" element={<NotFoundPage />} />
 					</Route>
-					<Route path="/about" element={<AboutPage />} />
-					<Route path="*" element={<NotFoundPage />} />
 				</Routes>
 			</Router>
 		</AuthProvider>
