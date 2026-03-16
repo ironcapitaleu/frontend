@@ -4,7 +4,7 @@ import Header from "@/components/Header";
 function StatementSection() {
 	return (
 		<section className="flex flex-col items-center justify-center px-6 py-24 text-center">
-			<p className="font-classic text-5xl md:text-7xl font-medium leading-tight max-w-4xl text-foreground">
+			<p className="font-classic text-5xl md:text-7xl font-medium leading-tight max-w-4xl text-foreground text-center">
 				Every successful investment begins with a deep understanding of the
 				business.
 			</p>
