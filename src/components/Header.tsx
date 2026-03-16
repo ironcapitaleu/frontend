@@ -5,6 +5,7 @@ const NAV_LINKS = [
 	{ label: "Screener", to: "/screener" },
 	{ label: "API", to: "/api" },
 	{ label: "About", to: "/about" },
+	{ label: "Sign in", to: "/login" },
 ] as const;
 
 function Header() {
