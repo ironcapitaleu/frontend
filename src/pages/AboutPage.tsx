@@ -67,9 +67,9 @@ function MethodSection() {
 				<h1 className="font-classic font-semibold">Our Method</h1>
 				<div className="flex flex-col gap-5 text-muted-foreground">
 					<p className="font-classic text-muted-foreground leading-relaxed">
-						We build tools for people who want to understand businesses —
-						their economics, their competitive positions, their capital
-						allocation, and their long-term prospects.
+						We build tools for people who want to understand businesses — their
+						economics, their competitive positions, their capital allocation,
+						and their long-term prospects.
 					</p>
 					<p className="font-classic leading-relaxed">
 						Information and facts about a company — not a ticker symbol.
