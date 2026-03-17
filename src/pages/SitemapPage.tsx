@@ -34,7 +34,7 @@ function SitemapSection({ title, links }: SitemapSectionProps) {
 
 const SITEMAP_SECTIONS: SitemapSectionProps[] = [
 	{
-		title: "About Iron Capital",
+		title: "Iron Capital",
 		links: [
 			{ label: "Home", to: "/" },
 			{ label: "About", to: "/about" },
