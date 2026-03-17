@@ -9,6 +9,7 @@ import PrivateDatabasePage from "./pages/PrivateDatabasePage";
 import { AuthProvider } from "./contexts/AuthContext";
 import HomePage from "./pages/HomePage";
 import NotFoundPage from "./pages/NotFoundPage";
+import SitemapPage from "./pages/SitemapPage";
 
 function App() {
 	return (
@@ -23,6 +24,7 @@ function App() {
 						<Route path="/login" element={<LoginPage />} />
 						<Route path="/about" element={<AboutPage />} />
 						<Route path="/private" element={<PrivateDatabasePage />} />
+						<Route path="/sitemap" element={<SitemapPage />} />
 						<Route path="*" element={<NotFoundPage />} />
 					</Route>
 				</Routes>
