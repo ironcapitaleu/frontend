@@ -50,7 +50,7 @@ function ContactForm() {
 	const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
 	const isValidEmail = (value: string) =>
-		/^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}\.?$/.test(value);
+		/^[^\s@.]([^\s@]*[^\s@.])?@[^\s@]+\.[a-zA-Z]{2,}$/.test(value);
 
 	const handleChange = (
 		e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
