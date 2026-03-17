@@ -153,6 +153,10 @@ All structured logs must be formatted as **JSON documents** with exactly **five 
 
 ---
 
+### Sitemap
+When adding / modifying pages in the frontend, make sure to update the sitemap page (`src/pages/SitemapPage.tsx`) and the sitemap XML file (`public/sitemap.xml`) accordingly. This is important for SEO and for users to easily navigate the site.
+
+---
 ## Copilot Guidance
 
 When Copilot generates code, it should:
@@ -163,6 +167,7 @@ When Copilot generates code, it should:
 - Avoid logging or exposing sensitive data
 - Prefer explicit error handling with meaningful error classes (e.g., custom `Error` subclasses) over generic errors
 - Use TypeScript types/interfaces for type safety
+- Make sure that any new added pages are included in the sitemap page and sitemap XML file
 
 ---
 
@@ -202,6 +207,7 @@ When Copilot generates code, it should:
 - Flag when function names, parameters, or behaviors change but docs are not updated  
 - Highlight outdated instructions or examples caused by code changes  
 - Ensure new features or breaking changes are properly documented  
+- Make sure that any new added pages are included in the sitemap page and sitemap XML file
 
 ### Testing
 - Confirm sufficient test coverage  
