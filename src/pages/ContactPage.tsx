@@ -1,246 +1,223 @@
+import type React from "react";
 import { useState } from "react";
 
-import { CheckCircle, Mail, MapPin, Phone } from "lucide-react";
+import { Turnstile } from "@marsidev/react-turnstile";
+import { Mail, MapPin, Phone } from "lucide-react";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
-interface ContactForm {
-	name: string;
-	email: string;
-	company: string;
-	phone: string;
-	message: string;
-}
-
-interface ContactInfoProps {
+interface ContactDetailProps {
 	icon: React.ReactNode;
-	title: string;
-	content: string;
+	value: string;
 }
 
-function ContactInfo({ icon, title, content }: ContactInfoProps) {
+function ContactDetail({ icon, value }: ContactDetailProps) {
 	return (
-		<div>
-			{icon}
-			<div>
-				<p>{title}</p>
-				<p>{content}</p>
-			</div>
+		<div className="flex items-center gap-3">
+			<span className="text-muted-foreground">{icon}</span>
+			<span className="text-sm text-muted-foreground">{value}</span>
 		</div>
 	);
 }
 
-function SuccessMessage({ onReset }: { onReset: () => void }) {
-	return (
-		<Card>
-			<CardHeader>
-				<CheckCircle />
-				<CardTitle>Thank You!</CardTitle>
-				<CardDescription>
-					We've received your inquiry and will be in touch within 24 hours. Our
-					team will review your information and prepare a customized
-					consultation.
-				</CardDescription>
-			</CardHeader>
-			<CardContent>
-				<Button onClick={onReset}>Send Another Message</Button>
-			</CardContent>
-		</Card>
-	);
+interface ContactFormState {
+	fullName: string;
+	email: string;
+	subject: string;
+	message: string;
 }
 
-function ContactPage() {
-	const [form, setForm] = useState<ContactForm>({
-		name: "",
+function ContactForm() {
+	const [form, setForm] = useState<ContactFormState>({
+		fullName: "",
 		email: "",
-		company: "",
-		phone: "",
+		subject: "",
 		message: "",
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isSubmitted, setIsSubmitted] = useState(false);
-	const [error, setError] = useState<string | null>(null);
+	const [emailError, setEmailError] = useState<string | null>(null);
+	const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+
+	const isValidEmail = (value: string) =>
+		/^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}\.?$/.test(value);
 
 	const handleChange = (
 		e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
 	) => {
 		const { name, value } = e.target;
-		setForm((prev) => ({
-			...prev,
-			[name]: value,
-		}));
+		setForm((prev) => ({ ...prev, [name]: value }));
+	};
+
+	const handleEmailBlur = () => {
+		setEmailError(
+			form.email && !isValidEmail(form.email)
+				? "Please enter a valid email address."
+				: null,
+		);
 	};
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
+		if (!isValidEmail(form.email)) {
+			setEmailError("Please enter a valid email address.");
+			return;
+		}
 		setIsSubmitting(true);
-		setError(null);
 
 		try {
-			// Simulate form submission
-			await new Promise((resolve) => setTimeout(resolve, 2000));
+			// TODO: wire up to third-party service (Resend, Formspree, EmailJS)
+			// TODO: [SECURITY] Send `turnstileToken` in the payload and verify server-side via
+			//   POST https://challenges.cloudflare.com/turnstile/v0/siteverify
+			//   with your secret key — client-side token presence alone is NOT sufficient protection.
+			await new Promise((resolve) => setTimeout(resolve, 1500));
 			setIsSubmitted(true);
-		} catch (_err) {
-			setError("Failed to send message. Please try again.");
 		} finally {
 			setIsSubmitting(false);
 		}
 	};
 
-	const resetForm = () => {
-		setIsSubmitted(false);
-		setForm({
-			name: "",
-			email: "",
-			company: "",
-			phone: "",
-			message: "",
-		});
-	};
-
 	if (isSubmitted) {
 		return (
-			<main>
-				<SuccessMessage onReset={resetForm} />
-			</main>
+			<div className="flex flex-col gap-4 py-12">
+				<h3 className="text-xl font-semibold text-foreground">
+					Message sent.
+				</h3>
+				<p className="text-sm text-muted-foreground">
+					We'll be in touch within 24 hours.
+				</p>
+			</div>
 		);
 	}
 
 	return (
-		<main>
-			<section>
-				<h1>Contact Iron Capital</h1>
-				<p>
-					Ready to start your investment journey? Get in touch with our team to
-					discuss how we can help you achieve your financial goals.
-				</p>
-			</section>
+		<form onSubmit={handleSubmit} className="flex flex-col gap-6">
+			<div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+				<div className="flex flex-col gap-2">
+					<Label htmlFor="fullName">Full Name</Label>
+					<Input
+						id="fullName"
+						name="fullName"
+						type="text"
+						required
+						placeholder="Jane Doe"
+						value={form.fullName}
+						onChange={handleChange}
+					/>
+				</div>
+				<div className="flex flex-col gap-2">
+					<Label htmlFor="email">Email</Label>
+					<Input
+						id="email"
+						name="email"
+						type="email"
+						required
+						placeholder="jane@company.com"
+						value={form.email}
+						onChange={handleChange}
+						onBlur={handleEmailBlur}
+						aria-invalid={emailError !== null}
+					/>
+					{emailError && (
+						<p className="text-xs text-destructive">{emailError}</p>
+					)}
+				</div>
+			</div>
 
-			<Separator />
+			<div className="flex flex-col gap-2">
+				<Label htmlFor="subject">Subject</Label>
+				<Select
+					value={form.subject}
+					onValueChange={(value) =>
+						setForm((prev) => ({ ...prev, subject: value ?? "" }))
+					}
+				>
+					<SelectTrigger className="w-full">
+						<SelectValue placeholder="Select a topic" />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="investment-inquiry">
+							Investment Inquiry
+						</SelectItem>
+						<SelectItem value="api-support">API Support</SelectItem>
+						<SelectItem value="general">General</SelectItem>
+					</SelectContent>
+				</Select>
+			</div>
 
-			<section>
-				<Card>
-					<CardHeader>
-						<CardTitle>Get Started Today</CardTitle>
-						<CardDescription>
-							Fill out the form below and we'll get back to you within 24 hours.
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<form onSubmit={handleSubmit}>
-							<div>
-								<Label htmlFor="name">Full Name</Label>
-								<Input
-									id="name"
-									name="name"
-									type="text"
-									required
-									placeholder="Your full name"
-									value={form.name}
-									onChange={handleChange}
-								/>
-							</div>
+			<div className="flex flex-col gap-2">
+				<Label htmlFor="message">Message</Label>
+				<Textarea
+					id="message"
+					name="message"
+					rows={5}
+					required
+					placeholder="How can we help?"
+					value={form.message}
+					onChange={handleChange}
+				/>
+			</div>
 
-							<div>
-								<Label htmlFor="email">Email Address</Label>
-								<Input
-									id="email"
-									name="email"
-									type="email"
-									required
-									placeholder="you@example.com"
-									value={form.email}
-									onChange={handleChange}
-								/>
-							</div>
+			<Turnstile
+				siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY ?? "1x00000000000000000000AA"}
+				onSuccess={(token) => setTurnstileToken(token)}
+				onExpire={() => setTurnstileToken(null)}
+				onError={() => setTurnstileToken(null)}
+			/>
 
-							<div>
-								<Label htmlFor="company">Company (Optional)</Label>
-								<Input
-									id="company"
-									name="company"
-									type="text"
-									placeholder="Your company name"
-									value={form.company}
-									onChange={handleChange}
-								/>
-							</div>
+			<div className="flex justify-end">
+				<Button type="submit" disabled={isSubmitting || turnstileToken === null}>
+					{isSubmitting ? "Sending..." : "Send message"}
+				</Button>
+			</div>
+		</form>
+	);
+}
 
-							<div>
-								<Label htmlFor="phone">Phone Number (Optional)</Label>
-								<Input
-									id="phone"
-									name="phone"
-									type="tel"
-									placeholder="+1 (555) 123-4567"
-									value={form.phone}
-									onChange={handleChange}
-								/>
-							</div>
+function ContactPage() {
+	return (
+		<div className="flex-1 bg-background">
+			<div className="max-w-6xl mx-auto px-6 py-20 grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24">
+				<div className="flex flex-col gap-10">
+					<div className="flex flex-col gap-4">
+						<h1 className="font-classic text-4xl md:text-5xl font-semibold text-foreground leading-tight">
+							Get in touch
+						</h1>
+						<p className="text-muted-foreground text-base leading-relaxed max-w-sm">
+							Have a question about our screener or API? Fill out the form and
+							our team will get back to you within 24 hours.
+						</p>
+					</div>
 
-							<div>
-								<Label htmlFor="message">Message</Label>
-								<Textarea
-									id="message"
-									name="message"
-									placeholder="Tell us about your investment goals..."
-									value={form.message}
-									onChange={handleChange}
-								/>
-							</div>
-
-							{error && (
-								<Alert variant="destructive">
-									<AlertDescription>{error}</AlertDescription>
-								</Alert>
-							)}
-
-							<Button
-								type="submit"
-								disabled={isSubmitting || !form.name || !form.email}
-							>
-								{isSubmitting ? "Sending..." : "Send Message"}
-							</Button>
-						</form>
-					</CardContent>
-				</Card>
-
-				<Card>
-					<CardHeader>
-						<CardTitle>Contact Information</CardTitle>
-					</CardHeader>
-					<CardContent>
-						<ContactInfo
-							icon={<MapPin />}
-							title="Address"
-							content="Bahnhofstrasse 10, 8001 Zürich, Switzerland"
+					<div className="flex flex-col gap-4">
+						<ContactDetail
+							icon={<MapPin size={18} />}
+							value="Zürich, Switzerland"
 						/>
-						<ContactInfo
-							icon={<Phone />}
-							title="Phone"
-							content="+41 44 123 4567"
+						<ContactDetail
+							icon={<Phone size={18} />}
+							value="+41 44 123 4567"
 						/>
-						<ContactInfo
-							icon={<Mail />}
-							title="Email"
-							content="partners@ironcapital.ch"
+						<ContactDetail
+							icon={<Mail size={18} />}
+							value="hello@ironcapital.com"
 						/>
-					</CardContent>
-				</Card>
-			</section>
-		</main>
+					</div>
+				</div>
+
+				<ContactForm />
+			</div>
+		</div>
 	);
 }
 
