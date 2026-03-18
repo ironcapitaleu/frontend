@@ -2,7 +2,7 @@ import type React from "react";
 import { useState } from "react";
 
 import { Turnstile } from "@marsidev/react-turnstile";
-import { Mail, MapPin } from "lucide-react";
+import { Mail, MapPin, Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +48,7 @@ function ContactForm() {
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isSubmitted, setIsSubmitted] = useState(false);
+	const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
 	const [errors, setErrors] = useState<{
 		fullName?: string;
 		email?: string;
@@ -76,36 +77,32 @@ function ContactForm() {
 	};
 
 	const handleBlur = (field: keyof ContactFormState) => {
-		let isInvalid = false;
+		if (!hasAttemptedSubmit) return;
+		
 		if (!form[field]?.trim()) {
 			setErrors((prev) => ({
 				...prev,
 				[field]: "Please fill out this field.",
 			}));
-			isInvalid = true;
 		} else if (field === "email" && !isValidEmail(form.email)) {
 			setErrors((prev) => ({
 				...prev,
 				email: "Please enter a valid email address.",
 			}));
-			isInvalid = true;
 		} else if (field === "message" && form.message.trim().length < 10) {
 			setErrors((prev) => ({
 				...prev,
 				message: "Message must be at least 10 characters.",
 			}));
-			isInvalid = true;
 		} else {
 			setErrors((prev) => ({ ...prev, [field]: undefined }));
-		}
-
-		if (isInvalid) {
-			triggerShake();
 		}
 	};
 
 	const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
 		e.preventDefault();
+		setHasAttemptedSubmit(true);
+		
 		const newErrors: typeof errors = {};
 
 		if (!form.fullName.trim())
@@ -255,11 +252,13 @@ function ContactForm() {
 				/>
 			</div>
 
-			<div className="flex justify-end">
+			<div className="flex justify-end mt-2">
 				<Button
 					type="submit"
 					disabled={isSubmitting || turnstileToken === null}
+					className="w-full sm:w-auto gap-2 py-6 px-8 text-base font-medium hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/30 transition-all duration-150 cursor-pointer"
 				>
+					<Send size={18} />
 					{isSubmitting ? "Sending..." : "Send message"}
 				</Button>
 			</div>
