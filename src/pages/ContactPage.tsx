@@ -56,11 +56,11 @@ function ContactForm() {
 		message?: string;
 	}>({});
 	const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-	const [shake, setShake] = useState(true);
+	const [isShaking, setIsShaking] = useState(false);
 
 	const triggerShake = () => {
-		setShake(false);
-		setTimeout(() => setShake(true), 10);
+		setIsShaking(true);
+		setTimeout(() => setIsShaking(false), 400); // 400ms matches the CSS animation duration
 	};
 
 	const isValidEmail = (value: string) =>
@@ -164,7 +164,7 @@ function ContactForm() {
 						onChange={handleChange}
 						onBlur={() => handleBlur("fullName")}
 						aria-invalid={!!errors.fullName}
-						className={shake ? "animate-shake-invalid" : ""}
+						className={isShaking && errors.fullName ? "animate-shake-invalid" : ""}
 					/>
 					{errors.fullName && (
 						<p className="text-xs text-destructive">{errors.fullName}</p>
@@ -182,7 +182,7 @@ function ContactForm() {
 						onChange={handleChange}
 						onBlur={() => handleBlur("email")}
 						aria-invalid={!!errors.email}
-						className={shake ? "animate-shake-invalid" : ""}
+						className={isShaking && errors.email ? "animate-shake-invalid" : ""}
 					/>
 					{errors.email && (
 						<p className="text-xs text-destructive">{errors.email}</p>
@@ -203,7 +203,7 @@ function ContactForm() {
 				>
 					<SelectTrigger
 						id="subject"
-						className={`w-full ${shake ? "animate-shake-invalid" : ""}`}
+						className={`w-full ${isShaking && errors.subject ? "animate-shake-invalid" : ""}`}
 						aria-invalid={!!errors.subject}
 						onBlur={() => handleBlur("subject")}
 					>
@@ -233,7 +233,7 @@ function ContactForm() {
 					onChange={handleChange}
 					onBlur={() => handleBlur("message")}
 					aria-invalid={!!errors.message}
-					className={shake ? "animate-shake-invalid" : ""}
+					className={isShaking && errors.message ? "animate-shake-invalid" : ""}
 				/>
 				{errors.message && (
 					<p className="text-xs text-destructive">{errors.message}</p>
@@ -252,11 +252,11 @@ function ContactForm() {
 				/>
 			</div>
 
-			<div className="flex justify-end mt-2">
+			<div className="mt-2 w-full">
 				<Button
 					type="submit"
 					disabled={isSubmitting || turnstileToken === null}
-					className="w-full sm:w-auto gap-2 py-6 px-8 text-base font-medium hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/30 transition-all duration-150 cursor-pointer"
+					className="w-full h-11 px-6 gap-2 text-base font-medium hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/30 active:translate-y-0.5 active:scale-[0.98] active:shadow-none transition-all duration-200 cursor-pointer"
 				>
 					<Send size={18} />
 					{isSubmitting ? "Sending..." : "Send message"}

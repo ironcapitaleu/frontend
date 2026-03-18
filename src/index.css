@@ -195,6 +195,25 @@
 	}
 }
 
+@keyframes shake-invalid {
+	0%,
+	100% {
+		transform: translateX(0);
+	}
+	15%,
+	45%,
+	75% {
+		transform: translateX(-4px);
+	}
+	30%,
+	60% {
+		transform: translateX(4px);
+	}
+}
+.animate-shake-invalid {
+	animation: shake-invalid 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
 /* ── GlowNavBar ─────────────────────────────────────────── */
 .glow-nav {
 	display: flex;
@@ -287,23 +306,4 @@
 .glow-nav-item:hover .glow-nav-title {
 	transform: scale(1);
 	transition-delay: 0.25s;
-}
-
-@keyframes shake-invalid {
-	0%,
-	100% {
-		transform: translateX(0);
-	}
-	15%,
-	45%,
-	75% {
-		transform: translateX(-4px);
-	}
-	30%,
-	60% {
-		transform: translateX(4px);
-	}
-}
-.animate-shake-invalid[aria-invalid="true"] {
-	animation: shake-invalid 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
