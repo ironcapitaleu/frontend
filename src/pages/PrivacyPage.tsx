@@ -167,18 +167,18 @@ function ThirdPartyProcessorsSection() {
 							to protect the contact form from automated submissions. Turnstile
 							may process your IP address and browser signals (user agent,
 							interaction patterns) for bot detection purposes. No CAPTCHA image
-						is shown. Turnstile does not have access to your name, email, or
-						message content. Cloudflare's own retention practices are governed
-						by the{" "}
-						<a
-							href="https://www.cloudflare.com/privacypolicy/"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="underline hover:text-foreground transition-colors"
-						>
-							Cloudflare Privacy Policy
-						</a>
-						, which we do not control.
+							is shown. Turnstile does not have access to your name, email, or
+							message content. Cloudflare's own retention practices are governed
+							by the{" "}
+							<a
+								href="https://www.cloudflare.com/privacypolicy/"
+								target="_blank"
+								rel="noopener noreferrer"
+								className="underline hover:text-foreground transition-colors"
+							>
+								Cloudflare Privacy Policy
+							</a>
+							, which we do not control.
 						</p>
 					</div>
 				</div>
