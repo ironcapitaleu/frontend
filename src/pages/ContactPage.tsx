@@ -242,7 +242,7 @@ function ContactForm() {
 					<Textarea
 						id="message"
 						name="message"
-					rows={4}
+						rows={4}
 						required
 						placeholder="Provide details about your inquiry."
 						value={form.message}
@@ -274,7 +274,7 @@ function ContactForm() {
 					<Button
 						type="submit"
 						disabled={isSubmitting || turnstileToken === null}
-						className="w-full h-11 px-6 gap-2 text-base font-medium hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/30 active:translate-y-0.5 active:scale-[0.98] active:shadow-none transition-all duration-200 cursor-pointer"
+						className="w-full h-11 px-6 gap-2 text-base font-medium btn-tactile"
 					>
 						<Send size={18} />
 						{isSubmitting ? "Sending..." : "Send message"}

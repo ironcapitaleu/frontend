@@ -56,7 +56,7 @@ export default function LoginPage() {
 					</Alert>
 				)}
 				<Button
-					className="w-full gap-2 py-6 text-base font-medium hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/30 transition-all duration-150 cursor-pointer"
+					className="w-full gap-2 py-6 text-base font-medium btn-tactile"
 					disabled={loading}
 					onClick={handlePasskey}
 				>

@@ -195,6 +195,11 @@
 	}
 }
 
+/* Make buttons appear responsive by adding tactile feedback (like lifting on hover, and feedback moving when pressed) */
+.btn-tactile {
+	@apply hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/30 active:translate-y-0.5 active:scale-[0.98] active:shadow-none transition-all duration-200 cursor-pointer;
+}
+
 @keyframes shake-invalid {
 	0%,
 	100% {
