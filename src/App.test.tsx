@@ -24,13 +24,11 @@ describe("App", () => {
 
 		// Check for the main heading on the home page
 		expect(
-			screen.getByText(/Premium Investment Partnership/i),
+			screen.getByRole("heading", { name: /Iron Capital/i }),
 		).toBeInTheDocument();
 
 		// Check for the description text
-		expect(
-			screen.getByText(/Iron Capital combines advanced analytics/i),
-		).toBeInTheDocument();
+		expect(screen.getByText(/Research businesses/i)).toBeInTheDocument();
 	});
 
 	it("renders navigation links", async () => {
@@ -40,7 +38,7 @@ describe("App", () => {
 
 		// Check if navigation elements are present
 		expect(
-			screen.getByRole("link", { name: /Explore Stock Screener/i }),
+			screen.getByRole("link", { name: /Iron Capital home/i }),
 		).toBeInTheDocument();
 	});
 });
