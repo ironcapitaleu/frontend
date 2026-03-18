@@ -153,6 +153,10 @@ All structured logs must be formatted as **JSON documents** with exactly **five 
 
 ---
 
+### Sitemap
+When adding / modifying pages in the frontend, make sure to update the sitemap page (`src/pages/SitemapPage.tsx`) and the sitemap XML file (`public/sitemap.xml`) accordingly. This is important for SEO and for users to easily navigate the site.
+
+---
 ## Copilot Guidance
 
 When Copilot generates code, it should:
@@ -163,6 +167,7 @@ When Copilot generates code, it should:
 - Avoid logging or exposing sensitive data
 - Prefer explicit error handling with meaningful error classes (e.g., custom `Error` subclasses) over generic errors
 - Use TypeScript types/interfaces for type safety
+- Make sure that any new added pages are included in the sitemap page and sitemap XML file
 
 ---
 
@@ -202,6 +207,7 @@ When Copilot generates code, it should:
 - Flag when function names, parameters, or behaviors change but docs are not updated  
 - Highlight outdated instructions or examples caused by code changes  
 - Ensure new features or breaking changes are properly documented  
+- Make sure that any new added pages are included in the sitemap page and sitemap XML file
 
 ### Testing
 - Confirm sufficient test coverage  
@@ -336,5 +342,126 @@ Some general guidelines to follow when writing JavaScript/TypeScript code in thi
 - Use **triple equals (`===`)** for comparisons to avoid type coercion issues.
 - **Avoid Number, String, and Boolean as Objects**: Always treat numbers, strings, or booleans as primitive values. Not as objects. Declaring these types as objects, slows down execution speed, and produces nasty side effects (e.g., cannot compare a String object with a string primitive), or cannot compare objects by default.
 - **Avoid using `eval()`**: The `eval()` function is used to run text as code. In almost all cases, it should not be necessary to use it. It poses serious security risk as it allows arbitrary code to be executed.
+- Never set `undefined` to a variable manually. Use `null` instead to indicate an empty value. As a guideline, JavaScript's `undefined` should only be used by the JavaScript engine itself. In other words, `undefined` is set naturally. Use `null` for intentional purposes, i.e., to indicate that a variable has no value for now.
+
+---
+
+## CSS Guidelines
+
+### Layout Philosophy
+- Think **outside-in**: design from the largest page regions down to the smallest component details before writing any CSS.
+- Each container is responsible only for laying out its **direct children** — do not attempt to control deeply nested elements from a parent layout.
+- Avoid using a single monolithic layout to control the entire page. Each component is its own layout context.
+- Build in phases: macro layout → component layout → spacing and typography → visual polish. Do not style details before structure is solid.
+- Write **semantic HTML first** — structure and content before any layout CSS.
+
+### When to Use Grid vs. Flexbox
+
+**Use Grid when:**
+- Laying out elements in **two dimensions** (rows and columns simultaneously)
+- A defined, explicit structure is needed — full page layout, card grids, named regions
+- A component's sole responsibility is arranging items in a two-dimensional layout (e.g., `<CardGrid>`, `<PhotoGrid>`)
+
+**Use Flexbox when:**
+- Laying out elements in **one dimension** — a row of links or a vertical stack
+- Items need to grow or shrink dynamically
+- Aligning elements inside a component (icon + label, button groups, header with title and action)
+
+Real-world pages use both: Grid for page structure, Flexbox inside regions for components.
+
+| Scope | Primary tool |
+|---|---|
+| Page structure | Grid |
+| Section / region layout | Grid or Flexbox |
+| Individual component internals | Flexbox |
+| Inline element alignment | Flexbox |
+
+### React Components
+- Inside a React component, **default to Flexbox**. Components are micro-layouts — small, self-contained pieces of UI that are almost always one-dimensional alignment problems.
+- Reach for Grid inside a component only when the component's explicit purpose is a two-dimensional layout. Its children should still use Flexbox internally.
+- A component that requires a complex internal Grid layout is often a signal that it is doing too much — revisit the single responsibility principle.
+
+### Spacing
+- Use **`gap`** on flex and grid containers for spacing between items — do not apply margins to individual children for this purpose.
+- Use **`padding`** for internal component spacing (e.g., button padding, card padding, nav link hit areas).
+- Use **`margin`** sparingly: acceptable for vertical rhythm in text-heavy content, one-off nudges, or `margin: 0 auto` for centering a block element with a fixed width.
+- Avoid using `margin` for layout alignment — that is the responsibility of Grid and Flexbox.
+
+### Responsive Design
+- Consider **mobile and desktop layouts from the start**, not as an afterthought. Sketch at least two versions — mobile and desktop — before writing any CSS.
+- Prefer **intrinsically responsive** techniques over explicit breakpoints where possible:
+  - Grid: use `repeat(auto-fit, minmax(250px, 1fr))` to let the grid determine column count automatically
+  - Flexbox: use `flex-wrap: wrap` combined with `flex-basis` to allow natural reflow without breakpoints
+- When a layout direction change is required (e.g., row on desktop → column on mobile), use a media query — but prefer a single, deliberate breakpoint over many fragmented ones:
+```css
+.header {
+  display: flex;
+  flex-direction: row;
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+  }
+}
+```
+
+- Avoid `px` for spacing and font sizes where `rem` or `em` would better support accessibility and scaling.
+
+### Navigation — Mobile Patterns
+- Do not simply collapse a horizontal nav into a visible vertical column on mobile — this is rarely the right UX choice.
+- Prefer one of these established patterns:
+  - **Hamburger menu** (most common): hide links by default, reveal on toggle via an `open` class controlled by JavaScript
+  - **Slide-in drawer**: a panel sliding in from the left or right, suitable for app-like interfaces
+  - **Bottom navigation bar**: fixed bar at the bottom of the screen, appropriate for mobile-first apps with 3–5 top-level destinations
+- Ensure all tap targets meet the minimum accessible size of **44×44px**.
+```css
+.nav-links {
+  display: flex;
+  gap: 1rem;
+}
+
+.hamburger {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .nav-links {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .nav-links.open {
+    display: flex;
+  }
+
+  .hamburger {
+    display: block;
+  }
+}
+​```
+
+### Collapse / Expand Animations
+- Avoid toggling `display: none` / `display: block` when animated transitions are needed — it produces an instant snap with no animation.
+- Avoid the `max-height` transition trick — it bases duration on the max value rather than actual content height, producing sluggish or uneven animations.
+- Prefer the **`grid-template-rows` technique** for smooth, content-aware height transitions:
+```css
+.collapsible-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s ease;
+}
+
+.collapsible-body > div {
+  overflow: hidden;
+}
+
+.collapsible-body.open {
+  grid-template-rows: 1fr;
+}
+​```
+
+- Always include `aria-expanded` on trigger elements for accessibility.
 
 ---

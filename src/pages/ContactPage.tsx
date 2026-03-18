@@ -1,452 +1,411 @@
 import type React from "react";
 import { useState } from "react";
 
-interface ContactForm {
-	name: string;
-	email: string;
-	company: string;
-	phone: string;
-	investmentAmount: string;
-	message: string;
-	newsletter: boolean;
+import { Turnstile } from "@marsidev/react-turnstile";
+import { Mail, MapPin, Send } from "lucide-react";
+import { Link } from "react-router-dom";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+	AlertDialog,
+	AlertDialogContent,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+
+interface ContactDetailProps {
+	icon: React.ReactNode;
+	value: string;
 }
 
-const ContactPage: React.FC = () => {
-	const [form, setForm] = useState<ContactForm>({
-		name: "",
+function ContactDetail({ icon, value }: ContactDetailProps) {
+	return (
+		<div className="flex items-center gap-3">
+			<span className="text-muted-foreground">{icon}</span>
+			<span className="text-sm text-muted-foreground">{value}</span>
+		</div>
+	);
+}
+
+interface ContactFormState {
+	fullName: string;
+	email: string;
+	subject: string;
+	message: string;
+	privacyConsent: boolean;
+}
+
+const SUBJECTS = ["General", "Technical"] as const;
+
+function ContactForm() {
+	const [form, setForm] = useState<ContactFormState>({
+		fullName: "",
 		email: "",
-		company: "",
-		phone: "",
-		investmentAmount: "",
+		subject: "",
 		message: "",
-		newsletter: false,
+		privacyConsent: false,
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isSubmitted, setIsSubmitted] = useState(false);
+	const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+	const [errors, setErrors] = useState<{
+		fullName?: string;
+		email?: string;
+		subject?: string;
+		message?: string;
+		privacyConsent?: string;
+	}>({});
+	const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+	const [isShaking, setIsShaking] = useState(false);
+
+	const triggerShake = () => {
+		setIsShaking(true);
+		setTimeout(() => setIsShaking(false), 400); // 400ms matches the CSS animation duration
+	};
+
+	const isValidEmail = (value: string) =>
+		/^[^\s@.]([^\s@]*[^\s@.])?@[^\s@]+\.[a-zA-Z]{2,}$/.test(value);
 
 	const handleChange = (
-		e: React.ChangeEvent<
-			HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-		>,
+		e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
 	) => {
-		const { name, value, type } = e.target;
-		setForm((prev) => ({
-			...prev,
-			[name]:
-				type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
-		}));
+		const { name, value } = e.target;
+		setForm((prev) => ({ ...prev, [name]: value }));
+		if (errors[name as keyof typeof errors]) {
+			setErrors((prev) => ({ ...prev, [name]: undefined }));
+		}
 	};
 
-	const handleSubmit = async (e: React.FormEvent) => {
+	const handleBlur = (
+		field: Exclude<keyof ContactFormState, "privacyConsent">,
+	) => {
+		if (!hasAttemptedSubmit) return;
+
+		if (!form[field]?.trim()) {
+			const emptyMessages: Record<
+				Exclude<keyof ContactFormState, "privacyConsent">,
+				string
+			> = {
+				fullName: "Please enter your full name.",
+				email: "Please enter your email.",
+				subject: "Please select a subject.",
+				message: "Please enter a message.",
+			};
+			setErrors((prev) => ({
+				...prev,
+				[field]: emptyMessages[field],
+			}));
+		} else if (field === "email" && !isValidEmail(form.email)) {
+			setErrors((prev) => ({
+				...prev,
+				email: "Please enter a valid email address.",
+			}));
+		} else if (field === "message" && form.message.trim().length < 10) {
+			setErrors((prev) => ({
+				...prev,
+				message: "Message must be at least 10 characters.",
+			}));
+		} else {
+			setErrors((prev) => ({ ...prev, [field]: undefined }));
+		}
+	};
+
+	const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
 		e.preventDefault();
+		setHasAttemptedSubmit(true);
+
+		const newErrors: typeof errors = {};
+
+		if (!form.fullName.trim())
+			newErrors.fullName = "Please enter your full name.";
+
+		if (!form.email.trim()) newErrors.email = "Please enter your email.";
+		else if (!isValidEmail(form.email))
+			newErrors.email = "Please enter a valid email address.";
+
+		if (!form.subject?.trim()) newErrors.subject = "Please select a subject.";
+
+		if (!form.message.trim()) newErrors.message = "Please enter a message.";
+		else if (form.message.trim().length < 10)
+			newErrors.message = "Message must be at least 10 characters.";
+
+		if (!form.privacyConsent)
+			newErrors.privacyConsent =
+				"Please accept the Privacy Policy to continue.";
+
+		if (Object.keys(newErrors).length > 0) {
+			setErrors(newErrors);
+			triggerShake();
+			return;
+		}
+
 		setIsSubmitting(true);
 
-		// Simulate form submission
-		await new Promise((resolve) => setTimeout(resolve, 2000));
-
-		setIsSubmitting(false);
-		setIsSubmitted(true);
+		try {
+			// TODO: wire up to third-party service (Resend, Formspree, EmailJS)
+			// TODO: [SECURITY] Send `turnstileToken` in the payload and verify server-side via
+			//   POST https://challenges.cloudflare.com/turnstile/v0/siteverify
+			//   with your secret key — client-side token presence alone is NOT sufficient protection.
+			await new Promise((resolve) => setTimeout(resolve, 1500));
+			setIsSubmitted(true);
+		} finally {
+			setIsSubmitting(false);
+		}
 	};
 
-	if (isSubmitted) {
-		return (
-			<div className="container py-8">
-				<div className="max-w-2xl mx-auto text-center">
-					<div className="glass p-12 rounded-xl fade-in">
-						<div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
-							<svg
-								className="w-8 h-8 text-white"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-								aria-hidden="true"
-							>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={2}
-									d="M5 13l4 4L19 7"
-								/>
-							</svg>
-						</div>
-						<h1 className="h1 mb-4">Thank You!</h1>
-						<p className="body-large text-secondary mb-8">
-							We've received your inquiry and will be in touch within 24 hours.
-							Our team will review your information and prepare a customized
-							consultation.
-						</p>
-						<button
-							type="button"
-							onClick={() => {
-								setIsSubmitted(false);
-								setForm({
-									name: "",
-									email: "",
-									company: "",
-									phone: "",
-									investmentAmount: "",
-									message: "",
-									newsletter: false,
-								});
-							}}
-							className="btn btn-primary"
-						>
-							Send Another Message
-						</button>
-					</div>
-				</div>
-			</div>
-		);
-	}
+	const handleReset = () => {
+		setIsSubmitted(false);
+		setForm({
+			fullName: "",
+			email: "",
+			subject: "",
+			message: "",
+			privacyConsent: false,
+		});
+		setErrors({});
+		setHasAttemptedSubmit(false);
+	};
 
 	return (
-		<div className="container py-8">
-			{/* Hero Section */}
-			<div className="text-center mb-12 fade-in">
-				<h1 className="h1 mb-6">Contact Iron Capital</h1>
-				<p className="body-large text-secondary max-w-3xl mx-auto">
-					Ready to start your investment journey? Get in touch with our team to
-					discuss how we can help you achieve your financial goals.
-				</p>
-			</div>
+		<>
+			<form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
+				<div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+					<div className="flex flex-col gap-2">
+						<Label htmlFor="fullName">Full Name</Label>
+						<Input
+							id="fullName"
+							name="fullName"
+							type="text"
+							required
+							placeholder="Full Name"
+							value={form.fullName}
+							onChange={handleChange}
+							onBlur={() => handleBlur("fullName")}
+							aria-invalid={!!errors.fullName}
+							className={
+								isShaking && errors.fullName ? "animate-shake-invalid" : ""
+							}
+						/>
+						{errors.fullName && (
+							<p className="text-xs text-destructive">{errors.fullName}</p>
+						)}
+					</div>
+					<div className="flex flex-col gap-2">
+						<Label htmlFor="email">Email</Label>
+						<Input
+							id="email"
+							name="email"
+							type="email"
+							required
+							placeholder="name@example.com"
+							value={form.email}
+							onChange={handleChange}
+							onBlur={() => handleBlur("email")}
+							aria-invalid={!!errors.email}
+							className={
+								isShaking && errors.email ? "animate-shake-invalid" : ""
+							}
+						/>
+						{errors.email && (
+							<p className="text-xs text-destructive">{errors.email}</p>
+						)}
+					</div>
+				</div>
 
-			<div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-				{/* Contact Form */}
-				<div className="lg:col-span-2">
-					<form
-						onSubmit={handleSubmit}
-						className="glass p-8 rounded-xl slide-up"
+				<div className="flex flex-col gap-2">
+					<Label htmlFor="subject">Subject</Label>
+					<Select
+						value={form.subject || ""}
+						onValueChange={(value) => {
+							setForm((prev) => ({ ...prev, subject: value ?? "" }));
+							if (errors.subject) {
+								setErrors((prev) => ({ ...prev, subject: undefined }));
+							}
+						}}
 					>
-						<h2 className="h2 mb-6">Get Started Today</h2>
-
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-							<div>
-								<label
-									htmlFor="name"
-									className="block text-sm font-semibold mb-2"
-								>
-									Full Name *
-								</label>
-								<input
-									type="text"
-									id="name"
-									name="name"
-									required
-									className="input"
-									placeholder="Your full name"
-									value={form.name}
-									onChange={handleChange}
-								/>
-							</div>
-							<div>
-								<label
-									htmlFor="email"
-									className="block text-sm font-semibold mb-2"
-								>
-									Email Address *
-								</label>
-								<input
-									type="email"
-									id="email"
-									name="email"
-									required
-									className="input"
-									placeholder="your.email@example.com"
-									value={form.email}
-									onChange={handleChange}
-								/>
-							</div>
-						</div>
-
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-							<div>
-								<label
-									htmlFor="company"
-									className="block text-sm font-semibold mb-2"
-								>
-									Company (Optional)
-								</label>
-								<input
-									type="text"
-									id="company"
-									name="company"
-									className="input"
-									placeholder="Your company name"
-									value={form.company}
-									onChange={handleChange}
-								/>
-							</div>
-							<div>
-								<label
-									htmlFor="phone"
-									className="block text-sm font-semibold mb-2"
-								>
-									Phone Number
-								</label>
-								<input
-									type="tel"
-									id="phone"
-									name="phone"
-									className="input"
-									placeholder="+1 (555) 123-4567"
-									value={form.phone}
-									onChange={handleChange}
-								/>
-							</div>
-						</div>
-
-						<div className="mb-6">
-							<label
-								htmlFor="investmentAmount"
-								className="block text-sm font-semibold mb-2"
-							>
-								Intended Investment Amount
-							</label>
-							<select
-								id="investmentAmount"
-								name="investmentAmount"
-								className="input"
-								value={form.investmentAmount}
-								onChange={handleChange}
-							>
-								<option value="">Select range</option>
-								<option value="50k-250k">€50,000 - €250,000</option>
-								<option value="250k-500k">€250,000 - €500,000</option>
-								<option value="500k-1m">€500,000 - €1,000,000</option>
-								<option value="1m-5m">€1,000,000 - €5,000,000</option>
-								<option value="5m+">€5,000,000+</option>
-							</select>
-						</div>
-
-						<div className="mb-6">
-							<label
-								htmlFor="message"
-								className="block text-sm font-semibold mb-2"
-							>
-								Message
-							</label>
-							<textarea
-								id="message"
-								name="message"
-								rows={6}
-								className="input resize-y"
-								placeholder="Tell us about your investment goals and any questions you have..."
-								value={form.message}
-								onChange={handleChange}
-							></textarea>
-						</div>
-
-						<div className="mb-6">
-							<label className="flex items-center gap-3">
-								<input
-									type="checkbox"
-									name="newsletter"
-									className="w-4 h-4 rounded border-glass-border bg-glass-bg"
-									checked={form.newsletter}
-									onChange={handleChange}
-								/>
-								<span className="text-sm text-secondary">
-									I would like to receive market insights and investment updates
-								</span>
-							</label>
-						</div>
-
-						<button
-							type="submit"
-							disabled={isSubmitting || !form.name || !form.email}
-							className="btn btn-primary w-full"
+						<SelectTrigger
+							id="subject"
+							className={`w-full ${isShaking && errors.subject ? "animate-shake-invalid" : ""}`}
+							aria-invalid={!!errors.subject}
+							onBlur={() => handleBlur("subject")}
 						>
-							{isSubmitting ? (
-								<div className="flex items-center gap-2">
-									<div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-									Sending...
-								</div>
-							) : (
-								"Send Message"
-							)}
-						</button>
+							<SelectValue placeholder="Select a topic" />
+						</SelectTrigger>
+						<SelectContent>
+							{SUBJECTS.map((item) => (
+								<SelectItem key={item} value={item}>
+									{item}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+					{errors.subject && (
+						<p className="text-xs text-destructive">{errors.subject}</p>
+					)}
+				</div>
+				<div className="flex flex-col gap-2">
+					<Label htmlFor="message">Message</Label>
+					<Textarea
+						id="message"
+						name="message"
+						rows={4}
+						required
+						placeholder="Provide details about your inquiry."
+						value={form.message}
+						onChange={handleChange}
+						onBlur={() => handleBlur("message")}
+						aria-invalid={!!errors.message}
+						className={
+							isShaking && errors.message ? "animate-shake-invalid" : ""
+						}
+					/>
+					{errors.message && (
+						<p className="text-xs text-destructive">{errors.message}</p>
+					)}
+				</div>
 
-						<p className="text-xs text-tertiary mt-4">
-							By submitting this form, you agree to our privacy policy and terms
-							of service. We will only use your information to respond to your
+				<div className="hidden">
+					<Turnstile
+						siteKey={
+							import.meta.env.VITE_TURNSTILE_SITE_KEY ??
+							"1x00000000000000000000AA"
+						}
+						onSuccess={(token) => setTurnstileToken(token)}
+						onExpire={() => setTurnstileToken(null)}
+						onError={() => setTurnstileToken(null)}
+					/>
+				</div>
+
+				<div
+					className={`flex items-start gap-3 ${isShaking && errors.privacyConsent ? "animate-shake-invalid" : ""}`}
+				>
+					<input
+						type="checkbox"
+						id="privacyConsent"
+						checked={form.privacyConsent}
+						onChange={(e) => {
+							setForm((prev) => ({
+								...prev,
+								privacyConsent: e.target.checked,
+							}));
+							if (e.target.checked) {
+								setErrors((prev) => ({
+									...prev,
+									privacyConsent: undefined,
+								}));
+							}
+						}}
+						className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-primary"
+						aria-invalid={!!errors.privacyConsent}
+					/>
+					<div className="flex flex-col gap-1">
+						<label
+							htmlFor="privacyConsent"
+							className="text-sm text-muted-foreground cursor-pointer leading-snug"
+						>
+							I have read and accept the{" "}
+							<Link
+								to="/privacy"
+								className="underline hover:text-foreground transition-colors"
+							>
+								Privacy Policy
+							</Link>{" "}
+							and consent to Iron Capital processing my data to handle this
 							inquiry.
-						</p>
-					</form>
+						</label>
+						{errors.privacyConsent && (
+							<p className="text-xs text-destructive">
+								{errors.privacyConsent}
+							</p>
+						)}
+					</div>
 				</div>
 
-				{/* Contact Information */}
-				<div className="space-y-6">
-					{/* Office Info */}
-					<div className="glass p-6 rounded-xl">
-						<h3 className="h3 mb-4">European Headquarters</h3>
-						<div className="space-y-4">
-							<div className="flex items-start gap-3">
-								<div className="w-6 h-6 mt-1">
-									<svg
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-										className="text-primary"
-										aria-hidden="true"
-									>
-										<path
-											strokeLinecap="round"
-											strokeLinejoin="round"
-											strokeWidth={2}
-											d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-										/>
-										<path
-											strokeLinecap="round"
-											strokeLinejoin="round"
-											strokeWidth={2}
-											d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-										/>
-									</svg>
-								</div>
-								<div>
-									<p className="font-semibold text-primary">Address</p>
-									<p className="text-secondary">
-										Bahnhofstrasse 45
-										<br />
-										8001 Zurich, Switzerland
-									</p>
-								</div>
-							</div>
+				<div className="mt-2 w-full">
+					<Button
+						type="submit"
+						disabled={isSubmitting || turnstileToken === null}
+						className="w-full h-11 px-6 gap-2 text-base font-medium btn-tactile"
+					>
+						<Send size={18} />
+						{isSubmitting ? "Sending..." : "Send message"}
+					</Button>
+				</div>
+			</form>
 
-							<div className="flex items-start gap-3">
-								<div className="w-6 h-6 mt-1">
-									<svg
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-										className="text-primary"
-										aria-hidden="true"
-									>
-										<path
-											strokeLinecap="round"
-											strokeLinejoin="round"
-											strokeWidth={2}
-											d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-										/>
-									</svg>
-								</div>
-								<div>
-									<p className="font-semibold text-primary">Phone</p>
-									<p className="text-secondary">+41 44 123 4567</p>
-								</div>
-							</div>
+			<AlertDialog
+				open={isSubmitted}
+				onOpenChange={(open) => {
+					if (!open) handleReset();
+				}}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Message sent</AlertDialogTitle>
+						<AlertDialogDescription>
+							We'll be in touch with you soon.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogAction
+							onClick={() => {
+								handleReset();
+							}}
+							className="cursor-pointer"
+						>
+							Close
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+		</>
+	);
+}
 
-							<div className="flex items-start gap-3">
-								<div className="w-6 h-6 mt-1">
-									<svg
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-										className="text-primary"
-										aria-hidden="true"
-									>
-										<path
-											strokeLinecap="round"
-											strokeLinejoin="round"
-											strokeWidth={2}
-											d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-										/>
-									</svg>
-								</div>
-								<div>
-									<p className="font-semibold text-primary">Email</p>
-									<p className="text-secondary">contact@ironcapital.eu</p>
-								</div>
-							</div>
-						</div>
-					</div>
-
-					{/* Business Hours */}
-					<div className="glass p-6 rounded-xl">
-						<h3 className="h3 mb-4">Business Hours</h3>
-						<div className="space-y-2">
-							<div className="flex justify-between">
-								<span className="text-secondary">Monday - Friday</span>
-								<span className="text-primary font-semibold">9:00 - 18:00</span>
-							</div>
-							<div className="flex justify-between">
-								<span className="text-secondary">Saturday</span>
-								<span className="text-primary font-semibold">
-									10:00 - 14:00
-								</span>
-							</div>
-							<div className="flex justify-between">
-								<span className="text-secondary">Sunday</span>
-								<span className="text-tertiary">Closed</span>
-							</div>
-						</div>
-						<p className="text-xs text-tertiary mt-4">
-							CET/CEST timezone. Emergency contact available 24/7 for existing
-							partners.
+function ContactPage() {
+	return (
+		<div className="flex-1 bg-background">
+			<div className="max-w-6xl mx-auto px-6 py-12 lg:py-16 grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24">
+				<div className="flex flex-col gap-10">
+					<div className="flex flex-col gap-4">
+						<h1 className="font-classic text-4xl md:text-5xl font-semibold text-foreground leading-tight">
+							Get in touch
+						</h1>
+						<p className="text-muted-foreground text-base leading-relaxed max-w-sm">
+							Connect with our team for questions about our tools. We typically
+							respond within 24 hours.
 						</p>
 					</div>
 
-					{/* Quick Links */}
-					<div className="glass p-6 rounded-xl">
-						<h3 className="h3 mb-4">Quick Actions</h3>
-						<div className="space-y-3">
-							<a href="/screener" className="btn btn-glass w-full text-left">
-								<svg
-									className="w-5 h-5"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-									aria-hidden="true"
-								>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2-2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-									/>
-								</svg>
-								Try Stock Screener
-							</a>
-							<a href="/search" className="btn btn-glass w-full text-left">
-								<svg
-									className="w-5 h-5"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-									aria-hidden="true"
-								>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-									/>
-								</svg>
-								Company Research
-							</a>
-							<a href="/about" className="btn btn-glass w-full text-left">
-								<svg
-									className="w-5 h-5"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-									aria-hidden="true"
-								>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-									/>
-								</svg>
-								Learn More About Us
-							</a>
-						</div>
+					<div className="flex flex-col gap-4">
+						<ContactDetail
+							icon={<MapPin size={18} />}
+							value="Zürich, Switzerland"
+						/>
+						<ContactDetail
+							icon={<Mail size={18} />}
+							value="contact@ironcapital.eu"
+						/>
 					</div>
 				</div>
+
+				<ContactForm />
 			</div>
 		</div>
 	);
-};
+}
 
 export default ContactPage;

@@ -1,47 +1,32 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+
+import { KeyRound } from "lucide-react";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { useAuthContext } from "../contexts/AuthContext";
 
 export default function LoginPage() {
 	const [isSignUp, setIsSignUp] = useState(false);
-	const [email, setEmail] = useState("");
-	const [password, setPassword] = useState("");
 	const [error, setError] = useState<string | null>(null);
-	const [message, setMessage] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
 
-	const { signInWithEmail, signUpWithEmail, user } = useAuthContext();
+	const { user } = useAuthContext();
 	const navigate = useNavigate();
 
-	// Redirect if already logged in
 	useEffect(() => {
 		if (user) {
 			navigate("/");
 		}
 	}, [user, navigate]);
 
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
+	const handlePasskey = async () => {
 		setError(null);
-		setMessage(null);
 		setLoading(true);
-
 		try {
-			if (isSignUp) {
-				const { error } = await signUpWithEmail(email, password);
-				if (error) {
-					setError(String(error));
-				} else {
-					setMessage("Check your email for a confirmation link!");
-				}
-			} else {
-				const { error } = await signInWithEmail(email, password);
-				if (error) {
-					setError(String(error));
-				} else {
-					navigate("/");
-				}
-			}
+			// TODO: implement passkey authentication
+			await Promise.resolve();
 		} catch (_err) {
 			setError("An unexpected error occurred");
 		} finally {
@@ -50,89 +35,48 @@ export default function LoginPage() {
 	};
 
 	return (
-		<div className="min-h-screen flex items-center justify-center py-12 px-4">
-			<div className="glass p-8 max-w-md w-full">
-				<h1 className="h2 text-center mb-6">
-					{isSignUp ? "Create Account" : "Welcome Back"}
-				</h1>
+		<div className="flex-1 flex flex-col items-center justify-center px-6 lg:px-8">
+			<div className="sm:mx-auto sm:w-full sm:max-w-sm flex flex-col items-center">
+				<Link to="/" aria-label="Iron Capital home">
+					<img
+						src="/icon.svg"
+						alt="Iron Capital"
+						className="w-12 h-12 rounded-full object-cover"
+					/>
+				</Link>
+				<h2 className="mt-8 text-center text-2xl/9 font-bold font-classic sm:text-3xl/9 tracking-tight text-foreground">
+					{isSignUp ? "Create an account" : "Sign in to your account"}
+				</h2>
+			</div>
 
-				<p className="text-secondary text-center mb-8">
-					{isSignUp
-						? "Sign up to access Iron Capital tools"
-						: "Sign in to your Iron Capital account"}
-				</p>
+			<div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm flex flex-col gap-6">
+				{error && (
+					<Alert variant="destructive">
+						<AlertDescription>{error}</AlertDescription>
+					</Alert>
+				)}
+				<Button
+					className="w-full gap-2 py-6 text-base font-medium btn-tactile"
+					disabled={loading}
+					onClick={handlePasskey}
+				>
+					<KeyRound size={18} />
+					{loading ? "Continuing..." : "Continue with passkey"}
+				</Button>
 
-				<form onSubmit={handleSubmit} className="space-y-4">
-					<div>
-						<label htmlFor="email" className="block text-sm font-semibold mb-2">
-							Email
-						</label>
-						<input
-							id="email"
-							type="email"
-							value={email}
-							onChange={(e) => setEmail(e.target.value)}
-							className="input"
-							placeholder="you@example.com"
-							required
-						/>
-					</div>
-
-					<div>
-						<label
-							htmlFor="password"
-							className="block text-sm font-semibold mb-2"
-						>
-							Password
-						</label>
-						<input
-							id="password"
-							type="password"
-							value={password}
-							onChange={(e) => setPassword(e.target.value)}
-							className="input"
-							placeholder="••••••••"
-							required
-							minLength={6}
-						/>
-					</div>
-
-					{error && (
-						<div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg text-sm">
-							{error}
-						</div>
-					)}
-
-					{message && (
-						<div className="bg-green-500/20 border border-green-500/50 text-green-200 px-4 py-3 rounded-lg text-sm">
-							{message}
-						</div>
-					)}
-
-					<button
-						type="submit"
-						disabled={loading}
-						className="btn btn-primary w-full justify-center"
-					>
-						{loading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
-					</button>
-				</form>
-
-				<div className="mt-6 text-center">
+				<p className="mt-2 text-center text-sm text-muted-foreground">
+					{isSignUp ? "Already a member? " : "Not a member? "}
 					<button
 						type="button"
 						onClick={() => {
 							setIsSignUp(!isSignUp);
 							setError(null);
-							setMessage(null);
 						}}
-						className="text-secondary hover:text-primary transition-colors"
+						className="font-medium text-foreground hover:text-primary transition-colors cursor-pointer"
 					>
-						{isSignUp
-							? "Already have an account? Sign in"
-							: "Don't have an account? Sign up"}
+						{isSignUp ? "Sign in" : "Create an account"}
 					</button>
-				</div>
+				</p>
 			</div>
 		</div>
 	);
