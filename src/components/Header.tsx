@@ -74,6 +74,7 @@ function Header() {
 			<nav
 				id="mobile-menu"
 				aria-label="Mobile navigation"
+				{...(!isMenuOpen && { inert: true })}
 				className={`mobile-menu md:hidden border-t border-border${isMenuOpen ? " open" : ""}`}
 			>
 				<ul className="flex flex-col list-none m-0 p-0 overflow-hidden">
