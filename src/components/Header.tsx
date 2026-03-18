@@ -5,6 +5,7 @@ const NAV_LINKS = [
 	{ label: "Screener", to: "/screener" },
 	{ label: "API", to: "/api" },
 	{ label: "About", to: "/about" },
+	{ label: "Contact", to: "/contact" },
 	{ label: "Sign in", to: "/login" },
 ] as const;
 
