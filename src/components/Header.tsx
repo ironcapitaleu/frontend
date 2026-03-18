@@ -63,29 +63,31 @@ function Header() {
 			</div>
 
 			{/* Mobile menu */}
-			{isMenuOpen && (
-				<div id="mobile-menu" className="md:hidden border-t border-border">
-					<ul className="flex flex-col list-none m-0 p-0">
-						{NAV_LINKS.map(({ label, to }) => (
-							<li key={to}>
-								<NavLink
-									to={to}
-									onClick={() => setIsMenuOpen(false)}
-									className={({ isActive }) =>
-										`block px-6 py-4 text-sm transition-colors ${
-											isActive
-												? "text-foreground"
-												: "text-muted-foreground hover:text-foreground"
-										}`
-									}
-								>
-									{label}
-								</NavLink>
-							</li>
-						))}
-					</ul>
-				</div>
-			)}
+			<nav
+				id="mobile-menu"
+				aria-label="Mobile navigation"
+				className={`mobile-menu md:hidden border-t border-border${isMenuOpen ? " open" : ""}`}
+			>
+				<ul className="flex flex-col list-none m-0 p-0 overflow-hidden">
+					{NAV_LINKS.map(({ label, to }) => (
+						<li key={to}>
+							<NavLink
+								to={to}
+								onClick={() => setIsMenuOpen(false)}
+								className={({ isActive }) =>
+									`block px-6 py-4 text-sm transition-colors ${
+										isActive
+											? "text-foreground"
+											: "text-muted-foreground hover:text-foreground"
+									}`
+								}
+							>
+								{label}
+							</NavLink>
+						</li>
+					))}
+				</ul>
+			</nav>
 		</header>
 	);
 }
