@@ -2,18 +2,19 @@ import type React from "react";
 import { useState } from "react";
 
 import { Turnstile } from "@marsidev/react-turnstile";
-import { Mail, MapPin, Phone } from "lucide-react";
+import { Mail, MapPin } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/components/ui/select";
+	Combobox,
+	ComboboxContent,
+	ComboboxEmpty,
+	ComboboxInput,
+	ComboboxItem,
+	ComboboxList,
+} from "@/components/ui/combobox";
 import { Textarea } from "@/components/ui/textarea";
 
 interface ContactDetailProps {
@@ -36,6 +37,8 @@ interface ContactFormState {
 	subject: string;
 	message: string;
 }
+
+const SUBJECTS = ["General", "Technical"] as const;
 
 function ContactForm() {
 	const [form, setForm] = useState<ContactFormState>({
@@ -67,7 +70,7 @@ function ContactForm() {
 		);
 	};
 
-	const handleSubmit = async (e: React.FormEvent) => {
+	const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		if (!isValidEmail(form.email)) {
 			setEmailError("Please enter a valid email address.");
@@ -94,7 +97,7 @@ function ContactForm() {
 					Message sent.
 				</h3>
 				<p className="text-sm text-muted-foreground">
-					We'll be in touch within 24 hours.
+					We'll be in touch with you soon.
 				</p>
 			</div>
 		);
@@ -110,7 +113,7 @@ function ContactForm() {
 						name="fullName"
 						type="text"
 						required
-						placeholder="Jane Doe"
+						placeholder="Full Name"
 						value={form.fullName}
 						onChange={handleChange}
 					/>
@@ -122,7 +125,7 @@ function ContactForm() {
 						name="email"
 						type="email"
 						required
-						placeholder="jane@company.com"
+						placeholder="name@example.com"
 						value={form.email}
 						onChange={handleChange}
 						onBlur={handleEmailBlur}
@@ -136,25 +139,31 @@ function ContactForm() {
 
 			<div className="flex flex-col gap-2">
 				<Label htmlFor="subject">Subject</Label>
-				<Select
-					value={form.subject}
-					onValueChange={(value) =>
-						setForm((prev) => ({ ...prev, subject: value ?? "" }))
-					}
-				>
-					<SelectTrigger className="w-full">
-						<SelectValue placeholder="Select a topic" />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="investment-inquiry">
-							Investment Inquiry
-						</SelectItem>
-						<SelectItem value="api-support">API Support</SelectItem>
-						<SelectItem value="general">General</SelectItem>
-					</SelectContent>
-				</Select>
+			<Combobox
+				items={SUBJECTS}
+				value={form.subject || null}
+				onValueChange={(value) =>
+					setForm((prev) => ({ ...prev, subject: value ?? "" }))
+				}
+			>
+				<ComboboxInput
+					id="subject"
+					placeholder="Select a topic"
+					className="w-full"
+					showClear={false}
+				/>
+				<ComboboxContent>
+					<ComboboxEmpty>No matches.</ComboboxEmpty>
+					<ComboboxList>
+						{(item) => (
+							<ComboboxItem key={item} value={item}>
+								{item}
+							</ComboboxItem>
+						)}
+					</ComboboxList>
+				</ComboboxContent>
+			</Combobox>
 			</div>
-
 			<div className="flex flex-col gap-2">
 				<Label htmlFor="message">Message</Label>
 				<Textarea
@@ -162,7 +171,7 @@ function ContactForm() {
 					name="message"
 					rows={5}
 					required
-					placeholder="How can we help?"
+					placeholder="Provide details about your inquiry."
 					value={form.message}
 					onChange={handleChange}
 				/>
@@ -196,8 +205,7 @@ function ContactPage() {
 							Get in touch
 						</h1>
 						<p className="text-muted-foreground text-base leading-relaxed max-w-sm">
-							Have a question about our screener or API? Fill out the form and
-							our team will get back to you within 24 hours.
+							Connect with our team for questions about our tools. We typically respond within 24 hours.
 						</p>
 					</div>
 
@@ -207,12 +215,8 @@ function ContactPage() {
 							value="Zürich, Switzerland"
 						/>
 						<ContactDetail
-							icon={<Phone size={18} />}
-							value="+41 44 123 4567"
-						/>
-						<ContactDetail
 							icon={<Mail size={18} />}
-							value="hello@ironcapital.com"
+							value="contact@ironcapital.eu"
 						/>
 					</div>
 				</div>
