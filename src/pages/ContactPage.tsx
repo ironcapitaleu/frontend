@@ -8,6 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+	AlertDialog,
+	AlertDialogContent,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+import {
 	Select,
 	SelectContent,
 	SelectItem,
@@ -78,11 +87,17 @@ function ContactForm() {
 
 	const handleBlur = (field: keyof ContactFormState) => {
 		if (!hasAttemptedSubmit) return;
-		
+
 		if (!form[field]?.trim()) {
+			const emptyMessages: Record<keyof ContactFormState, string> = {
+				fullName: "Please enter your full name.",
+				email: "Please enter your email.",
+				subject: "Please select a subject.",
+				message: "Please enter a message.",
+			};
 			setErrors((prev) => ({
 				...prev,
-				[field]: "Please fill out this field.",
+				[field]: emptyMessages[field],
 			}));
 		} else if (field === "email" && !isValidEmail(form.email)) {
 			setErrors((prev) => ({
@@ -102,7 +117,7 @@ function ContactForm() {
 	const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		setHasAttemptedSubmit(true);
-		
+
 		const newErrors: typeof errors = {};
 
 		if (!form.fullName.trim())
@@ -114,7 +129,7 @@ function ContactForm() {
 
 		if (!form.subject?.trim()) newErrors.subject = "Please select a subject.";
 
-		if (!form.message.trim()) newErrors.message = "Please fill out this field.";
+		if (!form.message.trim()) newErrors.message = "Please enter a message.";
 		else if (form.message.trim().length < 10)
 			newErrors.message = "Message must be at least 10 characters.";
 
@@ -138,131 +153,161 @@ function ContactForm() {
 		}
 	};
 
-	if (isSubmitted) {
-		return (
-			<div className="flex flex-col gap-4 py-12">
-				<h3 className="text-xl font-semibold text-foreground">Message sent.</h3>
-				<p className="text-sm text-muted-foreground">
-					We'll be in touch with you soon.
-				</p>
-			</div>
-		);
-	}
+	const handleReset = () => {
+		setIsSubmitted(false);
+		setForm({ fullName: "", email: "", subject: "", message: "" });
+		setErrors({});
+		setHasAttemptedSubmit(false);
+	};
 
 	return (
-		<form onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
-			<div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
-				<div className="flex flex-col gap-2">
-					<Label htmlFor="fullName">Full Name</Label>
-					<Input
-						id="fullName"
-						name="fullName"
-						type="text"
-						required
-						placeholder="Full Name"
-						value={form.fullName}
-						onChange={handleChange}
-						onBlur={() => handleBlur("fullName")}
-						aria-invalid={!!errors.fullName}
-						className={isShaking && errors.fullName ? "animate-shake-invalid" : ""}
-					/>
-					{errors.fullName && (
-						<p className="text-xs text-destructive">{errors.fullName}</p>
-					)}
+		<>
+			<form onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
+				<div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+					<div className="flex flex-col gap-2">
+						<Label htmlFor="fullName">Full Name</Label>
+						<Input
+							id="fullName"
+							name="fullName"
+							type="text"
+							required
+							placeholder="Full Name"
+							value={form.fullName}
+							onChange={handleChange}
+							onBlur={() => handleBlur("fullName")}
+							aria-invalid={!!errors.fullName}
+							className={
+								isShaking && errors.fullName ? "animate-shake-invalid" : ""
+							}
+						/>
+						{errors.fullName && (
+							<p className="text-xs text-destructive">{errors.fullName}</p>
+						)}
+					</div>
+					<div className="flex flex-col gap-2">
+						<Label htmlFor="email">Email</Label>
+						<Input
+							id="email"
+							name="email"
+							type="email"
+							required
+							placeholder="name@example.com"
+							value={form.email}
+							onChange={handleChange}
+							onBlur={() => handleBlur("email")}
+							aria-invalid={!!errors.email}
+							className={
+								isShaking && errors.email ? "animate-shake-invalid" : ""
+							}
+						/>
+						{errors.email && (
+							<p className="text-xs text-destructive">{errors.email}</p>
+						)}
+					</div>
 				</div>
-				<div className="flex flex-col gap-2">
-					<Label htmlFor="email">Email</Label>
-					<Input
-						id="email"
-						name="email"
-						type="email"
-						required
-						placeholder="name@example.com"
-						value={form.email}
-						onChange={handleChange}
-						onBlur={() => handleBlur("email")}
-						aria-invalid={!!errors.email}
-						className={isShaking && errors.email ? "animate-shake-invalid" : ""}
-					/>
-					{errors.email && (
-						<p className="text-xs text-destructive">{errors.email}</p>
-					)}
-				</div>
-			</div>
 
-			<div className="flex flex-col gap-2">
-				<Label htmlFor="subject">Subject</Label>
-				<Select
-					value={form.subject || ""}
-					onValueChange={(value) => {
-						setForm((prev) => ({ ...prev, subject: value ?? "" }));
-						if (errors.subject) {
-							setErrors((prev) => ({ ...prev, subject: undefined }));
-						}
-					}}
-				>
-					<SelectTrigger
-						id="subject"
-						className={`w-full ${isShaking && errors.subject ? "animate-shake-invalid" : ""}`}
-						aria-invalid={!!errors.subject}
-						onBlur={() => handleBlur("subject")}
+				<div className="flex flex-col gap-2">
+					<Label htmlFor="subject">Subject</Label>
+					<Select
+						value={form.subject || ""}
+						onValueChange={(value) => {
+							setForm((prev) => ({ ...prev, subject: value ?? "" }));
+							if (errors.subject) {
+								setErrors((prev) => ({ ...prev, subject: undefined }));
+							}
+						}}
 					>
-						<SelectValue placeholder="Select a topic" />
-					</SelectTrigger>
-					<SelectContent>
-						{SUBJECTS.map((item) => (
-							<SelectItem key={item} value={item}>
-								{item}
-							</SelectItem>
-						))}
-					</SelectContent>
-				</Select>
-				{errors.subject && (
-					<p className="text-xs text-destructive">{errors.subject}</p>
-				)}
-			</div>
-			<div className="flex flex-col gap-2">
-				<Label htmlFor="message">Message</Label>
-				<Textarea
-					id="message"
-					name="message"
-					rows={5}
-					required
-					placeholder="Provide details about your inquiry."
-					value={form.message}
-					onChange={handleChange}
-					onBlur={() => handleBlur("message")}
-					aria-invalid={!!errors.message}
-					className={isShaking && errors.message ? "animate-shake-invalid" : ""}
-				/>
-				{errors.message && (
-					<p className="text-xs text-destructive">{errors.message}</p>
-				)}
-			</div>
+						<SelectTrigger
+							id="subject"
+							className={`w-full ${isShaking && errors.subject ? "animate-shake-invalid" : ""}`}
+							aria-invalid={!!errors.subject}
+							onBlur={() => handleBlur("subject")}
+						>
+							<SelectValue placeholder="Select a topic" />
+						</SelectTrigger>
+						<SelectContent>
+							{SUBJECTS.map((item) => (
+								<SelectItem key={item} value={item}>
+									{item}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+					{errors.subject && (
+						<p className="text-xs text-destructive">{errors.subject}</p>
+					)}
+				</div>
+				<div className="flex flex-col gap-2">
+					<Label htmlFor="message">Message</Label>
+					<Textarea
+						id="message"
+						name="message"
+						rows={5}
+						required
+						placeholder="Provide details about your inquiry."
+						value={form.message}
+						onChange={handleChange}
+						onBlur={() => handleBlur("message")}
+						aria-invalid={!!errors.message}
+						className={
+							isShaking && errors.message ? "animate-shake-invalid" : ""
+						}
+					/>
+					{errors.message && (
+						<p className="text-xs text-destructive">{errors.message}</p>
+					)}
+				</div>
 
-			<div className="hidden">
-				<Turnstile
-					siteKey={
-						import.meta.env.VITE_TURNSTILE_SITE_KEY ??
-						"1x00000000000000000000AA"
-					}
-					onSuccess={(token) => setTurnstileToken(token)}
-					onExpire={() => setTurnstileToken(null)}
-					onError={() => setTurnstileToken(null)}
-				/>
-			</div>
+				<div className="hidden">
+					<Turnstile
+						siteKey={
+							import.meta.env.VITE_TURNSTILE_SITE_KEY ??
+							"1x00000000000000000000AA"
+						}
+						onSuccess={(token) => setTurnstileToken(token)}
+						onExpire={() => setTurnstileToken(null)}
+						onError={() => setTurnstileToken(null)}
+					/>
+				</div>
 
-			<div className="mt-2 w-full">
-				<Button
-					type="submit"
-					disabled={isSubmitting || turnstileToken === null}
-					className="w-full h-11 px-6 gap-2 text-base font-medium hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/30 active:translate-y-0.5 active:scale-[0.98] active:shadow-none transition-all duration-200 cursor-pointer"
-				>
-					<Send size={18} />
-					{isSubmitting ? "Sending..." : "Send message"}
-				</Button>
-			</div>
-		</form>
+				<div className="mt-2 w-full">
+					<Button
+						type="submit"
+						disabled={isSubmitting || turnstileToken === null}
+						className="w-full h-11 px-6 gap-2 text-base font-medium hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/30 active:translate-y-0.5 active:scale-[0.98] active:shadow-none transition-all duration-200 cursor-pointer"
+					>
+						<Send size={18} />
+						{isSubmitting ? "Sending..." : "Send message"}
+					</Button>
+				</div>
+			</form>
+
+			<AlertDialog
+				open={isSubmitted}
+				onOpenChange={(open) => {
+					if (!open) handleReset();
+				}}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Message sent</AlertDialogTitle>
+						<AlertDialogDescription>
+							We'll be in touch with you soon.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogAction
+							onClick={() => {
+								handleReset();
+							}}
+							className="cursor-pointer"
+						>
+							Close
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+		</>
 	);
 }
 
