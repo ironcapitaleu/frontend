@@ -8,6 +8,7 @@ import PrivateDatabasePage from "./pages/PrivateDatabasePage";
 import { AuthProvider } from "./contexts/AuthContext";
 import HomePage from "./pages/HomePage";
 import NotFoundPage from "./pages/NotFoundPage";
+import PrivacyPage from "./pages/PrivacyPage";
 import SitemapPage from "./pages/SitemapPage";
 
 function App() {
@@ -21,7 +22,8 @@ function App() {
 						<Route path="/contact" element={<ContactPage />} />
 						<Route path="/login" element={<LoginPage />} />
 						<Route path="/about" element={<AboutPage />} />
-						<Route path="/private" element={<PrivateDatabasePage />} />
+						<Route path="/private" element={<PrivateDatabasePage />} />{" "}
+						<Route path="/privacy" element={<PrivacyPage />} />{" "}
 						<Route path="/sitemap" element={<SitemapPage />} />
 						<Route path="*" element={<NotFoundPage />} />
 					</Route>

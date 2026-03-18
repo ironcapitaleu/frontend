@@ -39,6 +39,7 @@ const SITEMAP_SECTIONS: SitemapSectionProps[] = [
 			{ label: "Home", to: "/" },
 			{ label: "About", to: "/about" },
 			{ label: "Contact", to: "/contact" },
+			{ label: "Privacy Policy", to: "/privacy" },
 		],
 	},
 	{

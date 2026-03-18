@@ -8,6 +8,12 @@ function Footer() {
 					© {new Date().getFullYear()} Iron Capital. All rights reserved.
 				</span>
 				<Link
+					to="/privacy"
+					className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+				>
+					Privacy Policy
+				</Link>
+				<Link
 					to="/sitemap"
 					className="text-sm text-muted-foreground hover:text-foreground transition-colors"
 				>

@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import { Turnstile } from "@marsidev/react-turnstile";
 import { Mail, MapPin, Send } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,7 @@ interface ContactFormState {
 	email: string;
 	subject: string;
 	message: string;
+	privacyConsent: boolean;
 }
 
 const SUBJECTS = ["General", "Technical"] as const;
@@ -54,6 +56,7 @@ function ContactForm() {
 		email: "",
 		subject: "",
 		message: "",
+		privacyConsent: false,
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isSubmitted, setIsSubmitted] = useState(false);
@@ -63,6 +66,7 @@ function ContactForm() {
 		email?: string;
 		subject?: string;
 		message?: string;
+		privacyConsent?: string;
 	}>({});
 	const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 	const [isShaking, setIsShaking] = useState(false);
@@ -85,11 +89,16 @@ function ContactForm() {
 		}
 	};
 
-	const handleBlur = (field: keyof ContactFormState) => {
+	const handleBlur = (
+		field: Exclude<keyof ContactFormState, "privacyConsent">,
+	) => {
 		if (!hasAttemptedSubmit) return;
 
 		if (!form[field]?.trim()) {
-			const emptyMessages: Record<keyof ContactFormState, string> = {
+			const emptyMessages: Record<
+				Exclude<keyof ContactFormState, "privacyConsent">,
+				string
+			> = {
 				fullName: "Please enter your full name.",
 				email: "Please enter your email.",
 				subject: "Please select a subject.",
@@ -133,6 +142,10 @@ function ContactForm() {
 		else if (form.message.trim().length < 10)
 			newErrors.message = "Message must be at least 10 characters.";
 
+		if (!form.privacyConsent)
+			newErrors.privacyConsent =
+				"Please accept the Privacy Policy to continue.";
+
 		if (Object.keys(newErrors).length > 0) {
 			setErrors(newErrors);
 			triggerShake();
@@ -155,7 +168,13 @@ function ContactForm() {
 
 	const handleReset = () => {
 		setIsSubmitted(false);
-		setForm({ fullName: "", email: "", subject: "", message: "" });
+		setForm({
+			fullName: "",
+			email: "",
+			subject: "",
+			message: "",
+			privacyConsent: false,
+		});
 		setErrors({});
 		setHasAttemptedSubmit(false);
 	};
@@ -268,6 +287,51 @@ function ContactForm() {
 						onExpire={() => setTurnstileToken(null)}
 						onError={() => setTurnstileToken(null)}
 					/>
+				</div>
+
+				<div
+					className={`flex items-start gap-3 ${isShaking && errors.privacyConsent ? "animate-shake-invalid" : ""}`}
+				>
+					<input
+						type="checkbox"
+						id="privacyConsent"
+						checked={form.privacyConsent}
+						onChange={(e) => {
+							setForm((prev) => ({
+								...prev,
+								privacyConsent: e.target.checked,
+							}));
+							if (e.target.checked) {
+								setErrors((prev) => ({
+									...prev,
+									privacyConsent: undefined,
+								}));
+							}
+						}}
+						className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-primary"
+						aria-invalid={!!errors.privacyConsent}
+					/>
+					<div className="flex flex-col gap-1">
+						<label
+							htmlFor="privacyConsent"
+							className="text-sm text-muted-foreground cursor-pointer leading-snug"
+						>
+							I have read and accept the{" "}
+							<Link
+								to="/privacy"
+								className="underline hover:text-foreground transition-colors"
+							>
+								Privacy Policy
+							</Link>{" "}
+							and consent to Iron Capital processing my data to handle this
+							inquiry.
+						</label>
+						{errors.privacyConsent && (
+							<p className="text-xs text-destructive">
+								{errors.privacyConsent}
+							</p>
+						)}
+					</div>
 				</div>
 
 				<div className="mt-2 w-full">
