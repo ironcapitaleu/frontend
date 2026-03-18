@@ -1,5 +1,3 @@
-import Footer from "@/components/Footer";
-import Header from "@/components/Header";
 import SearchBar from "@/components/SearchBar";
 
 function HeroSection() {
@@ -18,12 +16,8 @@ function HeroSection() {
 
 function HomePage() {
 	return (
-		<div className="min-h-screen flex flex-col">
-			<Header />
-			<main className="flex-1 flex items-center justify-center px-4">
-				<HeroSection />
-			</main>
-			<Footer />
+		<div className="flex-1 flex items-center justify-center px-4">
+			<HeroSection />
 		</div>
 	);
 }

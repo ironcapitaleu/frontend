@@ -220,6 +220,17 @@
 	animation: shake-invalid 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
+/* Animate the mobile nav open/close using a grid-template-rows height transition.
+   The inner child must have overflow: hidden to clip content during the animation. */
+.mobile-menu {
+	display: grid;
+	grid-template-rows: 0fr;
+	transition: grid-template-rows 0.25s ease;
+}
+.mobile-menu.open {
+	grid-template-rows: 1fr;
+}
+
 /* ── GlowNavBar ─────────────────────────────────────────── */
 .glow-nav {
 	display: flex;
