@@ -48,8 +48,19 @@ function ContactForm() {
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isSubmitted, setIsSubmitted] = useState(false);
-	const [emailError, setEmailError] = useState<string | null>(null);
+	const [errors, setErrors] = useState<{
+		fullName?: string;
+		email?: string;
+		subject?: string;
+		message?: string;
+	}>({});
 	const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+	const [shake, setShake] = useState(true);
+
+	const triggerShake = () => {
+		setShake(false);
+		setTimeout(() => setShake(true), 10);
+	};
 
 	const isValidEmail = (value: string) =>
 		/^[^\s@.]([^\s@]*[^\s@.])?@[^\s@]+\.[a-zA-Z]{2,}$/.test(value);
@@ -59,22 +70,63 @@ function ContactForm() {
 	) => {
 		const { name, value } = e.target;
 		setForm((prev) => ({ ...prev, [name]: value }));
+		if (errors[name as keyof typeof errors]) {
+			setErrors((prev) => ({ ...prev, [name]: undefined }));
+		}
 	};
 
-	const handleEmailBlur = () => {
-		setEmailError(
-			form.email && !isValidEmail(form.email)
-				? "Please enter a valid email address."
-				: null,
-		);
+	const handleBlur = (field: keyof ContactFormState) => {
+		let isInvalid = false;
+		if (!form[field]?.trim()) {
+			setErrors((prev) => ({
+				...prev,
+				[field]: "Please fill out this field.",
+			}));
+			isInvalid = true;
+		} else if (field === "email" && !isValidEmail(form.email)) {
+			setErrors((prev) => ({
+				...prev,
+				email: "Please enter a valid email address.",
+			}));
+			isInvalid = true;
+		} else if (field === "message" && form.message.trim().length < 10) {
+			setErrors((prev) => ({
+				...prev,
+				message: "Message must be at least 10 characters.",
+			}));
+			isInvalid = true;
+		} else {
+			setErrors((prev) => ({ ...prev, [field]: undefined }));
+		}
+
+		if (isInvalid) {
+			triggerShake();
+		}
 	};
 
 	const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
 		e.preventDefault();
-		if (!isValidEmail(form.email)) {
-			setEmailError("Please enter a valid email address.");
+		const newErrors: typeof errors = {};
+
+		if (!form.fullName.trim())
+			newErrors.fullName = "Please enter your full name.";
+
+		if (!form.email.trim()) newErrors.email = "Please enter your email.";
+		else if (!isValidEmail(form.email))
+			newErrors.email = "Please enter a valid email address.";
+
+		if (!form.subject?.trim()) newErrors.subject = "Please select a subject.";
+
+		if (!form.message.trim()) newErrors.message = "Please fill out this field.";
+		else if (form.message.trim().length < 10)
+			newErrors.message = "Message must be at least 10 characters.";
+
+		if (Object.keys(newErrors).length > 0) {
+			setErrors(newErrors);
+			triggerShake();
 			return;
 		}
+
 		setIsSubmitting(true);
 
 		try {
@@ -101,7 +153,7 @@ function ContactForm() {
 	}
 
 	return (
-		<form onSubmit={handleSubmit} className="flex flex-col gap-6">
+		<form onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
 			<div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
 				<div className="flex flex-col gap-2">
 					<Label htmlFor="fullName">Full Name</Label>
@@ -113,7 +165,13 @@ function ContactForm() {
 						placeholder="Full Name"
 						value={form.fullName}
 						onChange={handleChange}
+						onBlur={() => handleBlur("fullName")}
+						aria-invalid={!!errors.fullName}
+						className={shake ? "animate-shake-invalid" : ""}
 					/>
+					{errors.fullName && (
+						<p className="text-xs text-destructive">{errors.fullName}</p>
+					)}
 				</div>
 				<div className="flex flex-col gap-2">
 					<Label htmlFor="email">Email</Label>
@@ -125,11 +183,12 @@ function ContactForm() {
 						placeholder="name@example.com"
 						value={form.email}
 						onChange={handleChange}
-						onBlur={handleEmailBlur}
-						aria-invalid={emailError !== null}
+						onBlur={() => handleBlur("email")}
+						aria-invalid={!!errors.email}
+						className={shake ? "animate-shake-invalid" : ""}
 					/>
-					{emailError && (
-						<p className="text-xs text-destructive">{emailError}</p>
+					{errors.email && (
+						<p className="text-xs text-destructive">{errors.email}</p>
 					)}
 				</div>
 			</div>
@@ -138,11 +197,19 @@ function ContactForm() {
 				<Label htmlFor="subject">Subject</Label>
 				<Select
 					value={form.subject || ""}
-					onValueChange={(value) =>
-						setForm((prev) => ({ ...prev, subject: value ?? "" }))
-					}
+					onValueChange={(value) => {
+						setForm((prev) => ({ ...prev, subject: value ?? "" }));
+						if (errors.subject) {
+							setErrors((prev) => ({ ...prev, subject: undefined }));
+						}
+					}}
 				>
-					<SelectTrigger id="subject" className="w-full">
+					<SelectTrigger
+						id="subject"
+						className={`w-full ${shake ? "animate-shake-invalid" : ""}`}
+						aria-invalid={!!errors.subject}
+						onBlur={() => handleBlur("subject")}
+					>
 						<SelectValue placeholder="Select a topic" />
 					</SelectTrigger>
 					<SelectContent>
@@ -153,6 +220,9 @@ function ContactForm() {
 						))}
 					</SelectContent>
 				</Select>
+				{errors.subject && (
+					<p className="text-xs text-destructive">{errors.subject}</p>
+				)}
 			</div>
 			<div className="flex flex-col gap-2">
 				<Label htmlFor="message">Message</Label>
@@ -164,7 +234,13 @@ function ContactForm() {
 					placeholder="Provide details about your inquiry."
 					value={form.message}
 					onChange={handleChange}
+					onBlur={() => handleBlur("message")}
+					aria-invalid={!!errors.message}
+					className={shake ? "animate-shake-invalid" : ""}
 				/>
+				{errors.message && (
+					<p className="text-xs text-destructive">{errors.message}</p>
+				)}
 			</div>
 
 			<div className="hidden">
