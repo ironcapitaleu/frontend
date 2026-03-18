@@ -8,13 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-	Combobox,
-	ComboboxContent,
-	ComboboxEmpty,
-	ComboboxInput,
-	ComboboxItem,
-	ComboboxList,
-} from "@/components/ui/combobox";
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
 interface ContactDetailProps {
@@ -93,9 +92,7 @@ function ContactForm() {
 	if (isSubmitted) {
 		return (
 			<div className="flex flex-col gap-4 py-12">
-				<h3 className="text-xl font-semibold text-foreground">
-					Message sent.
-				</h3>
+				<h3 className="text-xl font-semibold text-foreground">Message sent.</h3>
 				<p className="text-sm text-muted-foreground">
 					We'll be in touch with you soon.
 				</p>
@@ -139,30 +136,23 @@ function ContactForm() {
 
 			<div className="flex flex-col gap-2">
 				<Label htmlFor="subject">Subject</Label>
-			<Combobox
-				items={SUBJECTS}
-				value={form.subject || null}
-				onValueChange={(value) =>
-					setForm((prev) => ({ ...prev, subject: value ?? "" }))
-				}
-			>
-				<ComboboxInput
-					id="subject"
-					placeholder="Select a topic"
-					className="w-full"
-					showClear={false}
-				/>
-				<ComboboxContent>
-					<ComboboxEmpty>No matches.</ComboboxEmpty>
-					<ComboboxList>
-						{(item) => (
-							<ComboboxItem key={item} value={item}>
+				<Select
+					value={form.subject || ""}
+					onValueChange={(value) =>
+						setForm((prev) => ({ ...prev, subject: value ?? "" }))
+					}
+				>
+					<SelectTrigger id="subject" className="w-full">
+						<SelectValue placeholder="Select a topic" />
+					</SelectTrigger>
+					<SelectContent>
+						{SUBJECTS.map((item) => (
+							<SelectItem key={item} value={item}>
 								{item}
-							</ComboboxItem>
-						)}
-					</ComboboxList>
-				</ComboboxContent>
-			</Combobox>
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
 			</div>
 			<div className="flex flex-col gap-2">
 				<Label htmlFor="message">Message</Label>
@@ -179,7 +169,10 @@ function ContactForm() {
 
 			<div className="hidden">
 				<Turnstile
-					siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY ?? "1x00000000000000000000AA"}
+					siteKey={
+						import.meta.env.VITE_TURNSTILE_SITE_KEY ??
+						"1x00000000000000000000AA"
+					}
 					onSuccess={(token) => setTurnstileToken(token)}
 					onExpire={() => setTurnstileToken(null)}
 					onError={() => setTurnstileToken(null)}
@@ -187,7 +180,10 @@ function ContactForm() {
 			</div>
 
 			<div className="flex justify-end">
-				<Button type="submit" disabled={isSubmitting || turnstileToken === null}>
+				<Button
+					type="submit"
+					disabled={isSubmitting || turnstileToken === null}
+				>
 					{isSubmitting ? "Sending..." : "Send message"}
 				</Button>
 			</div>
@@ -205,7 +201,8 @@ function ContactPage() {
 							Get in touch
 						</h1>
 						<p className="text-muted-foreground text-base leading-relaxed max-w-sm">
-							Connect with our team for questions about our tools. We typically respond within 24 hours.
+							Connect with our team for questions about our tools. We typically
+							respond within 24 hours.
 						</p>
 					</div>
 
