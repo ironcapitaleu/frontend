@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Menu, X } from "lucide-react";
 import { Link, NavLink } from "react-router-dom";
@@ -14,6 +14,15 @@ const NAV_LINKS = [
 
 function Header() {
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+	useEffect(() => {
+		const mediaQuery = window.matchMedia("(min-width: 768px)");
+		const handleChange = (e: MediaQueryListEvent) => {
+			if (e.matches) setIsMenuOpen(false);
+		};
+		mediaQuery.addEventListener("change", handleChange);
+		return () => mediaQuery.removeEventListener("change", handleChange);
+	}, []);
 
 	return (
 		<header className="border-b border-border">
