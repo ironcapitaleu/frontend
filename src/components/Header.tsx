@@ -82,7 +82,7 @@ function Header() {
 						<li key={to}>
 							<NavLink
 								to={to}
-								onClick={() => setIsMenuOpen(false)}
+								onClick={() => setTimeout(() => setIsMenuOpen(false), 300)}
 								className={({ isActive }) =>
 									`block px-6 py-4 text-sm transition-colors ${
 										isActive
