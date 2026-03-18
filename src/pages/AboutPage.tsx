@@ -1,240 +1,98 @@
-import { Link } from "react-router-dom";
-
-import { BarChart3, Eye, Shield, TrendingUp, Users, Zap } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-
-interface ValueCardProps {
-	title: string;
-	description: string;
-	icon: React.ReactNode;
-}
-
-function ValueCard({ title, description, icon }: ValueCardProps) {
+function StatementSection() {
 	return (
-		<Card>
-			<CardHeader>
-				<div>{icon}</div>
-				<CardTitle>{title}</CardTitle>
-				<CardDescription>{description}</CardDescription>
-			</CardHeader>
-		</Card>
-	);
-}
-
-interface TeamMemberProps {
-	name: string;
-	role: string;
-	bio: string;
-}
-
-function TeamMember({ name, role, bio }: TeamMemberProps) {
-	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>{name}</CardTitle>
-				<CardDescription>{role}</CardDescription>
-			</CardHeader>
-			<CardContent>
-				<p>{bio}</p>
-			</CardContent>
-		</Card>
-	);
-}
-
-function HeroSection() {
-	return (
-		<section>
-			<h1>About Iron Capital</h1>
-			<p>
-				Iron Capital is a premier investment partnership dedicated to delivering
-				exceptional returns through strategic analysis, cutting-edge technology,
-				and disciplined risk management. Founded on principles of transparency
-				and excellence.
+		<section className="flex flex-col items-center justify-center px-6 py-24 text-center">
+			<p className="font-classic text-5xl md:text-7xl font-medium leading-tight max-w-4xl text-foreground text-center">
+				Every successful investment begins with a deep understanding of the
+				business.
 			</p>
 		</section>
 	);
 }
 
-function MissionVisionSection() {
+function PhilosophySection() {
 	return (
-		<section>
-			<Card>
-				<CardHeader>
-					<div>
-						<Zap />
-					</div>
-					<CardTitle>Our Mission</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<p>
-						To democratize institutional-grade investment research and provide
-						our partners with the tools and insights needed to make informed
-						investment decisions in today's complex financial markets.
+		<section className="flex flex-col items-center px-6 py-16 border-t border-border/50">
+			<div className="max-w-prose flex flex-col gap-6 text-center">
+				<h1 className="font-classic font-semibold">Timeless Principles</h1>
+				<p className="font-classic text-muted-foreground leading-relaxed">
+					Everything we do is grounded in principles that have endured through
+					time and continue to guide our judgment about the future.
+				</p>
+				<p className="font-classic text-muted-foreground leading-relaxed">
+					It is rarely wise to project the past into the future. But the past
+					does contain something valuable: patterns that refuse to change. Human
+					behavior, incentives, and the fundamental drivers of value have
+					persisted across decades and centuries. We study these — and only
+					these. Markets shift, industries transform, technologies disrupt — but
+					the forces that govern how businesses create and destroy value
+					persist.
+				</p>
+				<p className="font-classic text-muted-foreground leading-relaxed">
+					We dedicate ourselves to these principles and apply them with patience
+					and discipline.
+				</p>
+			</div>
+		</section>
+	);
+}
+
+function SecurityAnalysisSection() {
+	return (
+		<section className="flex flex-col items-center px-6 py-16 border-t border-border/50">
+			<div className="max-w-prose flex flex-col gap-6 text-center">
+				<h1 className="font-classic font-semibold">Security Analysis</h1>
+				<p className="font-classic text-muted-foreground leading-relaxed">
+					A security is not a blinking number on a screen — it represents a
+					claim on a real business, with real economics, real risks, and a real
+					future.
+				</p>
+				<p className="font-classic text-muted-foreground leading-relaxed">
+					The discipline of security analysis, as practiced by its earliest and
+					most rigorous thinkers, asks one central question: what is this
+					business actually worth? Answering it demands patience, accounting
+					literacy, and a refusal to confuse price with value.
+				</p>
+			</div>
+		</section>
+	);
+}
+
+function MethodSection() {
+	return (
+		<section className="flex flex-col items-center px-6 py-16 border-t border-border/50">
+			<div className="max-w-prose flex flex-col gap-8 text-center">
+				<h1 className="font-classic font-semibold">Our Method</h1>
+				<div className="flex flex-col gap-5 text-muted-foreground">
+					<p className="font-classic text-muted-foreground leading-relaxed">
+						We build tools for people who want to understand businesses — their
+						economics, their competitive positions, their capital allocation,
+						and their long-term prospects.
 					</p>
-				</CardContent>
-			</Card>
-			<Card>
-				<CardHeader>
-					<div>
-						<Eye />
-					</div>
-					<CardTitle>Our Vision</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<p>
-						To become Europe's leading investment partnership by combining
-						traditional investment wisdom with innovative technology, creating
-						sustainable wealth for our partners while maintaining the highest
-						ethical standards.
+					<p className="font-classic leading-relaxed">
+						Information and facts about a company — not a ticker symbol.
 					</p>
-				</CardContent>
-			</Card>
-		</section>
-	);
-}
-
-function ApproachSection() {
-	const approaches: ValueCardProps[] = [
-		{
-			title: "Data-Driven Analysis",
-			description:
-				"We leverage advanced analytics and quantitative models to identify market opportunities and assess risk across all asset classes.",
-			icon: <BarChart3 />,
-		},
-		{
-			title: "Risk Management",
-			description:
-				"Comprehensive risk assessment and portfolio diversification strategies protect capital while maximizing potential returns.",
-			icon: <Shield />,
-		},
-		{
-			title: "Long-term Focus",
-			description:
-				"We prioritize sustainable, long-term growth over short-term gains, building wealth through patient and strategic investing.",
-			icon: <TrendingUp />,
-		},
-	];
-
-	return (
-		<section>
-			<h2>Our Investment Approach</h2>
-			<div>
-				{approaches.map((approach) => (
-					<ValueCard key={approach.title} {...approach} />
-				))}
+					<p className="font-classic leading-relaxed">
+						Financial data rooted in accounting fundamentals, not price
+						movements.
+					</p>
+					<p className="font-classic leading-relaxed">
+						A consistent framework for thinking about business quality, year
+						after year.
+					</p>
+				</div>
 			</div>
-		</section>
-	);
-}
-
-function TeamSection() {
-	const team: TeamMemberProps[] = [
-		{
-			name: "Alexander Schmidt",
-			role: "Founder & Chief Investment Officer",
-			bio: "20+ years in institutional investment management with expertise in European equities and alternative investments.",
-		},
-		{
-			name: "Dr. Maria Weber",
-			role: "Head of Quantitative Research",
-			bio: "PhD in Financial Mathematics from ETH Zürich. Previously led quantitative strategies at major European banks.",
-		},
-		{
-			name: "Thomas Müller",
-			role: "Head of Risk Management",
-			bio: "Former risk management director at a leading Swiss private bank with expertise in portfolio risk optimization.",
-		},
-	];
-
-	return (
-		<section>
-			<h2>Leadership Team</h2>
-			<div>
-				{team.map((member) => (
-					<TeamMember key={member.name} {...member} />
-				))}
-			</div>
-		</section>
-	);
-}
-
-function ValuesSection() {
-	const values: ValueCardProps[] = [
-		{
-			title: "Transparency",
-			description:
-				"Complete openness about our strategies, fees, and performance metrics.",
-			icon: <Eye />,
-		},
-		{
-			title: "Excellence",
-			description:
-				"Continuous pursuit of superior investment outcomes and client service.",
-			icon: <TrendingUp />,
-		},
-		{
-			title: "Partnership",
-			description:
-				"Your success is our success. We align our interests with our partners.",
-			icon: <Users />,
-		},
-	];
-
-	return (
-		<section>
-			<h2>Our Values</h2>
-			<div>
-				{values.map((value) => (
-					<ValueCard key={value.title} {...value} />
-				))}
-			</div>
-		</section>
-	);
-}
-
-function CTASection() {
-	return (
-		<section>
-			<Card>
-				<CardHeader>
-					<CardTitle>Ready to Partner with Us?</CardTitle>
-					<CardDescription>
-						Schedule a consultation to learn how Iron Capital can help you
-						achieve your investment goals.
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<Button render={<Link to="/contact" />}>Contact Us</Button>
-				</CardContent>
-			</Card>
 		</section>
 	);
 }
 
 function AboutPage() {
 	return (
-		<main>
-			<HeroSection />
-			<Separator />
-			<MissionVisionSection />
-			<Separator />
-			<ApproachSection />
-			<Separator />
-			<TeamSection />
-			<Separator />
-			<ValuesSection />
-			<Separator />
-			<CTASection />
-		</main>
+		<>
+			<StatementSection />
+			<PhilosophySection />
+			<SecurityAnalysisSection />
+			<MethodSection />
+		</>
 	);
 }
 

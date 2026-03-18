@@ -1,59 +1,32 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+
+import { KeyRound } from "lucide-react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useAuthContext } from "../contexts/AuthContext";
 
 export default function LoginPage() {
 	const [isSignUp, setIsSignUp] = useState(false);
-	const [email, setEmail] = useState("");
-	const [password, setPassword] = useState("");
 	const [error, setError] = useState<string | null>(null);
-	const [message, setMessage] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
 
-	const { signInWithEmail, signUpWithEmail, user } = useAuthContext();
+	const { user } = useAuthContext();
 	const navigate = useNavigate();
 
-	// Redirect if already logged in
 	useEffect(() => {
 		if (user) {
 			navigate("/");
 		}
 	}, [user, navigate]);
 
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
+	const handlePasskey = async () => {
 		setError(null);
-		setMessage(null);
 		setLoading(true);
-
 		try {
-			if (isSignUp) {
-				const { error } = await signUpWithEmail(email, password);
-				if (error) {
-					setError(String(error));
-				} else {
-					setMessage("Check your email for a confirmation link!");
-				}
-			} else {
-				const { error } = await signInWithEmail(email, password);
-				if (error) {
-					setError(String(error));
-				} else {
-					navigate("/");
-				}
-			}
+			// TODO: implement passkey authentication
+			await Promise.resolve();
 		} catch (_err) {
 			setError("An unexpected error occurred");
 		} finally {
@@ -62,76 +35,49 @@ export default function LoginPage() {
 	};
 
 	return (
-		<main>
-			<Card>
-				<CardHeader>
-					<CardTitle>{isSignUp ? "Create Account" : "Welcome Back"}</CardTitle>
-					<CardDescription>
-						{isSignUp
-							? "Sign up to access Iron Capital tools"
-							: "Sign in to your Iron Capital account"}
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<form onSubmit={handleSubmit}>
-						<div>
-							<Label htmlFor="email">Email</Label>
-							<Input
-								id="email"
-								type="email"
-								value={email}
-								onChange={(e) => setEmail(e.target.value)}
-								placeholder="you@example.com"
-								required
-							/>
-						</div>
+		<div className="flex-1 flex flex-col items-center justify-center px-6 lg:px-8">
+			<div className="sm:mx-auto sm:w-full sm:max-w-sm flex flex-col items-center">
+				<Link to="/" aria-label="Iron Capital home">
+					<img
+						src="/icon.svg"
+						alt="Iron Capital"
+						className="w-12 h-12 rounded-full object-cover"
+					/>
+				</Link>
+				<h2 className="mt-8 text-center text-2xl/9 font-bold font-classic sm:text-3xl/9 tracking-tight text-foreground">
+					{isSignUp ? "Create an account" : "Sign in to your account"}
+				</h2>
+			</div>
 
-						<div>
-							<Label htmlFor="password">Password</Label>
-							<Input
-								id="password"
-								type="password"
-								value={password}
-								onChange={(e) => setPassword(e.target.value)}
-								placeholder="••••••••"
-								required
-								minLength={6}
-							/>
-						</div>
+			<div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm flex flex-col gap-6">
+				{error && (
+					<Alert variant="destructive">
+						<AlertDescription>{error}</AlertDescription>
+					</Alert>
+				)}
+				<Button
+					className="w-full gap-2 py-6 text-base font-medium btn-tactile"
+					disabled={loading}
+					onClick={handlePasskey}
+				>
+					<KeyRound size={18} />
+					{loading ? "Continuing..." : "Continue with passkey"}
+				</Button>
 
-						{error && (
-							<Alert variant="destructive">
-								<AlertDescription>{error}</AlertDescription>
-							</Alert>
-						)}
-
-						{message && (
-							<Alert>
-								<AlertDescription>{message}</AlertDescription>
-							</Alert>
-						)}
-
-						<Button type="submit" disabled={loading}>
-							{loading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
-						</Button>
-					</form>
-
-					<div>
-						<Button
-							variant="link"
-							onClick={() => {
-								setIsSignUp(!isSignUp);
-								setError(null);
-								setMessage(null);
-							}}
-						>
-							{isSignUp
-								? "Already have an account? Sign in"
-								: "Don't have an account? Sign up"}
-						</Button>
-					</div>
-				</CardContent>
-			</Card>
-		</main>
+				<p className="mt-2 text-center text-sm text-muted-foreground">
+					{isSignUp ? "Already a member? " : "Not a member? "}
+					<button
+						type="button"
+						onClick={() => {
+							setIsSignUp(!isSignUp);
+							setError(null);
+						}}
+						className="font-medium text-foreground hover:text-primary transition-colors cursor-pointer"
+					>
+						{isSignUp ? "Sign in" : "Create an account"}
+					</button>
+				</p>
+			</div>
+		</div>
 	);
 }

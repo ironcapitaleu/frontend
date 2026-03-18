@@ -5,11 +5,9 @@ const NAV_LINKS = [
 	{ label: "Screener", to: "/screener" },
 	{ label: "API", to: "/api" },
 	{ label: "About", to: "/about" },
-	{ label: "Contact", to: "/contact" },
-	{ label: "Sign in", to: "/login" },
 ] as const;
 
-function Header() {
+function NavBar() {
 	return (
 		<header className="border-b border-border">
 			<div className="max-w-6xl mx-auto px-4">
@@ -47,4 +45,4 @@ function Header() {
 	);
 }
 
-export default Header;
+export default NavBar;
