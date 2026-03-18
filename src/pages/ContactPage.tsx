@@ -1,7 +1,8 @@
 import type React from "react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { Turnstile } from "@marsidev/react-turnstile";
+import type { TurnstileInstance } from "@marsidev/react-turnstile";
 import { Mail, MapPin, Send } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -69,6 +70,7 @@ function ContactForm() {
 		privacyConsent?: string;
 	}>({});
 	const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+	const turnstileRef = useRef<TurnstileInstance>(null);
 	const [isShaking, setIsShaking] = useState(false);
 
 	const triggerShake = () => {
@@ -177,6 +179,8 @@ function ContactForm() {
 		});
 		setErrors({});
 		setHasAttemptedSubmit(false);
+		setTurnstileToken(null);
+		turnstileRef.current?.reset();
 	};
 
 	return (
@@ -279,6 +283,7 @@ function ContactForm() {
 
 				<div className="hidden">
 					<Turnstile
+						ref={turnstileRef}
 						siteKey={
 							import.meta.env.VITE_TURNSTILE_SITE_KEY ??
 							"1x00000000000000000000AA"
