@@ -167,16 +167,18 @@ function ThirdPartyProcessorsSection() {
 							to protect the contact form from automated submissions. Turnstile
 							may process your IP address and browser signals (user agent,
 							interaction patterns) for bot detection purposes. No CAPTCHA image
-							is shown. See the{" "}
-							<a
-								href="https://www.cloudflare.com/privacypolicy/"
-								target="_blank"
-								rel="noopener noreferrer"
-								className="underline hover:text-foreground transition-colors"
-							>
-								Cloudflare Privacy Policy
-							</a>{" "}
-							for full details.
+						is shown. Turnstile does not have access to your name, email, or
+						message content. Cloudflare's own retention practices are governed
+						by the{" "}
+						<a
+							href="https://www.cloudflare.com/privacypolicy/"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="underline hover:text-foreground transition-colors"
+						>
+							Cloudflare Privacy Policy
+						</a>
+						, which we do not control.
 						</p>
 					</div>
 				</div>
@@ -195,9 +197,12 @@ function RetentionSection() {
 				<p className="font-classic text-muted-foreground leading-relaxed">
 					We retain the personal data you submit through the contact form for a
 					maximum of{" "}
-					<strong className="text-foreground font-medium">6 months</strong> from
-					the date of submission. After this period, your data is permanently
-					deleted.
+					<strong className="text-foreground font-medium">90 days</strong> from
+					the date of submission. After this period, we permanently delete the
+					data from our systems (inbox and any copies). This period covers the
+					data that Iron Capital directly holds. Third-party processors listed
+					above retain data according to their own policies, which we do not
+					control.
 				</p>
 			</div>
 		</section>
