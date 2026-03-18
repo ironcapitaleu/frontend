@@ -162,7 +162,7 @@ function ContactForm() {
 
 	return (
 		<>
-			<form onSubmit={handleSubmit} className="flex flex-col gap-6" noValidate>
+			<form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
 					<div className="flex flex-col gap-2">
 						<Label htmlFor="fullName">Full Name</Label>
@@ -242,7 +242,7 @@ function ContactForm() {
 					<Textarea
 						id="message"
 						name="message"
-						rows={5}
+					rows={4}
 						required
 						placeholder="Provide details about your inquiry."
 						value={form.message}
@@ -314,7 +314,7 @@ function ContactForm() {
 function ContactPage() {
 	return (
 		<div className="flex-1 bg-background">
-			<div className="max-w-6xl mx-auto px-6 py-20 grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24">
+			<div className="max-w-6xl mx-auto px-6 py-12 lg:py-16 grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24">
 				<div className="flex flex-col gap-10">
 					<div className="flex flex-col gap-4">
 						<h1 className="font-classic text-4xl md:text-5xl font-semibold text-foreground leading-tight">
