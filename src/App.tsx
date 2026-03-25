@@ -10,6 +10,7 @@ import HomePage from "./pages/HomePage";
 import NotFoundPage from "./pages/NotFoundPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import SitemapPage from "./pages/SitemapPage";
+import StockScreener from "./pages/StockScreener";
 
 function App() {
 	return (
@@ -25,6 +26,7 @@ function App() {
 						<Route path="/private" element={<PrivateDatabasePage />} />{" "}
 						<Route path="/privacy" element={<PrivacyPage />} />{" "}
 						<Route path="/sitemap" element={<SitemapPage />} />
+						<Route path="/screener" element={<StockScreener />} />
 						<Route path="*" element={<NotFoundPage />} />
 					</Route>
 				</Routes>

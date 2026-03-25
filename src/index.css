@@ -220,6 +220,20 @@
 	animation: shake-invalid 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
+/* Collapsible filter panel — uses grid-template-rows for smooth content-aware height transition.
+   The inner child must have overflow: hidden to clip content during the animation. */
+.filter-panel {
+	display: grid;
+	grid-template-rows: 0fr;
+	transition: grid-template-rows 0.3s ease;
+}
+.filter-panel > div {
+	overflow: hidden;
+}
+.filter-panel.open {
+	grid-template-rows: 1fr;
+}
+
 /* Animate the mobile nav open/close using a grid-template-rows height transition.
    The inner child must have overflow: hidden to clip content during the animation. */
 .mobile-menu {
