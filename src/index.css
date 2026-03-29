@@ -234,6 +234,52 @@
 	grid-template-rows: 1fr;
 }
 
+/* Custom animation for the AI glowing border effect */
+@keyframes gradient-flow {
+	0% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+	100% {
+		background-position: 0% 50%;
+	}
+}
+
+.animate-gradient-flow {
+	animation: gradient-flow 4s ease infinite;
+	background-size: 200% 200%;
+}
+
+@keyframes border-draw {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes fade-out {
+	0% {
+		opacity: 0.8;
+	}
+	90% {
+		opacity: 0.8;
+	}
+	100% {
+		opacity: 0;
+	}
+}
+
+.animate-glow-once {
+	/* Rotates the gradient once over 2 seconds */
+	animation:
+		border-draw 2s linear forwards,
+		fade-out 2.5s ease forwards;
+}
+
 /* Animate the mobile nav open/close using a grid-template-rows height transition.
    The inner child must have overflow: hidden to clip content during the animation. */
 .mobile-menu {
