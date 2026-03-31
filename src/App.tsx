@@ -10,13 +10,13 @@ import HomePage from "./pages/HomePage";
 import NotFoundPage from "./pages/NotFoundPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import SitemapPage from "./pages/SitemapPage";
+import StockScreener from "./pages/StockScreener";
 
 function App() {
 	return (
 		<AuthProvider>
 			<Router>
 				<Routes>
-					<Route path="/" element={<HomePage />} />
 					<Route path="/" element={<Layout />}>
 						<Route index element={<HomePage />} />
 						<Route path="/search" element={<CompanySearch />} />
@@ -26,6 +26,7 @@ function App() {
 						<Route path="/private" element={<PrivateDatabasePage />} />{" "}
 						<Route path="/privacy" element={<PrivacyPage />} />{" "}
 						<Route path="/sitemap" element={<SitemapPage />} />
+						<Route path="/screener" element={<StockScreener />} />
 						<Route path="*" element={<NotFoundPage />} />
 					</Route>
 				</Routes>
