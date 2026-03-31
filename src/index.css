@@ -220,6 +220,77 @@
 	animation: shake-invalid 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
+/* Collapsible filter panel — uses grid-template-rows for smooth content-aware height transition.
+   The inner child must have overflow: hidden to clip content during the animation. */
+.filter-panel {
+	display: grid;
+	grid-template-rows: 0fr;
+	transition: grid-template-rows 0.3s ease;
+}
+.filter-panel > div {
+	overflow: hidden;
+}
+.filter-panel.open {
+	grid-template-rows: 1fr;
+}
+
+/* Custom animation for the AI glowing border effect */
+@keyframes gradient-flow {
+	0% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+	100% {
+		background-position: 0% 50%;
+	}
+}
+
+.animate-gradient-flow {
+	animation: gradient-flow 4s ease infinite;
+	background-size: 200% 200%;
+}
+
+@keyframes border-draw {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+@keyframes fade-out {
+	0% {
+		opacity: 0.8;
+	}
+	90% {
+		opacity: 0.8;
+	}
+	100% {
+		opacity: 0;
+	}
+}
+
+.animate-glow-once {
+	/* Rotates the gradient once over 2 seconds */
+	animation:
+		border-draw 2s linear forwards,
+		fade-out 2.5s ease forwards;
+}
+
+/* Animate the mobile nav open/close using a grid-template-rows height transition.
+   The inner child must have overflow: hidden to clip content during the animation. */
+.mobile-menu {
+	display: grid;
+	grid-template-rows: 0fr;
+	transition: grid-template-rows 0.25s ease;
+}
+.mobile-menu.open {
+	grid-template-rows: 1fr;
+}
+
 /* ── GlowNavBar ─────────────────────────────────────────── */
 .glow-nav {
 	display: flex;
