@@ -812,7 +812,7 @@ export default function StockScreener() {
 						/>
 					</TableRow>
 					</TableHeader>
-					<TableBody className="[&_td]:py-2.5 [&_td]:px-3">
+					<TableBody className="[&_td]:py-8.5 [&_td]:px-3">
 						{results.length === 0 ? (
 						<TableRow>
 							<TableCell
