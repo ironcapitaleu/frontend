@@ -513,7 +513,7 @@ export default function StockScreener() {
 		sortConfig?.field === field ? "bg-primary/4" : undefined;
 
 	return (
-		<div className="flex-1 bg-background flex flex-col gap-3">
+		<div className="flex-1 bg-background flex flex-col gap-5 px-8 py-6">
 			{/* Toolbar */}
 			<div className="flex items-center justify-between gap-4">
 				<span className="text-sm text-muted-foreground">
@@ -730,7 +730,7 @@ export default function StockScreener() {
 			{/* Results table */}
 			<div className="screener-table rounded-lg border border-border overflow-hidden bg-card">
 				<Table>
-					<TableHeader className="bg-muted [&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-muted [&_th]:py-3">
+					<TableHeader className="sticky top-0 z-10 bg-muted [&_th]:py-3">
 						<TableRow className="border-b-2 hover:bg-transparent">
 						<SortableHeader
 							field="symbol"
