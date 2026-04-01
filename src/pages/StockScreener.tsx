@@ -848,11 +848,10 @@ export default function StockScreener() {
 								<TableCell className={cn("text-muted-foreground", colClass("country"))}>
 									{stock.country}
 								</TableCell>
-								<TableCell className={colClass("marketCap")}>{formatMarketCap(stock.marketCap)}</TableCell>
-								<TableCell className={colClass("price")}>${stock.price.toFixed(2)}</TableCell>
+								<TableCell className={cn("text-right", colClass("marketCap"))}>{formatMarketCap(stock.marketCap)}</TableCell>
+								<TableCell className={cn("text-right", colClass("price"))}>${stock.price.toFixed(2)}</TableCell>
 								<TableCell
-									className={cn(
-										stock.changePercent1M >= 0
+									className={cn(									"text-right",										stock.changePercent1M >= 0
 											? "text-emerald-500"
 											: "text-red-500",
 										colClass("changePercent1M"),
@@ -861,13 +860,13 @@ export default function StockScreener() {
 									{stock.changePercent1M >= 0 ? "+" : ""}
 									{stock.changePercent1M.toFixed(1)}%
 								</TableCell>
-								<TableCell className={colClass("peRatio")}>{fmt(stock.peRatio)}</TableCell>
-								<TableCell className={colClass("priceToFcf")}>{fmt(stock.priceToFcf)}</TableCell>
-								<TableCell className={colClass("priceToCash")}>{fmt(stock.priceToCash)}</TableCell>
-								<TableCell className={colClass("quickRatio")}>{fmt(stock.quickRatio, 2)}</TableCell>
-								<TableCell className={colClass("currentRatio")}>{fmt(stock.currentRatio, 2)}</TableCell>
-								<TableCell className={colClass("buybackYield")}>{fmtPct(stock.buybackYield)}</TableCell>
-								<TableCell className={colClass("dividendYield")}>{fmtPct(stock.dividendYield)}</TableCell>
+								<TableCell className={cn("text-right", colClass("peRatio"))}>{fmt(stock.peRatio)}</TableCell>
+								<TableCell className={cn("text-right", colClass("priceToFcf"))}>{fmt(stock.priceToFcf)}</TableCell>
+								<TableCell className={cn("text-right", colClass("priceToCash"))}>{fmt(stock.priceToCash)}</TableCell>
+								<TableCell className={cn("text-right", colClass("quickRatio"))}>{fmt(stock.quickRatio, 2)}</TableCell>
+								<TableCell className={cn("text-right", colClass("currentRatio"))}>{fmt(stock.currentRatio, 2)}</TableCell>
+								<TableCell className={cn("text-right", colClass("buybackYield"))}>{fmtPct(stock.buybackYield)}</TableCell>
+								<TableCell className={cn("text-right", colClass("dividendYield"))}>{fmtPct(stock.dividendYield)}</TableCell>
 							</TableRow>
 						))
 					)}
