@@ -565,7 +565,7 @@ export default function StockScreener() {
 							<Select
 								value={filters.country || "ALL"}
 								onValueChange={(v) =>
-									setFilter("country", v === "ALL" ? "" : v)
+									setFilter("country", v === "ALL" ? "" : (v ?? ""))
 								}
 							>
 								<SelectTrigger className="w-full">
@@ -589,7 +589,9 @@ export default function StockScreener() {
 							</Label>
 							<Select
 								value={filters.sector || "ALL"}
-								onValueChange={(v) => setFilter("sector", v === "ALL" ? "" : v)}
+								onValueChange={(v) =>
+									setFilter("sector", v === "ALL" ? "" : (v ?? ""))
+								}
 							>
 								<SelectTrigger className="w-full">
 									<SelectValue placeholder="All sectors" />
@@ -826,7 +828,7 @@ export default function StockScreener() {
 										{isNearFiftyTwoWeekLow(stock) && (
 											<Badge
 												variant="outline"
-												className="text-amber-500 border-amber-500/30 bg-amber-500/5 text-[10px] font-normal py-0 px-1.5"
+												className="text-amber-500 border-amber-500/30 bg-amber-500/5 text-10 font-normal py-0 px-1.5"
 											>
 												Near Low
 											</Badge>
