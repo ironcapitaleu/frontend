@@ -49,15 +49,13 @@ interface ContactLinkItemProps {
 
 function ContactLinkItem({ icon, value, href }: ContactLinkItemProps) {
 	return (
-		<div className="flex items-center gap-3">
-			<span className="text-muted-foreground">{icon}</span>
-			<a
-				href={href}
-				className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-			>
-				{value}
-			</a>
-		</div>
+		<a
+			href={href}
+			className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition-colors"
+		>
+			{icon}
+			<span className="text-sm">{value}</span>
+		</a>
 	);
 }
 
