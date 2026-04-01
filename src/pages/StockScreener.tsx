@@ -377,13 +377,19 @@ function SortableHeader({
 
 	return (
 		<TableHead
-			className={cn("cursor-pointer select-none", isActive && "bg-primary/4", className)}
+			className={cn(
+				"cursor-pointer select-none",
+				isActive && "bg-primary/4",
+				className,
+			)}
 			onClick={() => onSort(field)}
 		>
 			<span
 				className={cn(
 					"inline-flex items-center gap-1 transition-colors",
-					isActive ? "text-foreground" : "text-foreground/60 hover:text-foreground",
+					isActive
+						? "text-foreground"
+						: "text-foreground/60 hover:text-foreground",
 				)}
 			>
 				{label}
@@ -732,146 +738,184 @@ export default function StockScreener() {
 				<Table>
 					<TableHeader className="sticky top-0 z-10 bg-muted [&_th]:py-3">
 						<TableRow className="border-b-2 hover:bg-transparent">
-						<SortableHeader
-							field="symbol"
-							label="Symbol"
-							sortConfig={sortConfig}
-							onSort={handleSort}
-						/>
-						<SortableHeader
-							field="name"
-							label="Company"
-							sortConfig={sortConfig}
-							onSort={handleSort}
-						/>
-						<SortableHeader
-							field="country"
-							label="Country"
-							sortConfig={sortConfig}
-							onSort={handleSort}
-						/>
-						<SortableHeader
-							field="marketCap"
-							label="Mkt Cap"
-							sortConfig={sortConfig}
-							onSort={handleSort}
-						/>
-						<SortableHeader
-							field="price"
-							label="Price"
-							sortConfig={sortConfig}
-							onSort={handleSort}
-						/>
-						<SortableHeader
-							field="changePercent1M"
-							label="1M %"
-							sortConfig={sortConfig}
-							onSort={handleSort}
-						/>
-						<SortableHeader
-							field="peRatio"
-							label="P/E"
-							sortConfig={sortConfig}
-							onSort={handleSort}
-						/>
-						<SortableHeader
-							field="priceToFcf"
-							label="P/FCF"
-							sortConfig={sortConfig}
-							onSort={handleSort}
-						/>
-						<SortableHeader
-							field="priceToCash"
-							label="P/Cash"
-							sortConfig={sortConfig}
-							onSort={handleSort}
-						/>
-						<SortableHeader
-							field="quickRatio"
-							label="Quick R."
-							sortConfig={sortConfig}
-							onSort={handleSort}
-						/>
-						<SortableHeader
-							field="currentRatio"
-							label="Curr. R."
-							sortConfig={sortConfig}
-							onSort={handleSort}
-						/>
-						<SortableHeader
-							field="buybackYield"
-							label="Buyback Y."
-							sortConfig={sortConfig}
-							onSort={handleSort}
-						/>
-						<SortableHeader
-							field="dividendYield"
-							label="Div. Y."
-							sortConfig={sortConfig}
-							onSort={handleSort}
-						/>
-					</TableRow>
+							<SortableHeader
+								field="symbol"
+								label="Symbol"
+								sortConfig={sortConfig}
+								onSort={handleSort}
+							/>
+							<SortableHeader
+								field="name"
+								label="Company"
+								sortConfig={sortConfig}
+								onSort={handleSort}
+							/>
+							<SortableHeader
+								field="country"
+								label="Country"
+								sortConfig={sortConfig}
+								onSort={handleSort}
+							/>
+							<SortableHeader
+								field="marketCap"
+								label="Mkt Cap"
+								sortConfig={sortConfig}
+								onSort={handleSort}
+							/>
+							<SortableHeader
+								field="price"
+								label="Price"
+								sortConfig={sortConfig}
+								onSort={handleSort}
+							/>
+							<SortableHeader
+								field="changePercent1M"
+								label="1M %"
+								sortConfig={sortConfig}
+								onSort={handleSort}
+							/>
+							<SortableHeader
+								field="peRatio"
+								label="P/E"
+								sortConfig={sortConfig}
+								onSort={handleSort}
+							/>
+							<SortableHeader
+								field="priceToFcf"
+								label="P/FCF"
+								sortConfig={sortConfig}
+								onSort={handleSort}
+							/>
+							<SortableHeader
+								field="priceToCash"
+								label="P/Cash"
+								sortConfig={sortConfig}
+								onSort={handleSort}
+							/>
+							<SortableHeader
+								field="quickRatio"
+								label="Quick R."
+								sortConfig={sortConfig}
+								onSort={handleSort}
+							/>
+							<SortableHeader
+								field="currentRatio"
+								label="Curr. R."
+								sortConfig={sortConfig}
+								onSort={handleSort}
+							/>
+							<SortableHeader
+								field="buybackYield"
+								label="Buyback Y."
+								sortConfig={sortConfig}
+								onSort={handleSort}
+							/>
+							<SortableHeader
+								field="dividendYield"
+								label="Div. Y."
+								sortConfig={sortConfig}
+								onSort={handleSort}
+							/>
+						</TableRow>
 					</TableHeader>
 					<TableBody className="[&_td]:py-8.5 [&_td]:px-3">
 						{results.length === 0 ? (
-						<TableRow>
-							<TableCell
-								colSpan={13}
-								className="py-16 text-center text-muted-foreground"
-							>
-								No results match the current filters.
-							</TableCell>
-						</TableRow>
-					) : (
-						results.map((stock) => (
-							<TableRow
-								key={stock.symbol}
-								onClick={() => navigate(`/companies/${stock.symbol}`)}
-								className="cursor-pointer even:bg-foreground/2 hover:bg-foreground/4"
-							>
-								<TableCell className={cn("font-medium", colClass("symbol"))}>
-									<span className="flex items-center gap-2">
-										{stock.symbol}
-										{isNearFiftyTwoWeekLow(stock) && (
-											<Badge
-												variant="outline"
-												className="text-amber-500 border-amber-500/30 bg-amber-500/5 text-10 font-normal py-0 px-1.5"
-											>
-												Near Low
-											</Badge>
-										)}
-									</span>
-								</TableCell>
-								<TableCell className={cn("text-muted-foreground", colClass("name"))}>
-									{stock.name}
-								</TableCell>
-								<TableCell className={cn("text-muted-foreground", colClass("country"))}>
-									{stock.country}
-								</TableCell>
-								<TableCell className={cn("text-right", colClass("marketCap"))}>{formatMarketCap(stock.marketCap)}</TableCell>
-								<TableCell className={cn("text-right", colClass("price"))}>${stock.price.toFixed(2)}</TableCell>
+							<TableRow>
 								<TableCell
-									className={cn(									"text-right",										stock.changePercent1M >= 0
-											? "text-emerald-500"
-											: "text-red-500",
-										colClass("changePercent1M"),
-									)}
+									colSpan={13}
+									className="py-16 text-center text-muted-foreground"
 								>
-									{stock.changePercent1M >= 0 ? "+" : ""}
-									{stock.changePercent1M.toFixed(1)}%
+									No results match the current filters.
 								</TableCell>
-								<TableCell className={cn("text-right", colClass("peRatio"))}>{fmt(stock.peRatio)}</TableCell>
-								<TableCell className={cn("text-right", colClass("priceToFcf"))}>{fmt(stock.priceToFcf)}</TableCell>
-								<TableCell className={cn("text-right", colClass("priceToCash"))}>{fmt(stock.priceToCash)}</TableCell>
-								<TableCell className={cn("text-right", colClass("quickRatio"))}>{fmt(stock.quickRatio, 2)}</TableCell>
-								<TableCell className={cn("text-right", colClass("currentRatio"))}>{fmt(stock.currentRatio, 2)}</TableCell>
-								<TableCell className={cn("text-right", colClass("buybackYield"))}>{fmtPct(stock.buybackYield)}</TableCell>
-								<TableCell className={cn("text-right", colClass("dividendYield"))}>{fmtPct(stock.dividendYield)}</TableCell>
 							</TableRow>
-						))
-					)}
-				</TableBody>
-			</Table>
+						) : (
+							results.map((stock) => (
+								<TableRow
+									key={stock.symbol}
+									onClick={() => navigate(`/companies/${stock.symbol}`)}
+									className="cursor-pointer even:bg-foreground/2 hover:bg-foreground/4"
+								>
+									<TableCell className={cn("font-medium", colClass("symbol"))}>
+										<span className="flex items-center gap-2">
+											{stock.symbol}
+											{isNearFiftyTwoWeekLow(stock) && (
+												<Badge
+													variant="outline"
+													className="text-amber-500 border-amber-500/30 bg-amber-500/5 text-10 font-normal py-0 px-1.5"
+												>
+													Near Low
+												</Badge>
+											)}
+										</span>
+									</TableCell>
+									<TableCell
+										className={cn("text-muted-foreground", colClass("name"))}
+									>
+										{stock.name}
+									</TableCell>
+									<TableCell
+										className={cn("text-muted-foreground", colClass("country"))}
+									>
+										{stock.country}
+									</TableCell>
+									<TableCell
+										className={cn("text-right", colClass("marketCap"))}
+									>
+										{formatMarketCap(stock.marketCap)}
+									</TableCell>
+									<TableCell className={cn("text-right", colClass("price"))}>
+										${stock.price.toFixed(2)}
+									</TableCell>
+									<TableCell
+										className={cn(
+											"text-right",
+											stock.changePercent1M >= 0
+												? "text-emerald-500"
+												: "text-red-500",
+											colClass("changePercent1M"),
+										)}
+									>
+										{stock.changePercent1M >= 0 ? "+" : ""}
+										{stock.changePercent1M.toFixed(1)}%
+									</TableCell>
+									<TableCell className={cn("text-right", colClass("peRatio"))}>
+										{fmt(stock.peRatio)}
+									</TableCell>
+									<TableCell
+										className={cn("text-right", colClass("priceToFcf"))}
+									>
+										{fmt(stock.priceToFcf)}
+									</TableCell>
+									<TableCell
+										className={cn("text-right", colClass("priceToCash"))}
+									>
+										{fmt(stock.priceToCash)}
+									</TableCell>
+									<TableCell
+										className={cn("text-right", colClass("quickRatio"))}
+									>
+										{fmt(stock.quickRatio, 2)}
+									</TableCell>
+									<TableCell
+										className={cn("text-right", colClass("currentRatio"))}
+									>
+										{fmt(stock.currentRatio, 2)}
+									</TableCell>
+									<TableCell
+										className={cn("text-right", colClass("buybackYield"))}
+									>
+										{fmtPct(stock.buybackYield)}
+									</TableCell>
+									<TableCell
+										className={cn("text-right", colClass("dividendYield"))}
+									>
+										{fmtPct(stock.dividendYield)}
+									</TableCell>
+								</TableRow>
+							))
+						)}
+					</TableBody>
+				</Table>
 			</div>
 		</div>
 	);
