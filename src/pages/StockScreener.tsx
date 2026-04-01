@@ -737,7 +737,6 @@ export default function StockScreener() {
 							label="Symbol"
 							sortConfig={sortConfig}
 							onSort={handleSort}
-							className="pl-0"
 						/>
 						<SortableHeader
 							field="name"
@@ -830,7 +829,7 @@ export default function StockScreener() {
 								onClick={() => navigate(`/companies/${stock.symbol}`)}
 								className="cursor-pointer even:bg-foreground/2 hover:bg-foreground/4"
 							>
-								<TableCell className={cn("pl-0 font-medium", colClass("symbol"))}>
+								<TableCell className={cn("font-medium", colClass("symbol"))}>
 									<span className="flex items-center gap-2">
 										{stock.symbol}
 										{isNearFiftyTwoWeekLow(stock) && (
