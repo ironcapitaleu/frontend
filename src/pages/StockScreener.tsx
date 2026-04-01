@@ -377,10 +377,15 @@ function SortableHeader({
 
 	return (
 		<TableHead
-			className={cn("cursor-pointer select-none", className)}
+			className={cn("cursor-pointer select-none", isActive && "bg-primary/4", className)}
 			onClick={() => onSort(field)}
 		>
-			<span className="inline-flex items-center gap-1 text-foreground/60 hover:text-foreground transition-colors">
+			<span
+				className={cn(
+					"inline-flex items-center gap-1 transition-colors",
+					isActive ? "text-foreground" : "text-foreground/60 hover:text-foreground",
+				)}
+			>
 				{label}
 				{isActive && direction === "asc" ? (
 					<ArrowUp size={11} />
@@ -504,9 +509,11 @@ export default function StockScreener() {
 	}, [filters, sortConfig]);
 
 	const activeCount = countActiveFilters(filters);
+	const colClass = (field: keyof Stock) =>
+		sortConfig?.field === field ? "bg-primary/4" : undefined;
 
 	return (
-		<div className="flex-1 bg-background">
+		<div className="flex-1 bg-background flex flex-col gap-3">
 			{/* Toolbar */}
 			<div className="flex items-center justify-between gap-4">
 				<span className="text-sm text-muted-foreground">
@@ -721,9 +728,10 @@ export default function StockScreener() {
 			</div>
 
 			{/* Results table */}
-			<Table>
-				<TableHeader>
-					<TableRow className="border-b-2">
+			<div className="screener-table rounded-lg border border-border overflow-hidden bg-card">
+				<Table>
+					<TableHeader className="bg-muted [&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-muted [&_th]:py-3">
+						<TableRow className="border-b-2 hover:bg-transparent">
 						<SortableHeader
 							field="symbol"
 							label="Symbol"
@@ -804,9 +812,9 @@ export default function StockScreener() {
 							onSort={handleSort}
 						/>
 					</TableRow>
-				</TableHeader>
-				<TableBody>
-					{results.length === 0 ? (
+					</TableHeader>
+					<TableBody className="[&_td]:py-2.5 [&_td]:px-3">
+						{results.length === 0 ? (
 						<TableRow>
 							<TableCell
 								colSpan={13}
@@ -820,9 +828,9 @@ export default function StockScreener() {
 							<TableRow
 								key={stock.symbol}
 								onClick={() => navigate(`/companies/${stock.symbol}`)}
-								className="cursor-pointer"
+								className="cursor-pointer even:bg-foreground/2 hover:bg-foreground/4"
 							>
-								<TableCell className="pl-0 font-medium">
+								<TableCell className={cn("pl-0 font-medium", colClass("symbol"))}>
 									<span className="flex items-center gap-2">
 										{stock.symbol}
 										{isNearFiftyTwoWeekLow(stock) && (
@@ -835,36 +843,38 @@ export default function StockScreener() {
 										)}
 									</span>
 								</TableCell>
-								<TableCell className="text-muted-foreground">
+								<TableCell className={cn("text-muted-foreground", colClass("name"))}>
 									{stock.name}
 								</TableCell>
-								<TableCell className="text-muted-foreground">
+								<TableCell className={cn("text-muted-foreground", colClass("country"))}>
 									{stock.country}
 								</TableCell>
-								<TableCell>{formatMarketCap(stock.marketCap)}</TableCell>
-								<TableCell>${stock.price.toFixed(2)}</TableCell>
+								<TableCell className={colClass("marketCap")}>{formatMarketCap(stock.marketCap)}</TableCell>
+								<TableCell className={colClass("price")}>${stock.price.toFixed(2)}</TableCell>
 								<TableCell
-									className={
+									className={cn(
 										stock.changePercent1M >= 0
 											? "text-emerald-500"
-											: "text-red-500"
-									}
+											: "text-red-500",
+										colClass("changePercent1M"),
+									)}
 								>
 									{stock.changePercent1M >= 0 ? "+" : ""}
 									{stock.changePercent1M.toFixed(1)}%
 								</TableCell>
-								<TableCell>{fmt(stock.peRatio)}</TableCell>
-								<TableCell>{fmt(stock.priceToFcf)}</TableCell>
-								<TableCell>{fmt(stock.priceToCash)}</TableCell>
-								<TableCell>{fmt(stock.quickRatio, 2)}</TableCell>
-								<TableCell>{fmt(stock.currentRatio, 2)}</TableCell>
-								<TableCell>{fmtPct(stock.buybackYield)}</TableCell>
-								<TableCell>{fmtPct(stock.dividendYield)}</TableCell>
+								<TableCell className={colClass("peRatio")}>{fmt(stock.peRatio)}</TableCell>
+								<TableCell className={colClass("priceToFcf")}>{fmt(stock.priceToFcf)}</TableCell>
+								<TableCell className={colClass("priceToCash")}>{fmt(stock.priceToCash)}</TableCell>
+								<TableCell className={colClass("quickRatio")}>{fmt(stock.quickRatio, 2)}</TableCell>
+								<TableCell className={colClass("currentRatio")}>{fmt(stock.currentRatio, 2)}</TableCell>
+								<TableCell className={colClass("buybackYield")}>{fmtPct(stock.buybackYield)}</TableCell>
+								<TableCell className={colClass("dividendYield")}>{fmtPct(stock.dividendYield)}</TableCell>
 							</TableRow>
 						))
 					)}
 				</TableBody>
 			</Table>
+			</div>
 		</div>
 	);
 }
