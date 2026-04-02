@@ -761,60 +761,70 @@ export default function StockScreener() {
 								label="Mkt Cap"
 								sortConfig={sortConfig}
 								onSort={handleSort}
+								className="text-center"
 							/>
 							<SortableHeader
 								field="price"
 								label="Price"
 								sortConfig={sortConfig}
 								onSort={handleSort}
+								className="text-center"
 							/>
 							<SortableHeader
 								field="changePercent1M"
 								label="1M %"
 								sortConfig={sortConfig}
 								onSort={handleSort}
+								className="text-center"
 							/>
 							<SortableHeader
 								field="peRatio"
 								label="P/E"
 								sortConfig={sortConfig}
 								onSort={handleSort}
+								className="text-center"
 							/>
 							<SortableHeader
 								field="priceToFcf"
 								label="P/FCF"
 								sortConfig={sortConfig}
 								onSort={handleSort}
+								className="text-center"
 							/>
 							<SortableHeader
 								field="priceToCash"
 								label="P/Cash"
 								sortConfig={sortConfig}
 								onSort={handleSort}
+								className="text-center"
 							/>
 							<SortableHeader
 								field="quickRatio"
 								label="Quick R."
 								sortConfig={sortConfig}
 								onSort={handleSort}
+								className="text-center"
 							/>
 							<SortableHeader
 								field="currentRatio"
 								label="Curr. R."
 								sortConfig={sortConfig}
 								onSort={handleSort}
+								className="text-center"
 							/>
 							<SortableHeader
 								field="buybackYield"
 								label="Buyback Y."
 								sortConfig={sortConfig}
 								onSort={handleSort}
+								className="text-center"
 							/>
 							<SortableHeader
 								field="dividendYield"
 								label="Div. Y."
 								sortConfig={sortConfig}
 								onSort={handleSort}
+								className="text-center"
 							/>
 						</TableRow>
 					</TableHeader>
@@ -859,16 +869,16 @@ export default function StockScreener() {
 										{stock.country}
 									</TableCell>
 									<TableCell
-										className={cn("text-right", colClass("marketCap"))}
+										className={cn("text-center", colClass("marketCap"))}
 									>
 										{formatMarketCap(stock.marketCap)}
 									</TableCell>
-									<TableCell className={cn("text-right", colClass("price"))}>
+									<TableCell className={cn("text-center", colClass("price"))}>
 										${stock.price.toFixed(2)}
 									</TableCell>
 									<TableCell
 										className={cn(
-											"text-right",
+											"text-center",
 											stock.changePercent1M >= 0
 												? "text-emerald-500"
 												: "text-red-500",
@@ -878,36 +888,36 @@ export default function StockScreener() {
 										{stock.changePercent1M >= 0 ? "+" : ""}
 										{stock.changePercent1M.toFixed(1)}%
 									</TableCell>
-									<TableCell className={cn("text-right", colClass("peRatio"))}>
+									<TableCell className={cn("text-center", colClass("peRatio"))}>
 										{fmt(stock.peRatio)}
 									</TableCell>
 									<TableCell
-										className={cn("text-right", colClass("priceToFcf"))}
+										className={cn("text-center", colClass("priceToFcf"))}
 									>
 										{fmt(stock.priceToFcf)}
 									</TableCell>
 									<TableCell
-										className={cn("text-right", colClass("priceToCash"))}
+										className={cn("text-center", colClass("priceToCash"))}
 									>
 										{fmt(stock.priceToCash)}
 									</TableCell>
 									<TableCell
-										className={cn("text-right", colClass("quickRatio"))}
+										className={cn("text-center", colClass("quickRatio"))}
 									>
 										{fmt(stock.quickRatio, 2)}
 									</TableCell>
 									<TableCell
-										className={cn("text-right", colClass("currentRatio"))}
+										className={cn("text-center", colClass("currentRatio"))}
 									>
 										{fmt(stock.currentRatio, 2)}
 									</TableCell>
 									<TableCell
-										className={cn("text-right", colClass("buybackYield"))}
+										className={cn("text-center", colClass("buybackYield"))}
 									>
 										{fmtPct(stock.buybackYield)}
 									</TableCell>
 									<TableCell
-										className={cn("text-right", colClass("dividendYield"))}
+										className={cn("text-center", colClass("dividendYield"))}
 									>
 										{fmtPct(stock.dividendYield)}
 									</TableCell>
