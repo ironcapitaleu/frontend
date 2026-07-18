@@ -212,6 +212,33 @@ This repository uses a **two-branch flow**: feature branches → `dev` → `main
 - After a feature PR merges into `dev`, **proactively create a PR from `dev` → `main`** to keep the release path unblocked.
 - Do not let changes sit in `dev` without propagating — the goal is fast, clean flow from feature branch → dev → main.
 
+### Merge Conflict Resolution: `dev` Always Wins
+
+When merging `dev` into `main`, **`dev` always takes precedence**. This is a structural rule:
+
+- `dev` is the integration branch where all work lands first and is tested.
+- `main` is the release branch that receives proven code from `dev`.
+- If a conflict arises during a dev→main merge, resolve it by accepting dev's version (`-X theirs` from main's perspective).
+
+To merge dev→main locally when the GitHub PR has conflicts:
+
+```bash
+git checkout main
+git pull origin main
+git merge dev -X theirs
+git push origin main
+```
+
+Or to pre-resolve by merging main into dev (making dev a superset):
+
+```bash
+git checkout dev
+git merge origin/main -X ours
+git push origin dev
+```
+
+**Root cause prevention:** Conflicts only arise when `main` has commits that `dev` doesn't. Since the merge policy enforces that only `dev` can merge into `main`, this should not happen in normal flow. If it does, it means something was committed directly to `main` or a hotfix landed there — always merge `main` back into `dev` immediately after.
+
 ---
 
 ## PR Review Guidelines
