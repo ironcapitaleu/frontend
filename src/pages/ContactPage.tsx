@@ -27,17 +27,35 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
-interface ContactDetailProps {
+interface ContactInfoItemProps {
 	icon: React.ReactNode;
 	value: string;
 }
 
-function ContactDetail({ icon, value }: ContactDetailProps) {
+function ContactInfoItem({ icon, value }: ContactInfoItemProps) {
 	return (
 		<div className="flex items-center gap-3">
 			<span className="text-muted-foreground">{icon}</span>
 			<span className="text-sm text-muted-foreground">{value}</span>
 		</div>
+	);
+}
+
+interface ContactLinkItemProps {
+	icon: React.ReactNode;
+	value: string;
+	href: string;
+}
+
+function ContactLinkItem({ icon, value, href }: ContactLinkItemProps) {
+	return (
+		<a
+			href={href}
+			className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition-colors"
+		>
+			{icon}
+			<span className="text-sm">{value}</span>
+		</a>
 	);
 }
 
@@ -396,13 +414,14 @@ function ContactPage() {
 					</div>
 
 					<div className="flex flex-col gap-4">
-						<ContactDetail
+						<ContactInfoItem
 							icon={<MapPin size={18} />}
 							value="Zürich, Switzerland"
 						/>
-						<ContactDetail
+						<ContactLinkItem
 							icon={<Mail size={18} />}
 							value="contact@ironcapital.eu"
+							href="mailto:contact@ironcapital.eu"
 						/>
 					</div>
 				</div>

@@ -234,6 +234,11 @@
 	grid-template-rows: 1fr;
 }
 
+.screener-table [data-slot="table-container"] {
+	overflow: auto;
+	max-height: 65vh;
+}
+
 /* Custom animation for the AI glowing border effect */
 @keyframes gradient-flow {
 	0% {
