@@ -164,6 +164,17 @@ human-escalated items.
 - **Commit granularity:** One commit per iteration batch, not one commit per comment
 - **PR target:** Always `dev` unless explicitly told otherwise
 
+## Proactive Propagation
+
+After a PR is merged, **proactively propagate** through the full chain:
+
+1. **Feature branch → `dev`**: Once CI is green and review is clean, merge (or inform the human it's ready).
+2. **`dev` → `main`**: Immediately after the feature PR merges into `dev`, create a PR from `dev` to `main` so the release path stays unblocked.
+
+Do not wait to be asked — the goal is to get changes from feature branch → dev → main as fast and cleanly as possible. If there are reasons NOT to propagate (e.g., dev has untested changes from other PRs, a release freeze is in effect), flag it to the human instead of silently stopping.
+
+**Branch hygiene:** Always verify you are on the correct branch before making changes or pushing. Run `git branch --show-current` if uncertain. When iterating on a PR, check out the branch that the PR is on — not an unrelated branch.
+
 ## Example Invocation
 
 User: "iterate on the PR"
@@ -173,3 +184,4 @@ User: "iterate on the PR"
 → Commits, pushes, comments `@claude review the latest changes`
 → Waits for new review
 → Reports: "New review is clean. PR ready to merge into dev."
+→ After merge to dev, creates PR from dev → main

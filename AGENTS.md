@@ -204,6 +204,14 @@ When creating a pull request, always use the repository's PR template located at
 
 Never use a freeform PR body or a different structure.
 
+### Branching and Propagation
+
+This repository uses a **two-branch flow**: feature branches → `dev` → `main`.
+
+- Feature PRs always target **`dev`** (not `main`) unless explicitly told otherwise.
+- After a feature PR merges into `dev`, **proactively create a PR from `dev` → `main`** to keep the release path unblocked.
+- Do not let changes sit in `dev` without propagating — the goal is fast, clean flow from feature branch → dev → main.
+
 ---
 
 ## PR Review Guidelines
