@@ -239,6 +239,14 @@ git push origin dev
 
 **Root cause prevention:** Conflicts only arise when `main` has commits that `dev` doesn't. Since the merge policy enforces that only `dev` can merge into `main`, this should not happen in normal flow. If it does, it means something was committed directly to `main` or a hotfix landed there — always merge `main` back into `dev` immediately after.
 
+**Local merge driver setup:** The `.gitattributes` file declares `merge=ours` for `package-lock.json` so that dev's version always wins automatically during merges. For this to work, each developer must register the `ours` merge driver in their local git config:
+
+```bash
+git config merge.ours.driver true
+```
+
+This only needs to be done once per clone. Without it, git will still produce conflicts on `package-lock.json` and require manual resolution.
+
 ---
 
 ## PR Review Guidelines
