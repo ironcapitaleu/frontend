@@ -1,0 +1,3 @@
+# dev always takes precedence over main during merges
+# package-lock.json conflicts are resolved by regenerating from dev's package.json
+package-lock.json merge=ours

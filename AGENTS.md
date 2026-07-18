@@ -1,12 +1,11 @@
-# Copilot Instructions – Development Guidelines for JavaScript/TypeScript Projects
-
-> Use this file to guide GitHub Copilot and developers to follow consistent, high-quality practices when writing or updating code in this project.
+# Development Guidelines for This JavaScript/TypeScript Project
 
 ---
 
 ## General Rules (For All Code)
 
 ### Code Quality
+
 - The code is **properly formatted** (`npm run format:check`).
 - Dependencies must be **free of known security vulnerabilities** (`npm run security:check`).
 - Code **compiles without errors** and passes:
@@ -15,13 +14,39 @@
   - Integration tests
   - Type checking (`npm run typing:check`)
 
+### Pre-Push Verification
+
+Before pushing a completed section of work (and especially before creating a PR), **run the full CI check suite locally** to catch failures early. Do not push code and rely on CI to find issues — verify locally first.
+
+Run, at minimum:
+
+```bash
+npm run format:check
+npm run security:check
+npm run lint:check
+npm run typing:check
+npm run build
+npm run test:ci
+```
+
+If any of these fail, fix the issue before pushing. This avoids the cycle of: push → CI fails → iterate → force-push → re-run CI.
+
+**When to run:** After completing a logical unit of work (a feature, a refactor, a bug fix) — not after every single file save. Use judgement: a one-line typo fix doesn't need the full suite, but any change touching logic, dependencies, or configuration does.
+
+### Codebase-Wide Propagation
+
+When making a change that applies to multiple places (renaming a pattern, replacing a dependency,
+migrating an endpoint, fixing a convention), proactively **apply it everywhere in the same pass**. Do not fix
+one file and leave identical occurrences in other files for a follow-up PR. Search the entire
+codebase for all instances before considering the change complete.
+
 ### Documentation
+
 - Public items in libraries **must include JSDoc comments** (`/** */`).
 - All implementation changes must be **reflected in documentation**, including:
   - JSDoc comments
   - Design documents (if applicable, e.g., mermaid diagrams)
 - **Documentation must be version controlled**.
-
 
 ## Import Order Conventions
 
@@ -41,6 +66,7 @@ Within each group, order imports alphabetically by module name. Separate each gr
 After the final line of imports, other top-level declarations (e.g., `constants`, `types`) can follow.
 
 **Example:**
+
 ```javascript
 import crypto from 'crypto';
 import fs from 'fs';
@@ -57,21 +83,25 @@ import { useAuth } from '../hooks/useAuth';
 ## Error Naming Conventions
 
 ### Error Classes
+
 Error class names should follow consistent naming patterns based on the kind of error they represent:
 
 **Adjective-First Pattern** (for describing the *state* of something):
+
 - Use when the error represents an invalid or unexpected *quality* of data or state
 - Format: `[Adjective][Noun]`
 - Common adjectives: `Invalid`, `Missing`, `Unexpected`, `Unauthorized`
 - Examples: `InvalidInput`, `MissingData`, `UnexpectedResponse`
 
 **Failed-First Pattern** (for describing *failed actions*):
+
 - Use when the error represents a specific action or operation that failed
 - Format: `Failed[Action/Noun]`
 - Examples: `FailedClientCreation`, `FailedRequestExecution`, `FailedOutputComputation`
 - Avoid: `[Action]Failed`
 
 **General Guidelines:**
+
 - Keep error names concise but descriptive
 - The error class name should clearly indicate what went wrong
 - Be consistent within the same error domain or module
@@ -83,6 +113,7 @@ Error class names should follow consistent naming patterns based on the kind of 
 ## Library Code
 
 ### Testing
+
 - Write a **comprehensive unit test suite** for the implemented code.
 - If applicable, write **integration tests**.
 - Use **pretty assertions** (built-in with Vitest/Jest for readable diffs, or via libraries like `chai` with plugins) for improved readability.
@@ -102,6 +133,7 @@ Error class names should follow consistent naming patterns based on the kind of 
 ---
 
 ### Logging
+
 - Use **structured logging** in application code only (not in libraries).
 - Logs must:
   - Be formatted as **JSON**
@@ -114,7 +146,6 @@ Error class names should follow consistent naming patterns based on the kind of 
     - `error`: Critical issues (e.g., failure to connect to a database, unhandled exceptions)
 - For browser-based React apps, use `console.log`, `console.warn`, `console.error`, etc., or a lightweight logging library like `loglevel`.
 - For Node.js backends or SSR, consider libraries like `pino` or `winston` for structured JSON logging.
-
 
 ### Structured Logging Format
 
@@ -137,6 +168,7 @@ All structured logs must be formatted as **JSON documents** with exactly **five 
   - Include relevant variables, IDs, or environmental details
 
 **Example:**
+
 ```json
 {
   "level": "info",
@@ -154,68 +186,121 @@ All structured logs must be formatted as **JSON documents** with exactly **five 
 ---
 
 ### Sitemap
+
 When adding / modifying pages in the frontend, make sure to update the sitemap page (`src/pages/SitemapPage.tsx`) and the sitemap XML file (`public/sitemap.xml`) accordingly. This is important for SEO and for users to easily navigate the site.
 
 ---
-## Copilot Guidance
 
-When Copilot generates code, it should:
-- Follow existing conventions and module structure
-- Include JSDoc comments for public items
-- Generate unit tests (and integration tests if relevant)
-- Add structured logging in application code
-- Avoid logging or exposing sensitive data
-- Prefer explicit error handling with meaningful error classes (e.g., custom `Error` subclasses) over generic errors
-- Use TypeScript types/interfaces for type safety
-- Make sure that any new added pages are included in the sitemap page and sitemap XML file
+## Pull Request Creation
+
+When creating a pull request, always use the repository's PR template located at
+`.github/pull_request_template.md`. Fill in all sections:
+
+1. **Description** — what changed and why
+2. **Related** — link to tickets, issues, or prior PRs
+3. **Type of change** — check the appropriate box
+4. **Test Plan** — how was this tested, how can a reviewer verify
+5. **Checklist** — confirm guidelines are followed
+
+Never use a freeform PR body or a different structure.
+
+### Branching and Propagation
+
+This repository uses a **two-branch flow**: feature branches → `dev` → `main`.
+
+- Feature PRs always target **`dev`** (not `main`) unless explicitly told otherwise.
+- After a feature PR merges into `dev`, **proactively create a PR from `dev` → `main`** to keep the release path unblocked.
+- Do not let changes sit in `dev` without propagating — the goal is fast, clean flow from feature branch → dev → main.
+
+### Merge Conflict Resolution: `dev` Always Wins
+
+When merging `dev` into `main`, **`dev` always takes precedence**. This is a structural rule:
+
+- `dev` is the integration branch where all work lands first and is tested.
+- `main` is the release branch that receives proven code from `dev`.
+- If a conflict arises during a dev→main merge, resolve it by accepting dev's version (`-X theirs` from main's perspective).
+
+To merge dev→main locally when the GitHub PR has conflicts:
+
+```bash
+git checkout main
+git pull origin main
+git merge dev -X theirs
+git push origin main
+```
+
+Or to pre-resolve by merging main into dev (making dev a superset):
+
+```bash
+git checkout dev
+git merge origin/main -X ours
+git push origin dev
+```
+
+**Root cause prevention:** Conflicts only arise when `main` has commits that `dev` doesn't. Since the merge policy enforces that only `dev` can merge into `main`, this should not happen in normal flow. If it does, it means something was committed directly to `main` or a hotfix landed there — always merge `main` back into `dev` immediately after.
+
+**Local merge driver setup:** The `.gitattributes` file declares `merge=ours` for `package-lock.json` so that dev's version always wins automatically during merges. For this to work, each developer must register the `ours` merge driver in their local git config:
+
+```bash
+git config merge.ours.driver true
+```
+
+This only needs to be done once per clone. Without it, git will still produce conflicts on `package-lock.json` and require manual resolution.
 
 ---
 
 ## PR Review Guidelines
 
-### Code Quality
+### Code Quality Review
+
 - Readability and maintainability  
 - Flag duplicated code  
 - Ensure functions are focused and not overly long
 - Make sure components, hooks, and functions follow the single responsibility principle
 - Avoid side effects in functions (prefer pure functions where possible)
-- Naming of variables, components, hooks, and functions must follow **Ottinger’s Naming Rules** ([what they are](https://objectmentor.com/resources/articles/naming.htm)) (names should reveal intent, be pronounceable, avoid encodings, not be too cute, etc.)  
+- Naming of variables, components, hooks, and functions must follow **Ottinger's Naming Rules** ([what they are](https://objectmentor.com/resources/articles/naming.htm)) (names should reveal intent, be pronounceable, avoid encodings, not be too cute, etc.)  
 - Code within files and modules must follow the **Step-Down Rule** ([see explanation](https://dzone.com/articles/the-stepdown-rule)) (functions stay on one layer of abstraction, inside a module order functions by higher-level concepts first, details later)
 
-
 ### Performance
+
 - Flag inefficiencies (e.g., unnecessary re-renders, missing `useMemo`/`useCallback`)
 - Avoid premature optimization  
 
 ### Correctness & Safety
+
 - Spot potential bugs and edge cases  
 - Verify sufficient error handling  (e.g., `try/catch`, error boundaries, etc.)
 - Ensure async code handles rejections properly (e.g., `await`, `.catch()`)
 
 ### Security
+
 - Identify insecure practices (e.g., hardcoded secrets like exposed API keys)  
 - Flag outdated or vulnerable libraries (`npm run security:check`)
 - Avoid `dangerouslySetInnerHTML` or similar unsafe patterns in React components without sanitization
 
 ### Style & Documentation
+
 - Ensure style conventions are followed  
 - Check for meaningful comments and JSDoc  
 - Suggest clearer names and documentation where needed  
 
 ### Documentation Consistency
+
 - Cross-check code changes against `README.md`, API docs, usage guides, and inline examples  
 - Flag when function names, parameters, or behaviors change but docs are not updated  
 - Highlight outdated instructions or examples caused by code changes  
 - Ensure new features or breaking changes are properly documented  
 - Make sure that any new added pages are included in the sitemap page and sitemap XML file
 
-### Testing
+### Testing Review
+
 - Confirm sufficient test coverage  
-- Suggest missing edge cases or error condition tests 
+- Suggest missing edge cases or error condition tests
 - Ensure React components have appropriate tests (e.g., rendering, props, state changes)  
 - Verify tests follow the **"Arrange, Define, Act, Assert"** pattern
 
 ### What NOT to Do
+
 - Avoid nitpicks on trivial formatting  
 - Do not suggest unnecessary rewrites if code is clear and correct  
 - Do not enforce rules not listed in these guidelines  
@@ -226,7 +311,7 @@ When Copilot generates code, it should:
 
 All commits must follow the following format:
 
-```
+```sh
 <type>[<scope>]: <short summary>
 
 [<commit body>]
@@ -257,11 +342,13 @@ All commits must follow the following format:
 ### Scope (Optional)
 
 Add scope for area-specific changes when it helps understanding:
+
 - Package names
 - Service or module names
 - Component areas
 
 **Examples:**
+
 - `feat(auth): add user login validation`
 - `fix(database): handle connection timeout errors`
 
@@ -278,11 +365,13 @@ Add scope for area-specific changes when it helps understanding:
 - Separate from summary with blank line
 
 ### Footer (Optional)
+
 - Reference issues or breaking changes
 - Use when relevant for context
 
 **Example Commit:**
-```
+
+```sh
 fix: prevent racing of requests
 
 Introduce a request id and a reference to latest request. Dismiss
@@ -298,14 +387,17 @@ Refs: #123
 ---
 
 ## Deviations
+
 If you must deviate from any guideline, **include a code comment** explaining why. Consistency, safety, and clarity are the priorities in this project.
 
 ---
 
 ## JavaScript/TypeScript Guidelines
+
 Some general guidelines to follow when writing JavaScript/TypeScript code in this project. Some of these (as well as rules that are not listed here) are enforced via linters or formatters, but it's good to gather some important ones in one place for reference.
 
 ### Variable Declaration
+
 - General rule for variable declarations:
   - Use `const` by default
   - Use `let` when you need to reassign
@@ -314,6 +406,7 @@ Some general guidelines to follow when writing JavaScript/TypeScript code in thi
 - **Declare Arrays with `const`**: Declaring arrays with const will prevent any accidental change of type.
 
 ### Variable Initialization
+
 - **Initialize Variables**: Always initialize variables when declaring them.
 - **Don't use `new Object()`**:
   - Use `""` instead of `new String()`
@@ -324,6 +417,7 @@ Some general guidelines to follow when writing JavaScript/TypeScript code in thi
   - Use `function (){}` instead of `new Function()`
 
 ### TypeScript-Specific Guidelines
+
 - Use TypeScript's type system effectively: prefer interfaces and types for complex structures, use unions and intersections as needed.
 - Avoid using `any` type unless absolutely necessary; prefer more specific types.
 - Use `unknown` instead of `any` when the type is not known
@@ -332,6 +426,7 @@ Some general guidelines to follow when writing JavaScript/TypeScript code in thi
 - Prefer `interface` over `type` for defining object shapes, unless using advanced type features
 
 ### Miscellaneous
+
 - Use **arrow functions** for anonymous functions and callbacks
 - Prefer **template literals** (`` `Hello, ${name}!` ``) over string
   concatenation (`'Hello, ' + name + '!'`)
@@ -349,6 +444,7 @@ Some general guidelines to follow when writing JavaScript/TypeScript code in thi
 ## CSS Guidelines
 
 ### Layout Philosophy
+
 - Think **outside-in**: design from the largest page regions down to the smallest component details before writing any CSS.
 - Each container is responsible only for laying out its **direct children** — do not attempt to control deeply nested elements from a parent layout.
 - Avoid using a single monolithic layout to control the entire page. Each component is its own layout context.
@@ -358,11 +454,13 @@ Some general guidelines to follow when writing JavaScript/TypeScript code in thi
 ### When to Use Grid vs. Flexbox
 
 **Use Grid when:**
+
 - Laying out elements in **two dimensions** (rows and columns simultaneously)
 - A defined, explicit structure is needed — full page layout, card grids, named regions
 - A component's sole responsibility is arranging items in a two-dimensional layout (e.g., `<CardGrid>`, `<PhotoGrid>`)
 
 **Use Flexbox when:**
+
 - Laying out elements in **one dimension** — a row of links or a vertical stack
 - Items need to grow or shrink dynamically
 - Aligning elements inside a component (icon + label, button groups, header with title and action)
@@ -370,29 +468,33 @@ Some general guidelines to follow when writing JavaScript/TypeScript code in thi
 Real-world pages use both: Grid for page structure, Flexbox inside regions for components.
 
 | Scope | Primary tool |
-|---|---|
+| --- | --- |
 | Page structure | Grid |
 | Section / region layout | Grid or Flexbox |
 | Individual component internals | Flexbox |
 | Inline element alignment | Flexbox |
 
 ### React Components
+
 - Inside a React component, **default to Flexbox**. Components are micro-layouts — small, self-contained pieces of UI that are almost always one-dimensional alignment problems.
 - Reach for Grid inside a component only when the component's explicit purpose is a two-dimensional layout. Its children should still use Flexbox internally.
 - A component that requires a complex internal Grid layout is often a signal that it is doing too much — revisit the single responsibility principle.
 
 ### Spacing
+
 - Use **`gap`** on flex and grid containers for spacing between items — do not apply margins to individual children for this purpose.
 - Use **`padding`** for internal component spacing (e.g., button padding, card padding, nav link hit areas).
 - Use **`margin`** sparingly: acceptable for vertical rhythm in text-heavy content, one-off nudges, or `margin: 0 auto` for centering a block element with a fixed width.
 - Avoid using `margin` for layout alignment — that is the responsibility of Grid and Flexbox.
 
 ### Responsive Design
+
 - Consider **mobile and desktop layouts from the start**, not as an afterthought. Sketch at least two versions — mobile and desktop — before writing any CSS.
 - Prefer **intrinsically responsive** techniques over explicit breakpoints where possible:
   - Grid: use `repeat(auto-fit, minmax(250px, 1fr))` to let the grid determine column count automatically
   - Flexbox: use `flex-wrap: wrap` combined with `flex-basis` to allow natural reflow without breakpoints
 - When a layout direction change is required (e.g., row on desktop → column on mobile), use a media query — but prefer a single, deliberate breakpoint over many fragmented ones:
+
 ```css
 .header {
   display: flex;
@@ -409,12 +511,14 @@ Real-world pages use both: Grid for page structure, Flexbox inside regions for c
 - Avoid `px` for spacing and font sizes where `rem` or `em` would better support accessibility and scaling.
 
 ### Navigation — Mobile Patterns
+
 - Do not simply collapse a horizontal nav into a visible vertical column on mobile — this is rarely the right UX choice.
 - Prefer one of these established patterns:
   - **Hamburger menu** (most common): hide links by default, reveal on toggle via an `open` class controlled by JavaScript
   - **Slide-in drawer**: a panel sliding in from the left or right, suitable for app-like interfaces
   - **Bottom navigation bar**: fixed bar at the bottom of the screen, appropriate for mobile-first apps with 3–5 top-level destinations
 - Ensure all tap targets meet the minimum accessible size of **44×44px**.
+
 ```css
 .nav-links {
   display: flex;
@@ -440,12 +544,14 @@ Real-world pages use both: Grid for page structure, Flexbox inside regions for c
     display: block;
   }
 }
-​```
+```
 
 ### Collapse / Expand Animations
+
 - Avoid toggling `display: none` / `display: block` when animated transitions are needed — it produces an instant snap with no animation.
 - Avoid the `max-height` transition trick — it bases duration on the max value rather than actual content height, producing sluggish or uneven animations.
 - Prefer the **`grid-template-rows` technique** for smooth, content-aware height transitions:
+
 ```css
 .collapsible-body {
   display: grid;
@@ -460,7 +566,7 @@ Real-world pages use both: Grid for page structure, Flexbox inside regions for c
 .collapsible-body.open {
   grid-template-rows: 1fr;
 }
-​```
+```
 
 - Always include `aria-expanded` on trigger elements for accessibility.
 
