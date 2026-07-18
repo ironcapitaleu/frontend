@@ -14,6 +14,32 @@
   - Integration tests
   - Type checking (`npm run typing:check`)
 
+### Pre-Push Verification
+
+Before pushing a completed section of work (and especially before creating a PR), **run the full CI check suite locally** to catch failures early. Do not push code and rely on CI to find issues — verify locally first.
+
+Run, at minimum:
+
+```bash
+npm run format:check
+npm run security:check
+npm run lint:check
+npm run typing:check
+npm run build
+npm run test:ci
+```
+
+If any of these fail, fix the issue before pushing. This avoids the cycle of: push → CI fails → iterate → force-push → re-run CI.
+
+**When to run:** After completing a logical unit of work (a feature, a refactor, a bug fix) — not after every single file save. Use judgement: a one-line typo fix doesn't need the full suite, but any change touching logic, dependencies, or configuration does.
+
+### Codebase-Wide Propagation
+
+When making a change that applies to multiple places (renaming a pattern, replacing a dependency,
+migrating an endpoint, fixing a convention), proactively **apply it everywhere in the same pass**. Do not fix
+one file and leave identical occurrences in other files for a follow-up PR. Search the entire
+codebase for all instances before considering the change complete.
+
 ### Documentation
 
 - Public items in libraries **must include JSDoc comments** (`/** */`).
