@@ -4,10 +4,14 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     target-branch: "dev"
     commit-message:
       prefix: "cicd(deps)"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
 
   # TypeScript / JavaScript
   - package-ecosystem: "npm"
@@ -17,3 +21,12 @@ updates:
     target-branch: "dev"
     commit-message:
       prefix: "build(deps)"
+    groups:
+      dev-dependencies:
+        dependency-type: "development"
+        patterns:
+          - "*"
+      production-dependencies:
+        dependency-type: "production"
+        patterns:
+          - "*"

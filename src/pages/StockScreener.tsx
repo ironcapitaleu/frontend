@@ -357,19 +357,6 @@ function countActiveFilters(filters: FilterState): number {
 
 // ── Presentational Components ──────────────────────────────────────────────────
 
-function ScreenerHeader() {
-	return (
-		<div className="flex flex-col gap-3">
-			<h1 className="font-classic text-4xl md:text-5xl font-semibold text-foreground leading-tight">
-				Screener
-			</h1>
-			<p className="text-muted-foreground text-base leading-relaxed max-w-md">
-				Filter companies by fundamental criteria.
-			</p>
-		</div>
-	);
-}
-
 interface SortableHeaderProps {
 	field: keyof Stock;
 	label: string;
@@ -390,10 +377,21 @@ function SortableHeader({
 
 	return (
 		<TableHead
-			className={cn("cursor-pointer select-none", className)}
+			className={cn(
+				"cursor-pointer select-none",
+				isActive && "bg-primary/4",
+				className,
+			)}
 			onClick={() => onSort(field)}
 		>
-			<span className="inline-flex items-center gap-1 text-foreground/60 hover:text-foreground transition-colors">
+			<span
+				className={cn(
+					"inline-flex items-center gap-1 transition-colors",
+					isActive
+						? "text-foreground"
+						: "text-foreground/60 hover:text-foreground",
+				)}
+			>
 				{label}
 				{isActive && direction === "asc" ? (
 					<ArrowUp size={11} />
@@ -517,241 +515,234 @@ export default function StockScreener() {
 	}, [filters, sortConfig]);
 
 	const activeCount = countActiveFilters(filters);
+	const colClass = (field: keyof Stock) =>
+		sortConfig?.field === field ? "bg-primary/4" : undefined;
 
 	return (
-		<div className="flex-1 bg-background">
-			<div className="max-w-7xl mx-auto px-6 py-12 lg:py-16 flex flex-col gap-8">
-				<ScreenerHeader />
-
-				{/* Toolbar */}
-				<div className="flex items-center justify-between gap-4">
-					<span className="text-sm text-muted-foreground">
-						{results.length} {results.length === 1 ? "result" : "results"}
-					</span>
-					<div className="flex items-center gap-3">
-						{activeCount > 0 && (
-							<button
-								type="button"
-								onClick={resetFilters}
-								className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-							>
-								Reset
-							</button>
-						)}
-						<Button
-							variant="outline"
-							size="sm"
-							onClick={() => setFiltersOpen((v) => !v)}
-							aria-expanded={filtersOpen}
-							className="gap-2 cursor-pointer"
+		<div className="flex-1 bg-background flex flex-col gap-5 px-8 py-6">
+			{/* Toolbar */}
+			<div className="flex items-center justify-between gap-4">
+				<span className="text-sm text-muted-foreground">
+					{results.length} {results.length === 1 ? "result" : "results"}
+				</span>
+				<div className="flex items-center gap-3">
+					{activeCount > 0 && (
+						<button
+							type="button"
+							onClick={resetFilters}
+							className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
 						>
-							<Filter size={14} />
-							Filters
-							{activeCount > 0 && (
-								<Badge className="ml-0.5 h-4 min-w-4 px-1 text-10 font-medium rounded-full">
-									{activeCount}
-								</Badge>
-							)}
-						</Button>
-					</div>
+							Reset
+						</button>
+					)}
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => setFiltersOpen((v) => !v)}
+						aria-expanded={filtersOpen}
+						className="gap-2 cursor-pointer"
+					>
+						<Filter size={14} />
+						Filters
+						{activeCount > 0 && (
+							<Badge className="ml-0.5 h-4 min-w-4 px-1 text-10 font-medium rounded-full">
+								{activeCount}
+							</Badge>
+						)}
+					</Button>
 				</div>
+			</div>
 
-				{/* Collapsible filter panel */}
-				<div className={`filter-panel${filtersOpen ? " open" : ""}`}>
-					<div>
-						<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-6 pb-6 border-b border-border/50">
-							{/* Search */}
+			{/* Collapsible filter panel */}
+			<div className={`filter-panel${filtersOpen ? " open" : ""}`}>
+				<div>
+					<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-6 pb-6 border-b border-border/50">
+						{/* Search */}
+						<div className="flex flex-col gap-2">
+							<Label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+								Search
+							</Label>
+							<Input
+								type="text"
+								placeholder="Symbol or name"
+								value={filters.search}
+								onChange={(e) => setFilter("search", e.target.value)}
+							/>
+						</div>
+
+						{/* Geography */}
+						<div className="flex flex-col gap-2">
+							<Label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+								Country
+							</Label>
+							<Select
+								value={filters.country || "ALL"}
+								onValueChange={(v) =>
+									setFilter("country", v === "ALL" ? "" : (v ?? ""))
+								}
+							>
+								<SelectTrigger className="w-full">
+									<SelectValue placeholder="All countries" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="ALL">All countries</SelectItem>
+									{COUNTRIES.map((c) => (
+										<SelectItem key={c} value={c}>
+											{c}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+
+						{/* Sector */}
+						<div className="flex flex-col gap-2">
+							<Label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+								Sector
+							</Label>
+							<Select
+								value={filters.sector || "ALL"}
+								onValueChange={(v) =>
+									setFilter("sector", v === "ALL" ? "" : (v ?? ""))
+								}
+							>
+								<SelectTrigger className="w-full">
+									<SelectValue placeholder="All sectors" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="ALL">All sectors</SelectItem>
+									{SECTORS.map((s) => (
+										<SelectItem key={s} value={s}>
+											{s}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+
+						{/* Valuation */}
+						<div className="flex flex-col gap-2">
+							<Label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+								Valuation
+							</Label>
 							<div className="flex flex-col gap-2">
-								<Label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
-									Search
-								</Label>
+								<div className="flex items-center gap-2">
+									<Input
+										type="number"
+										placeholder="P/E min"
+										value={filters.peMin}
+										onChange={(e) => setFilter("peMin", e.target.value)}
+									/>
+									<span className="text-muted-foreground text-xs shrink-0">
+										–
+									</span>
+									<Input
+										type="number"
+										placeholder="max"
+										value={filters.peMax}
+										onChange={(e) => setFilter("peMax", e.target.value)}
+									/>
+								</div>
 								<Input
-									type="text"
-									placeholder="Symbol or name"
-									value={filters.search}
-									onChange={(e) => setFilter("search", e.target.value)}
+									type="number"
+									placeholder="P/Cash max"
+									value={filters.priceToCashMax}
+									onChange={(e) => setFilter("priceToCashMax", e.target.value)}
+								/>
+								<Input
+									type="number"
+									placeholder="P/FCF max"
+									value={filters.priceToFcfMax}
+									onChange={(e) => setFilter("priceToFcfMax", e.target.value)}
 								/>
 							</div>
+						</div>
 
-							{/* Geography */}
+						{/* Quality */}
+						<div className="flex flex-col gap-2">
+							<Label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+								Quality
+							</Label>
 							<div className="flex flex-col gap-2">
-								<Label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
-									Country
-								</Label>
-								<Select
-									value={filters.country || "ALL"}
-									onValueChange={(v) =>
-										setFilter("country", v === "ALL" ? "" : v)
+								<Input
+									type="number"
+									placeholder="Quick Ratio min"
+									value={filters.quickRatioMin}
+									onChange={(e) => setFilter("quickRatioMin", e.target.value)}
+								/>
+								<Input
+									type="number"
+									placeholder="Current Ratio min"
+									value={filters.currentRatioMin}
+									onChange={(e) => setFilter("currentRatioMin", e.target.value)}
+								/>
+							</div>
+						</div>
+
+						{/* Yield */}
+						<div className="flex flex-col gap-2">
+							<Label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+								Yield
+							</Label>
+							<div className="flex flex-col gap-2">
+								<Input
+									type="number"
+									placeholder="Buyback Yield min %"
+									value={filters.buybackYieldMin}
+									onChange={(e) => setFilter("buybackYieldMin", e.target.value)}
+								/>
+								<Input
+									type="number"
+									placeholder="Dividend Yield min %"
+									value={filters.dividendYieldMin}
+									onChange={(e) =>
+										setFilter("dividendYieldMin", e.target.value)
 									}
-								>
-									<SelectTrigger className="w-full">
-										<SelectValue placeholder="All countries" />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="ALL">All countries</SelectItem>
-										{COUNTRIES.map((c) => (
-											<SelectItem key={c} value={c}>
-												{c}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
+								/>
 							</div>
+						</div>
 
-							{/* Sector */}
-							<div className="flex flex-col gap-2">
-								<Label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
-									Sector
-								</Label>
-								<Select
-									value={filters.sector || "ALL"}
-									onValueChange={(v) =>
-										setFilter("sector", v === "ALL" ? "" : v)
-									}
-								>
-									<SelectTrigger className="w-full">
-										<SelectValue placeholder="All sectors" />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="ALL">All sectors</SelectItem>
-										{SECTORS.map((s) => (
-											<SelectItem key={s} value={s}>
-												{s}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</div>
-
-							{/* Valuation */}
-							<div className="flex flex-col gap-2">
-								<Label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
-									Valuation
-								</Label>
-								<div className="flex flex-col gap-2">
-									<div className="flex items-center gap-2">
-										<Input
-											type="number"
-											placeholder="P/E min"
-											value={filters.peMin}
-											onChange={(e) => setFilter("peMin", e.target.value)}
-										/>
-										<span className="text-muted-foreground text-xs shrink-0">
-											–
-										</span>
-										<Input
-											type="number"
-											placeholder="max"
-											value={filters.peMax}
-											onChange={(e) => setFilter("peMax", e.target.value)}
-										/>
-									</div>
-									<Input
-										type="number"
-										placeholder="P/Cash max"
-										value={filters.priceToCashMax}
+						{/* Technical */}
+						<div className="flex flex-col gap-2">
+							<Label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+								Technical
+							</Label>
+							<div className="flex flex-col gap-3">
+								<label className="flex items-center gap-2 cursor-pointer">
+									<input
+										type="checkbox"
+										checked={filters.nearFiftyTwoWeekLow}
 										onChange={(e) =>
-											setFilter("priceToCashMax", e.target.value)
+											setFilter("nearFiftyTwoWeekLow", e.target.checked)
 										}
+										className="rounded border-border accent-primary"
 									/>
-									<Input
-										type="number"
-										placeholder="P/FCF max"
-										value={filters.priceToFcfMax}
-										onChange={(e) => setFilter("priceToFcfMax", e.target.value)}
-									/>
-								</div>
-							</div>
-
-							{/* Quality */}
-							<div className="flex flex-col gap-2">
-								<Label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
-									Quality
-								</Label>
-								<div className="flex flex-col gap-2">
-									<Input
-										type="number"
-										placeholder="Quick Ratio min"
-										value={filters.quickRatioMin}
-										onChange={(e) => setFilter("quickRatioMin", e.target.value)}
-									/>
-									<Input
-										type="number"
-										placeholder="Current Ratio min"
-										value={filters.currentRatioMin}
-										onChange={(e) =>
-											setFilter("currentRatioMin", e.target.value)
-										}
-									/>
-								</div>
-							</div>
-
-							{/* Yield */}
-							<div className="flex flex-col gap-2">
-								<Label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
-									Yield
-								</Label>
-								<div className="flex flex-col gap-2">
-									<Input
-										type="number"
-										placeholder="Buyback Yield min %"
-										value={filters.buybackYieldMin}
-										onChange={(e) =>
-											setFilter("buybackYieldMin", e.target.value)
-										}
-									/>
-									<Input
-										type="number"
-										placeholder="Dividend Yield min %"
-										value={filters.dividendYieldMin}
-										onChange={(e) =>
-											setFilter("dividendYieldMin", e.target.value)
-										}
-									/>
-								</div>
-							</div>
-
-							{/* Technical */}
-							<div className="flex flex-col gap-2">
-								<Label className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
-									Technical
-								</Label>
-								<div className="flex flex-col gap-3">
-									<label className="flex items-center gap-2 cursor-pointer">
-										<input
-											type="checkbox"
-											checked={filters.nearFiftyTwoWeekLow}
-											onChange={(e) =>
-												setFilter("nearFiftyTwoWeekLow", e.target.checked)
-											}
-											className="rounded border-border accent-primary"
-										/>
-										<span className="text-sm text-foreground">
-											Near 52-wk Low
-										</span>
-									</label>
-									<Input
-										type="number"
-										placeholder="Down last month ≥ %"
-										value={filters.downLastMonth}
-										onChange={(e) => setFilter("downLastMonth", e.target.value)}
-									/>
-								</div>
+									<span className="text-sm text-foreground">
+										Near 52-wk Low
+									</span>
+								</label>
+								<Input
+									type="number"
+									placeholder="Down last month ≥ %"
+									value={filters.downLastMonth}
+									onChange={(e) => setFilter("downLastMonth", e.target.value)}
+								/>
 							</div>
 						</div>
 					</div>
 				</div>
+			</div>
 
-				{/* Results table */}
+			{/* Results table */}
+			<div className="screener-table rounded-lg border border-border overflow-hidden bg-card">
 				<Table>
-					<TableHeader>
-						<TableRow className="border-b-2">
+					<TableHeader className="sticky top-0 z-10 bg-muted [&_th]:py-3">
+						<TableRow className="border-b-2 hover:bg-transparent">
 							<SortableHeader
 								field="symbol"
 								label="Symbol"
 								sortConfig={sortConfig}
 								onSort={handleSort}
-								className="pl-0"
 							/>
 							<SortableHeader
 								field="name"
@@ -770,64 +761,74 @@ export default function StockScreener() {
 								label="Mkt Cap"
 								sortConfig={sortConfig}
 								onSort={handleSort}
+								className="text-center"
 							/>
 							<SortableHeader
 								field="price"
 								label="Price"
 								sortConfig={sortConfig}
 								onSort={handleSort}
+								className="text-center"
 							/>
 							<SortableHeader
 								field="changePercent1M"
 								label="1M %"
 								sortConfig={sortConfig}
 								onSort={handleSort}
+								className="text-center"
 							/>
 							<SortableHeader
 								field="peRatio"
 								label="P/E"
 								sortConfig={sortConfig}
 								onSort={handleSort}
+								className="text-center"
 							/>
 							<SortableHeader
 								field="priceToFcf"
 								label="P/FCF"
 								sortConfig={sortConfig}
 								onSort={handleSort}
+								className="text-center"
 							/>
 							<SortableHeader
 								field="priceToCash"
 								label="P/Cash"
 								sortConfig={sortConfig}
 								onSort={handleSort}
+								className="text-center"
 							/>
 							<SortableHeader
 								field="quickRatio"
 								label="Quick R."
 								sortConfig={sortConfig}
 								onSort={handleSort}
+								className="text-center"
 							/>
 							<SortableHeader
 								field="currentRatio"
 								label="Curr. R."
 								sortConfig={sortConfig}
 								onSort={handleSort}
+								className="text-center"
 							/>
 							<SortableHeader
 								field="buybackYield"
 								label="Buyback Y."
 								sortConfig={sortConfig}
 								onSort={handleSort}
+								className="text-center"
 							/>
 							<SortableHeader
 								field="dividendYield"
 								label="Div. Y."
 								sortConfig={sortConfig}
 								onSort={handleSort}
+								className="text-center"
 							/>
 						</TableRow>
 					</TableHeader>
-					<TableBody>
+					<TableBody className="[&_td]:py-8.5 [&_td]:px-3">
 						{results.length === 0 ? (
 							<TableRow>
 								<TableCell
@@ -842,46 +843,84 @@ export default function StockScreener() {
 								<TableRow
 									key={stock.symbol}
 									onClick={() => navigate(`/companies/${stock.symbol}`)}
-									className="cursor-pointer"
+									className="cursor-pointer even:bg-foreground/2 hover:bg-foreground/4"
 								>
-									<TableCell className="pl-0 font-medium">
+									<TableCell className={cn("font-medium", colClass("symbol"))}>
 										<span className="flex items-center gap-2">
 											{stock.symbol}
 											{isNearFiftyTwoWeekLow(stock) && (
 												<Badge
 													variant="outline"
-													className="text-amber-500 border-amber-500/30 bg-amber-500/5 text-[10px] font-normal py-0 px-1.5"
+													className="text-amber-500 border-amber-500/30 bg-amber-500/5 text-10 font-normal py-0 px-1.5"
 												>
 													Near Low
 												</Badge>
 											)}
 										</span>
 									</TableCell>
-									<TableCell className="text-muted-foreground">
+									<TableCell
+										className={cn("text-muted-foreground", colClass("name"))}
+									>
 										{stock.name}
 									</TableCell>
-									<TableCell className="text-muted-foreground">
+									<TableCell
+										className={cn("text-muted-foreground", colClass("country"))}
+									>
 										{stock.country}
 									</TableCell>
-									<TableCell>{formatMarketCap(stock.marketCap)}</TableCell>
-									<TableCell>${stock.price.toFixed(2)}</TableCell>
 									<TableCell
-										className={
+										className={cn("text-center", colClass("marketCap"))}
+									>
+										{formatMarketCap(stock.marketCap)}
+									</TableCell>
+									<TableCell className={cn("text-center", colClass("price"))}>
+										${stock.price.toFixed(2)}
+									</TableCell>
+									<TableCell
+										className={cn(
+											"text-center",
 											stock.changePercent1M >= 0
 												? "text-emerald-500"
-												: "text-red-500"
-										}
+												: "text-red-500",
+											colClass("changePercent1M"),
+										)}
 									>
 										{stock.changePercent1M >= 0 ? "+" : ""}
 										{stock.changePercent1M.toFixed(1)}%
 									</TableCell>
-									<TableCell>{fmt(stock.peRatio)}</TableCell>
-									<TableCell>{fmt(stock.priceToFcf)}</TableCell>
-									<TableCell>{fmt(stock.priceToCash)}</TableCell>
-									<TableCell>{fmt(stock.quickRatio, 2)}</TableCell>
-									<TableCell>{fmt(stock.currentRatio, 2)}</TableCell>
-									<TableCell>{fmtPct(stock.buybackYield)}</TableCell>
-									<TableCell>{fmtPct(stock.dividendYield)}</TableCell>
+									<TableCell className={cn("text-center", colClass("peRatio"))}>
+										{fmt(stock.peRatio)}
+									</TableCell>
+									<TableCell
+										className={cn("text-center", colClass("priceToFcf"))}
+									>
+										{fmt(stock.priceToFcf)}
+									</TableCell>
+									<TableCell
+										className={cn("text-center", colClass("priceToCash"))}
+									>
+										{fmt(stock.priceToCash)}
+									</TableCell>
+									<TableCell
+										className={cn("text-center", colClass("quickRatio"))}
+									>
+										{fmt(stock.quickRatio, 2)}
+									</TableCell>
+									<TableCell
+										className={cn("text-center", colClass("currentRatio"))}
+									>
+										{fmt(stock.currentRatio, 2)}
+									</TableCell>
+									<TableCell
+										className={cn("text-center", colClass("buybackYield"))}
+									>
+										{fmtPct(stock.buybackYield)}
+									</TableCell>
+									<TableCell
+										className={cn("text-center", colClass("dividendYield"))}
+									>
+										{fmtPct(stock.dividendYield)}
+									</TableCell>
 								</TableRow>
 							))
 						)}
