@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run test:ci)",
+      "Bash(npm run test:ci *)",
+      "Bash(npm run lint:check)",
+      "Bash(npm run lint:check *)",
+      "Bash(npm run typing:check)",
+      "Bash(npm run format:check)",
+      "Bash(npm run security:check)",
+      "mcp__linear__get_issue",
+      "mcp__linear__list_issues",
+      "mcp__linear__list_teams",
+      "mcp__linear__list_projects",
+      "mcp__linear__search_issues"
+    ]
+  }
+}

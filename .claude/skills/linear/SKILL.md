@@ -37,6 +37,7 @@ Each issue type exists for a specific reason in the development workflow:
 | **DOCS** | Improve documentation quality and consistency. | Docs are missing, outdated, or inconsistent. | Updated documentation. |
 | **TEST** | Add or review test coverage. | Code exists but tests are missing or inadequate. | Test suite improvements. |
 | **FRONTEND** | UI/frontend implementation or changes. | Design or requirements available. | Working UI, tests, PR merged. |
+| **DATABASE** | Data layer work: schemas, migrations, queries, storage design, database infrastructure. | Data model or storage requirements known. | Schema/migration/query changes, tests, PR merged. |
 | **DESIGN** | Architectural/design work producing diagrams or specs. | System needs to be designed before implementation. | Design documents, diagrams. |
 
 ### The SPIKE → FEATURE Pipeline
@@ -61,6 +62,7 @@ by a SPIKE link back to it for context.
 | DOCS | `[DOCS]` | High (2) or Medium (3) |
 | TEST | `[TEST]` | Medium (3) |
 | FRONTEND | `[FRONTEND]` | Medium (3) |
+| DATABASE | `[DATABASE]` | High (2) |
 | DESIGN | `[DESIGN]` | High (2) |
 | (none) | (no prefix) | Varies |
 
@@ -218,6 +220,39 @@ This SPIKE ticket is related to the implementation ticket [STA-XXX](url).
 /
 ```
 
+### ONBOARDING Template
+
+```markdown
+## **User Story:**
+
+As a developer,
+
+I want to …
+
+so that I can be efficiently onboarded and start working productively.
+
+## **Description:**
+
+This ticket is the direct continuation of [STA-XXX](url).
+
+## Definition of Done:
+
+- [ ] Read certain chapters in Rust by Example
+  - [ ] …
+- [ ] Read chapter X
+  - [ ] …
+- [ ] Finish the Rustlings Exercises
+  - [ ] XX …
+- [ ] Read Chapter XX of Rust Notes
+  - [ ] …
+
+## **Additional Notes:**
+
+/
+
+---
+```
+
 ### FRONTEND Template
 
 ```markdown
@@ -251,6 +286,12 @@ so that … .
 ---
 ```
 
+### DOCS / TEST / DATABASE / DESIGN Templates
+
+These types do not have a dedicated description template. Use the **BASIC USER TICKET**
+description structure below and adapt it to the specific needs of the issue.
+The title prefix still applies (e.g., `[DOCS] ...`, `[TEST] ...`).
+
 ### BASIC USER TICKET Template (no prefix)
 
 ```markdown
@@ -278,10 +319,238 @@ so that … .
 ---
 ```
 
+## Few-Shot Examples
+
+### Example 1: SPIKE (STA-124)
+
+**Title:** ``[SPIKE] Design a Rate Limiter for `Extract` `SuperState` ``
+**Priority:** High (2)
+**Label:** SPIKE
+
+```markdown
+## **User Story:**
+
+As a developer,
+
+I want to make sure that I have configurable global rate limiting across `StateMachine` runs
+
+so that I can run ingestion pipelines at maximum throughput.
+
+## **Description:**
+
+This SPIKE ticket is related to the implementation ticket [STA-125](https://linear.app/state-machine/issue/STA-125/feature-implement-controllable-rate-limiting-for-extract-superstate).
+
+## Definition of Done:
+
+- [ ] Review how to best implement a Rate Limiter for our State Machine Executions
+  - [ ] Review if and what libraries are needed for this
+    - [ ] Is there a built-in `tokio` rate limiter, is it usable for us?
+    - [ ] governor - not sure if this will do it instead?
+  - [ ] how would they be best integrated into our existing async stream pipeline?
+    - [ ] minimal disruptions to the async stream would be ideal
+  - [ ] how and where would the rate limiter be initialized?
+  - [ ] How about a Queue-based rate limiter, like the token bucket vs leaky bucket?
+    - [ ] Compare the two and when each is preferred, and what you would suggest for our use case
+- [ ] Review also how to best test the rate limiter
+  - [ ] e.g., via timed integration tests or whatnot
+- [ ] Also note or review limitations of this rate limiting strategy and how it could be implemented in a distributed fashion
+- [ ] Does it make sense to remove `buffer_unordered(3)` once we have the rate limiter?
+- [ ] Write a document (e.g., Linear document) containing the findings of this research.
+  - [ ] Summarize these review findings and discuss potential alternatives (if they exist) on a very high level. Discuss pros and cons for each approach.
+  - [ ] Based on the summary, make a recommendation as to how rate limiting should ideally be implemented with minimal disruptions to our async stream implementations for the ETL pipeline
+  - [ ] Link the created written document in the "Link to Findings" section in this ticket
+
+## **Additional Notes:**
+
+/
+
+## **Link to Findings:**
+
+/
+```
+
+### Example 2: FEATURE (STA-74)
+
+**Title:** ``[FEATURE] `ExecuteSecRequest` as Third Sub-`State` of `Extract` ``
+**Priority:** High (2)
+**Label:** FEATURE
+
+```markdown
+## **User Story:**
+
+As a developer,
+
+I want to implement the `ExecuteSecRequest` `State` of the `Extract` `SuperState`
+
+so that I can continue working on the other Sub-`States` of the `Extract` `SuperState` in the ETL pipeline.
+
+## **Description:**
+
+This is the implementation of the Sub-`State` in the `Extract` `SuperState` that sends the actual request with the `Cik` to the SEC server and gets the company information returned.
+
+Validation of only that the request has been successful will be made at this point. No validation about the structure of the data (?).
+
+## Definition of Done:
+
+- [ ] `ExecuteSecRequest` Sub-`State` implemented
+  - [ ] Implement the third Sub-`State` of the `Extract` `SuperState`
+  - [ ] Design an `ExecuteSecRequest` as a `State` for the `Extract` `StateMachine`
+  - [ ] Implement the `ExecuteSecRequest` `State` according to the Retrieval State design doc
+  - [ ] Implement the necessary domain concepts (if needed) inside the `arkad/sec/src/lib/shared/` directory
+  - [ ] Implement Error Handling for the `ExecuteSecRequest` `State` according to the existing hybrid error handling model
+  - [ ] (If applicable) Adapt the `Extract` `SuperState` and the `main()` function
+- [ ] Follow the Software Development Guidelines outlined in [AGENTS.md](../AGENTS.md)
+
+## **Related Design Documents:**
+
+Error Handling: `arkad/sec/design/uml_class_diagram/sec_error_handling.md`
+
+Class diagram (update `StateError` here): `arkad/sec/design/uml_class_diagram/sec_sample_state.md`
+
+State diagram: `arkad/sec/design/state_diagram/sec_state_machine.md`
+
+## **Additional Notes:**
+
+Once this is done, a `Transition` from `Extract<PrepareSecRequest>` to `Extract<ProcessSecRequest>` can be implemented.
+
+---
+```
+
+### Example 3: FEATURE — Transition (STA-73)
+
+**Title:** ``[FEATURE] `Transition` from `Extract<ValidateCikFormat>` to `Extract<PrepareSecRequest>` ``
+**Priority:** High (2)
+**Label:** FEATURE
+
+```markdown
+## **User Story:**
+
+As a developer
+
+I want to implement the `Transition` from `ValidateCikFormat` to the `PrepareSecRequest` `State` of the `Extract` `SuperState`
+
+so that I can continue working on the other Sub-`States` of the `Extract` `SuperState` in the ETL pipeline and have a first `Transition` implementation as a baseline for future implementations.
+
+## **Description:**
+
+Implement the `Transition` from `ValidateCikFormat` to `PrepareSecRequest`.
+
+Implement any fixtures if needed.
+
+Implement a first `TransitionError`.
+
+This ticket is a direct continuation of [STA-72](https://linear.app/state-machine/issue/STA-72/feature-preparesecrequestas-second-sub-state-of-extract).
+
+## Definition of Done:
+
+- [ ] `Transition` from the `ValidateCikFormat` to the `PrepareSecRequest` is implemented
+  - [ ] `Transition` trait with its methods has been implemented from `ValidateCikFormat` to `PrepareSecRequest`
+  - [ ] Implement the necessary domain concepts (if needed) inside the `arkad/sec/src/lib/shared/` directory
+  - [ ] Implement Error Handling for the `Transition` according to the existing hybrid error handling model (add/use a `Transition` error)
+  - [ ] the main method inside the binary now initializes a `StateMachine` in the `Extract<ValidateCikFormat>` `State` and transfers to `Extract<PrepareSecRequest>` `State` - the logging statements have been adapted
+- [ ] Follow the Software Development Guidelines outlined in [AGENTS.md](../AGENTS.md)
+
+## **Related Design Documents:**
+
+Error Handling: `arkad/sec/design/uml_class_diagram/sec_error_handling.md`
+
+State diagram: `arkad/sec/design/state_diagram/sec_state_machine.md`
+
+## **Additional Notes:**
+
+Once this is done, a `Transition` from `Extract<PrepareSecRequest>` to `Extract<ExecuteSecRequest>` can be implemented.
+
+---
+```
+
+### Example 4: REFACTOR (STA-90)
+
+**Title:** ``[REFACTOR] `Extract` with Sub-`States` ``
+**Priority:** Medium (3)
+**Label:** REFACTOR
+
+```markdown
+## **User Story:**
+
+As a developer,
+
+I want to be able to ergonomically use `Extract` with all its Sub-`State`s
+
+so that I can use and modify the `Extract` `State` easily.
+
+## **Description:**
+
+This is a refactoring ticket to finalize the implementation work of working on the `Extract` `SuperState` with all its Sub-States.
+
+## Definition of Done:
+
+- [ ] Review the code with respect to (but not limited to) the following aspects. Refactor them if any of these things apply.
+  - [ ] Folder Structure and Naming
+  - [ ] Idiomatic use of the `builder` pattern as a constructor
+  - [ ] Renaming of some redundantly named concepts
+  - [ ] Error Types and Error Structure
+  - [ ] Check (and refactor) all `.expect(…)` messages
+  - [ ] Use dependency injection for new added dependencies
+  - [ ] Re-implement and simplify main function for `Extraction` with new implementation
+- [ ] Make sure the Software Development Guidelines outlined in [AGENTS.md](../AGENTS.md) are followed
+
+## **Related Design Documents:**
+
+/
+
+## **Additional Notes:**
+
+/
+
+---
+```
+
+### Example 5: ONBOARDING (STA-116)
+
+**Title:** `[ONBOARDING] Rust Programming Concepts - Async Rust`
+**Priority:** High (2)
+**Label:** ONBOARDING
+
+```markdown
+## **User Story:**
+
+As a developer,
+
+I want to learn about parallel programming in Rust
+
+so that I can be efficiently onboarded and start working productively.
+
+## **Description:**
+
+This ticket is the direct continuation of [STA-69](https://linear.app/state-machine/issue/STA-69/onboarding-rust-programming-concepts-threading).
+
+## Definition of Done:
+
+- [ ] Read chapter 17
+  - [ ] Futures and the Async Syntax
+  - [ ] Applying Concurrency with Async
+  - [ ] Working with Any Number of Futures
+  - [ ] Streams: Futures in Sequence
+  - [ ] A Closer Look at the Traits for Async
+  - [ ] Futures, Tasks, and Threads
+- [ ] Read Chapter 17 of Rust Notes
+  - [ ] Rust Async Overview Cheatsheet
+  - [ ] Asynchronous Rust Programming
+  - [ ] Working With Multiple Futures (Join, Race)
+  - [ ] Message Passing
+  - [ ] Streams: Futures in Sequence
+
+## **Additional Notes:**
+
+/
+
+---
+```
+
 ## Building the Definition of Done
 
-The Definition of Done (DoD) is the most critical part of every ticket — it defines when work
-is complete and prevents scope ambiguity. Every DoD should be constructed deliberately using
+The Definition of Done is the most critical part of every ticket — it defines when work
+is complete and prevents scope ambiguity. Every Definition of Done should be constructed deliberately using
 the following methodology.
 
 ### Structure Rules
@@ -292,39 +561,95 @@ the following methodology.
    not a vague aspiration. "Implement error handling" → good. "Think about errors" → bad.
 3. **Ordered by execution flow:** Items should roughly follow the order in which they'd be
    completed. Research before implementation, implementation before testing.
-4. **Final item is always the guidelines link** (for FEATURE, REFACTOR, IMPLEMENTATION, FRONTEND types).
+4. **Final item is always the guidelines link** (for FEATURE, REFACTOR, IMPLEMENTATION types).
 
-### How to Build the DoD Interactively
+### Per-Type Definition of Done Patterns
 
-When the user provides enough context, infer the DoD from the problem description and domain
-knowledge. Draft it fully and present it in the created ticket.
+| Type | Definition of Done Structure |
+| --- | --- |
+| **SPIKE** | Research areas (with specific questions as sub-items) → Testing/validation considerations → Write findings doc (with sub-items: summarize, recommend, link) |
+| **FEATURE** | Primary implementation (with sub-tasks: design, implement, domain concepts, error handling, integration) → Guidelines link |
+| **REFACTOR** | Review aspects as top-level items (with specific checks as sub-items) → Guidelines link |
+| **IMPLEMENTATION** | Same as FEATURE |
+| **ONBOARDING** | Resources grouped by source (book chapters, exercises, notes) with individual items as sub-checkboxes |
+| **DOCS / TEST / FRONTEND / DATABASE / DESIGN** | Deliverables specific to the work, no fixed pattern |
 
-When context is insufficient, use `AskUserQuestion` to clarify:
+### How to Build the Definition of Done Interactively
+
+Building the Definition of Done is a natural end point of the guided flow: after system area, issue type,
+title, and user story are settled, converge on the Definition of Done together with the user.
+
+**Propose-then-refine (default):** When you can think of Definition of Done items — from the problem
+description, conversation context, or domain knowledge — draft a full list of proposed
+items and present it to the user for refinement *before* creating the ticket. Ask what
+to add, remove, or sharpen. Iterate until the user is satisfied, then create the ticket
+with the refined Definition of Done.
+
+**Ideate together (fallback):** When you cannot propose meaningful items, don't present
+an empty or generic list — ideate with the user directly. Use `AskUserQuestion` to clarify:
 
 1. **What are the major deliverables?** — These become top-level checkboxes.
 2. **What specific sub-tasks does each deliverable involve?** — These become nested checkboxes.
 3. **Are there specific questions to answer or alternatives to compare?** (SPIKEs)
-4. **Are there specific components or pages affected?** (FEATURE/FRONTEND)
+4. **Are there specific components or pages affected?** (FEATURE/FRONTEND/REFACTOR)
 5. **What does "done" look like — how would you verify this is complete?**
+
+### Definition of Done Quality Checklist (internal, not shown to user)
+
+Before finalizing a Definition of Done, verify:
+
+- [ ] Every top-level item is independently verifiable (someone can check it off without ambiguity)
+- [ ] Sub-items are specific enough that two developers would interpret them the same way
+- [ ] No item duplicates what's already in the Description section
+- [ ] SPIKE Definitions of Done end with the "Write a document" item and its standard sub-items
+- [ ] FEATURE/REFACTOR/IMPLEMENTATION Definitions of Done end with the guidelines link (correct phrasing per type)
+- [ ] Items reference specific code names in backticks where applicable
 
 ## Workflow: Creating an Issue
 
 ### Step 1: Gather Information
 
-Use `AskUserQuestion` to collect:
+Guide the user from high-level to specific. Use `AskUserQuestion` to collect:
 
-1. **Issue type** — options: FEATURE, SPIKE, REFACTOR, IMPLEMENTATION, ONBOARDING, DOCS, TEST, FRONTEND, DESIGN, Basic (no prefix)
-2. **Title** — what is this issue about? (will be formatted as `[TYPE] Title`, or just `Title` for basic)
-3. **User story** — what do you want and why?
-4. **Priority** — options: Urgent (1), High (2), Medium (3), Low (4) — default High (2)
+1. **System area** (only if not clear from the conversation/prompt) — which part of the
+   system is this ticket about? Options: **Backend** (pipeline, state machine, crates),
+   **Frontend** (UI, pages, components), **Database** (data layer: schemas, migrations,
+   queries, storage), **Cross-cutting** (docs, CI/CD, onboarding, process). Skip this
+   question entirely when the area is obvious from context — it exists to orient the
+   conversation, not to add friction.
+2. **Issue type** — options: FEATURE, SPIKE, REFACTOR, IMPLEMENTATION, ONBOARDING, DOCS, TEST, FRONTEND, DATABASE, DESIGN, Basic (no prefix).
+   Use the system area to narrow the options offered:
+   - **Frontend** → FRONTEND (or SPIKE/REFACTOR/TEST if the work is research, restructuring, or testing)
+   - **Database** → DATABASE (or SPIKE/DESIGN for research and schema-design work)
+   - **Backend** → FEATURE, IMPLEMENTATION, REFACTOR, SPIKE, TEST, DESIGN
+   - **Cross-cutting** → DOCS, ONBOARDING, or Basic
+3. **Title** — what is this issue about? (will be formatted as `[TYPE] Title`, or just `Title` for basic)
+4. **User story** — what do you want and why?
+5. **Priority** — options: Urgent (1), High (2), Medium (3), Low (4) — default High (2)
 
 If the user provided enough context when invoking the skill, skip questions you can already
 answer. Infer what you can from conversation context.
 
 ### Step 2: Build the Description and Definition of Done
 
-Based on the issue type, fill in the appropriate template. The DoD is the most important
+Based on the issue type, fill in the appropriate template. The Definition of Done is the most important
 part — follow the "Building the Definition of Done" section above to construct it.
+
+**Gathering Definition of Done input:**
+
+- If the user provided rich context (problem description, specific concerns, components involved),
+  draft the full Definition of Done from that context, propose it to the user, and refine it with their
+  feedback before creating the ticket (see "How to Build the Definition of Done Interactively" above).
+- If context is sparse, ideate with the user via targeted follow-up questions instead of
+  proposing a generic list.
+- Always err on the side of being specific — a Definition of Done that's too detailed is better than one that's too vague.
+
+**Additional template-specific questions:**
+
+- **FEATURE:** What are the acceptance criteria? Related design docs? Is there a preceding SPIKE?
+- **SPIKE:** What is the related implementation ticket? What specific research questions need answering? What alternatives should be compared?
+- **ONBOARDING:** What resources should be read? What's the learning path? What's the continuation of?
+- **REFACTOR:** What is being refactored and why? What aspects should be reviewed?
 
 ### Step 3: Create the Issue
 
@@ -363,18 +688,30 @@ Always confirm with the user before making changes.
 | REFACTOR | `f4ab8267-331c-400a-8b54-4e6424b7f3e7` |
 | DOCS | `4ae80929-fd9a-4d24-9e05-1c896d374700` |
 | ONBOARDING | `339b3f41-9f48-4574-a958-ff76cf82795e` |
-
-**Note:** Label IDs for IMPLEMENTATION, TEST, FRONTEND, and DESIGN are not yet captured.
-When creating an issue with one of these types for the first time, omit `labelIds` — the
-label can be added manually in Linear, and the ID should be captured here afterwards.
+| IMPLEMENTATION | `88330314-8dc6-43dc-b2bb-855ede6634c1` |
+| TEST | `6edf3100-c0cf-4f7a-8c41-3342d21f1b6d` |
+| DESIGN | `ea9940a6-9ba4-443f-8c78-1f2da9251eeb` |
+| CI/CD | `f4a7c5c2-347f-4900-9181-f2706c7f0662` |
+| FIX | `0e1e8146-791e-4ec2-a266-65ef6282db06` |
+| FRONTEND | `f4239270-e616-4f43-9db8-1fa284cbc147` |
+| DATABASE | `434537ba-1774-46cf-9803-a8870aa02a38` |
 
 ## Conventions
 
-- **SPIKE before FEATURE (when needed):** When requirements are unclear or multiple approaches exist, create a SPIKE before the FEATURE.
-- **Comments as progress logs:** Use comments for meeting notes and progress updates.
+- **SPIKE before FEATURE (when needed):** When requirements are unclear or multiple approaches exist, create a SPIKE before the FEATURE. Not every FEATURE needs a SPIKE — only those with ambiguity that needs resolving. When a SPIKE exists, link it bidirectionally with its FEATURE.
+- **Implementation requires clarity:** FEATURE and IMPLEMENTATION tickets should have concise requirements or designs in place before work begins. If requirements are unclear, create a SPIKE first.
+- **Comments as progress logs:** Use comments for meeting notes (DONE / NEXT STEPS format) and progress updates.
+- **Branch names:** Linear auto-generates branch names from titles — no manual naming needed.
+- **Due dates:** Set when known, especially for SPIKEs.
 - **Related tickets:** Always cross-reference related issues with `[STA-XXX](url)` format.
-- **Empty fields:** Use `/` for sections with no content.
-- **Next steps in Additional Notes:** When a ticket enables follow-on work, note it.
+- **Continuation chains:** ONBOARDING and sequential FEATURE tickets reference their predecessor as "direct continuation of [STA-XXX]".
+- **Empty fields:** Use `/` for sections with no content (Description, Related Design Documents, Additional Notes, Link to Findings).
+- **Software Development Guidelines:** FEATURE, REFACTOR, and IMPLEMENTATION tickets always include the guidelines link in Definition of Done. Each uses slightly different phrasing — follow the template exactly:
+  - FEATURE: "The Software Development Guidelines outlined in [AGENTS.md](../AGENTS.md) are followed"
+  - REFACTOR: "Make sure the Software Development Guidelines outlined in [AGENTS.md](../AGENTS.md) are followed"
+  - IMPLEMENTATION: "Follow the Software Development Guidelines outlined in [AGENTS.md](../AGENTS.md)"
+- **Definition of Done structure:** See the dedicated "Building the Definition of Done" section above for the full methodology. In short: top-level items are major deliverables, nested items are specific tasks, ordered by execution flow.
+- **Next steps in Additional Notes:** When a ticket enables follow-on work, note it (e.g., "Once this is done, a `Transition` from X to Y can be implemented.").
 
 ## Self-Improvement
 
@@ -383,3 +720,15 @@ After creating an issue where the user corrected or refined the template, naming
 1. Ask: "Should I update the linear skill with this change?"
 2. If yes, update the relevant section in this SKILL.md.
 3. Apply after user approval.
+
+Examples of things worth capturing:
+- New issue types or labels that emerge (add to the tables and create a template if warranted)
+- Template adjustments (new sections, reworded headings, different Definition of Done phrasing)
+- New label IDs discovered when creating issues of previously-uncaptured types
+- Priority conventions that differ from the documented defaults
+- Workflow changes (e.g., new linking conventions, new fields to fill)
+- Few-shot examples that better represent current practice — replace outdated ones
+- Conventions the user establishes through repeated corrections
+
+Nothing in this skill is set in stone — templates, headings, types, and conventions should
+evolve as the team's process evolves. The skill is authoritative guidance, not a frozen spec.
