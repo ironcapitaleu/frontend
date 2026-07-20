@@ -126,7 +126,6 @@ function CompanyDetails({ company }: { company: CompanyResult }) {
 					<Button
 						variant="outline"
 						render={
-							// biome-ignore lint/a11y/useAnchorContent: Content provided by Button children
 							<a
 								href={company.website}
 								target="_blank"
