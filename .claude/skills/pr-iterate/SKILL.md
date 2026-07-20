@@ -175,6 +175,14 @@ Do not wait to be asked — the goal is to get changes from feature branch → d
 
 **Branch hygiene:** Always verify you are on the correct branch before making changes or pushing. Run `git branch --show-current` if uncertain. When iterating on a PR, check out the branch that the PR is on — not an unrelated branch.
 
+## Integration with CI
+
+The skill works alongside the `claude.yaml` workflow:
+- The workflow's `claude-auto-review` job does the initial review on PR open (triggered by `pull_request: opened`)
+- The `claude` job handles `@claude` comments (triggered by `issue_comment: created`)
+- When this skill posts `@claude review the latest changes`, it triggers the `claude` job (not `claude-auto-review`)
+- You can invoke this skill at any point to catch up on unaddressed feedback
+
 ## Example Invocation
 
 User: "iterate on the PR"
