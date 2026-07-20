@@ -237,13 +237,11 @@ This ticket is the direct continuation of [STA-XXX](url).
 
 ## Definition of Done:
 
-- [ ] Read certain chapters in Rust by Example
+- [ ] Read [resource name]
+  - [ ] Chapter / section …
+- [ ] Complete [exercise / tutorial]
   - [ ] …
-- [ ] Read chapter X
-  - [ ] …
-- [ ] Finish the Rustlings Exercises
-  - [ ] XX …
-- [ ] Read Chapter XX of Rust Notes
+- [ ] Read [supplementary notes]
   - [ ] …
 
 ## **Additional Notes:**
