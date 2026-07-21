@@ -169,7 +169,7 @@ human-escalated items.
 After a PR is merged, **proactively propagate** through the full chain:
 
 1. **Feature branch → `dev`**: Once CI is green and review is clean, merge (or inform the human it's ready).
-2. **`dev` → `main`**: Immediately after the feature PR merges into `dev`, create a PR from `dev` to `main` so the release path stays unblocked.
+2. **`dev` → `main`**: Immediately after the feature PR merges into `dev` and `dev` is green, invoke the **`release`** skill (the `dev → main` promotion) rather than hand-rolling the release PR — it applies the merge-commit rule and the diverged-config guard. Do not squash a `dev → main` release.
 
 Do not wait to be asked — the goal is to get changes from feature branch → dev → main as fast and cleanly as possible. If there are reasons NOT to propagate (e.g., dev has untested changes from other PRs, a release freeze is in effect), flag it to the human instead of silently stopping.
 
