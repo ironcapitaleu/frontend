@@ -4,8 +4,9 @@ A modern React + Vite application for Iron Capital's investment partnership webs
 
 ## Features
 
-- **Editorial Design Language** - Classical, print-inspired UI built on serif
-  display type and a restrained palette (see [DESIGN.md](./DESIGN.md))
+- **Timeless-meets-modern Design Language** - A classical foundation (serif
+  display type, black-on-white, restrained palette) reinterpreted with modern
+  app craft (elegant motion, an accent spark); see [DESIGN.md](./DESIGN.md)
 - **Stock Screener** - Advanced filtering and sorting for investment research
 - **Company Search** - Comprehensive company information and analysis
 - **Responsive Design** - Optimized for all device sizes
