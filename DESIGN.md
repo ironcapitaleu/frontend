@@ -34,8 +34,8 @@ authority, restraint, and calm. Serif display type, black-on-white, generous
 reading measures, quiet surfaces.
 
 **The modern pole — of its time.** We are not a museum. Under the hood the
-product is genuinely modern: a fast frontend, a modern backend, and modern
-data/research workflows. The surface should feel that way too — quick, crisp,
+product is genuinely modern: a fast frontend, a modern backend, and fast
+workflows. The surface should feel that way too — quick, crisp,
 elegant, alive. This is where the small sparks of modernity live: the flowing
 gradient around the search bar, tactile feedback, precise motion, an app that
 responds instantly.
