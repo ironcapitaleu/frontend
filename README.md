@@ -4,7 +4,8 @@ A modern React + Vite application for Iron Capital's investment partnership webs
 
 ## Features
 
-- **Apple Glass Design System** - Modern glass morphism UI with blur effects
+- **Editorial Design Language** - Classical, print-inspired UI built on serif
+  display type and a restrained palette (see [DESIGN.md](./DESIGN.md))
 - **Stock Screener** - Advanced filtering and sorting for investment research
 - **Company Search** - Comprehensive company information and analysis
 - **Responsive Design** - Optimized for all device sizes
@@ -15,7 +16,8 @@ A modern React + Vite application for Iron Capital's investment partnership webs
 - **React 19** with TypeScript
 - **Vite** for build tooling and development server
 - **React Router** for client-side routing
-- **Custom CSS** with glass morphism design system
+- **Tailwind CSS v4** with design tokens defined in `src/index.css`
+- **shadcn / @base-ui** component primitives, catalogued in Storybook
 - **Cloudflare Pages** deployment ready
 
 ## Getting Started
@@ -54,12 +56,15 @@ A modern React + Vite application for Iron Capital's investment partnership webs
 
 ### Development
 
-The application uses a custom CSS design system with Apple Glass aesthetics:
+The application uses an editorial, print-inspired design language built on
+Tailwind CSS v4, with all design tokens defined in `src/index.css`. See
+[DESIGN.md](./DESIGN.md) for the full design language and [AGENTS.md](./AGENTS.md)
+for layout and CSS methodology. In short:
 
-- Glass morphism components with backdrop blur
-- Responsive grid layouts
-- Smooth animations and transitions
-- Professional color palette
+- Classical serif display type (Playfair Display) with Inter for UI text
+- Restrained, low-chroma `oklch` color palette with class-based dark mode
+- Hairline borders for separation; shadows reserved for floating surfaces
+- Small, tactile interactions and content-aware height animations
 
 ### Deployment
 
@@ -104,11 +109,16 @@ src/
 
 ### Design System
 
-- Glass morphism components (`glass`, `glass-strong`)
-- Responsive button styles (`btn-primary`, `btn-glass`)
-- Form inputs with focus states
-- Typography scale with responsive sizing
-- Animation utilities (`fade-in`, `slide-up`)
+The full design language is documented in [DESIGN.md](./DESIGN.md). Highlights:
+
+- Four typographic roles: `font-classic` (Playfair display), `font-serif`
+  (base headings), `font-sans-serif` (Inter UI text), `font-monospace` (data)
+- Semantic color tokens (`bg-background`, `text-foreground`, `bg-primary`, …)
+  with class-based dark mode — never hard-code colors in components
+- Tactile button feedback (`.btn-tactile`) and content-aware height animations
+  (`grid-template-rows`)
+- Reusable primitives in `src/components/ui`, catalogued in Storybook
+  (`npm run storybook`)
 
 ## License
 
