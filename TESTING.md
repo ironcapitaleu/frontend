@@ -159,20 +159,19 @@ with its validation) rather than every trivial leaf in isolation.
 
 ---
 
-## 3. The three layers
+## 3. The test layers
 
 The frontend has failure modes a backend does not: a page can be logically
 correct and still **look wrong** — a layout that collapses on mobile, an
 animation that jumps, a serif heading that silently fell back to sans. One
-environment cannot catch all of that, so tests live in three layers. Each layer
-answers one question, and every UI change should be able to say which layers
-cover it.
+environment cannot catch all of that, so tests live in two layers today (with
+a third planned — see below). Each layer answers one question, and every UI
+change should be able to say which layers cover it.
 
 | Layer | Runs in | Question it answers | Where |
 | --- | --- | --- | --- |
 | **1. Unit / integration** | jsdom (`unit` Vitest project) | *Does the logic and DOM behaviour work?* | colocated `*.test.ts(x)` |
 | **2. Interaction & visual behaviour** | Real browser via Storybook + Playwright (`storybook` Vitest project) | *Does it actually work — and hold up — as rendered, interacted with, across themes and viewports?* | `play` functions in `*.stories.tsx` |
-| **3. Visual regression** | Snapshot comparison of rendered stories | *Does it still look the way it should?* | Chromatic (the `@chromatic-com/storybook` addon is already wired) |
 
 ### Layer 1 — unit / integration (jsdom)
 
@@ -199,14 +198,22 @@ regressed silently:
   is `test: "todo"` (violations surface in the test UI); the goal is `"error"`
   once existing violations are cleared. New components should pass from day one.
 
-### Layer 3 — visual regression (Chromatic)
+### Planned third layer — pixel-level visual regression (not yet adopted)
 
 Play tests catch *behavioural* breakage; only pixel comparison catches "the
-spacing jumped", "the gradient stopped flowing", "the serif fell back". Every
-story doubles as a visual test case, which is why **story coverage is test
-coverage**: a component without stories for its meaningful states is invisible
-to this layer. When Chromatic runs in CI, each PR shows visual diffs against
-the baseline for review.
+spacing jumped", "the gradient stopped flowing", "the serif fell back". A
+snapshot-diffing layer over the rendered stories would close that gap — but
+**adopting one is an open decision, not part of the current doctrine.** Tool
+choice (Chromatic — whose Storybook addon happens to ship in our config —
+Percy, Lost Pixel, self-hosted Playwright screenshots), cost, and the
+baseline-review workflow all need a spike first; the evaluation is tracked in
+the testing-strategy SPIKE (STA-140).
+
+What **is** doctrine today: stories are the visual record, and any future
+snapshot layer will consume them story-by-story. That is why **story coverage
+is test coverage** — a component without stories for its meaningful states is
+undocumented now and invisible to that layer later. Keep story coverage
+complete so the layer can be switched on without a backfill.
 
 ---
 
@@ -236,7 +243,8 @@ one:
 
 - Test motion **by its observable endpoints**, not its pixels: the filter panel
   is closed, the trigger is clicked, the panel's content is visible/hidden. The
-  transition itself is layer 3's job.
+  transition itself is a job for pixel-level visual regression once adopted;
+  until then, the Storybook catalog and review carry it.
 - The house conventions — height animated via `grid-template-rows`
   (`0fr` → `1fr`), never `display` toggles or the `max-height` trick;
   `.btn-tactile` on buttons — are **review items** (see AGENTS.md § PR Review):
@@ -288,8 +296,8 @@ To keep the Arrange phase uniform and short, common setup lives in `src/test/`:
 | Presentational component (Header, Footer, …) | 1 (+ story) | Render, assert visible content/roles. |
 | Page (HomePage, LoginPage, …) | 1 | Custom `render()` + `MemoryRouter`; assert user-visible outcome. |
 | `ui/*` primitive | 2 (+ 1 where logic warrants) | Stories for every meaningful state; play test for interaction. |
-| Layout-bearing / responsive component | 2 + 3 | Viewport-variant stories; play tests at each breakpoint. |
-| Motion-bearing component | 1 or 2 for endpoints, 3 for the motion itself | Assert open/closed states; conventions checked in review. |
+| Layout-bearing / responsive component | 2 | Viewport-variant stories; play tests at each breakpoint. |
+| Motion-bearing component | 1 or 2 for endpoints | Assert open/closed states; motion conventions checked in review. |
 
 When behaviour is buried inside a component's render and awkward to reach
 through the DOM, **extract it into a pure function** and test that directly.
@@ -312,7 +320,8 @@ is the gap the `[TEST]` ticket closes:
   that holds the line over an aspirational number that blocks every PR.
 - Remember that line coverage only measures layer 1. **Story coverage** —
   every component's meaningful states having stories — is the coverage metric
-  for layers 2 and 3, and is checked in review.
+  for layer 2 (and for any future visual-regression layer), and is checked in
+  review.
 
 ---
 

@@ -25,7 +25,7 @@ existing UI against it, then carries the work through the full flow:
 > (Storybook stories) → defend it against regression (unit + play + visual tests, TESTING.md).
 
 A UI change that skips a step is unfinished: undesigned UI drifts off-language, undocumented
-UI is invisible to visual regression, untested UI regresses silently.
+UI is invisible to the catalog and to review, untested UI regresses silently.
 
 ## Read First
 

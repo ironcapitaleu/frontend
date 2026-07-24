@@ -63,12 +63,12 @@ three-step flow. Each step has an authoritative document and a supporting skill:
    stories double as its primary documentation. Written docs (JSDoc, root documents) stay
    in sync in the same pass. Skill: `documentation`.
 3. **Testing** — defend it. Logic is unit-tested; interactions get play tests in a real
-   browser; stories double as visual-regression cases across themes and viewports, so a
-   change on one page cannot silently break the look, layout, or motion of another.
+   browser; stories are exercised across themes and viewports, so a change on one page
+   cannot silently break the look, layout, or motion of another.
    Authority: [TESTING.md](./TESTING.md). Skill: `testing`.
 
 A UI change that skips a step is unfinished: undesigned UI drifts off-language,
-undocumented UI is invisible to visual regression, untested UI regresses silently.
+undocumented UI is invisible to the catalog and to review, untested UI regresses silently.
 
 **Be an advocate of the design language.** When building or reviewing any user-facing
 change, measure it against [DESIGN.md](./DESIGN.md) — does it feel timeless AND modern,
@@ -346,8 +346,8 @@ Every user-facing change is measured against [DESIGN.md](./DESIGN.md):
 
 The full doctrine lives in [TESTING.md](./TESTING.md); review against it:
 
-- Confirm sufficient test coverage — across all three layers: unit (jsdom), interaction/play
-  (Storybook), and story coverage for visual regression
+- Confirm sufficient test coverage — across the layers: unit (jsdom), interaction/play
+  (Storybook), and story coverage of meaningful states
 - Suggest missing edge cases or error condition tests
 - Ensure React components have appropriate tests (e.g., rendering, props, state changes)  
 - Verify tests follow the **"Arrange, Define, Act, Assert"** pattern with **exactly one

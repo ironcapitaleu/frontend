@@ -50,7 +50,7 @@ Based on this reasoning, suggest what tests to write/review and let the user con
 
 ## Modes
 
-- **Review** — audit existing tests for a module/component, find gaps across all three layers
+- **Review** — audit existing tests for a module/component, find gaps across the layers
 - **Write** — add missing tests (baseline + meaningful behavioural tests)
 - **Interaction** — add or improve Storybook play tests for a component
 - **Visual/responsive** — add viewport-variant stories and breakpoint coverage for a layout-bearing component
@@ -70,15 +70,18 @@ Authoritative source: `TESTING.md`. Summary:
 - **Async:** `findBy*` / `waitFor`; wrap state-updating renders in `act(...)` when React warns
 - **Behaviour, not implementation:** assert what the user perceives; never internal state, props, or call counts as proxies
 
-## The Three Layers — where a test belongs
+## The Test Layers — where a test belongs
 
 1. **Unit/integration (jsdom, `npm run test:dev` / `test:ci`)** — logic and DOM behaviour.
    jsdom computes no CSS: never assert Tailwind class strings as a stand-in for layout.
 2. **Interaction & visual behaviour (Storybook + Playwright, `npm run test:storybook`)** —
    play tests in real browsers: interactions, both themes (the class-based light/dark decorator),
    viewport variants, axe checks via `addon-a11y`.
-3. **Visual regression (Chromatic)** — every story is a visual test case. Story coverage IS
-   test coverage for this layer: a state without a story is invisible to it.
+
+A third, pixel-level visual-regression layer (snapshot-diffing the rendered stories) is
+**planned but not adopted** — tool choice and workflow are to be spiked first (see TESTING.md §3
+and STA-140). Do not present it as existing infrastructure. Story coverage stays mandatory
+regardless: stories are the visual record any future snapshot layer will consume.
 
 When reviewing a UI change, ask: which layers cover it? A change is complete when its logic is
 unit-tested, its states have stories, its interactions have a play test, and it holds at its
@@ -249,8 +252,9 @@ export const OpensOnClick: Story = {
 For layout-bearing components, add viewport-variant stories at the component's **own**
 breakpoints (where its layout genuinely changes — e.g. where the nav collapses into the
 mobile menu), not a fixed device list. Give each variant a story so it is exercised by play
-tests and captured by visual regression. Test motion by its **endpoints** (menu closed →
-click → menu open); the animation itself is visual regression's job.
+tests (and captured by visual regression once that layer is adopted). Test motion by its
+**endpoints** (menu closed → click → menu open); the animation itself is carried by the
+catalog and review until a pixel-diffing layer exists.
 
 ## Proactive Behavior
 

@@ -22,8 +22,9 @@ documentation has **two halves that must stay in step**:
    (`README.md`, `DESIGN.md`, `TESTING.md`, `AGENTS.md`).
 2. **Living documentation** — **Storybook is the living catalog of the design system.** A
    component's stories ARE its primary documentation: they show every meaningful state,
-   render under both themes, generate autodocs, and double as test cases (interaction +
-   visual regression). Documenting a component means giving it stories.
+   render under both themes, generate autodocs, and double as interaction test cases
+   (and as visual-regression cases once that layer is adopted — see TESTING.md §3).
+   Documenting a component means giving it stories.
 
 This skill operates in three modes:
 1. **Write** — Add or improve documentation for a target (JSDoc + stories + doc sync)
@@ -65,8 +66,8 @@ Then:
   (DESIGN.md §6), not a nice-to-have. CSF3, `tags: ["autodocs"]`.
 - First story is `Playground` with sensible defaults; then **one story per meaningful state**:
   each variant and size, disabled/error/empty/loading states, and viewport variants for
-  layout-bearing components. A state without a story is undocumented AND invisible to visual
-  regression — story coverage is documentation coverage and test coverage at once.
+  layout-bearing components. A state without a story is undocumented and untested — story
+  coverage is documentation coverage and test coverage at once.
 - Story-level JSDoc explains what each story demonstrates (see the existing story files).
 - Interactive stories get `play` tests (see the `testing` skill for the shape).
 - Use the shared showcase decorators (`.storybook/utils/showcaseDecorators.tsx`) for
