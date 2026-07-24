@@ -34,14 +34,14 @@ When a target is identified (either from context or user input), reason about:
 
 - **What kind of code is it?**
   - A pure function or `lib/` utility → layer-1 unit tests, `toEqual` on data in/out
-  - A hook (`useAuth`, …) → layer-1 `renderHook` tests with mocked dependencies
+  - A hook (`useAuth`, …) → layer-1 `renderHook` tests with faked dependencies
   - A context (`AuthContext`) → layer-1 tests through a probe consumer component
   - A presentational component (Header, Footer, …) → layer-1 render tests + a story
   - A page → layer-1 integration test via the custom `render()` + `MemoryRouter`
   - A `ui/*` primitive → stories for every meaningful state; play test if interactive
   - A layout-bearing/responsive component → viewport-variant stories, play tests at its breakpoints
   - A motion-bearing component (collapse/expand, hover reveal) → endpoint tests (open/closed states); check the mechanism follows the motion conventions (review item)
-- **Does it depend on Supabase/auth?** → use the shared Supabase mock factory (or inline mock until the factory lands)
+- **Does it depend on Supabase/auth?** → arrange the world with a Supabase fake (see Fakes below)
 - **Does it branch on a media query?** → unit-testable via the `matchMedia` stub in `src/test/setup.ts`; CSS-breakpoint layout is NOT — that goes to the browser layer
 - **Is behaviour buried in a component's render?** → extract it into a pure function first, then test the function (the `StockScreener` filter/sort pattern)
 - **Is it async?** → plan `findBy*` / `waitFor`, never timeouts
@@ -120,33 +120,103 @@ And every `ui/*` primitive gets, at minimum, a `Playground` story plus one story
 (the `component-scaffold` skill generates these). If you encounter a component missing its
 baseline tests or stories, add them proactively.
 
-## Test Doubles
+## Fakes
 
-### The Supabase mock factory
+### What is a Fake
 
-The frontend's equivalent of the backend's fakes: a minimal, predictable stand-in for the
-external system, with **named behaviours** instead of per-test ad-hoc stubs.
+A fake is a minimal implementation of an external dependency that returns fixed, predictable
+responses. Fakes decouple unit tests from real external systems (network, auth, storage) and
+keep the Arrange phase declarative: you name the world ("the user is signed out"), you don't
+script it. No logic, no state mutation, no call expectations — just a predetermined behaviour.
 
-- Lives in `src/test/` (shared infra; see TESTING.md §5).
-- Named variants over configuration soup: an always-authenticated client, an
-  always-unauthenticated client, an always-failing client.
-- Use it in the Arrange phase via `vi.mock("@/lib/supabase", …)`; never let a unit test hit
-  the network.
+This is a deliberate stance: **fakes over mocks**. Per-test stub configuration and
+"was called with" assertions couple tests to implementation and violate the
+behaviour-not-implementation principle. The single assertion stays on what the user sees.
 
-Until the factory lands (tracked in STA-141), mock inline as `App.test.tsx` does — same
-principle, kept small and predictable.
+### Where to put them
+
+Fakes live in `src/test/fixtures/` — one directory per faked concept, one file per behaviour,
+mirroring the backend's `tests/fixtures/sample_{concept}/` layout:
+
+```text
+src/test/fixtures/
+└── supabase/
+    ├── always-authenticated.ts
+    ├── always-unauthenticated.ts
+    └── always-failing.ts
+```
+
+### How to define a Fake
+
+A fake implements the dependency's surface with fixed behavior — hardcoded, predictable values:
+
+```ts
+// src/test/fixtures/supabase/always-unauthenticated.ts
+
+/**
+ * A Supabase client whose auth methods always behave as if no user is
+ * signed in. Session queries resolve to null; sign-in attempts fail.
+ */
+export function alwaysUnauthenticatedSupabase() {
+  return {
+    auth: {
+      getSession: async () => ({ data: { session: null }, error: null }),
+      onAuthStateChange: () => ({
+        data: { subscription: { unsubscribe: () => {} } },
+      }),
+      signInWithPassword: async () => ({
+        data: { user: null, session: null },
+        error: { message: "Invalid login credentials" },
+      }),
+    },
+  };
+}
+```
+
+### Naming conventions
+
+- **Behaviour-named factories:** `always{Behavior}{Concept}` (e.g. `alwaysAuthenticatedSupabase`,
+  `alwaysUnauthenticatedSupabase`, `alwaysFailingSupabase`) — the direct translation of the
+  backend's `Always{Behavior}{ConceptName}` fakes (`AlwaysSucceedingHttpClient`,
+  `AlwaysFailingHttpClient`).
+- File per behaviour, kebab-case: `always-unauthenticated.ts`.
+
+### When to create a Fake
+
+- The dependency crosses a system boundary (Supabase, network, storage)
+- You need to test error-handling paths (the always-failing variant)
+- The same world is arranged in more than one test file — one fake serves many tests
+
+### When NOT to create a Fake
+
+- Pure functions and presentational components — test them directly
+- Child components in an integration test — render the real tree; that's the point
+- The router — use a real `MemoryRouter`, not a faked navigate function
+
+### How and where to use Fakes
+
+`vi.mock(...)` is only the **injection mechanism** (module substitution); what gets injected
+is a fake:
+
+```ts
+// In a test file — arrange the signed-out world
+vi.mock("./lib/supabase", async () => {
+  const { alwaysUnauthenticatedSupabase } = await import(
+    "./test/fixtures/supabase/always-unauthenticated"
+  );
+  return { supabase: alwaysUnauthenticatedSupabase() };
+});
+```
+
+Never let a unit test hit the network. Until the fixtures land (tracked in STA-141), keep
+inline stand-ins small, fixed, and predictable — fake-shaped, like `App.test.tsx`'s current
+inline stub — and migrate them into `src/test/fixtures/` when it does.
 
 ### The custom `render()`
 
 Wraps the subject in the real provider tree (`AuthProvider` + `MemoryRouter`). Prefer it for
 anything that consumes auth or routing; use `initialEntries` to place the router on the route
 under test.
-
-### When NOT to mock
-
-- Pure functions and presentational components — test them directly.
-- Child components in an integration test — render the real tree; that's the point.
-- The router — use a real `MemoryRouter`, not a mocked navigate function.
 
 ## Unit Test Patterns
 

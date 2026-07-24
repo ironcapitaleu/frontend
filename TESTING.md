@@ -29,7 +29,7 @@ in this repository — unit tests and Storybook play tests alike.
 
 Every test body is four clearly separated phases, in this order:
 
-- **Arrange** — set up the world: render components, mount hooks, build mocks,
+- **Arrange** — set up the world: render components, mount hooks, inject fakes,
   seed inputs.
 - **Define** — declare the expected outcome in a single variable, `expectedResult`.
 - **Act** — execute the behaviour under test and capture it in a single variable,
@@ -272,17 +272,58 @@ To keep the Arrange phase uniform and short, common setup lives in `src/test/`:
   `AuthProvider` and a router (`MemoryRouter` for unit tests). Prefer it over
   bare `@testing-library/react` `render` for anything that consumes auth or
   routing, so tests exercise the real provider tree.
-- **A reusable Supabase mock factory** that produces a configurable fake
-  `supabase` client (session present/absent, sign-in success/error). This
-  consolidates the ad-hoc mocks currently duplicated in `App.test.tsx` and
-  `src/test/setup.ts`. Its role mirrors the backend's **fakes**: a minimal,
-  predictable stand-in for an external system, with named behaviours
-  (an always-authenticated client, an always-failing client) rather than
-  per-test ad-hoc stubs.
+- **Fakes** for external systems, in `src/test/fixtures/` — see below.
+
+### Fakes, not mocks
+
+We use **fakes** the way the backend does: a fake is a minimal, working
+implementation of an external dependency that returns **fixed, predictable
+responses**. No logic, no state mutation, no call expectations — just a
+predetermined behaviour with a name. This is a deliberate stance against
+mockist testing: configuring stubs per test and asserting "was called with"
+couples tests to implementation; a fake keeps the Arrange phase declarative
+("the world where the user is signed out") and leaves the single assertion on
+what the user sees.
+
+- **Where they live:** `src/test/fixtures/`, one directory per faked concept,
+  one file per behaviour — mirroring the backend's
+  `tests/fixtures/sample_http_client/always_succeeding.rs` layout:
+
+  ```text
+  src/test/fixtures/
+  └── supabase/
+      ├── always-authenticated.ts
+      ├── always-unauthenticated.ts
+      └── always-failing.ts
+  ```
+
+- **Naming:** `always{Behavior}{Concept}` — `alwaysAuthenticatedSupabase`,
+  `alwaysUnauthenticatedSupabase`, `alwaysFailingSupabase` — the direct
+  translation of the backend's `Always{Behavior}{ConceptName}` fakes.
+- **How they're injected:** `vi.mock(...)` is only the *injection mechanism*
+  (module substitution); what gets injected is a fake:
+
+  ```ts
+  vi.mock("./lib/supabase", async () => {
+    const { alwaysUnauthenticatedSupabase } = await import(
+      "./test/fixtures/supabase/always-unauthenticated"
+    );
+    return { supabase: alwaysUnauthenticatedSupabase() };
+  });
+  ```
+
+- **When to create one:** the dependency crosses a system boundary (network,
+  auth, storage) or you need an error-path behaviour (the always-failing
+  variant). One fake serves many tests.
+- **When NOT to:** pure functions and presentational components (test them
+  directly); child components in an integration test (render the real tree);
+  the router (use a real `MemoryRouter`).
 
 > Building this shared infra is tracked work — see the `[TEST]` implementation
-> ticket (STA-141). Until it lands, mock Supabase inline as `App.test.tsx` does
-> today, but keep the AADA shape and single assertion.
+> ticket (STA-141), which replaces the ad-hoc inline stubs currently duplicated
+> in `App.test.tsx` and `src/test/setup.ts` with these fakes. Until it lands,
+> keep inline stand-ins small, fixed, and predictable — fake-shaped — and keep
+> the AADA shape and single assertion.
 
 ---
 
@@ -291,7 +332,7 @@ To keep the Arrange phase uniform and short, common setup lives in `src/test/`:
 | Kind of code | Layer | What its tests look like |
 | --- | --- | --- |
 | Pure function (`lib/`, extracted logic) | 1 | Direct AADA, `toEqual` on data in/out. |
-| Hook (`useAuth`, …) | 1 | `renderHook` with providers/mocks; assert returned surface. |
+| Hook (`useAuth`, …) | 1 | `renderHook` with providers/fakes; assert returned surface. |
 | Context (`AuthContext`) | 1 | Render a probe consumer; assert what a consumer sees. |
 | Presentational component (Header, Footer, …) | 1 (+ story) | Render, assert visible content/roles. |
 | Page (HomePage, LoginPage, …) | 1 | Custom `render()` + `MemoryRouter`; assert user-visible outcome. |
@@ -392,7 +433,7 @@ import { LoginPage } from "./LoginPage";
 
 describe("LoginPage", () => {
   it("should disable submit and show a spinner when a sign-in is in flight", async () => {
-    // Arrange: render with a Supabase mock whose sign-in never resolves (in-flight)
+    // Arrange: render with a Supabase fake whose sign-in never resolves (in-flight)
     render(<LoginPage />);
     // …trigger submit via user-event…
 
