@@ -132,6 +132,26 @@ After a session where the user corrected or refined a design judgement:
 2. Character/principle-level → `DESIGN.md`; operational checklist item → this skill.
 3. Apply after user approval.
 
+Examples of things worth capturing:
+- A rebalancing the user asked for (too classical / too modern) — capture what tipped it, as
+  a named smell the Review mode checks for
+- Token or utility usages the user corrected — add to the Mechanics checklist
+- A new motion or layout pattern the user approved — capture it in DESIGN.md and demonstrate
+  it in a story
+- Pages or components the user holds up as reference ("more like this") — cite them in this
+  skill as exemplars
+- Design decisions that recur in conversation but live nowhere — propose them for DESIGN.md
+
+Also periodically review: do the checklists and cited exemplars still match the product and
+DESIGN.md? If not, update them. The examples are authoritative guidance — they must reflect
+reality.
+
 **DESIGN.md takes priority.** If this skill diverges from DESIGN.md, DESIGN.md wins — and
 remember DESIGN.md itself is a living draft: when a decision serves the character better
 than what's written, make it and update the doc in the same pass.
+
+**Proactive divergence detection.** When working on UI, if you suspect existing screens or
+components diverge from the design language, fix them in passing or flag them without
+waiting to be asked (see Proactive Behavior above).
+
+This keeps the skill growing from real usage rather than speculation.

@@ -266,9 +266,23 @@ After scaffolding a component where the user corrects or refines the output:
 
 1. Ask: "Should I update the component-scaffold skill with this change?"
 2. If yes, update the relevant template or convention.
+3. Apply after user approval.
 
 Examples worth capturing:
 - New base patterns that emerge (e.g., compound components, context-based components)
 - Story patterns that work well (decorators, play functions)
 - Test patterns for specific component types (forms, modals, async)
 - Changes to the file set (e.g., if the team adds `.css` files or co-located types)
+
+Also periodically review: do the templates still match the real components in the codebase
+(structure, story titles, test shape)? If not, update them. The templates are authoritative
+guidance — they must reflect reality.
+
+**AGENTS.md, TESTING.md, and DESIGN.md take priority.** If a template diverges from them,
+they win; resolve conflicts in their favor.
+
+**Proactive divergence detection.** When scaffolding near existing components that diverge
+from the templates (missing stories, off-convention tests), flag or fix them proactively
+without waiting to be asked.
+
+This keeps the skill growing from real usage rather than speculation.

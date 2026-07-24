@@ -354,11 +354,19 @@ After completing a testing session where the user corrected or refined a pattern
 Examples worth capturing:
 - New test patterns that emerged (e.g., a better way to test the auth flow)
 - Play-test patterns that proved valuable
+- New fakes and fake behaviours that other tests will want
 - Few-shot examples that drifted from actual code — update them
+- New tests that make good few-shot examples — add them
 - Tests where the user had to correct the agent — add as examples to prevent repeating mistakes
+
+Also periodically review: do the existing few-shot examples still match the codebase?
+If not, update them. If a new test is a better or complementary example, add it.
+The examples are authoritative guidance — they must reflect reality.
 
 **TESTING.md and AGENTS.md take priority.** If this skill diverges from them, they win. When
 updating this skill, check both for conflicts and resolve in their favor.
 
 **Proactive divergence detection.** When working on tests, if you suspect existing tests in the
 codebase diverge from the doctrine, fix them proactively without waiting to be asked.
+
+This keeps the skill growing from real usage rather than speculation.

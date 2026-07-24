@@ -148,5 +148,22 @@ After a documentation session where the user corrected or refined something:
 2. If yes, propose the addition (here, or in the appropriate root doc) with a concrete example.
 3. Apply after user approval.
 
+Examples of things worth capturing:
+- JSDoc phrasings the user corrected — capture the preferred wording as a convention
+- Story patterns that proved valuable (decorators, argTypes descriptions, showcase layouts)
+- New sync rules that emerged (a doc that had to be updated alongside a kind of change)
+- Autodocs/story-organization conventions established through repeated corrections
+- Few-shot examples that drifted from the actual story files — update them
+
+Also periodically review: do the conventions and examples here still match the catalog and
+the codebase? If not, update them. The examples are authoritative guidance — they must
+reflect reality.
+
 **AGENTS.md, DESIGN.md, and TESTING.md take priority.** If this skill diverges from them,
 they win; resolve conflicts in their favor.
+
+**Proactive divergence detection.** When working on documentation, if you suspect existing
+JSDoc, stories, or root docs diverge from the conventions, fix them proactively without
+waiting to be asked.
+
+This keeps the skill growing from real usage rather than speculation.
