@@ -125,34 +125,36 @@ import { describe, expect, it } from "vitest";
 import { {PascalName} } from ".";
 
 describe("{PascalName}", () => {
-  it("should render when mounted", () => {
+  it("should render its content when mounted", () => {
     render(<{PascalName}>Content</{PascalName}>);
 
-    const result = screen.getByText("Content");
+    const expectedResult = "Content";
+
+    const result = screen.getByText(expectedResult);
 
     expect(result).toBeInTheDocument();
   });
 
-  it("should apply custom className when provided", () => {
+  it("should merge a custom class when className is provided", () => {
     render(<{PascalName} className="custom-class">Content</{PascalName}>);
 
-    const expectedResult = "custom-class";
+    const expectedResult = true;
 
-    const result = screen.getByText("Content");
+    const result = screen.getByText("Content").className.includes("custom-class");
 
-    expect(result.className).toContain(expectedResult);
+    expect(result).toBe(expectedResult);
   });
 });
 ```
 
-**Test conventions:**
+**Test conventions** (full doctrine in `TESTING.md`; operational patterns in the `testing` skill):
 - Import from barrel (`"."`), not from the file directly
 - `describe("{PascalName}", () => { ... })`
 - `it("should ... when ...", () => { ... })` naming
-- Arrange, Define, Act, Assert pattern
-- ONE `expect()` per test
-- Use `userEvent.setup()` for interaction tests
-- Use `screen` queries (prefer `getByRole`, `getByText`, `getByLabelText`)
+- Arrange, Define (`expectedResult`), Act (`result`), Assert — blank lines between phases, no phase-label comments
+- Exactly ONE `expect()` per test — composite outcomes as a single structured object
+- Use `userEvent.setup()` for interaction tests; `await` every interaction
+- Use `screen` queries (prefer `getByRole`, `getByLabelText`; `getByTestId` last resort)
 
 ### Story (`{name}.stories.tsx`)
 
@@ -162,7 +164,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { {PascalName} } from ".";
 
 const meta: Meta<typeof {PascalName}> = {
-  title: "UI/{PascalName}",
+  title: "Components/{PascalName}",
   component: {PascalName},
   tags: ["autodocs"],
 };
@@ -178,14 +180,18 @@ export const Playground: Story = {
 };
 ```
 
-**Story conventions:**
+**Story conventions** (stories are the living documentation — see the `documentation` skill):
 - CSF3 format
 - Import `Meta` and `StoryObj` from `@storybook/react-vite`
 - `tags: ["autodocs"]` for auto-generated docs
-- `title: "UI/{PascalName}"` for UI components
+- `title: "Components/{PascalName}"` (matches every existing story in the catalog)
+- JSDoc above `meta` (renders as the autodocs intro) and above each story
 - First story is always `Playground` with sensible defaults
-- Add variant stories when component has variants (one per variant)
-- Add interaction tests via `play` function for stateful components
+- Add variant stories when component has variants (one per variant); use the shared
+  showcase decorators (`.storybook/utils/showcaseDecorators.tsx`) for variant/size grids
+- Add interaction tests via `play` function for stateful components — same AADA shape,
+  one composite assertion (see the `testing` skill)
+- Add viewport-variant stories for layout-bearing components (at the component's own breakpoints)
 
 ### Barrel Export (`index.ts`)
 
