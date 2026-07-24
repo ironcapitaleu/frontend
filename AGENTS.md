@@ -48,6 +48,35 @@ codebase for all instances before considering the change complete.
   - Design documents (if applicable, e.g., mermaid diagrams)
 - **Documentation must be version controlled**.
 
+---
+
+## The UI Development Flow: Design → Documentation → Testing
+
+We are building a timeless product, and that intent runs through every UI change as a
+three-step flow. Each step has an authoritative document and a supporting skill:
+
+1. **Design** — decide how it should look, feel, and move, in the terms of the design
+   language: the dual mandate of classical foundation and modern spark. Authority:
+   [DESIGN.md](./DESIGN.md). Skill: `design`.
+2. **Documentation** — demonstrate it. **Storybook is the living catalog of the design
+   system**: every reusable component ships stories for its meaningful states, and those
+   stories double as its primary documentation. Written docs (JSDoc, root documents) stay
+   in sync in the same pass. Skill: `documentation`.
+3. **Testing** — defend it. Logic is unit-tested; interactions get play tests in a real
+   browser; stories double as visual-regression cases across themes and viewports, so a
+   change on one page cannot silently break the look, layout, or motion of another.
+   Authority: [TESTING.md](./TESTING.md). Skill: `testing`.
+
+A UI change that skips a step is unfinished: undesigned UI drifts off-language,
+undocumented UI is invisible to visual regression, untested UI regresses silently.
+
+**Be an advocate of the design language.** When building or reviewing any user-facing
+change, measure it against [DESIGN.md](./DESIGN.md) — does it feel timeless AND modern,
+trustworthy AND elegant? Use semantic tokens, the correct font roles, and the house motion
+conventions; flag drift toward either a legacy-institution look or a generic-startup look.
+Design conformance is part of code review, not a matter of taste left to chance (see
+**Design Language Review** below).
+
 ## Import Order Conventions
 
 To ensure readability and consistency, all imports in this project must be grouped and ordered as follows:
@@ -297,12 +326,34 @@ This only needs to be done once per clone. Without it, git will still produce co
 - Ensure new features or breaking changes are properly documented  
 - Make sure that any new added pages are included in the sitemap page and sitemap XML file
 
+### Design Language Review
+
+Every user-facing change is measured against [DESIGN.md](./DESIGN.md):
+
+- Does it hold the **dual mandate** — timeless AND modern, trustworthy AND elegant? Flag drift
+  toward either pole (legacy-institution stiffness or generic-startup gloss)
+- **Semantic tokens only** — flag raw hex or `oklch()` values in components (dark mode must keep working)
+- **Font roles** used correctly — `font-classic` reserved for voice/values moments, Inter for
+  working UI, `font-monospace` for numbers and tickers; running prose keeps its `65ch` justified measure
+- **Motion conventions** — buttons carry `.btn-tactile`; height animates via `grid-template-rows`
+  (`0fr` → `1fr`), never `display` toggles or the `max-height` trick — flag the wrong mechanism
+  even when it currently looks fine; accent and motion stay restrained and purposeful
+- **Both themes and the component's breakpoints hold** — check the Storybook theme toggle and
+  viewport variants for layout-bearing changes
+- New reusable components ship **Storybook stories** for their meaningful states
+
 ### Testing Review
 
-- Confirm sufficient test coverage  
+The full doctrine lives in [TESTING.md](./TESTING.md); review against it:
+
+- Confirm sufficient test coverage — across all three layers: unit (jsdom), interaction/play
+  (Storybook), and story coverage for visual regression
 - Suggest missing edge cases or error condition tests
 - Ensure React components have appropriate tests (e.g., rendering, props, state changes)  
-- Verify tests follow the **"Arrange, Define, Act, Assert"** pattern
+- Verify tests follow the **"Arrange, Define, Act, Assert"** pattern with **exactly one
+  `expect` per test** and `should … when …` names
+- For UI changes: stories exist for new/changed states; interactive changes have a play test;
+  layout-bearing changes are exercised at their breakpoints and in both themes
 
 ### What NOT to Do
 

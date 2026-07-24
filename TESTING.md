@@ -2,13 +2,15 @@
 
 This document is the single source of truth for **how we write frontend tests**.
 It is a companion to [AGENTS.md](./AGENTS.md) (general engineering guidelines)
-and [DESIGN.md](./DESIGN.md) (design language).
+and [DESIGN.md](./DESIGN.md) (design language), and it closes the loop of the
+UI development flow: **design → documentation → testing**. What DESIGN.md
+declares and Storybook demonstrates, the tests defend.
 
-The rules here are deliberately **strict and uniform**. As more code is written
-by and with AI, a human reviewer must be able to spot a broken convention **at a
-glance**. Uniformity is the point: every test in this repo — and, where the
-shape allows, every test in our backend repo [`arkad`](https://github.com/ironcapitaleu/arkad) —
-should read the same way, so a reviewer's eye knows exactly where to look.
+The rules here are deliberately **strict and uniform**. Every test in this
+repo — and, where the shape allows, every test in our backend repo
+[`arkad`](https://github.com/ironcapitaleu/arkad) — reads the same way, so a
+reviewer's eye knows exactly where to look and a broken convention stands out
+**at a glance**. Uniformity is the point.
 
 > **The shape is non-negotiable. The judgement is in what you assert.**
 > The structure below (AADA, one `expect`, `should … when …`) never bends. The
@@ -21,7 +23,7 @@ should read the same way, so a reviewer's eye knows exactly where to look.
 
 These four rules are inherited verbatim from the `arkad` backend doctrine (see
 [AGENTS.md § Library Code → Testing](./AGENTS.md)). They apply to **every** test
-in this repository, TypeScript and TSX alike.
+in this repository — unit tests and Storybook play tests alike.
 
 ### 1.1 Arrange–Define–Act–Assert (AADA)
 
@@ -34,10 +36,11 @@ Every test body is four clearly separated phases, in this order:
   `result`.
 - **Assert** — one comparison of `result` against `expectedResult`.
 
-Separate the phases with blank lines. Do not interleave them. The Define phase
-comes *before* Act so the reader knows the target before seeing the mechanics —
-this is the one deviation from vanilla "Arrange, Act, Assert", and it is
-deliberate.
+Separate the phases with blank lines. Do not interleave them, and do not label
+them with `// Arrange` / `// Act` comments — the structure speaks for itself.
+The Define phase comes *before* Act so the reader knows the target before seeing
+the mechanics — this is the one deviation from vanilla "Arrange, Act, Assert",
+and it is deliberate.
 
 For comparison, this is the exact pattern in `arkad` (Rust):
 
@@ -58,9 +61,8 @@ Our TypeScript translates it one-to-one — same phases, same variable names.
 
 **Write exactly one `expect(...)` assertion per test.** No exceptions.
 
-This is the rule most likely to be violated by habit or by AI, and the one a
-reviewer scans for first. If you feel the urge to add a second `expect`, you
-have one of two situations:
+This is the rule a reviewer scans for first. If you feel the urge to add a
+second `expect`, you have one of two situations:
 
 - **A composite UI outcome that belongs together** — assert it as a single
   structured object:
@@ -81,6 +83,10 @@ have one of two situations:
 
 Never reach for a second `expect`. Never reach for `expect.assertions(n)` as a
 way to smuggle several in.
+
+**Play tests follow the same rule.** A `play` function may script several
+interaction steps (that is its Act phase), but it ends in a single assertion of
+the outcome — composite object if several facts describe it.
 
 ### 1.3 `should … when …` test names
 
@@ -153,7 +159,104 @@ with its validation) rather than every trivial leaf in isolation.
 
 ---
 
-## 3. Shared test infrastructure (`src/test/`)
+## 3. The three layers
+
+The frontend has failure modes a backend does not: a page can be logically
+correct and still **look wrong** — a layout that collapses on mobile, an
+animation that jumps, a serif heading that silently fell back to sans. One
+environment cannot catch all of that, so tests live in three layers. Each layer
+answers one question, and every UI change should be able to say which layers
+cover it.
+
+| Layer | Runs in | Question it answers | Where |
+| --- | --- | --- | --- |
+| **1. Unit / integration** | jsdom (`unit` Vitest project) | *Does the logic and DOM behaviour work?* | colocated `*.test.ts(x)` |
+| **2. Interaction & visual behaviour** | Real browser via Storybook + Playwright (`storybook` Vitest project) | *Does it actually work — and hold up — as rendered, interacted with, across themes and viewports?* | `play` functions in `*.stories.tsx` |
+| **3. Visual regression** | Snapshot comparison of rendered stories | *Does it still look the way it should?* | Chromatic (the `@chromatic-com/storybook` addon is already wired) |
+
+### Layer 1 — unit / integration (jsdom)
+
+Hooks, contexts, `lib/` utilities, pure functions, presentational components,
+and page-level logic. Fast, deterministic, no real rendering engine. **Know its
+limits:** jsdom does not compute CSS, so it cannot see Tailwind breakpoints,
+animations, or layout. Anything whose correctness depends on *rendered
+appearance* belongs in layer 2 or 3 — do not fake it in jsdom by asserting
+class strings.
+
+### Layer 2 — interaction & visual behaviour (Storybook play tests)
+
+Every interactive component's story earns a `play` test: real browser, real
+CSS, real events. This is where we test the things that have historically
+regressed silently:
+
+- **Interactions** — open/close, select, toggle, hover reveals, keyboard paths.
+- **Responsive behaviour** — the same story exercised at mobile and desktop
+  viewports (see §4). A component is not done when it works at 1440px.
+- **Both themes** — stories render under the light/dark class-based theming
+  (the `addon-themes` decorator in [.storybook/preview.ts](./.storybook/preview.ts));
+  a component that only works in one theme is half a component.
+- **Accessibility** — `addon-a11y` runs axe checks per story. The current gate
+  is `test: "todo"` (violations surface in the test UI); the goal is `"error"`
+  once existing violations are cleared. New components should pass from day one.
+
+### Layer 3 — visual regression (Chromatic)
+
+Play tests catch *behavioural* breakage; only pixel comparison catches "the
+spacing jumped", "the gradient stopped flowing", "the serif fell back". Every
+story doubles as a visual test case, which is why **story coverage is test
+coverage**: a component without stories for its meaningful states is invisible
+to this layer. When Chromatic runs in CI, each PR shows visual diffs against
+the baseline for review.
+
+---
+
+## 4. Responsive, motion, and visual regressions
+
+The regressions that hurt most are the ones no unit test sees: a change on one
+page shifts a shared component, and suddenly the mobile nav jumps or the filter
+panel animation stutters. The doctrine for defending against them:
+
+### 4.1 Responsive
+
+- Layout is built desktop-and-mobile from the start (AGENTS.md's responsive
+  methodology); tests must exercise **both**. Stories for layout-bearing
+  components define viewport variants — the same story at a mobile width and a
+  desktop width — so play tests and visual snapshots cover each breakpoint the
+  component actually responds to.
+- Test at the component's **own** breakpoints (where its layout genuinely
+  changes), not a fixed device list.
+- In jsdom, `window.matchMedia` is stubbed (see `src/test/setup.ts`). Logic
+  that branches on a media query can be unit-tested by configuring that stub —
+  but layout produced by CSS breakpoints cannot, and belongs in layer 2/3.
+
+### 4.2 Motion
+
+Motion is part of the design language (DESIGN.md §5), so it gets defended like
+one:
+
+- Test motion **by its observable endpoints**, not its pixels: the filter panel
+  is closed, the trigger is clicked, the panel's content is visible/hidden. The
+  transition itself is layer 3's job.
+- The house conventions — height animated via `grid-template-rows`
+  (`0fr` → `1fr`), never `display` toggles or the `max-height` trick;
+  `.btn-tactile` on buttons — are **review items** (see AGENTS.md § PR Review):
+  a wrong mechanism is flagged in review even when the endpoints test green,
+  because the wrong mechanism is exactly what produces the subtle jump later.
+
+### 4.3 What "done" means for a UI change
+
+A UI change is complete when:
+
+1. Its logic is unit-tested (layer 1).
+2. Its states have stories, and its interactions have a play test (layer 2).
+3. Those stories hold at the component's breakpoints and in both themes.
+4. It reads correctly against [DESIGN.md](./DESIGN.md) — semantic tokens, the
+   right font role, the motion conventions. Design conformance is part of
+   review, not an afterthought.
+
+---
+
+## 5. Shared test infrastructure (`src/test/`)
 
 To keep the Arrange phase uniform and short, common setup lives in `src/test/`:
 
@@ -164,46 +267,39 @@ To keep the Arrange phase uniform and short, common setup lives in `src/test/`:
 - **A reusable Supabase mock factory** that produces a configurable fake
   `supabase` client (session present/absent, sign-in success/error). This
   consolidates the ad-hoc mocks currently duplicated in `App.test.tsx` and
-  `src/test/setup.ts`.
+  `src/test/setup.ts`. Its role mirrors the backend's **fakes**: a minimal,
+  predictable stand-in for an external system, with named behaviours
+  (an always-authenticated client, an always-failing client) rather than
+  per-test ad-hoc stubs.
 
 > Building this shared infra is tracked work — see the `[TEST]` implementation
-> ticket. Until it lands, mock Supabase inline as `App.test.tsx` does today, but
-> keep the AADA shape and single assertion.
+> ticket (STA-141). Until it lands, mock Supabase inline as `App.test.tsx` does
+> today, but keep the AADA shape and single assertion.
 
 ---
 
-## 4. Test layers — what to write where
+## 6. What to test where — by kind of code
 
-| Layer | Where | What it covers |
+| Kind of code | Layer | What its tests look like |
 | --- | --- | --- |
-| **Storybook stories + interaction (play) tests** | `src/components/ui/**/*.stories.tsx` | Visual primitives and their interactive behaviour (the `storybook` Vitest project, real browser via Playwright). |
-| **Unit / integration tests** | colocated `*.test.ts(x)` (the `unit` project, jsdom) | Hooks, contexts, `lib/` utilities, presentational components, and page-level logic. |
+| Pure function (`lib/`, extracted logic) | 1 | Direct AADA, `toEqual` on data in/out. |
+| Hook (`useAuth`, …) | 1 | `renderHook` with providers/mocks; assert returned surface. |
+| Context (`AuthContext`) | 1 | Render a probe consumer; assert what a consumer sees. |
+| Presentational component (Header, Footer, …) | 1 (+ story) | Render, assert visible content/roles. |
+| Page (HomePage, LoginPage, …) | 1 | Custom `render()` + `MemoryRouter`; assert user-visible outcome. |
+| `ui/*` primitive | 2 (+ 1 where logic warrants) | Stories for every meaningful state; play test for interaction. |
+| Layout-bearing / responsive component | 2 + 3 | Viewport-variant stories; play tests at each breakpoint. |
+| Motion-bearing component | 1 or 2 for endpoints, 3 for the motion itself | Assert open/closed states; conventions checked in review. |
 
-Rules of thumb:
-
-- A `ui/*` primitive with meaningful interaction (open/close, select, toggle)
-  earns a **play test** in its story; a purely presentational one may not need a
-  separate unit test.
-- Hooks, contexts, and `lib/` utilities get **unit tests**.
-- Pages get **integration tests** rendered through the custom `render()` and, where
-  routing matters, a `MemoryRouter`.
-- Extract logic that is awkward to test through the DOM into **pure functions**
-  and unit-test those directly (see §5).
-
----
-
-## 5. Make hard-to-test logic testable
-
-When behaviour is buried inside a component's render, lift it into a pure
-function and test the function. The canonical case is **`StockScreener`**: its
-filtering and sorting should be extracted into pure helpers (e.g.
-`filterStocks(stocks, criteria)`, `sortStocks(stocks, key, direction)`) that take
-data in and return data out. Pure functions test cleanly in the AADA shape with a
-single `toEqual`, and the component becomes a thin, easily-rendered shell.
+When behaviour is buried inside a component's render and awkward to reach
+through the DOM, **extract it into a pure function** and test that directly.
+The canonical case is `StockScreener`: its filtering and sorting belong in pure
+helpers (`filterStocks(stocks, criteria)`, `sortStocks(stocks, key, direction)`)
+that test cleanly with a single `toEqual`, leaving the component a thin shell.
 
 ---
 
-## 6. Coverage gate
+## 7. Coverage gate
 
 Coverage is measured by the v8 provider (configured in
 [`vite.config.ts`](./vite.config.ts)). Today there are **no thresholds** — that
@@ -214,12 +310,15 @@ is the gap the `[TEST]` ticket closes:
 - Set an **achievable initial floor** based on the baseline the first slice of
   tests establishes, then **ratchet it upward** as coverage grows. Prefer a floor
   that holds the line over an aspirational number that blocks every PR.
+- Remember that line coverage only measures layer 1. **Story coverage** —
+  every component's meaningful states having stories — is the coverage metric
+  for layers 2 and 3, and is checked in review.
 
 ---
 
-## 7. Worked examples (this repo's real style)
+## 8. Worked examples (this repo's real style)
 
-### 7.1 A pure utility — `src/lib/utils.test.ts`
+### 8.1 A pure utility — `src/lib/utils.test.ts`
 
 ```ts
 import { describe, it, expect } from "vitest";
@@ -237,7 +336,7 @@ describe("cn", () => {
 });
 ```
 
-### 7.2 An interactive component — `src/components/ui/accordion/accordion.test.tsx`
+### 8.2 An interactive component — `src/components/ui/accordion/accordion.test.tsx`
 
 The existing accordion test is the reference. Note the four phases, the single
 assertion, and the `should … when …` name:
@@ -271,7 +370,7 @@ describe("Accordion", () => {
 });
 ```
 
-### 7.3 A composite UI outcome as one object — a login form
+### 8.3 A composite UI outcome as one object — a login form
 
 When several observable facts describe one behaviour, assert them together in a
 single structured `expectedResult` — never as several `expect` calls:
@@ -300,15 +399,46 @@ describe("LoginPage", () => {
 });
 ```
 
+### 8.4 A play test — the same shape in a story
+
+The `play` function scripts the interaction (Act), then closes with one
+composite assertion:
+
+```tsx
+import { expect, userEvent, within } from "storybook/test";
+
+export const CountsClicks: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const button = canvas.getByRole("button", { name: /click me/i });
+
+    const expectedResult = { label: "Clicked 3 times", countShown: true };
+
+    await userEvent.click(button);
+    await userEvent.click(button);
+    await userEvent.click(button);
+    const result = {
+      label: button.textContent,
+      countShown: canvas.queryByText(/Clicks:\s*3/i) !== null,
+    };
+
+    await expect(result).toEqual(expectedResult);
+  },
+};
+```
+
 ---
 
-## 8. Checklist before you open a PR
+## 9. Checklist before you open a PR
 
-- [ ] Every test is AADA with blank-line-separated phases.
-- [ ] Every test has **exactly one** `expect`.
+- [ ] Every test is AADA with blank-line-separated phases (no phase-label comments).
+- [ ] Every test — play tests included — has **exactly one** `expect`.
 - [ ] Every test name is `should … when …`.
 - [ ] Queries prefer `getByRole` / `getByLabelText`; `getByTestId` only as a last resort.
 - [ ] Interactions use `user-event`; async uses `findBy*` / `waitFor`.
 - [ ] Assertions are about user-visible behaviour, not implementation details.
 - [ ] Test files are colocated with their subject.
-- [ ] `npm run test:ci` passes and coverage stays at or above the floor.
+- [ ] New/changed components have stories for their meaningful states; interactive ones have a play test.
+- [ ] Layout-bearing changes hold at the component's breakpoints and in both themes.
+- [ ] The change reads correctly against [DESIGN.md](./DESIGN.md) — tokens, font roles, motion conventions.
+- [ ] `npm run test:ci` and `npm run test:storybook` pass; coverage stays at or above the floor.
