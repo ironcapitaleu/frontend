@@ -84,7 +84,8 @@ export { {PascalName} };
 - `data-slot="{name}"` on root element
 - Accept `className` prop, merge via `cn()`
 - Spread remaining `...props`
-- JSDoc comment describing purpose
+- JSDoc comment describing purpose — follow `DOCUMENTATION.md` (summary line answering *Was?*,
+  when-to-use with neighbour disambiguation for `ui/` primitives, no `@example` blocks)
 - Base element type in `React.ComponentProps<"...">` matches the root HTML element
 
 ### Variants (`variants.ts`) — only when needed
@@ -278,8 +279,8 @@ Also periodically review: do the templates still match the real components in th
 (structure, story titles, test shape)? If not, update them. The templates are authoritative
 guidance — they must reflect reality.
 
-**AGENTS.md, TESTING.md, and DESIGN.md take priority.** If a template diverges from them,
-they win; resolve conflicts in their favor.
+**AGENTS.md, DOCUMENTATION.md, TESTING.md, and DESIGN.md take priority.** If a template
+diverges from them, they win; resolve conflicts in their favor.
 
 **Proactive divergence detection.** When scaffolding near existing components that diverge
 from the templates (missing stories, off-convention tests), flag or fix them proactively

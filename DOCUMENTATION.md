@@ -3,8 +3,7 @@
 This document defines the standards for writing frontend documentation. It tells
 you **what** to document, **how** to structure it, and **where** examples live.
 It is a companion to [AGENTS.md](./AGENTS.md) (general engineering guidelines),
-[DESIGN.md](./DESIGN.md) (design language), and [TESTING.md](./TESTING.md)
-(testing doctrine), and it mirrors the backend's `DOCUMENTATION.md` in
+and it mirrors the backend's `DOCUMENTATION.md` in
 [`arkad`](https://github.com/ironcapitaleu/arkad) — same skeleton, same
 principles, reinterpreted for TypeScript/React where the languages genuinely
 differ.
