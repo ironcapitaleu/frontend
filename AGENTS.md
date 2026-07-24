@@ -42,7 +42,9 @@ codebase for all instances before considering the change complete.
 
 ### Documentation
 
-- Public items in libraries **must include JSDoc comments** (`/** */`).
+- Public items in libraries **must include JSDoc comments** (`/** */`), following the
+  conventions in [DOCUMENTATION.md](./DOCUMENTATION.md) (W-Fragen, summary-line discipline,
+  examples live in stories).
 - All implementation changes must be **reflected in documentation**, including:
   - JSDoc comments
   - Design documents (if applicable, e.g., mermaid diagrams)
@@ -61,7 +63,8 @@ three-step flow. Each step has an authoritative document and a supporting skill:
 2. **Documentation** — demonstrate it. **Storybook is the living catalog of the design
    system**: every reusable component ships stories for its meaningful states, and those
    stories double as its primary documentation. Written docs (JSDoc, root documents) stay
-   in sync in the same pass. Skill: `documentation`.
+   in sync in the same pass. Authority: [DOCUMENTATION.md](./DOCUMENTATION.md).
+   Skill: `documentation`.
 3. **Testing** — defend it. Logic is unit-tested; interactions get play tests in a real
    browser; stories are exercised across themes and viewports, so a change on one page
    cannot silently break the look, layout, or motion of another.
@@ -315,7 +318,7 @@ This only needs to be done once per clone. Without it, git will still produce co
 ### Style & Documentation
 
 - Ensure style conventions are followed  
-- Check for meaningful comments and JSDoc  
+- Check for meaningful comments and JSDoc — verified against [DOCUMENTATION.md](./DOCUMENTATION.md)
 - Suggest clearer names and documentation where needed  
 
 ### Documentation Consistency

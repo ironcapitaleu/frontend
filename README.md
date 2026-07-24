@@ -60,7 +60,8 @@ A modern React + Vite application for Iron Capital's investment partnership webs
 The application uses an editorial, print-inspired design language built on
 Tailwind CSS v4, with all design tokens defined in `src/index.css`. See
 [DESIGN.md](./DESIGN.md) for the full design language, [AGENTS.md](./AGENTS.md)
-for layout and CSS methodology, and [TESTING.md](./TESTING.md) for the frontend
+for layout and CSS methodology, [DOCUMENTATION.md](./DOCUMENTATION.md) for the
+documentation conventions, and [TESTING.md](./TESTING.md) for the frontend
 testing doctrine. In short:
 
 - Classical serif display type (Playfair Display) with Inter for UI text

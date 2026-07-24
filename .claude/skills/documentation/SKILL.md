@@ -15,8 +15,10 @@ allowed-tools: [Read, Write, Edit, Bash, AskUserQuestion, Agent]
 
 ## Purpose
 
-Guide documenting, checking, or refactoring frontend documentation. On the frontend,
-documentation has **two halves that must stay in step**:
+Guide documenting, checking, or refactoring frontend documentation. All written
+documentation must comply with the guidelines in `DOCUMENTATION.md` at the project root —
+read it before writing docs. On the frontend, documentation has **two halves that must
+stay in step**:
 
 1. **Written docs** — JSDoc on components/hooks/utilities, and the root documents
    (`README.md`, `DESIGN.md`, `TESTING.md`, `AGENTS.md`).
@@ -48,17 +50,25 @@ Then:
 
 ## Conventions
 
-### JSDoc
+### JSDoc (Quick Reference)
 
-- Every exported component, hook, and utility carries a JSDoc block stating **what** it is and
-  **why/when** to use it — the contract, not the implementation.
-- The component JSDoc doubles as its Storybook autodocs intro (the comment above the `meta`
-  in the story file is what renders); write it for a reader browsing the catalog. Include
-  disambiguation from neighbours where useful ("For non-interactive status labels, use
-  `Badge`" — see `button.stories.tsx`).
-- Present tense, third person. First sentence short and self-contained.
-- No `@param`/`@returns` noise on self-documenting signatures; add them only when a parameter's
-  meaning is genuinely non-obvious.
+These are loaded from `DOCUMENTATION.md` but summarized here for speed:
+
+- Every **exported** item carries a JSDoc block stating the **contract**, not the implementation.
+- **W-Fragen**: every doc answers *Was?* (summary line, always); *Warum?/Wie?/Wer?/Wann?/Wo?*
+  when a reader would naturally ask.
+- First line short, complete sentence, present tense, third person — it is the IDE tooltip
+  and the autodocs preview.
+- The component file's JSDoc is the API contract; the JSDoc above the story `meta` is the
+  catalog intro. Keep them consistent. Include disambiguation from confusable neighbours
+  ("For non-interactive status labels, use `Badge`").
+- **Self-documenting signatures first** — rename a prop/parameter before documenting it; no
+  `@param`/`@returns` noise. Document non-obvious props on the props type (renders in the
+  Storybook controls table).
+- **No `@example` blocks** — examples live in stories, which are rendered and play-tested.
+- **Never name consumers** in a reusable component's docs; naming the external system an item
+  serves (Supabase in `lib/supabase`) is fine.
+- When unsure: look at documented siblings that already follow the conventions and match them.
 
 ### Stories (the living documentation)
 
@@ -91,7 +101,8 @@ Docs drift is a review item. The binding rules:
 
 ### For "Write" or "Refactor" mode:
 
-1. Read the conventions above; for design-language content also read `DESIGN.md`.
+1. Read `DOCUMENTATION.md` to load the current conventions; for design-language content also
+   read `DESIGN.md`.
 2. Read the target files.
 3. For each component in scope:
    - Check JSDoc exists and states the contract; write/improve it.
@@ -103,8 +114,14 @@ Docs drift is a review item. The binding rules:
 
 ### For "Check" mode:
 
-1. Scan the target for violations. Check for:
-   - Exported components/hooks/utilities without JSDoc
+1. Read `DOCUMENTATION.md` to load conventions, then scan the target for violations.
+   Check for:
+   - Exported components/hooks/utilities without JSDoc, or without a proper summary line
+   - `@example` blocks in JSDoc (examples belong in stories)
+   - Consumer names in a reusable component's docs (coupling)
+   - Non-obvious props left undocumented on the props type
+   - Missing when-to-use / neighbour disambiguation on confusable `ui/` primitives
+   - Hooks that don't document their returned surface or subscription/cleanup behaviour
    - Components without a story file, or with stories missing meaningful states
      (variants without a story, no disabled/error/empty state, no viewport variant for
      layout-bearing components)
@@ -120,8 +137,9 @@ Docs drift is a review item. The binding rules:
 
 When iteration with the user reaches a new convention:
 
-1. Identify where it belongs — this skill (operational), `DESIGN.md` (design language),
-   `TESTING.md` (test doctrine), or `AGENTS.md` (general).
+1. Identify where it belongs — `DOCUMENTATION.md` (written-doc conventions), this skill
+   (operational), `DESIGN.md` (design language), `TESTING.md` (test doctrine), or
+   `AGENTS.md` (general).
 2. Write it concisely with a concrete example matching the existing style.
 3. Show the user the proposed change before applying.
 
@@ -159,8 +177,8 @@ Also periodically review: do the conventions and examples here still match the c
 the codebase? If not, update them. The examples are authoritative guidance — they must
 reflect reality.
 
-**AGENTS.md, DESIGN.md, and TESTING.md take priority.** If this skill diverges from them,
-they win; resolve conflicts in their favor.
+**DOCUMENTATION.md, AGENTS.md, DESIGN.md, and TESTING.md take priority.** If this skill
+diverges from them, they win; resolve conflicts in their favor.
 
 **Proactive divergence detection.** When working on documentation, if you suspect existing
 JSDoc, stories, or root docs diverge from the conventions, fix them proactively without
