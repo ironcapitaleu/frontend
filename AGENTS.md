@@ -114,6 +114,11 @@ Error class names should follow consistent naming patterns based on the kind of 
 
 ### Testing
 
+> **Frontend tests:** the strict/uniform doctrine below applies to the frontend
+> too, with React/Vitest/Testing Library specifics. See [TESTING.md](./TESTING.md)
+> for the full frontend testing doctrine (query priority, `user-event`, shared
+> `src/test/` infra, coverage gate) and worked examples in this repo's style.
+
 - Write a **comprehensive unit test suite** for the implemented code.
 - If applicable, write **integration tests**.
 - Use **pretty assertions** (built-in with Vitest/Jest for readable diffs, or via libraries like `chai` with plugins) for improved readability.
