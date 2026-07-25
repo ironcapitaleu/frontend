@@ -22,11 +22,12 @@ describe("App", () => {
 			render(<App />);
 		});
 
-		const expectedResult = /Iron Capital/i;
+		const expectedResult = true;
 
-		const result = screen.getByRole("heading", { name: expectedResult });
+		const result =
+			screen.queryByRole("heading", { name: /Iron Capital/i }) !== null;
 
-		expect(result).toBeInTheDocument();
+		expect(result).toBe(expectedResult);
 	});
 
 	it("should render the product description when the home page loads", async () => {
@@ -34,11 +35,11 @@ describe("App", () => {
 			render(<App />);
 		});
 
-		const expectedResult = /Research businesses/i;
+		const expectedResult = true;
 
-		const result = screen.getByText(expectedResult);
+		const result = screen.queryByText(/Research businesses/i) !== null;
 
-		expect(result).toBeInTheDocument();
+		expect(result).toBe(expectedResult);
 	});
 
 	it("should render the home navigation link when the home page loads", async () => {
@@ -46,10 +47,11 @@ describe("App", () => {
 			render(<App />);
 		});
 
-		const expectedResult = /Iron Capital home/i;
+		const expectedResult = true;
 
-		const result = screen.getByRole("link", { name: expectedResult });
+		const result =
+			screen.queryByRole("link", { name: /Iron Capital home/i }) !== null;
 
-		expect(result).toBeInTheDocument();
+		expect(result).toBe(expectedResult);
 	});
 });

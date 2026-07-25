@@ -131,9 +131,9 @@ describe("{PascalName}", () => {
 
     const expectedResult = "Content";
 
-    const result = screen.getByText(expectedResult);
+    const result = screen.getByText("Content").textContent;
 
-    expect(result).toBeInTheDocument();
+    expect(result).toBe(expectedResult);
   });
 
   it("should merge a custom class when className is provided", () => {

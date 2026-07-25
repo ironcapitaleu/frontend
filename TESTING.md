@@ -110,6 +110,25 @@ it should read as a sentence a non-author can verify against the assertion.
   equivalent of `arkad`'s `pretty_assertions::assert_eq`. They are registered
   globally in [`src/test/setup.ts`](./src/test/setup.ts).
 
+**`expectedResult` must appear in the assertion.** The Assert phase (§1.1) is one
+comparison of `result` against `expectedResult`, mirroring `arkad`'s
+`assert_eq!(result, expected_result)`. So do not end on a matcher that drops
+`expectedResult` — an argument-less `expect(el).toBeInTheDocument()` where
+`expectedResult` lived only in the query is *not* the shape. Reduce the outcome to
+a value the assertion compares:
+
+- **Existence / absence** — `result` is a boolean, `expectedResult` is `true`/`false`:
+  `const result = screen.queryByRole("link", { name: /…/i }) !== null;`
+  then `expect(result).toBe(expectedResult)`. Use this when the accessible element
+  may carry no text (an icon link with an `aria-label`).
+- **Rendered text** — `result` is the extracted text, `expectedResult` is the
+  expected string: `const result = (await screen.findByText("…")).textContent;`
+  then `expect(result).toBe(expectedResult)` (see §8.2).
+
+jest-dom matchers that *take* an expected value (`toHaveTextContent(expectedResult)`,
+`toHaveValue(expectedResult)`, `toHaveAttribute(name, expectedResult)`) also satisfy
+the rule and keep the pretty-diff — reach for those over `toBe` when they read better.
+
 ---
 
 ## 2. Frontend-specific principles (added rigour, not looser shape)

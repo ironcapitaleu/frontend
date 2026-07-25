@@ -22,9 +22,9 @@ describe("Accordion", () => {
 
 		const expectedResult = "Account";
 
-		const result = screen.getByText(expectedResult);
+		const result = screen.getByText("Account").textContent;
 
-		expect(result).toBeInTheDocument();
+		expect(result).toBe(expectedResult);
 	});
 
 	it("should not display content when no item has been opened", () => {
@@ -58,9 +58,9 @@ describe("Accordion", () => {
 		const expectedResult = "Account content";
 
 		await user.click(screen.getByText("Account"));
-		const result = screen.getByText(expectedResult);
+		const result = (await screen.findByText("Account content")).textContent;
 
-		expect(result).toBeInTheDocument();
+		expect(result).toBe(expectedResult);
 	});
 
 	it("should hide content when an open trigger is clicked again", async () => {
@@ -149,9 +149,9 @@ describe("Accordion", () => {
 
 		await user.click(screen.getByText("Account"));
 		await user.click(screen.getByText("Billing"));
-		const result = screen.getByText(expectedResult);
+		const result = screen.getByText("Account content").textContent;
 
-		expect(result).toBeInTheDocument();
+		expect(result).toBe(expectedResult);
 	});
 
 	it("should not open content when the item is disabled", async () => {
@@ -185,8 +185,8 @@ describe("Accordion", () => {
 
 		const expectedResult = "Account content";
 
-		const result = screen.getByText(expectedResult);
+		const result = screen.getByText("Account content").textContent;
 
-		expect(result).toBeInTheDocument();
+		expect(result).toBe(expectedResult);
 	});
 });
