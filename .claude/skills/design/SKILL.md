@@ -3,9 +3,11 @@ name: design
 description: >
   Use when the user asks to "design a component", "design a page", "review the design",
   "check design conformance", "does this fit the design language", "make it feel right",
-  or when building or changing any user-facing UI. Guides new UI through the design
-  language (DESIGN.md) and the design → documentation → testing flow, and audits existing
-  UI for design-language conformance.
+  proposes a new design idea (especially one that may deviate from the current design
+  philosophy), or when building or changing any user-facing UI. Guides new UI through the
+  design language (DESIGN.md) and the design → documentation → testing flow, audits existing
+  UI for conformance, and when a new idea deviates from DESIGN.md surfaces the conflict and
+  the reconcile-or-evolve choice rather than silently complying or refusing.
 version: 0.1.0
 argument-hint: "[component-page-or-'review']"
 allowed-tools: [Read, Write, Edit, Bash, AskUserQuestion, Agent]
@@ -114,6 +116,36 @@ principle):
 5. Propagate: search for existing UI that the change affects and update it — the language
    stays coherent only if it's applied everywhere.
 
+## Handling a Deviation — reconcile or evolve
+
+When a new idea **conflicts** with DESIGN.md — not merely something the language is silent
+on (that is a gap: propose capturing it), but something the language argues against — do not
+silently comply and do not silently refuse. Both are failures: silent compliance is how the
+language dies by a thousand cuts; silent refusal is how it ossifies into a museum piece.
+Surface the deviation as an explicit decision:
+
+1. **Name the conflict precisely.** Point to the specific principle or token it breaks —
+   "DESIGN.md §3 treats the accent as a sparing spark; this fills a whole panel with it",
+   not a vague "this feels off". If you can't name what it deviates from, it may not be a
+   deviation.
+2. **Read the intent.** What is the idea trying to achieve? The goal is usually legitimate
+   even when the execution breaks a rule — separate the two.
+3. **Offer both roads, with a recommendation and the reasoning:**
+   - **Reconcile** — how to reach the same goal *within* the language. Give concrete
+     alternatives ("keep the emphasis, but carry it with weight and whitespace instead of a
+     full accent fill"). This is the default when the language already has a good answer.
+   - **Evolve** — if the idea genuinely serves the character ("timeless, modern, trustworthy,
+     elegant, precise") *better* than the current rule, then the rule is the thing that's
+     wrong. Route to **Evolve mode**: propose the DESIGN.md change, and on approval update
+     the doc, demonstrate it in a story, and propagate.
+4. **Let the user decide** when it's genuinely their call — use `AskUserQuestion`, leading
+   with your recommendation. Never change DESIGN.md without approval; never ship the
+   deviation without one either.
+
+The test for reconcile-vs-evolve is always the **character, not the letter**: does the idea
+make the product *more* timeless-and-modern, trustworthy-and-elegant — or is it drift dressed
+up as an idea? Say which you think it is, and why.
+
 ## Proactive Behavior
 
 - When building ANY user-facing UI — even when this skill wasn't explicitly invoked —
@@ -121,8 +153,11 @@ principle):
   implementing, not after.
 - When touching a file that contains an existing design-language violation (raw color,
   wrong animation mechanism, missing `.btn-tactile`), fix it in passing or call it out.
-- When a design decision emerges in conversation that DESIGN.md doesn't cover, propose
-  capturing it (Evolve mode) rather than letting it live only in the code.
+- When a design decision emerges in conversation that DESIGN.md doesn't cover (a **gap**),
+  propose capturing it (Evolve mode) rather than letting it live only in the code.
+- When a new idea **conflicts** with DESIGN.md (a **deviation**), never implement it silently
+  and never dismiss it silently — run the reconcile-or-evolve flow above and put the decision
+  to the user with your recommendation.
 
 ## Self-Improvement
 
