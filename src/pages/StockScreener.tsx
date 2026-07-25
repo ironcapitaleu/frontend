@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { ArrowDown, ArrowUp, ArrowUpDown, Filter } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
