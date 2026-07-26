@@ -80,7 +80,9 @@ export function isNearFiftyTwoWeekLow(stock: Stock): boolean {
 /**
  * How many filter criteria are currently active — drives the count badge on the
  * Filters button. A criterion counts when its string is non-empty or its
- * boolean is true.
+ * boolean is true. Exception: `downLastMonth` requires a parseable number — a
+ * non-numeric string is treated as inactive to mirror the NaN guard in
+ * {@link filterStocks}.
  */
 export function countActiveFilters(filters: FilterState): number {
 	return [
