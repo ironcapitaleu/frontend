@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ComponentProps } from "react";
+import { expect, userEvent, within } from "storybook/test";
 import {
 	AlertDialog,
 	AlertDialogTrigger,
@@ -168,6 +169,36 @@ export const Small: Story = {
 	argTypes: {
 		dialogSize: { control: { disable: true } },
 		triggerSize: { control: { disable: true } },
+	},
+};
+
+// ==========================================
+// INTERACTION TESTS
+// ==========================================
+
+/**
+ * Play test: clicking the trigger opens the alert dialog with its title.
+ */
+export const OpensOnTrigger: Story = {
+	parameters: {
+		controls: { disable: true },
+	},
+	render: renderDialog,
+	args: {
+		defaultOpen: false,
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const body = within(document.body);
+
+		const expectedResult = "Are you absolutely sure?";
+
+		await userEvent.click(
+			canvas.getByRole("button", { name: "Open Alert Dialog" }),
+		);
+		const result = (await body.findByRole("alertdialog")).textContent;
+
+		await expect(result).toContain(expectedResult);
 	},
 };
 
