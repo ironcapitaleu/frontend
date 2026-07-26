@@ -9,7 +9,7 @@ description: >
   UI for conformance, and when a new idea deviates from DESIGN.md surfaces the conflict and
   the reconcile-or-evolve choice rather than silently complying or refusing.
 version: 0.1.0
-argument-hint: "[component-page-or-'review']"
+argument-hint: "[target-path or 'review' or 'recent']"
 allowed-tools: [Read, Write, Edit, Bash, AskUserQuestion, Agent]
 ---
 
@@ -19,8 +19,10 @@ allowed-tools: [Read, Write, Edit, Bash, AskUserQuestion, Agent]
 
 Be the **advocate of the design language**. Every piece of UI in this product either
 strengthens or dilutes the character defined in `DESIGN.md` — timeless classics,
-reinterpreted for a modern age. This skill guides new UI through that language and audits
-existing UI against it, then carries the work through the full flow:
+reinterpreted for a modern age. The feeling every screen should evoke in the viewer is
+**trust, class, and competence** — that is what the product represents; measure work against
+it. This skill guides new UI through that language and audits existing UI against it, then
+carries the work through the full flow:
 
 > **Design → Documentation → Testing.**
 > Decide how it should look and feel (DESIGN.md) → demonstrate it in the living catalog
@@ -52,7 +54,32 @@ UI is invisible to the catalog and to review, untested UI regresses silently.
 
 ### 1. Design — shape a new component or page
 
-Before writing code, settle the design decisions (incrementally, don't overwhelm):
+**Decompose first — what level are we at?** Before styling anything, place the thing in the
+component tree and work at the right altitude:
+
+- **Atomic (primitive)** — it can't be broken down further (a button, an input, a badge). It
+  stands alone, lives in `ui/`, and takes flexible props so any parent can arrange it.
+- **Composite** — it arranges other components into something more coarse-grained (a search
+  bar, a header, a page). A page is simply the largest composite: a whole tree of
+  sub-components.
+
+For a composite, decompose top-down but **build bottom-up**:
+
+1. Break the target into the smallest reusable sub-components its design implies.
+2. Check the Storybook catalog and the codebase — does a sub-component already exist to reuse?
+   (A specialized component that narrows a more generic one is a composite too — prefer
+   specializing an existing primitive over duplicating it.)
+3. For each piece that doesn't exist yet, recurse: design and build it — atomic or composite —
+   guided by the top-level design you're holding in mind, until the leaves are primitives.
+4. Assemble upward. Each sub-component is independently designed, documented (its own stories),
+   and tested.
+
+Keep every component **flexible** — accept the props that let a parent compose or specialize
+it — so it is reusable beyond the one place you first need it. And match the altitude to the
+task: don't style pixels when the real question is "what are the sub-problems?", and don't
+re-architect the tree when the task is a leaf tweak.
+
+Then settle the design decisions for the component at hand (incrementally, don't overwhelm):
 
 1. **What is it, and what is the user doing there?** — speaking-about-us moments lean
    classical; doing-work moments lean modern. Name which pole leads and where the other
@@ -94,12 +121,12 @@ For each component/page in scope, check:
   `max-height` tricks or `display` toggles even when they currently "work" (the wrong
   mechanism is what produces the subtle jump later)
 - Accent used sparingly — flag accent creep
-- Dark mode holds — both themes checked (Storybook theme toggle)
+- Theming holds — checked in all themes (Storybook theme toggle), not just the one it was built in
 - Responsive — the layout holds at the component's breakpoints; no desktop-only design
 
 **Flow completeness**
-- Stories exist for the meaningful states (documentation half)
-- Interactions have play tests; layout has viewport variants (testing half)
+- Stories exist for the meaningful states (the documentation step)
+- Interactions have play tests; layout has viewport variants (the testing step)
 
 Report findings as a list: file, violation, suggested fix. Offer to apply.
 

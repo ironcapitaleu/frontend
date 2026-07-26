@@ -17,16 +17,20 @@ allowed-tools: [Read, Write, Edit, Bash, AskUserQuestion, Agent]
 
 Guide documenting, checking, or refactoring frontend documentation. All written
 documentation must comply with the guidelines in `DOCUMENTATION.md` at the project root —
-read it before writing docs. On the frontend, documentation has **two halves that must
+read it before writing docs. On the frontend, documentation has **two parts that must
 stay in step**:
 
 1. **Written docs** — JSDoc on components/hooks/utilities, and the root documents
    (`README.md`, `DESIGN.md`, `TESTING.md`, `AGENTS.md`).
 2. **Living documentation** — **Storybook is the living catalog of the design system.** A
-   component's stories ARE its primary documentation: they show every meaningful state,
-   render under both themes, generate autodocs, and double as interaction test cases
-   (and as visual-regression cases once that layer is adopted — see TESTING.md §3).
-   Documenting a component means giving it stories.
+   component's stories show every meaningful state, render under all themes, generate
+   autodocs, and double as interaction test cases (and as visual-regression cases once that
+   layer is adopted — see TESTING.md §3).
+
+Documenting a component means giving it **both**: JSDoc (the written contract) *and* stories
+(the rendered catalog). For a **composite** component, documenting it is documenting its tree
+— each reusable sub-component earns its own JSDoc and stories, so the catalog builds bottom-up
+and every level is inspectable in isolation (see the `design` skill's decomposition step).
 
 This skill operates in three modes:
 1. **Write** — Add or improve documentation for a target (JSDoc + stories + doc sync)
@@ -40,7 +44,7 @@ This skill operates in three modes:
 When invoked, first parse the user's invocation message and conversation context for:
 - **Mode** — write, check, refactor, or improve guidelines?
 - **Scope** — a component, a directory, "recent" (git diff), or everything?
-- **Half** — JSDoc, stories, root docs, or the full pass?
+- **Aspect** — JSDoc, stories, root docs, or the full pass?
 
 Then:
 1. **State your understanding** back in one sentence (e.g. "I'll add stories and JSDoc for the

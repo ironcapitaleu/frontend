@@ -84,8 +84,9 @@ export { {PascalName} };
 - `data-slot="{name}"` on root element
 - Accept `className` prop, merge via `cn()`
 - Spread remaining `...props`
-- JSDoc comment describing purpose — follow `DOCUMENTATION.md` (summary line answering *Was?*,
-  when-to-use with neighbour disambiguation for `ui/` primitives, no `@example` blocks)
+- JSDoc comment describing purpose — follow `DOCUMENTATION.md` (summary line answering *Was?*
+  always, plus *Warum?/Wer?* when non-obvious — e.g. when-to-use with neighbour disambiguation
+  for `ui/` primitives; no `@example` blocks)
 - Base element type in `React.ComponentProps<"...">` matches the root HTML element
 
 ### Variants (`variants.ts`) — only when needed
@@ -275,9 +276,20 @@ Examples worth capturing:
 - Test patterns for specific component types (forms, modals, async)
 - Changes to the file set (e.g., if the team adds `.css` files or co-located types)
 
-Also periodically review: do the templates still match the real components in the codebase
-(structure, story titles, test shape)? If not, update them. The templates are authoritative
-guidance — they must reflect reality.
+**When and how to keep the templates current.** Tie the review to *use*, not a calendar —
+it's more reliable than a cadence nobody watches:
+
+- **On every invocation**, before generating, sanity-check the templates against one real,
+  recently-touched component of the same kind (open an actual `ui/` sibling). If the codebase
+  has moved on — a new convention, a changed story title, a different test shape — update the
+  template first, then scaffold. This makes drift self-correcting at exactly the moment it
+  would otherwise be copied forward.
+- **On a correction**, apply the ask-capture-apply loop above.
+
+(If the team ever wants an explicit freshness signal rather than use-triggered review, add a
+`last-reviewed:` date to this skill's frontmatter and treat anything older than a chosen window
+as due for a pass — but that's a heavier process to adopt deliberately, not a default.) The
+templates are authoritative guidance — they must reflect reality.
 
 **AGENTS.md, DOCUMENTATION.md, TESTING.md, and DESIGN.md take priority.** If a template
 diverges from them, they win; resolve conflicts in their favor.

@@ -2,11 +2,12 @@
 name: testing
 description: >
   This skill should be used when the user asks to "review tests", "add tests", "check test coverage",
-  "write play tests", "add interaction tests", "test responsiveness", "review testing strategy",
-  or needs to write, review, or improve unit tests, Storybook play tests, or visual/responsive
-  coverage for a component, hook, page, or utility.
+  "write play tests", "add interaction tests", "test responsiveness", "re-test a page", "test recent
+  components", "review testing strategy", or reports a bug/regression that needs a test so it can't
+  recur. Covers writing, reviewing, or improving unit tests, Storybook play tests, and
+  visual/responsive coverage for a component, page, hook, or utility.
 version: 0.1.0
-argument-hint: "[module-or-file-path]"
+argument-hint: "[target-path or 'recent' or 'review']"
 allowed-tools: [Read, Write, Edit, Bash, AskUserQuestion]
 ---
 
@@ -21,6 +22,13 @@ layers a change is missing.
 
 The doctrine lives in `TESTING.md` at the repo root — read it before writing tests. This skill
 is the *operational* companion: how to pick what to test, in which layer, with which pattern.
+
+**A reported bug is a missing test.** Whenever a logical bug, regression, or unrecorded
+behaviour surfaces — during a PR, from a review, or from plain user feedback — the job is two
+parts: (a) fix the behaviour, and (b) ask *"why didn't a test catch this, and what test makes
+sure it never happens again?"*, then write that test (and, where the same class of mistake
+could recur elsewhere, tests for the siblings). The regression test lands with the fix, not
+later. See **Proactive Behavior**.
 
 ## Context Gathering
 
@@ -41,7 +49,7 @@ When a target is identified (either from context or user input), reason about:
   - A `ui/*` primitive → stories for every meaningful state; play test if interactive
   - A layout-bearing/responsive component → viewport-variant stories, play tests at its breakpoints
   - A motion-bearing component (collapse/expand, hover reveal) → endpoint tests (open/closed states); check the mechanism follows the motion conventions (review item)
-- **Does it depend on Supabase/auth?** → arrange the world with a Supabase fake (see Fakes below)
+- **Does it talk to an external system (auth, network, storage)?** → arrange the world with a fake behind the port (see Fakes below) — e.g. auth through an `AuthGateway` fake, never a raw vendor stub
 - **Does it branch on a media query?** → unit-testable via the `matchMedia` stub in `src/test/setup.ts`; CSS-breakpoint layout is NOT — that goes to the browser layer
 - **Is behaviour buried in a component's render?** → extract it into a pure function first, then test the function (the `StockScreener` filter/sort pattern)
 - **Is it async?** → plan `findBy*` / `waitFor`, never timeouts
@@ -75,7 +83,7 @@ Authoritative source: `TESTING.md`. Summary:
 1. **Unit/integration (jsdom, `npm run test:dev` / `test:ci`)** — logic and DOM behaviour.
    jsdom computes no CSS: never assert Tailwind class strings as a stand-in for layout.
 2. **Interaction & visual behaviour (Storybook + Playwright, `npm run test:storybook`)** —
-   play tests in real browsers: interactions, both themes (the class-based light/dark decorator),
+   play tests in real browsers: interactions, all themes (the class-based theming decorator),
    viewport variants, axe checks via `addon-a11y`.
 
 A third, pixel-level visual-regression layer (snapshot-diffing the rendered stories) is
@@ -85,12 +93,12 @@ regardless: stories are the visual record any future snapshot layer will consume
 
 When reviewing a UI change, ask: which layers cover it? A change is complete when its logic is
 unit-tested, its states have stories, its interactions have a play test, and it holds at its
-breakpoints in both themes.
+breakpoints in all themes.
 
 ## Baseline Tests (apply to ALL components)
 
-The frontend counterpart of the backend's boilerplate auto-trait tests. Every component gets,
-at minimum:
+The floor of coverage every component carries, so a broken render or a dropped prop can never
+land silently. At minimum:
 
 ```tsx
 describe("MyComponent", () => {
@@ -116,107 +124,72 @@ describe("MyComponent", () => {
 });
 ```
 
+The second test is **not** CSS testing. It asserts the component's *composability
+contract* — that a consumer's `className` is forwarded and merged so the component can be
+restyled and arranged wherever it's placed — a structural behaviour that jsdom can check
+cheaply. Whether those classes *look* right (colour, spacing, dark mode) is visual
+correctness, and that lives in layer 2 (Storybook, real browser), never in a jsdom class-string
+assertion. Keep the two straight: forwarding is a contract; appearance is visual.
+
 And every `ui/*` primitive gets, at minimum, a `Playground` story plus one story per variant
 (the `component-scaffold` skill generates these). If you encounter a component missing its
 baseline tests or stories, add them proactively.
 
-## Fakes
+## Fakes (behind interfaces, with dependency injection)
 
-### What is a Fake
+A fake is defined by an **interface we own** (a "port"), not by the third-party dependency it
+stands in for. This is the ports-and-adapters (hexagonal) idea: an interface is the contract;
+the real vendor is one adapter that implements it; the fake is another. The fake conforms to
+*our* interface — it never has to imitate the vendor's API. Full doctrine and worked example
+in `TESTING.md` §5; the operational shape:
 
-A fake is a minimal implementation of an external dependency that returns fixed, predictable
-responses. Fakes decouple unit tests from real external systems (network, auth, storage) and
-keep the Arrange phase declarative: you name the world ("the user is signed out"), you don't
-script it. No logic, no state mutation, no call expectations — just a predetermined behaviour.
+### Three roles
 
-This is a deliberate stance: **fakes over mocks**. Per-test stub configuration and
-"was called with" assertions couple tests to implementation and violate the
-behaviour-not-implementation principle. The single assertion stays on what the user sees.
+1. **The port** — a TypeScript `interface` the app owns, in the app's own vocabulary, that
+   conceals the vendor. It states what the app needs, not what the vendor offers, so the
+   vendor's name never appears in it (e.g. an `AuthGateway`, not a Supabase client).
+2. **The real adapter** — implements the port by wrapping the vendor. This is the *only* place
+   the vendor is named.
+3. **The fake** — implements the *same port* with fixed, named behaviour. It conforms to the
+   interface, not to the vendor's response shapes.
 
-### Where to put them
+### Inject the fake — don't mock the module
 
-Fakes live in `src/test/fixtures/` — one directory per faked concept, one file per behaviour,
-mirroring the backend's `tests/fixtures/sample_{concept}/` layout:
+Components and hooks depend on the **port**, handed to them through a provider (dependency
+injection), never on the concrete vendor. A test arranges the world by injecting the fake
+through that provider:
 
-```text
-src/test/fixtures/
-└── supabase/
-    ├── always-authenticated.ts
-    ├── always-unauthenticated.ts
-    └── always-failing.ts
+```tsx
+render(
+  <AuthProvider gateway={alwaysUnauthenticatedAuth()}>
+    <LoginPage />
+  </AuthProvider>,
+);
 ```
 
-### How to define a Fake
+There is nothing to `vi.mock` here — that is the payoff of DI. `vi.mock` is only an interim
+seam for code that still imports a vendor module directly (as `useAuth` imports `supabase`
+today); introducing the port removes both the coupling and the mock. Treat any inline vendor
+stub as debt until the port lands (STA-141), never as the pattern.
 
-A fake implements the dependency's surface with fixed behavior — hardcoded, predictable values:
+### Conventions
 
-```ts
-// src/test/fixtures/supabase/always-unauthenticated.ts
-
-/**
- * A Supabase client whose auth methods always behave as if no user is
- * signed in. Session queries resolve to null; sign-in attempts fail.
- */
-export function alwaysUnauthenticatedSupabase() {
-  return {
-    auth: {
-      getSession: async () => ({ data: { session: null }, error: null }),
-      onAuthStateChange: () => ({
-        data: { subscription: { unsubscribe: () => {} } },
-      }),
-      signInWithPassword: async () => ({
-        data: { user: null, session: null },
-        error: { message: "Invalid login credentials" },
-      }),
-    },
-  };
-}
-```
-
-### Naming conventions
-
-- **Behaviour-named factories:** `always{Behavior}{Concept}` (e.g. `alwaysAuthenticatedSupabase`,
-  `alwaysUnauthenticatedSupabase`, `alwaysFailingSupabase`) — the direct translation of the
-  backend's `Always{Behavior}{ConceptName}` fakes (`AlwaysSucceedingHttpClient`,
-  `AlwaysFailingHttpClient`).
-- File per behaviour, kebab-case: `always-unauthenticated.ts`.
-
-### When to create a Fake
-
-- The dependency crosses a system boundary (Supabase, network, storage)
-- You need to test error-handling paths (the always-failing variant)
-- The same world is arranged in more than one test file — one fake serves many tests
-
-### When NOT to create a Fake
-
-- Pure functions and presentational components — test them directly
-- Child components in an integration test — render the real tree; that's the point
-- The router — use a real `MemoryRouter`, not a faked navigate function
-
-### How and where to use Fakes
-
-`vi.mock(...)` is only the **injection mechanism** (module substitution); what gets injected
-is a fake:
-
-```ts
-// In a test file — arrange the signed-out world
-vi.mock("./lib/supabase", async () => {
-  const { alwaysUnauthenticatedSupabase } = await import(
-    "./test/fixtures/supabase/always-unauthenticated"
-  );
-  return { supabase: alwaysUnauthenticatedSupabase() };
-});
-```
-
-Never let a unit test hit the network. Until the fixtures land (tracked in STA-141), keep
-inline stand-ins small, fixed, and predictable — fake-shaped, like `App.test.tsx`'s current
-inline stub — and migrate them into `src/test/fixtures/` when it does.
+- **Fixed, not scripted:** a fake returns predetermined values — no logic, no state mutation,
+  no "was called with" expectations. You name the world ("the user is signed out"); the single
+  assertion stays on what the user sees.
+- **Naming:** `always{Behavior}{Port}` — `alwaysAuthenticatedAuth`, `alwaysUnauthenticatedAuth`,
+  `alwaysFailingAuth`. Fakes live in `src/test/fixtures/{port}/`, one file per behaviour.
+- **When to create one:** the app talks to an external system (auth, network, storage) a test
+  must not hit, or you need an error-path behaviour (the always-failing variant).
+- **When NOT to:** pure functions and presentational components (test them directly); child
+  components in an integration test (render the real tree); the router (use a real
+  `MemoryRouter`, not a faked navigate).
 
 ### The custom `render()`
 
 Wraps the subject in the real provider tree (`AuthProvider` + `MemoryRouter`). Prefer it for
 anything that consumes auth or routing; use `initialEntries` to place the router on the route
-under test.
+under test, and pass a fake gateway to arrange the auth world.
 
 ## Unit Test Patterns
 
@@ -330,17 +303,22 @@ catalog and review until a pixel-diffing layer exists.
 
 When reviewing or writing tests:
 
-1. **Fill baseline gaps everywhere** — a component without baseline tests or stories gets them without asking
-2. **Suggest meaningful behavioural tests** based on the component's public surface:
+1. **Turn every reported bug into a test.** When a logical bug, regression, or unrecorded
+   behaviour is reported — in a PR, a review, or plain user feedback — first reproduce and fix
+   it, then ask *"why didn't a test catch this?"* and write the test that would have. The
+   regression test lands in the same change as the fix. Then propagate: if the same class of
+   mistake could hide in sibling components, cover them too.
+2. **Fill baseline gaps everywhere** — a component without baseline tests or stories gets them without asking
+3. **Suggest meaningful behavioural tests** based on the component's public surface:
    - Happy path for each user-facing behaviour
    - Error/empty states (failed sign-in, empty screener results, missing data)
    - Edge cases (long text, unicode, keyboard-only interaction)
-   - Both themes and the component's breakpoints for anything visual
-3. **Suggest extraction** when logic is buried in a render — pure function first, then test it
-4. **Inquire with the user** about:
+   - All themes and the component's breakpoints for anything visual
+4. **Suggest extraction** when logic is buried in a render — pure function first, then test it
+5. **Inquire with the user** about:
    - Which user flows are most critical
    - Which regressions have actually been observed before (these become permanent tests)
-5. **Proactively propagate** — when fixing a test-shape violation in one file, search for all
+6. **Proactively propagate** — when fixing a test-shape violation in one file, search for all
    files with the same violation and fix them all in one pass
 
 ## Self-Improvement
