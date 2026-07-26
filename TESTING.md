@@ -430,19 +430,33 @@ that test cleanly with a single `toEqual`, leaving the component a thin shell.
 
 ## 7. Coverage gate
 
-Coverage is measured by the v8 provider (configured in
-[`vite.config.ts`](./vite.config.ts)). Today there are **no thresholds** — that
-is the gap **STA-141** closes:
+Coverage is measured by the v8 provider and **gated** via
+`coverage.thresholds` (both configured in [`vite.config.ts`](./vite.config.ts)).
+`npm run test:ci` runs with `--coverage`, so a drop below any floor **fails the
+build**. The current floors, set just under the baseline the first slice of
+tests established:
 
-- Add Vitest `coverage.thresholds` and wire them into `npm run test:ci` so a
-  regression below the floor fails CI.
-- Set an **achievable initial floor** based on the baseline the first slice of
-  tests establishes, then **ratchet it upward** as coverage grows. Prefer a floor
-  that holds the line over an aspirational number that blocks every PR.
-- Remember that line coverage only measures layer 1. **Story coverage** —
-  every component's meaningful states having stories — is the coverage metric
-  for layer 2 (and for any future visual-regression layer), and is checked in
-  review.
+| Metric | Floor |
+| --- | --- |
+| Statements | 17% |
+| Branches | 8% |
+| Functions | 14% |
+| Lines | 19% |
+
+Working with the gate:
+
+- **Ratchet upward, never down.** As coverage grows, raise the floors to lock in
+  the gain. Never lower a floor to make a red build pass — that defeats the gate.
+  Prefer a floor that holds the line over an aspirational number that blocks
+  every PR.
+- **These floors measure layer 1 only.** `test:ci` runs the `unit` project, so
+  `ui/*` primitives covered by Storybook play tests (layer 2) count as
+  uncovered here and hold the global numbers down. That is why the floors look
+  low relative to how well-tested the components actually are — do not read the
+  global percentage as the whole story.
+- **Story coverage is the layer-2 metric.** Every component's meaningful states
+  having stories is the coverage measure for layer 2 (and for any future
+  visual-regression layer), and is checked in review — not by this gate.
 
 ---
 
