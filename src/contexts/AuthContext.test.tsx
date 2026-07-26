@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { alwaysAuthenticatedAuth } from "../test/fixtures/auth/always-authenticated";
+import { fakeUser } from "../test/fixtures/auth/user";
 import { render, renderHook, screen } from "../test/render";
 import { useAuthContext } from "./AuthContext";
 
@@ -21,7 +22,7 @@ describe("useAuthContext", () => {
 	it("should expose the signed-in user's email to a consumer when the gateway is authenticated", async () => {
 		render(<EmailProbe />, { gateway: alwaysAuthenticatedAuth() });
 
-		const expectedResult = "investor@ironcapital.test";
+		const expectedResult = fakeUser.email as string;
 
 		const result = await screen.findByText(expectedResult);
 
