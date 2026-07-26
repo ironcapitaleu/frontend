@@ -42,16 +42,20 @@ The Define phase comes *before* Act so the reader knows the target before seeing
 the mechanics — this is the one deviation from vanilla "Arrange, Act, Assert",
 and it is deliberate.
 
-For comparison, this is the exact pattern in `arkad` (Rust):
+For comparison, this is the exact pattern in `arkad` (Rust) — all four phases
+present, including an Arrange that builds the input:
 
 ```rust
 #[test]
-fn should_parse_annual_frame_when_input_is_cy2024() {
-    let expected_result = Some(Frame { year: 2024, quarter: None, instant: false });
+fn should_create_valid_cik_when_input_is_a_ten_digit_string() {
+    let cik_input = "1234567890";
 
-    let result = Frame::parse("CY2024");
+    let expected_result = "1234567890";
 
-    assert_eq!(result, expected_result);
+    let result = Cik::new(cik_input)
+        .expect("CIK creation should succeed for a valid ten-digit input");
+
+    assert_eq!(result.value(), expected_result);
 }
 ```
 
@@ -110,24 +114,37 @@ it should read as a sentence a non-author can verify against the assertion.
   equivalent of `arkad`'s `pretty_assertions::assert_eq`. They are registered
   globally in [`src/test/setup.ts`](./src/test/setup.ts).
 
-**`expectedResult` must appear in the assertion.** The Assert phase (§1.1) is one
-comparison of `result` against `expectedResult`, mirroring `arkad`'s
-`assert_eq!(result, expected_result)`. So do not end on a matcher that drops
-`expectedResult` — an argument-less `expect(el).toBeInTheDocument()` where
-`expectedResult` lived only in the query is *not* the shape. Reduce the outcome to
-a value the assertion compares:
+**`expectedResult` must appear in the assertion, and prefer a meaningful value
+over a bare boolean.** The Assert phase (§1.1) is one comparison of `result`
+against `expectedResult`, mirroring `arkad`'s `assert_eq!(result, expected_result)`.
+So do not end on a matcher that drops `expectedResult` — an argument-less
+`expect(el).toBeInTheDocument()`, where `expectedResult` lived only in the query,
+is *not* the shape. And prefer asserting **what the content actually is** over a
+`true`/`false` presence flag: `expect(result).toBe(true)` tells a failing reader
+nothing, `expect(result).toBe("Iron Capital")` tells them everything.
 
-- **Existence / absence** — `result` is a boolean, `expectedResult` is `true`/`false`:
-  `const result = screen.queryByRole("link", { name: /…/i }) !== null;`
-  then `expect(result).toBe(expectedResult)`. Use this when the accessible element
-  may carry no text (an icon link with an `aria-label`).
-- **Rendered text** — `result` is the extracted text, `expectedResult` is the
-  expected string: `const result = (await screen.findByText("…")).textContent;`
-  then `expect(result).toBe(expectedResult)` (see §8.2).
+- **Rendered text (default)** — assert the text against the expected string.
+  Reach for a jest-dom matcher that *takes* the expected value so it keeps the
+  pretty-diff:
 
-jest-dom matchers that *take* an expected value (`toHaveTextContent(expectedResult)`,
-`toHaveValue(expectedResult)`, `toHaveAttribute(name, expectedResult)`) also satisfy
-the rule and keep the pretty-diff — reach for those over `toBe` when they read better.
+  ```ts
+  const expectedResult = "Iron Capital";
+
+  const result = screen.getByRole("heading", { name: /Iron Capital/i });
+
+  expect(result).toHaveTextContent(expectedResult);
+  ```
+
+  `toHaveAccessibleName(expectedResult)`, `toHaveValue(expectedResult)`, and
+  `toHaveAttribute(name, expectedResult)` follow the same shape — use the one
+  that names the outcome. For an element with no text of its own (an icon link
+  carrying an `aria-label`), assert its accessible name:
+  `expect(result).toHaveAccessibleName("Iron Capital home")`.
+
+- **Pure existence / absence (fallback)** — only when there is genuinely no
+  content to compare, reduce to a boolean: `const result = screen.queryByText("…")
+  !== null; expect(result).toBe(expectedResult)`. Absence uses the same shape with
+  `expectedResult = false` (or `queryBy(...)` against `null`).
 
 ---
 
@@ -210,9 +227,10 @@ regressed silently:
 - **Interactions** — open/close, select, toggle, hover reveals, keyboard paths.
 - **Responsive behaviour** — the same story exercised at mobile and desktop
   viewports (see §4). A component is not done when it works at 1440px.
-- **Both themes** — stories render under the light/dark class-based theming
-  (the `addon-themes` decorator in [.storybook/preview.ts](./.storybook/preview.ts));
-  a component that only works in one theme is half a component.
+- **All themes** — stories render under the class-based theming (the
+  `addon-themes` decorator in [.storybook/preview.ts](./.storybook/preview.ts));
+  today that is dark and light, but a component must hold in every theme the app
+  ships, not just the one it was built in.
 - **Accessibility** — `addon-a11y` runs axe checks per story. The current gate
   is `test: "todo"` (violations surface in the test UI); the goal is `"error"`
   once existing violations are cleared. New components should pass from day one.
@@ -276,7 +294,7 @@ A UI change is complete when:
 
 1. Its logic is unit-tested (layer 1).
 2. Its states have stories, and its interactions have a play test (layer 2).
-3. Those stories hold at the component's breakpoints and in both themes.
+3. Those stories hold at the component's breakpoints and in all themes.
 4. It reads correctly against [DESIGN.md](./DESIGN.md) — semantic tokens, the
    right font role, the motion conventions. Design conformance is part of
    review, not an afterthought.
@@ -293,56 +311,84 @@ To keep the Arrange phase uniform and short, common setup lives in `src/test/`:
   routing, so tests exercise the real provider tree.
 - **Fakes** for external systems, in `src/test/fixtures/` — see below.
 
-### Fakes, not mocks
+### Fakes behind interfaces, not mocks
 
-We use **fakes** the way the backend does: a fake is a minimal, working
-implementation of an external dependency that returns **fixed, predictable
-responses**. No logic, no state mutation, no call expectations — just a
-predetermined behaviour with a name. This is a deliberate stance against
-mockist testing: configuring stubs per test and asserting "was called with"
-couples tests to implementation; a fake keeps the Arrange phase declarative
-("the world where the user is signed out") and leaves the single assertion on
-what the user sees.
+A fake is defined by an **interface we own**, not by the third-party dependency
+it stands in for. This is the ports-and-adapters (hexagonal) idea, and it is
+exactly how the backend defines its fakes: the trait `InnerClient` is the
+contract; `reqwest` is one adapter that implements it; `FakeInnerClient` is
+another. `FakeInnerClient` conforms to `InnerClient` — it never has to imitate
+`reqwest`'s API. We do the same on the frontend with three roles:
 
-- **Where they live:** `src/test/fixtures/`, one directory per faked concept,
-  one file per behaviour — mirroring the backend's
-  `tests/fixtures/sample_http_client/always_succeeding.rs` layout:
+1. **The port** — a TypeScript `interface` the app owns, written in the app's
+   own vocabulary, that *conceals* the vendor. It states what the app needs, not
+   what the vendor offers, so the word "Supabase" never appears in it:
 
-  ```text
-  src/test/fixtures/
-  └── supabase/
-      ├── always-authenticated.ts
-      ├── always-unauthenticated.ts
-      └── always-failing.ts
-  ```
+   ```ts
+   export interface AuthGateway {
+     getSession(): Promise<Session | null>;
+     onAuthChange(listener: (session: Session | null) => void): () => void;
+     signIn(email: string, password: string): Promise<{ error: AuthError | null }>;
+     signOut(): Promise<void>;
+   }
+   ```
 
-- **Naming:** `always{Behavior}{Concept}` — `alwaysAuthenticatedSupabase`,
-  `alwaysUnauthenticatedSupabase`, `alwaysFailingSupabase` — the direct
-  translation of the backend's `Always{Behavior}{ConceptName}` fakes.
-- **How they're injected:** `vi.mock(...)` is only the *injection mechanism*
-  (module substitution); what gets injected is a fake:
+2. **The real adapter** — implements the port by wrapping the vendor. This is
+   the *only* place the vendor is named:
 
-  ```ts
-  vi.mock("./lib/supabase", async () => {
-    const { alwaysUnauthenticatedSupabase } = await import(
-      "./test/fixtures/supabase/always-unauthenticated"
-    );
-    return { supabase: alwaysUnauthenticatedSupabase() };
-  });
-  ```
+   ```ts
+   export function supabaseAuthGateway(): AuthGateway {
+     /* delegates to supabase.auth.* */
+   }
+   ```
 
-- **When to create one:** the dependency crosses a system boundary (network,
-  auth, storage) or you need an error-path behaviour (the always-failing
-  variant). One fake serves many tests.
+3. **The fake** — implements the *same port* with fixed, named behaviour. It
+   conforms to `AuthGateway`, not to Supabase's response shapes:
+
+   ```ts
+   // src/test/fixtures/auth/always-unauthenticated.ts
+   export function alwaysUnauthenticatedAuth(): AuthGateway {
+     return {
+       getSession: async () => null,
+       onAuthChange: () => () => {},
+       signIn: async () => ({ error: new AuthError("Invalid login credentials") }),
+       signOut: async () => {},
+     };
+   }
+   ```
+
+**Dependency injection is the whole point.** Components and hooks depend on the
+port and receive it through a provider — never on the concrete vendor. A test
+arranges the world by injecting the fake through that provider; there is no
+vendor to mock and no per-test stubbing:
+
+```ts
+render(
+  <AuthProvider gateway={alwaysUnauthenticatedAuth()}>
+    <LoginPage />
+  </AuthProvider>,
+);
+```
+
+- **Naming:** `always{Behavior}{Port}` — `alwaysAuthenticatedAuth`,
+  `alwaysUnauthenticatedAuth`, `alwaysFailingAuth`. Fakes live in
+  `src/test/fixtures/{port}/`, one file per behaviour.
+- **When to create one:** the app talks to an external system (auth, network,
+  storage) a test must not hit, or you need an error-path behaviour.
 - **When NOT to:** pure functions and presentational components (test them
   directly); child components in an integration test (render the real tree);
   the router (use a real `MemoryRouter`).
 
-> Building this shared infra is tracked work — see the `[TEST]` implementation
-> ticket (STA-141), which replaces the ad-hoc inline stubs currently duplicated
-> in `App.test.tsx` and `src/test/setup.ts` with these fakes. Until it lands,
-> keep inline stand-ins small, fixed, and predictable — fake-shaped — and keep
-> the AADA shape and single assertion.
+> **On `vi.mock`.** Injecting the fake through the provider means you do *not*
+> need `vi.mock`. `vi.mock` is only an interim seam for code that still imports a
+> vendor module directly — as `useAuth` imports `supabase` today. Introducing the
+> `AuthGateway` port removes that coupling and the mock with it. Until the port
+> lands (STA-141), keep any inline vendor stub small, fixed, and predictable, but
+> treat it as debt, not the pattern.
+
+> Building this shared infra — the ports, the custom `render()`, and the fakes —
+> is tracked in **STA-141**, which also replaces the ad-hoc inline stubs in
+> `App.test.tsx` and `src/test/setup.ts`.
 
 ---
 
@@ -371,7 +417,7 @@ that test cleanly with a single `toEqual`, leaving the component a thin shell.
 
 Coverage is measured by the v8 provider (configured in
 [`vite.config.ts`](./vite.config.ts)). Today there are **no thresholds** — that
-is the gap the `[TEST]` ticket closes:
+is the gap **STA-141** closes:
 
 - Add Vitest `coverage.thresholds` and wire them into `npm run test:ci` so a
   regression below the floor fails CI.
@@ -471,7 +517,8 @@ describe("LoginPage", () => {
 ### 8.4 A play test — the same shape in a story
 
 The `play` function scripts the interaction (Act), then closes with one
-composite assertion:
+assertion on the observable outcome — a plain string here, since the label after
+three clicks says everything:
 
 ```tsx
 import { expect, userEvent, within } from "storybook/test";
@@ -481,20 +528,21 @@ export const CountsClicks: Story = {
     const canvas = within(canvasElement);
     const button = canvas.getByRole("button", { name: /click me/i });
 
-    const expectedResult = { label: "Clicked 3 times", countShown: true };
+    const expectedResult = "Clicked 3 times";
 
     await userEvent.click(button);
     await userEvent.click(button);
     await userEvent.click(button);
-    const result = {
-      label: button.textContent,
-      countShown: canvas.queryByText(/Clicks:\s*3/i) !== null,
-    };
+    const result = button.textContent;
 
-    await expect(result).toEqual(expectedResult);
+    await expect(result).toBe(expectedResult);
   },
 };
 ```
+
+When several facts genuinely describe one outcome, use a composite object of
+**meaningful values** (§1.2) — `{ label: "Clicked 3 times", counter: "Clicks: 3" }`,
+not a bag of booleans that hides what actually failed.
 
 ---
 
@@ -508,6 +556,6 @@ export const CountsClicks: Story = {
 - [ ] Assertions are about user-visible behaviour, not implementation details.
 - [ ] Test files are colocated with their subject.
 - [ ] New/changed components have stories for their meaningful states; interactive ones have a play test.
-- [ ] Layout-bearing changes hold at the component's breakpoints and in both themes.
+- [ ] Layout-bearing changes hold at the component's breakpoints and in all themes.
 - [ ] The change reads correctly against [DESIGN.md](./DESIGN.md) — tokens, font roles, motion conventions.
 - [ ] `npm run test:ci` and `npm run test:storybook` pass; coverage stays at or above the floor.

@@ -341,8 +341,9 @@ Every user-facing change is measured against [DESIGN.md](./DESIGN.md):
 - **Motion conventions** — buttons carry `.btn-tactile`; height animates via `grid-template-rows`
   (`0fr` → `1fr`), never `display` toggles or the `max-height` trick — flag the wrong mechanism
   even when it currently looks fine; accent and motion stay restrained and purposeful
-- **Both themes and the component's breakpoints hold** — check the Storybook theme toggle and
-  viewport variants for layout-bearing changes
+- **All themes and the component's breakpoints hold** — check the Storybook theme toggle and
+  viewport variants for layout-bearing changes (today that's dark and light; hold in every
+  theme the app ships, not just the one it was built in)
 - New reusable components ship **Storybook stories** for their meaningful states
 
 ### Testing Review
@@ -356,7 +357,7 @@ The full doctrine lives in [TESTING.md](./TESTING.md); review against it:
 - Verify tests follow the **"Arrange, Define, Act, Assert"** pattern with **exactly one
   `expect` per test** and `should … when …` names
 - For UI changes: stories exist for new/changed states; interactive changes have a play test;
-  layout-bearing changes are exercised at their breakpoints and in both themes
+  layout-bearing changes are exercised at their breakpoints and in all themes
 
 ### What NOT to Do
 

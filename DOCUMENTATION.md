@@ -2,18 +2,13 @@
 
 This document defines the standards for writing frontend documentation. It tells
 you **what** to document, **how** to structure it, and **where** examples live.
-It is a companion to [AGENTS.md](./AGENTS.md) (general engineering guidelines),
-and it mirrors the backend's `DOCUMENTATION.md` in
-[`arkad`](https://github.com/ironcapitaleu/arkad) — same skeleton, same
-principles, reinterpreted for TypeScript/React where the languages genuinely
-differ.
+It is a companion to [AGENTS.md](./AGENTS.md) (general engineering guidelines).
 
-Frontend documentation has two halves that must stay in step:
+Frontend documentation has two parts that must stay in step:
 
 1. **Written docs** — JSDoc on every exported item, plus the root documents.
 2. **Living documentation** — **Storybook is the rendered documentation
-   surface.** What rustdoc pages are to the backend, the Storybook catalog is
-   to us: the JSDoc above a story's `meta` renders as the component's docs
+   surface**: the JSDoc above a story's `meta` renders as the component's docs
    intro, TSDoc on props surfaces in the controls table, and stories are the
    executable examples (see [Examples Live in Stories](#examples-live-in-stories)).
 
@@ -88,7 +83,8 @@ to guess the answer to a question they'd naturally ask.
 
 ### W-Fragen
 
-- **Was?** — What does it render? Always.
+- **Was?** — What does it render? Always. (Non-component items — hooks, utilities,
+  types — answer *what they do or return* instead of "render"; see their sections.)
 - **Wer?** — When should a consumer reach for it, and when for a neighbour?
   Required for `ui/` primitives with confusable siblings.
 - **Warum?** — For app-level components whose existence isn't self-evident.
@@ -118,7 +114,8 @@ function Button({ ... }) { ... }
 
 - **Self-documenting prop names first.** Rename a prop so its name and type
   carry the meaning before reaching for a doc comment — the TypeScript type
-  already does most of what a `# Arguments` section does in Rust.
+  already spells out what a parameter list otherwise would, so a separate
+  description is usually redundant.
 - Document the **non-obvious members** of the props type. TSDoc on a member
   surfaces in the Storybook controls table, so this is rendered documentation,
   not dead text.
@@ -161,15 +158,17 @@ export function useAuth() { ... }
 ## Contexts
 
 - The **provider** documents what world it provides to the subtree.
-- The **consumer hook** documents its contract — including the error thrown
-  when used outside the provider (that throw is part of the API):
+- The **consumer hook** documents its contract — including **what** it throws
+  and **when**, if used outside the provider (that throw is part of the API). Be
+  specific: name the error. Where a dedicated error class exists (see
+  [Error Classes](#error-classes)) name it; otherwise say it throws an `Error`.
 
 ```tsx
 /**
  * Returns the auth context of the nearest `AuthProvider`.
  *
- * Throws when used outside an `AuthProvider` — every consumer must be
- * rendered inside one.
+ * Throws an `Error` when used outside an `AuthProvider` — every consumer must
+ * be rendered inside one.
  */
 export function useAuthContext() { ... }
 ```
@@ -204,7 +203,7 @@ const buttonVariants = cva(...);
 
 ## Error Classes
 
-Wording follows the backend convention (see AGENTS.md § Error Naming):
+Wording follows the convention in AGENTS.md § Error Naming:
 
 - Error classes: start with **"Error representing..."** or **"Error indicating..."**
 - Include the *Wann?* — the condition that produces it.
@@ -242,10 +241,10 @@ export class InvalidTickerSymbol extends Error { ... }
 
 ### Examples Live in Stories
 
-The backend's doc-tests are compiled and executed — they cannot rot. A code
-block inside a JSDoc comment has no such guarantee, so **we do not write
-`@example` blocks.** The executable example on the frontend is the **story**:
-rendered in the catalog, exercised in both themes, verified by play tests.
+A code block inside a JSDoc comment is never compiled or run, so it silently
+rots as the code around it moves on. **We do not write `@example` blocks.** The
+executable example on the frontend is the **story**: rendered in the catalog,
+exercised in all themes, verified by play tests.
 
 - Usage worth demonstrating → add or extend a story (see the `documentation`
   skill for story conventions), and let the JSDoc point there in prose if
@@ -286,7 +285,7 @@ Concretely:
   and § Documentation Consistency).
 - The `documentation` skill's **Check mode** audits a target against these
   guidelines on demand.
-- Storybook builds and `npm run test:storybook` verify that the living half —
+- Storybook builds and `npm run test:storybook` verify that the living part —
   stories and their play tests — compiles and passes.
 
 If an automated doc lint is ever adopted, it will be spiked and added to CI

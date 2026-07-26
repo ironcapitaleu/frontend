@@ -35,7 +35,7 @@ reading measures, quiet surfaces.
 
 **The modern pole — of its time.** We are not a museum. Under the hood the
 product is genuinely modern: a fast frontend, a modern backend, and fast
-workflows. The surface should feel that way too — quick, crisp,
+workflows. The surface should feel that way too — quick, crisp, intuitive,
 elegant, alive. This is where the small sparks of modernity live: the flowing
 gradient around the search bar, tactile feedback, precise motion, an app that
 responds instantly.
@@ -46,8 +46,9 @@ machine-learning startup with no principles underneath. Iron Capital is the
 **best of both**: the timeless values of great investing, expressed through a
 modern, trustworthy, elegant product. Classical foundation, modern spark.
 
-Guiding adjectives: **timeless, modern, trustworthy, elegant, precise —
-classical at the root, modern in the execution.**
+Guiding adjectives: **timeless, modern, trustworthy, elegant, precise,
+intuitive — classical at the root, modern in the execution.** The feeling to
+evoke in the viewer is **trust, class, and competence.**
 
 Practical rule of thumb: **classical carries our _voice and values_; modern
 carries our _product and machinery_.** When the app is speaking about who we are
@@ -174,15 +175,21 @@ purposeful, never decorative for its own sake. The named utilities live in
 | ----------------------- | ------------------------------------------------------------------- |
 | `.btn-tactile`          | Buttons lift on hover and depress on active — the house feedback.   |
 | `.animate-shake-invalid`| Horizontal shake on invalid form input.                             |
-| `.animate-gradient-flow`| Flowing gradient (the `SearchBar` glow border).                     |
-| `.animate-glow-once`    | One-shot rotating glow border (emphasis moments).                   |
+| `.animate-gradient-flow`| Flowing gradient (the `SearchBar` glow border) — the signature spark.|
 | `.filter-panel`         | `grid-template-rows` collapse/expand (the screener filter panel).   |
 | `.mobile-menu`          | `grid-template-rows` collapse for the mobile nav.                   |
-| `.glow-nav*`            | Expanding pill navigation (`GlowNavBar`).                           |
 
 Follow the collapse/expand and mobile-nav conventions in AGENTS.md — animate
 height via `grid-template-rows` (`0fr` → `1fr`), never `display` toggles or the
 `max-height` trick.
+
+> **Exploratory, not canonical:** `.animate-glow-once` and the `.glow-nav*`
+> utilities (the `GlowNavBar`) were brought in to explore an effect and do **not**
+> represent the current design language — the heavy "glow" look pulls toward the
+> generic-startup pole, away from the classical restraint we hold. Treat them as
+> experiments pending a decision, not house style; the `SearchBar` gradient is
+> the one canonical modern spark. Don't reach for glow effects in new UI without
+> running it through the design skill's reconcile-or-evolve check.
 
 ---
 
@@ -200,6 +207,32 @@ npm run storybook
 
 When building UI, compose these primitives rather than restyling raw elements,
 and add a story for anything new.
+
+### Atomic and composite components
+
+Design at the right level of the tree. A component is either:
+
+- **Atomic (primitive)** — it can't be broken down further (a button, an input,
+  a badge). It stands alone in `ui/` and takes flexible props so any parent can
+  arrange it.
+- **Composite** — it arranges other components into something more
+  coarse-grained (a search bar, a header). A **page is simply the largest
+  composite**: a whole tree of sub-components.
+
+Two consequences shape everything we build:
+
+1. **Keep components flexible.** A component earns its place by being reusable
+   beyond the one spot it was first needed. Give it the props that let a parent
+   compose it, or that let a more specialized component narrow it (a
+   specialization is just a composite that wraps and constrains a more generic
+   component). Rigid, single-use components don't compose.
+2. **Build composites bottom-up.** Decompose a composite into the smallest
+   reusable sub-components its design implies; reuse what the catalog already
+   has; build what's missing as its own atomic-or-composite component (with its
+   own stories and tests), guided by the top-level design; then assemble upward.
+
+The `design` skill walks this decomposition; the `component-scaffold` skill
+generates each new piece with its full file set.
 
 ---
 
