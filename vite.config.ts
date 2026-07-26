@@ -40,10 +40,10 @@ export default defineConfig({
 			// blocking unrelated PRs. Ratchet them upward as coverage grows —
 			// never downward to make a red build pass.
 			thresholds: {
-				statements: 17,
-				branches: 8,
-				functions: 14,
-				lines: 19,
+				statements: 26,
+				branches: 17,
+				functions: 19,
+				lines: 26,
 			},
 		},
 		projects: [

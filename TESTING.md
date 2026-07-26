@@ -438,10 +438,10 @@ tests established:
 
 | Metric | Floor |
 | --- | --- |
-| Statements | 17% |
-| Branches | 8% |
-| Functions | 14% |
-| Lines | 19% |
+| Statements | 26% |
+| Branches | 17% |
+| Functions | 19% |
+| Lines | 26% |
 
 Working with the gate:
 
