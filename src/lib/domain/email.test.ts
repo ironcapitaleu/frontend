@@ -90,8 +90,13 @@ describe("Email validity", () => {
 		// Accepted
 		{ input: "investor@ironcapital.test", valid: true },
 		{ input: "  Investor@IronCapital.test  ", valid: true },
-		{ input: "first.last+tag@sub.domain.co.uk", valid: true },
 		{ input: "a@b.co", valid: true },
+		// Plus-addressing aliases
+		{ input: "some-user+alias@gmail.com", valid: true },
+		{ input: "investor+monthly-report@ironcapital.test", valid: true },
+		// Subdomains (and both together)
+		{ input: "analyst@research.ironcapital.test", valid: true },
+		{ input: "first.last+tag@sub.domain.co.uk", valid: true },
 		// Rejected
 		{ input: "   ", valid: false },
 		{ input: "investor.ironcapital.test", valid: false },
