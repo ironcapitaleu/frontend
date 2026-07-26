@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as React from "react";
+import { expect, userEvent, within } from "storybook/test";
 
 import {
 	Select,
@@ -303,6 +304,35 @@ export const WithDisabledItem: Story = {
 				</div>
 			</Select>
 		);
+	},
+};
+
+// ==========================================
+// INTERACTION TESTS
+// ==========================================
+
+/**
+ * Play test: opening the select and choosing an option updates the trigger value.
+ */
+export const SelectsOption: Story = {
+	parameters: {
+		controls: { disable: true },
+	},
+	render: renderSelect,
+	args: {
+		defaultValue: null,
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const body = within(document.body);
+
+		const expectedResult = "Editor";
+
+		await userEvent.click(canvas.getByLabelText("Role"));
+		await userEvent.click(await body.findByRole("option", { name: "Editor" }));
+		const result = (await canvas.findByLabelText("Role")).textContent;
+
+		await expect(result).toContain(expectedResult);
 	},
 };
 

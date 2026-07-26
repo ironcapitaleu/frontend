@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as React from "react";
+import { expect, userEvent, within } from "storybook/test";
 
 import {
 	Field,
@@ -132,6 +133,31 @@ export const MoreRows: Story = {
 	},
 	argTypes: {
 		rows: { control: { disable: true } },
+	},
+};
+
+// ==========================================
+// INTERACTION TESTS
+// ==========================================
+
+/**
+ * Play test: typing into the textarea updates its value.
+ */
+export const AcceptsTyping: Story = {
+	parameters: {
+		controls: { disable: true },
+	},
+	render: renderTextarea,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const textarea = canvas.getByLabelText("Message");
+
+		const expectedResult = "a longer message";
+
+		await userEvent.type(textarea, "a longer message");
+		const result = (textarea as HTMLTextAreaElement).value;
+
+		await expect(result).toBe(expectedResult);
 	},
 };
 

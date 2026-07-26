@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as React from "react";
+import { expect, userEvent, within } from "storybook/test";
 import { MailIcon, SearchIcon, XIcon, AlertCircleIcon } from "lucide-react";
 
 import {
@@ -269,6 +270,31 @@ export const SearchWithShortcut: Story = {
 				</InputGroup>
 			</div>
 		);
+	},
+};
+
+// ==========================================
+// INTERACTION TESTS
+// ==========================================
+
+/**
+ * Play test: typing into the grouped input updates its value despite the addons.
+ */
+export const AcceptsTyping: Story = {
+	parameters: {
+		controls: { disable: true },
+	},
+	render: renderInputGroup,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const input = canvas.getByLabelText("Email");
+
+		const expectedResult = "hello@example.com";
+
+		await userEvent.type(input, "hello@example.com");
+		const result = (input as HTMLInputElement).value;
+
+		await expect(result).toBe(expectedResult);
 	},
 };
 

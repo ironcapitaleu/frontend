@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ComponentProps } from "react";
 import * as React from "react";
+import { expect, userEvent, within } from "storybook/test";
 
 import {
 	Field,
@@ -279,6 +280,31 @@ export const FieldSetWithLegend: Story = {
 				</FieldSet>
 			</div>
 		);
+	},
+};
+
+// ==========================================
+// INTERACTION TESTS
+// ==========================================
+
+/**
+ * Play test: clicking the field label moves focus to its associated control.
+ */
+export const LabelFocusesControl: Story = {
+	parameters: {
+		controls: { disable: true },
+	},
+	render: renderField,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const input = canvas.getByLabelText("Email");
+
+		const expectedResult = true;
+
+		await userEvent.click(canvas.getByText("Email"));
+		const result = input === document.activeElement;
+
+		await expect(result).toBe(expectedResult);
 	},
 };
 

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as React from "react";
+import { expect, userEvent, within } from "storybook/test";
 
 import {
 	Pagination,
@@ -599,6 +600,55 @@ export const WithItemCount: Story = {
 	},
 	parameters: {
 		controls: { disable: true },
+	},
+};
+
+// ==========================================
+// INTERACTION TESTS
+// ==========================================
+
+/**
+ * Play test: clicking a page number marks it as the current page.
+ */
+export const MarksClickedPageActive: Story = {
+	parameters: {
+		controls: { disable: true },
+	},
+	render: () => {
+		const { currentPage, goToPage } = usePagination(5);
+
+		return (
+			<Pagination>
+				<PaginationContent>
+					{[1, 2, 3, 4, 5].map((page) => (
+						<PaginationItem key={page}>
+							<PaginationLink
+								href="#"
+								isActive={page === currentPage}
+								onClick={(e) => {
+									e.preventDefault();
+									goToPage(page);
+								}}
+							>
+								{page}
+							</PaginationLink>
+						</PaginationItem>
+					))}
+				</PaginationContent>
+			</Pagination>
+		);
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+
+		const expectedResult = "page";
+
+		await userEvent.click(canvas.getByRole("button", { name: "3" }));
+		const result = canvas
+			.getByRole("button", { name: "3" })
+			.getAttribute("aria-current");
+
+		await expect(result).toBe(expectedResult);
 	},
 };
 

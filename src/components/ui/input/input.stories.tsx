@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as React from "react";
+import { expect, userEvent, within } from "storybook/test";
 
 import { Input } from "./input";
 import {
@@ -193,6 +194,34 @@ export const Required: Story = {
 	},
 	argTypes: {
 		required: { control: { disable: true } },
+	},
+};
+
+// ==========================================
+// INTERACTION TESTS
+// ==========================================
+
+/**
+ * Play test: typing into the input updates its value.
+ */
+export const AcceptsTyping: Story = {
+	parameters: {
+		controls: { disable: true },
+	},
+	render: renderInput,
+	args: {
+		type: "text",
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const input = canvas.getByLabelText("Input");
+
+		const expectedResult = "hello";
+
+		await userEvent.type(input, "hello");
+		const result = (input as HTMLInputElement).value;
+
+		await expect(result).toBe(expectedResult);
 	},
 };
 

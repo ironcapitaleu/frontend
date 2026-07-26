@@ -321,38 +321,54 @@ another. `FakeInnerClient` conforms to `InnerClient` — it never has to imitate
 `reqwest`'s API. We do the same on the frontend with three roles:
 
 1. **The port** — a TypeScript `interface` the app owns, written in the app's
-   own vocabulary, that *conceals* the vendor. It states what the app needs, not
-   what the vendor offers, so the word "Supabase" never appears in it:
+   own vocabulary, that *conceals* the vendor. Neither Supabase nor *its types*
+   appear in it. Where the backend keeps the dependency abstract with associated
+   types, we use **app-owned domain types** — define the small shape the app
+   actually needs rather than threading the vendor's `User` / `Session` / `Error`
+   through the interface:
 
    ```ts
+   export interface AuthUser {
+     id: string;
+     email: string | null;
+   }
+
+   export interface AuthOutcome {
+     error: AuthFailure | null; // AuthFailure is an app-owned error, not the vendor's
+   }
+
    export interface AuthGateway {
-     getSession(): Promise<Session | null>;
-     onAuthChange(listener: (session: Session | null) => void): () => void;
-     signIn(email: string, password: string): Promise<{ error: AuthError | null }>;
-     signOut(): Promise<void>;
+     getCurrentUser(): Promise<AuthUser | null>;
+     onUserChange(listener: (user: AuthUser | null) => void): () => void;
+     signInWithEmail(email: string, password: string): Promise<AuthOutcome>;
+     signUpWithEmail(email: string, password: string): Promise<AuthOutcome>;
+     signOut(): Promise<AuthOutcome>;
    }
    ```
 
-2. **The real adapter** — implements the port by wrapping the vendor. This is
-   the *only* place the vendor is named:
+2. **The real adapter** — implements the port by wrapping the vendor and mapping
+   its types down to the app's. This is the *only* place the vendor is named:
 
    ```ts
    export function supabaseAuthGateway(): AuthGateway {
-     /* delegates to supabase.auth.* */
+     /* delegates to supabase.auth.*, mapping User → AuthUser and
+        AuthError → an app-owned AuthFailure */
    }
    ```
 
 3. **The fake** — implements the *same port* with fixed, named behaviour. It
-   conforms to `AuthGateway`, not to Supabase's response shapes:
+   conforms to `AuthGateway`, returning app types directly — never Supabase's
+   response shapes:
 
    ```ts
    // src/test/fixtures/auth/always-unauthenticated.ts
    export function alwaysUnauthenticatedAuth(): AuthGateway {
      return {
-       getSession: async () => null,
-       onAuthChange: () => () => {},
-       signIn: async () => ({ error: new AuthError("Invalid login credentials") }),
-       signOut: async () => {},
+       getCurrentUser: async () => null,
+       onUserChange: () => () => {},
+       signInWithEmail: async () => ({ error: new InvalidCredentials() }),
+       signUpWithEmail: async () => ({ error: new InvalidCredentials() }),
+       signOut: async () => ({ error: null }),
      };
    }
    ```
@@ -380,11 +396,10 @@ render(
   the router (use a real `MemoryRouter`).
 
 > **On `vi.mock`.** Injecting the fake through the provider means you do *not*
-> need `vi.mock`. `vi.mock` is only an interim seam for code that still imports a
-> vendor module directly — as `useAuth` imports `supabase` today. Introducing the
-> `AuthGateway` port removes that coupling and the mock with it. Until the port
-> lands (STA-141), keep any inline vendor stub small, fixed, and predictable, but
-> treat it as debt, not the pattern.
+> need `vi.mock`. The `AuthGateway` port (landed in STA-141) removed the last
+> direct vendor coupling in `useAuth`, so there is nothing left to mock. `vi.mock`
+> remains only an interim seam for any *new* code that still imports a vendor
+> module directly — treat that as debt to move behind a port, not the pattern.
 
 > Building this shared infra — the ports, the custom `render()`, and the fakes —
 > is tracked in **STA-141**, which also replaces the ad-hoc inline stubs in
@@ -415,19 +430,33 @@ that test cleanly with a single `toEqual`, leaving the component a thin shell.
 
 ## 7. Coverage gate
 
-Coverage is measured by the v8 provider (configured in
-[`vite.config.ts`](./vite.config.ts)). Today there are **no thresholds** — that
-is the gap **STA-141** closes:
+Coverage is measured by the v8 provider and **gated** via
+`coverage.thresholds` (both configured in [`vite.config.ts`](./vite.config.ts)).
+`npm run test:ci` runs with `--coverage`, so a drop below any floor **fails the
+build**. The current floors, set just under the baseline the first slice of
+tests established:
 
-- Add Vitest `coverage.thresholds` and wire them into `npm run test:ci` so a
-  regression below the floor fails CI.
-- Set an **achievable initial floor** based on the baseline the first slice of
-  tests establishes, then **ratchet it upward** as coverage grows. Prefer a floor
-  that holds the line over an aspirational number that blocks every PR.
-- Remember that line coverage only measures layer 1. **Story coverage** —
-  every component's meaningful states having stories — is the coverage metric
-  for layer 2 (and for any future visual-regression layer), and is checked in
-  review.
+| Metric | Floor |
+| --- | --- |
+| Statements | 26% |
+| Branches | 17% |
+| Functions | 19% |
+| Lines | 26% |
+
+Working with the gate:
+
+- **Ratchet upward, never down.** As coverage grows, raise the floors to lock in
+  the gain. Never lower a floor to make a red build pass — that defeats the gate.
+  Prefer a floor that holds the line over an aspirational number that blocks
+  every PR.
+- **These floors measure layer 1 only.** `test:ci` runs the `unit` project, so
+  `ui/*` primitives covered by Storybook play tests (layer 2) count as
+  uncovered here and hold the global numbers down. That is why the floors look
+  low relative to how well-tested the components actually are — do not read the
+  global percentage as the whole story.
+- **Story coverage is the layer-2 metric.** Every component's meaningful states
+  having stories is the coverage measure for layer 2 (and for any future
+  visual-regression layer), and is checked in review — not by this gate.
 
 ---
 

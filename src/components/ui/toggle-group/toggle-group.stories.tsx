@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ComponentProps } from "react";
 import * as React from "react";
+import { expect, userEvent, within } from "storybook/test";
 
 import {
 	BoldIcon,
@@ -320,6 +321,40 @@ export const Controlled: Story = {
 	},
 	parameters: {
 		controls: { disable: true },
+	},
+};
+
+// ==========================================
+// INTERACTION TESTS
+// ==========================================
+
+/**
+ * Play test: clicking an item in the group switches it to the pressed state.
+ */
+export const SelectsItemOnClick: Story = {
+	parameters: {
+		controls: { disable: true },
+	},
+	render: () => (
+		<ToggleGroup multiple={false} variant="outline">
+			<ToggleGroupItem value="bold" aria-label="Toggle bold">
+				<BoldIcon />
+			</ToggleGroupItem>
+			<ToggleGroupItem value="italic" aria-label="Toggle italic">
+				<ItalicIcon />
+			</ToggleGroupItem>
+		</ToggleGroup>
+	),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const italic = canvas.getByRole("button", { name: "Toggle italic" });
+
+		const expectedResult = "true";
+
+		await userEvent.click(italic);
+		const result = italic.getAttribute("aria-pressed");
+
+		await expect(result).toBe(expectedResult);
 	},
 };
 
