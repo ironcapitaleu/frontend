@@ -3,9 +3,9 @@
  *
  * Why app-owned? A consumer branches on *what went wrong* (bad credentials vs.
  * the service being down), not on Supabase's error shapes. The real adapter maps
- * the vendor error onto one of these; fakes construct them directly. Following
- * the error Display Format in AGENTS.md, each formats as
- * `[Name] <description>` with an optional `, Reason: '<detail>'` tail.
+ * the vendor error onto one of these; fakes construct them directly. Each
+ * formats in the bracketed display format — `[Name] <description>` with an
+ * optional `, Reason: '<detail>'` tail.
  */
 
 /**

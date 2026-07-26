@@ -32,13 +32,13 @@ export default defineConfig({
 				"src/**/*.stories.{ts,tsx}",
 				"src/test/**",
 			],
-			// The coverage gate (TESTING.md §7). These floors measure layer 1
-			// only — `test:ci` runs the `unit` project, so `ui/*` primitives
-			// covered by Storybook play tests (layer 2) count as uncovered here
-			// and hold the global numbers down. The floors sit just below the
-			// current baseline: they hold the line against regressions without
-			// blocking unrelated PRs. Ratchet them upward as coverage grows —
-			// never downward to make a red build pass.
+			// The coverage gate. These floors measure layer 1 only — `test:ci`
+			// runs the `unit` project, so `ui/*` primitives covered by Storybook
+			// play tests count as uncovered here and hold the global numbers
+			// down. The floors sit just below the current baseline: they hold the
+			// line against regressions without blocking unrelated PRs. Ratchet
+			// them upward as coverage grows — never downward to make a red build
+			// pass.
 			thresholds: {
 				statements: 26,
 				branches: 17,

@@ -1,6 +1,6 @@
 // Pure filtering and sorting logic for the stock screener, extracted from the
-// component so it tests cleanly with a single `toEqual` (TESTING.md §6). The
-// component stays a thin shell that wires state to these functions.
+// component so it tests cleanly with a single `toEqual`. The component stays a
+// thin shell that wires state to these functions.
 
 /** A single screened security, in the shape the screener table renders. */
 export interface Stock {

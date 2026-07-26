@@ -27,7 +27,7 @@ export interface AuthOutcome {
  * is the only place the vendor is named; test fakes (`always{Behaviour}Auth`)
  * implement this same interface with fixed behaviour. Both are injected through
  * `AuthProvider`'s `gateway` prop, so nothing that consumes auth depends on the
- * vendor directly. See AGENTS.md, "Dependency Injection & Ports".
+ * vendor directly.
  */
 export interface AuthGateway {
 	/** Resolves the current user, or `null` when nobody is signed in. */

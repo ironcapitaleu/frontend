@@ -22,8 +22,8 @@ export type InvalidEmailReason =
 
 /**
  * Domain error raised by {@link Email.parse} when validation fails. Carries the
- * reason and the offending input, and renders in the bracketed Display format
- * (see AGENTS.md): `[InvalidEmail] Not a valid email address, Reason: '<reason>', Input: '<input>'`.
+ * reason and the offending input, and renders in the bracketed display format:
+ * `[InvalidEmail] Not a valid email address, Reason: '<reason>', Input: '<input>'`.
  */
 export class InvalidEmail extends Error {
 	readonly reason: InvalidEmailReason;
