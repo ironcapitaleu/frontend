@@ -143,6 +143,36 @@ custom `render()`, fake naming, and when a fake is warranted — live in
 
 ---
 
+## Value Objects (Newtypes)
+
+Parse free-floating input into a validated domain type **once, at the boundary
+where it enters**, then hold that type everywhere downstream — the frontend
+adaptation of the backend's value types (`domain-concept` skill, Path A: `Cik`,
+`UserAgent`). "Parse, don't validate."
+
+A value object is a small **class** that:
+
+- keeps its inner value **private** and is constructed only through a static
+  **smart constructor** (`parse`) that validates and normalises, throwing a
+  domain error on invalid input — there is no other way to obtain one;
+- exposes **accessors** in the domain's vocabulary (`.value`, plus any derived
+  parts — e.g. an email's `.localPart` / `.domain`);
+- is **immutable** — any transformation returns a new instance;
+- provides **value equality** (`.equals`) — never compare instances with `===`;
+- serialises transparently to its primitive via `toString()` / `toJSON()`, so it
+  crosses template-string, storage, and JSON boundaries as a plain value. (React
+  JSX is the one exception: render `value.value`, since JSX rejects object
+  children regardless of `toString`.)
+
+Its failure is a domain error following the **Error Display Format** below — a
+`{Type}` error carrying a reason union with one variant per invariant:
+`[InvalidEmail] Not a valid email address, Reason: '<reason>', Input: '<input>'`.
+
+Worked example: `src/lib/domain/email.ts` (the `Email` value object +
+`InvalidEmail`).
+
+---
+
 ## Error Naming Conventions
 
 ### Error Classes
