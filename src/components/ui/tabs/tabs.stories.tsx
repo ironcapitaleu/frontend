@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, userEvent, within } from "storybook/test";
 
 import {
 	Tabs,
@@ -170,6 +171,30 @@ export const DisabledSettingsTab: Story = {
 	render: (args) => <TabsStory {...args} />,
 	args: {
 		disableSettings: true,
+	},
+};
+
+// ==========================================
+// INTERACTION TESTS
+// ==========================================
+
+/**
+ * Play test: clicking a tab switches the visible panel.
+ */
+export const SwitchesPanelOnClick: Story = {
+	parameters: {
+		controls: { disable: true },
+	},
+	render: (args) => <TabsStory {...args} />,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+
+		const expectedResult = "Update your password settings.";
+
+		await userEvent.click(canvas.getByRole("tab", { name: "Password" }));
+		const result = (await canvas.findByRole("tabpanel")).textContent;
+
+		await expect(result).toContain(expectedResult);
 	},
 };
 

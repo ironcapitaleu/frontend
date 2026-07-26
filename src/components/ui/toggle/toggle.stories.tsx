@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ComponentProps } from "react";
 import * as React from "react";
+import { expect, userEvent, within } from "storybook/test";
 
 import {
 	VariantShowcase,
@@ -277,6 +278,31 @@ export const Controlled: Story = {
 				</p>
 			</div>
 		);
+	},
+};
+
+// ==========================================
+// INTERACTION TESTS
+// ==========================================
+
+/**
+ * Play test: clicking an unpressed toggle switches it to the pressed state.
+ */
+export const TogglesOnClick: Story = {
+	parameters: {
+		controls: { disable: true },
+	},
+	render: () => <ToggleStory label="Bold" icon="bold" />,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const toggle = canvas.getByRole("button", { name: "Bold" });
+
+		const expectedResult = "true";
+
+		await userEvent.click(toggle);
+		const result = toggle.getAttribute("aria-pressed");
+
+		await expect(result).toBe(expectedResult);
 	},
 };
 

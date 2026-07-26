@@ -24,65 +24,18 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
-// ── Types ──────────────────────────────────────────────────────────────────────
-
-interface Stock {
-	readonly symbol: string;
-	readonly name: string;
-	readonly sector: string;
-	readonly country: string;
-	readonly price: number;
-	readonly marketCap: number;
-	readonly changePercent1M: number;
-	readonly peRatio: number | null;
-	readonly priceToCash: number | null;
-	readonly priceToFcf: number | null;
-	readonly quickRatio: number | null;
-	readonly currentRatio: number | null;
-	readonly buybackYield: number | null;
-	readonly dividendYield: number | null;
-	readonly weekLow52: number;
-	readonly weekHigh52: number;
-}
-
-interface FilterState {
-	search: string;
-	country: string;
-	sector: string;
-	peMin: string;
-	peMax: string;
-	priceToCashMax: string;
-	priceToFcfMax: string;
-	quickRatioMin: string;
-	currentRatioMin: string;
-	buybackYieldMin: string;
-	dividendYieldMin: string;
-	nearFiftyTwoWeekLow: boolean;
-	downLastMonth: string;
-}
-
-interface SortConfig {
-	field: keyof Stock;
-	direction: "asc" | "desc";
-}
+import {
+	countActiveFilters,
+	EMPTY_FILTERS,
+	filterStocks,
+	isNearFiftyTwoWeekLow,
+	sortStocks,
+	type FilterState,
+	type SortConfig,
+	type Stock,
+} from "./StockScreener.logic";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-
-const EMPTY_FILTERS: FilterState = {
-	search: "",
-	country: "",
-	sector: "",
-	peMin: "",
-	peMax: "",
-	priceToCashMax: "",
-	priceToFcfMax: "",
-	quickRatioMin: "",
-	currentRatioMin: "",
-	buybackYieldMin: "",
-	dividendYieldMin: "",
-	nearFiftyTwoWeekLow: false,
-	downLastMonth: "",
-};
 
 const MOCK_STOCKS: readonly Stock[] = [
 	{
@@ -333,28 +286,6 @@ function fmtPct(value: number | null): string {
 	return `${value.toFixed(1)}%`;
 }
 
-function isNearFiftyTwoWeekLow(stock: Stock): boolean {
-	return stock.price <= stock.weekLow52 * 1.2;
-}
-
-function countActiveFilters(filters: FilterState): number {
-	return [
-		filters.search,
-		filters.country,
-		filters.sector,
-		filters.peMin,
-		filters.peMax,
-		filters.priceToCashMax,
-		filters.priceToFcfMax,
-		filters.quickRatioMin,
-		filters.currentRatioMin,
-		filters.buybackYieldMin,
-		filters.dividendYieldMin,
-		filters.nearFiftyTwoWeekLow,
-		filters.downLastMonth,
-	].filter(Boolean).length;
-}
-
 // ── Presentational Components ──────────────────────────────────────────────────
 
 interface SortableHeaderProps {
@@ -430,88 +361,10 @@ export default function StockScreener() {
 	};
 
 	const results = useMemo(() => {
-		let list = [...MOCK_STOCKS];
-
-		if (filters.search) {
-			const q = filters.search.toLowerCase();
-			list = list.filter(
-				(s) =>
-					s.symbol.toLowerCase().includes(q) ||
-					s.name.toLowerCase().includes(q),
-			);
-		}
-		if (filters.country) {
-			list = list.filter((s) => s.country === filters.country);
-		}
-		if (filters.sector) {
-			list = list.filter((s) => s.sector === filters.sector);
-		}
-		if (filters.peMin) {
-			const min = parseFloat(filters.peMin);
-			list = list.filter((s) => s.peRatio !== null && s.peRatio >= min);
-		}
-		if (filters.peMax) {
-			const max = parseFloat(filters.peMax);
-			list = list.filter((s) => s.peRatio !== null && s.peRatio <= max);
-		}
-		if (filters.priceToCashMax) {
-			const max = parseFloat(filters.priceToCashMax);
-			list = list.filter((s) => s.priceToCash !== null && s.priceToCash <= max);
-		}
-		if (filters.priceToFcfMax) {
-			const max = parseFloat(filters.priceToFcfMax);
-			list = list.filter((s) => s.priceToFcf !== null && s.priceToFcf <= max);
-		}
-		if (filters.quickRatioMin) {
-			const min = parseFloat(filters.quickRatioMin);
-			list = list.filter((s) => s.quickRatio !== null && s.quickRatio >= min);
-		}
-		if (filters.currentRatioMin) {
-			const min = parseFloat(filters.currentRatioMin);
-			list = list.filter(
-				(s) => s.currentRatio !== null && s.currentRatio >= min,
-			);
-		}
-		if (filters.buybackYieldMin) {
-			const min = parseFloat(filters.buybackYieldMin);
-			list = list.filter(
-				(s) => s.buybackYield !== null && s.buybackYield >= min,
-			);
-		}
-		if (filters.dividendYieldMin) {
-			const min = parseFloat(filters.dividendYieldMin);
-			list = list.filter(
-				(s) => s.dividendYield !== null && s.dividendYield >= min,
-			);
-		}
-		if (filters.nearFiftyTwoWeekLow) {
-			list = list.filter(isNearFiftyTwoWeekLow);
-		}
-		if (filters.downLastMonth) {
-			const threshold = parseFloat(filters.downLastMonth);
-			if (!Number.isNaN(threshold)) {
-				list = list.filter((s) => s.changePercent1M <= -threshold);
-			}
-		}
-
-		if (sortConfig) {
-			list.sort((a, b) => {
-				const av = a[sortConfig.field];
-				const bv = b[sortConfig.field];
-				if (av === null) return 1;
-				if (bv === null) return -1;
-				if (typeof av === "string" && typeof bv === "string") {
-					return sortConfig.direction === "asc"
-						? av.localeCompare(bv)
-						: bv.localeCompare(av);
-				}
-				return sortConfig.direction === "asc"
-					? (av as number) - (bv as number)
-					: (bv as number) - (av as number);
-			});
-		}
-
-		return list;
+		const filtered = filterStocks(MOCK_STOCKS, filters);
+		return sortConfig
+			? sortStocks(filtered, sortConfig.field, sortConfig.direction)
+			: filtered;
 	}, [filters, sortConfig]);
 
 	const activeCount = countActiveFilters(filters);

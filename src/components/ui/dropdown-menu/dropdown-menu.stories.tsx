@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as React from "react";
+import { expect, userEvent, within } from "storybook/test";
 
 import {
 	DropdownMenu,
@@ -336,6 +337,44 @@ export const WithInsetItems: Story = {
 			</DropdownMenuContent>
 		</DropdownMenu>
 	),
+};
+
+// ==========================================
+// INTERACTION TESTS
+// ==========================================
+
+/**
+ * Play test: clicking the trigger opens the menu and reveals its items.
+ */
+export const OpensOnClick: Story = {
+	parameters: {
+		controls: { disable: true },
+	},
+	render: () => (
+		<DropdownMenu>
+			<DropdownMenuTrigger render={<Button variant="outline" size="default" />}>
+				Open menu
+			</DropdownMenuTrigger>
+			<DropdownMenuContent className="w-44">
+				<DropdownMenuItem>Profile</DropdownMenuItem>
+				<DropdownMenuItem>Settings</DropdownMenuItem>
+				<DropdownMenuSeparator />
+				<DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
+			</DropdownMenuContent>
+		</DropdownMenu>
+	),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const body = within(document.body);
+
+		const expectedResult = "Settings";
+
+		await userEvent.click(canvas.getByRole("button", { name: "Open menu" }));
+		const result = (await body.findByRole("menuitem", { name: "Settings" }))
+			.textContent;
+
+		await expect(result).toBe(expectedResult);
+	},
 };
 
 // ==========================================

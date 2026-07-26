@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as React from "react";
+import { expect, userEvent, within } from "storybook/test";
 
 import {
 	Menubar,
@@ -912,6 +913,44 @@ export const WithInsetItems: Story = {
 			</MenubarMenu>
 		</Menubar>
 	),
+};
+
+// ==========================================
+// INTERACTION TESTS
+// ==========================================
+
+/**
+ * Play test: clicking a menu trigger opens the menu and reveals its items.
+ */
+export const OpensMenuOnClick: Story = {
+	parameters: {
+		controls: { disable: true },
+	},
+	render: () => (
+		<Menubar>
+			<MenubarMenu>
+				<MenubarTrigger>File</MenubarTrigger>
+				<MenubarContent>
+					<MenubarItem>New</MenubarItem>
+					<MenubarItem>Open</MenubarItem>
+					<MenubarSeparator />
+					<MenubarItem>Save</MenubarItem>
+				</MenubarContent>
+			</MenubarMenu>
+		</Menubar>
+	),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const body = within(document.body);
+
+		const expectedResult = "Open";
+
+		await userEvent.click(canvas.getByText("File"));
+		const result = (await body.findByRole("menuitem", { name: "Open" }))
+			.textContent;
+
+		await expect(result).toBe(expectedResult);
+	},
 };
 
 // ==========================================

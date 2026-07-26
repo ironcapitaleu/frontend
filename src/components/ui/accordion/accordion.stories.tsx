@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, userEvent, within } from "storybook/test";
 
 import {
 	Accordion,
@@ -212,6 +213,34 @@ export const Horizontal: Story = {
 	args: {
 		orientation: "horizontal",
 		defaultOpen: "none",
+	},
+};
+
+// ==========================================
+// INTERACTION TESTS
+// ==========================================
+
+/**
+ * Play test: clicking a collapsed trigger reveals that item's content.
+ */
+export const ExpandsOnClick: Story = {
+	parameters: {
+		controls: { disable: true },
+	},
+	render: (args) => <AccordionStory {...args} />,
+	args: {
+		defaultOpen: "none",
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+
+		const expectedResult =
+			"Manage profile details like name, email, and connected accounts.";
+
+		await userEvent.click(canvas.getByRole("button", { name: "Account" }));
+		const result = (await canvas.findByText(expectedResult)).textContent;
+
+		await expect(result).toBe(expectedResult);
 	},
 };
 

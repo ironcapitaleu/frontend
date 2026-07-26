@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as React from "react";
+import { expect, userEvent, within } from "storybook/test";
 
 import {
 	Combobox,
@@ -298,6 +299,37 @@ export const MultipleSelectChips: Story = {
 				</ComboboxContent>
 			</Combobox>
 		);
+	},
+};
+
+// ==========================================
+// INTERACTION TESTS
+// ==========================================
+
+/**
+ * Play test: typing filters the list, and clicking a match fills the input.
+ */
+export const FiltersAndSelects: Story = {
+	parameters: {
+		controls: { disable: true },
+	},
+	render: renderSingleCombobox,
+	args: {
+		defaultValue: null,
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const body = within(document.body);
+		const input = canvas.getByLabelText("Framework");
+
+		const expectedResult = "Remix";
+
+		await userEvent.click(input);
+		await userEvent.type(input, "Rem");
+		await userEvent.click(await body.findByRole("option", { name: "Remix" }));
+		const result = (input as HTMLInputElement).value;
+
+		await expect(result).toBe(expectedResult);
 	},
 };
 

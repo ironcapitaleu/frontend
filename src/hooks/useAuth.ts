@@ -1,56 +1,50 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
-import type { User, Session } from "@supabase/supabase-js";
 
-export function useAuth() {
-	const [user, setUser] = useState<User | null>(null);
-	const [session, setSession] = useState<Session | null>(null);
+import type { AuthGateway, AuthUser } from "../lib/auth/gateway";
+
+/**
+ * Tracks the current user through an injected {@link AuthGateway} and exposes the
+ * user plus sign-in / sign-up / sign-out actions.
+ *
+ * Why a gateway argument? The hook depends on the app-owned port, not on Supabase
+ * directly, so tests inject a fake instead of mocking a vendor module. Pass a
+ * stable gateway instance — a fresh one on every render re-runs the subscription.
+ */
+export function useAuth(gateway: AuthGateway) {
+	const [user, setUser] = useState<AuthUser | null>(null);
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		// Get initial session
-		supabase.auth.getSession().then(({ data: { session } }) => {
-			setSession(session);
-			setUser(session?.user ?? null);
+		gateway
+			.getCurrentUser()
+			.then((currentUser) => {
+				setUser(currentUser);
+				setLoading(false);
+			})
+			.catch(() => {
+				// Gateway unreachable — treat as signed-out and unblock the app
+				// rather than leaving it stuck on the loading state forever.
+				setLoading(false);
+			});
+
+		const unsubscribe = gateway.onUserChange((nextUser) => {
+			setUser(nextUser);
 			setLoading(false);
 		});
 
-		// Listen for auth changes
-		const {
-			data: { subscription },
-		} = supabase.auth.onAuthStateChange((_event, session) => {
-			setSession(session);
-			setUser(session?.user ?? null);
-			setLoading(false);
-		});
+		return unsubscribe;
+	}, [gateway]);
 
-		return () => subscription.unsubscribe();
-	}, []);
+	const signInWithEmail = (email: string, password: string) =>
+		gateway.signInWithEmail(email, password);
 
-	const signInWithEmail = async (email: string, password: string) => {
-		const { data, error } = await supabase.auth.signInWithPassword({
-			email,
-			password,
-		});
-		return { data, error };
-	};
+	const signUpWithEmail = (email: string, password: string) =>
+		gateway.signUpWithEmail(email, password);
 
-	const signUpWithEmail = async (email: string, password: string) => {
-		const { data, error } = await supabase.auth.signUp({
-			email,
-			password,
-		});
-		return { data, error };
-	};
-
-	const signOut = async () => {
-		const { error } = await supabase.auth.signOut();
-		return { error };
-	};
+	const signOut = () => gateway.signOut();
 
 	return {
 		user,
-		session,
 		loading,
 		signInWithEmail,
 		signUpWithEmail,
