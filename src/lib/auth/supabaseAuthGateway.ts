@@ -14,7 +14,7 @@ function toAuthUser(user: User | null): AuthUser | null {
 
 /** Maps a Supabase `AuthError` onto an app-owned {@link AuthFailure}. */
 function toAuthFailure(error: AuthError): AuthFailure {
-	if (error.code === "invalid_credentials" || error.status === 400) {
+	if (error.code === "invalid_credentials") {
 		return new InvalidCredentials(error.message);
 	}
 	return new FailedAuthRequest(error.message);
@@ -28,10 +28,13 @@ function toAuthFailure(error: AuthError): AuthFailure {
 export function supabaseAuthGateway(): AuthGateway {
 	return {
 		getCurrentUser: async () => {
+			// Validate the token with the auth server (getUser) rather than
+			// trusting the locally stored session (getSession), so a revoked or
+			// tampered token in storage does not resolve as a signed-in user.
 			const {
-				data: { session },
-			} = await supabase.auth.getSession();
-			return toAuthUser(session?.user ?? null);
+				data: { user },
+			} = await supabase.auth.getUser();
+			return toAuthUser(user);
 		},
 		onUserChange: (listener) => {
 			const {

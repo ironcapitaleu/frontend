@@ -417,4 +417,24 @@ describe("countActiveFilters", () => {
 
 		expect(result).toBe(expectedResult);
 	});
+
+	it("should count a numeric down-last-month value as an active filter", () => {
+		const filters = withFilters({ downLastMonth: "5" });
+
+		const expectedResult = 1;
+
+		const result = countActiveFilters(filters);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should not count a non-numeric down-last-month value as an active filter", () => {
+		const filters = withFilters({ downLastMonth: "abc" });
+
+		const expectedResult = 0;
+
+		const result = countActiveFilters(filters);
+
+		expect(result).toBe(expectedResult);
+	});
 });

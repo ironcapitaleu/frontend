@@ -96,7 +96,10 @@ export function countActiveFilters(filters: FilterState): number {
 		filters.buybackYieldMin,
 		filters.dividendYieldMin,
 		filters.nearFiftyTwoWeekLow,
-		filters.downLastMonth,
+		// Count down-last-month only when it parses to a number, mirroring the
+		// NaN guard in filterStocks so the badge can't show a phantom filter.
+		filters.downLastMonth !== "" &&
+			!Number.isNaN(parseFloat(filters.downLastMonth)),
 	].filter(Boolean).length;
 }
 

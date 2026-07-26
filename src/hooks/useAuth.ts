@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import type { AuthGateway, AuthUser } from "../lib/auth/gateway";
 
@@ -35,13 +35,19 @@ export function useAuth(gateway: AuthGateway) {
 		return unsubscribe;
 	}, [gateway]);
 
-	const signInWithEmail = (email: string, password: string) =>
-		gateway.signInWithEmail(email, password);
+	const signInWithEmail = useCallback(
+		(email: string, password: string) =>
+			gateway.signInWithEmail(email, password),
+		[gateway],
+	);
 
-	const signUpWithEmail = (email: string, password: string) =>
-		gateway.signUpWithEmail(email, password);
+	const signUpWithEmail = useCallback(
+		(email: string, password: string) =>
+			gateway.signUpWithEmail(email, password),
+		[gateway],
+	);
 
-	const signOut = () => gateway.signOut();
+	const signOut = useCallback(() => gateway.signOut(), [gateway]);
 
 	return {
 		user,
