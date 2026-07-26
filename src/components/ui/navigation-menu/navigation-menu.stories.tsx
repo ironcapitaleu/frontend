@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, userEvent, within } from "storybook/test";
 
 import {
 	NavigationMenu,
@@ -424,6 +425,32 @@ export const WithIcons: Story = {
 	),
 	parameters: {
 		controls: { disable: true },
+	},
+};
+
+// ==========================================
+// INTERACTION TESTS
+// ==========================================
+
+/**
+ * Play test: clicking a trigger opens its dropdown content.
+ */
+export const OpensContentOnClick: Story = {
+	parameters: {
+		controls: { disable: true },
+	},
+	render: () => <NavigationMenuDemo />,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const body = within(document.body);
+
+		const expectedResult = "Introduction";
+
+		await userEvent.click(canvas.getByText("Getting started"));
+		const result = (await body.findByRole("link", { name: /Introduction/ }))
+			.textContent;
+
+		await expect(result).toContain(expectedResult);
 	},
 };
 
