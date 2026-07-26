@@ -1,25 +1,16 @@
 import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
 
-import type { Session, User } from "@supabase/supabase-js";
-
 import { useAuth } from "../hooks/useAuth";
-import type { AuthGateway } from "../lib/auth/gateway";
+import type { AuthGateway, AuthOutcome, AuthUser } from "../lib/auth/gateway";
 import { supabaseAuthGateway } from "../lib/auth/supabaseAuthGateway";
 
 interface AuthContextType {
-	user: User | null;
-	session: Session | null;
+	user: AuthUser | null;
 	loading: boolean;
-	signInWithEmail: (
-		email: string,
-		password: string,
-	) => Promise<{ data: unknown; error: unknown }>;
-	signUpWithEmail: (
-		email: string,
-		password: string,
-	) => Promise<{ data: unknown; error: unknown }>;
-	signOut: () => Promise<{ error: unknown }>;
+	signInWithEmail: (email: string, password: string) => Promise<AuthOutcome>;
+	signUpWithEmail: (email: string, password: string) => Promise<AuthOutcome>;
+	signOut: () => Promise<AuthOutcome>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

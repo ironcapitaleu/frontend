@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { alwaysAuthenticatedAuth } from "../test/fixtures/auth/always-authenticated";
 import { alwaysUnauthenticatedAuth } from "../test/fixtures/auth/always-unauthenticated";
-import { fakeUser } from "../test/fixtures/auth/session";
+import { fakeUser } from "../test/fixtures/auth/user";
 import { useAuth } from "./useAuth";
 
 describe("useAuth", () => {

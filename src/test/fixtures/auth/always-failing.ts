@@ -1,5 +1,4 @@
-import { AuthError } from "@supabase/supabase-js";
-
+import { FailedAuthRequest } from "../../../lib/auth/errors";
 import type { AuthGateway } from "../../../lib/auth/gateway";
 
 /**
@@ -7,12 +6,11 @@ import type { AuthGateway } from "../../../lib/auth/gateway";
  * unreachable. Use it to arrange the error path.
  */
 export function alwaysFailingAuth(): AuthGateway {
-	const error = new AuthError("Auth service unavailable");
 	return {
-		getSession: async () => null,
-		onAuthChange: () => () => {},
-		signInWithEmail: async () => ({ data: null, error }),
-		signUpWithEmail: async () => ({ data: null, error }),
-		signOut: async () => ({ error }),
+		getCurrentUser: async () => null,
+		onUserChange: () => () => {},
+		signInWithEmail: async () => ({ error: new FailedAuthRequest() }),
+		signUpWithEmail: async () => ({ error: new FailedAuthRequest() }),
+		signOut: async () => ({ error: new FailedAuthRequest() }),
 	};
 }

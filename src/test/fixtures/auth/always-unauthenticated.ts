@@ -1,5 +1,4 @@
-import { AuthError } from "@supabase/supabase-js";
-
+import { InvalidCredentials } from "../../../lib/auth/errors";
 import type { AuthGateway } from "../../../lib/auth/gateway";
 
 /**
@@ -8,15 +7,11 @@ import type { AuthGateway } from "../../../lib/auth/gateway";
  * test `render`).
  */
 export function alwaysUnauthenticatedAuth(): AuthGateway {
-	const rejected = {
-		data: null,
-		error: new AuthError("Invalid login credentials"),
-	};
 	return {
-		getSession: async () => null,
-		onAuthChange: () => () => {},
-		signInWithEmail: async () => rejected,
-		signUpWithEmail: async () => rejected,
+		getCurrentUser: async () => null,
+		onUserChange: () => () => {},
+		signInWithEmail: async () => ({ error: new InvalidCredentials() }),
+		signUpWithEmail: async () => ({ error: new InvalidCredentials() }),
 		signOut: async () => ({ error: null }),
 	};
 }

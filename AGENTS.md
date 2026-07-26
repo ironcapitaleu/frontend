@@ -112,6 +112,37 @@ import { useAuth } from '../hooks/useAuth';
 
 ---
 
+## Dependency Injection & Ports
+
+Any module that wraps an **external dependency** (auth, network, storage, a
+third-party SDK) is built behind a *port* so it can be swapped for a fake in
+tests. This is the frontend adaptation of the backend's trait-based dependency
+injection — its `domain-concept` skill, Path B (`InnerClient` / `SecClient`).
+Three roles:
+
+1. **The port** — a TypeScript `interface` the app owns, written in the app's own
+   vocabulary. The vendor and *its types* never appear in it. Where the backend
+   keeps the dependency abstract with associated types, we use **app-owned domain
+   types**: define the small shape the app actually needs (e.g.
+   `AuthUser = { id; email }`) instead of threading the vendor's `User` /
+   `Session` / `Error` types through the interface.
+2. **The real adapter** — implements the port by wrapping the vendor and mapping
+   its types onto the app's. This is the **only** place the vendor is imported
+   and named (e.g. `supabaseAuthGateway`).
+3. **The fake(s)** — implement the *same* port with fixed, named behaviour
+   (`always{Behaviour}{Port}`), returning app types directly.
+
+**Inject, don't mock.** Consumers depend on the port and receive an
+implementation through a provider (React context) — production wires the real
+adapter, tests inject a fake. There is nothing to `vi.mock`; that is the payoff.
+
+Worked example: `src/lib/auth/` (the `AuthGateway` port + `supabaseAuthGateway`
+adapter), with fakes in `src/test/fixtures/auth/`. The testing mechanics — the
+custom `render()`, fake naming, and when a fake is warranted — live in
+**TESTING.md §5**.
+
+---
+
 ## Error Naming Conventions
 
 ### Error Classes
@@ -139,6 +170,28 @@ Error class names should follow consistent naming patterns based on the kind of 
 - Be consistent within the same error domain or module
 - Prefer specific names over generic ones (e.g., `FailedClientCreation` over `CreationError`)
 - Consider using error codes or properties for programmatic handling.
+
+### Error Display Format
+
+Typed errors format to a consistent, parseable string, adapted from the backend
+convention:
+
+- **Leaf errors** (the root cause): `[ErrorName] High-level description` — add a
+  `, Reason: '<detail>'` tail when the error carries a free-form detail the name
+  alone doesn't convey (e.g. a vendor message).
+- **Chained errors** (wrapping a cause): `[ErrorName] High-level description, Caused by: <inner>`
+  — do not quote the inner error; it formats itself (pass it as the error's
+  `cause`).
+- Every segment carries a `[BracketedName]` prefix; a comma separates the
+  description from `Reason:` / `Caused by:`; no trailing periods.
+- Prefer a small class hierarchy — a base that extends `Error` and renders the
+  format, with one subclass per case — over ad-hoc `throw new Error("...")`.
+- Never build a message from `JSON.stringify` of an object or a thrown value: it
+  is unstable and unparseable. Give collections/objects an explicit,
+  deterministic string form instead.
+
+Example: `[FailedAuthRequest] The auth request could not be completed, Reason: 'Auth service unavailable'`.
+See `src/lib/auth/errors.ts` for a worked example.
 
 ---
 
