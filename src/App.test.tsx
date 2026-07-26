@@ -17,28 +17,39 @@ vi.mock("./lib/supabase", () => ({
 }));
 
 describe("App", () => {
-	it("renders the home page by default", async () => {
+	it("should render the brand heading when the home page loads", async () => {
 		await act(async () => {
 			render(<App />);
 		});
 
-		// Check for the main heading on the home page
-		expect(
-			screen.getByRole("heading", { name: /Iron Capital/i }),
-		).toBeInTheDocument();
+		const expectedResult = "Iron Capital";
 
-		// Check for the description text
-		expect(screen.getByText(/Research businesses/i)).toBeInTheDocument();
+		const result = screen.getByRole("heading", { name: /Iron Capital/i });
+
+		expect(result).toHaveTextContent(expectedResult);
 	});
 
-	it("renders navigation links", async () => {
+	it("should render the product description when the home page loads", async () => {
 		await act(async () => {
 			render(<App />);
 		});
 
-		// Check if navigation elements are present
-		expect(
-			screen.getByRole("link", { name: /Iron Capital home/i }),
-		).toBeInTheDocument();
+		const expectedResult = "Research businesses.";
+
+		const result = screen.getByText(/Research businesses/i);
+
+		expect(result).toHaveTextContent(expectedResult);
+	});
+
+	it("should render the home navigation link when the home page loads", async () => {
+		await act(async () => {
+			render(<App />);
+		});
+
+		const expectedResult = "Iron Capital home";
+
+		const result = screen.getByRole("link", { name: /Iron Capital home/i });
+
+		expect(result).toHaveAccessibleName(expectedResult);
 	});
 });

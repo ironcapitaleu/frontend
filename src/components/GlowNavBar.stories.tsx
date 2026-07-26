@@ -15,17 +15,7 @@ const meta: Meta<typeof GlowNavBar> = {
 	tags: ["autodocs"],
 	decorators: [
 		(Story) => (
-			<div
-				style={{
-					display: "flex",
-					justifyContent: "center",
-					alignItems: "center",
-					minHeight: "200px",
-					background: "#f5f5f5",
-					borderRadius: "12px",
-					padding: "2rem",
-				}}
-			>
+			<div className="flex min-h-[200px] items-center justify-center rounded-xl bg-muted p-8">
 				<Story />
 			</div>
 		),

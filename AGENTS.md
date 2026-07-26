@@ -42,11 +42,43 @@ codebase for all instances before considering the change complete.
 
 ### Documentation
 
-- Public items in libraries **must include JSDoc comments** (`/** */`).
+- Public items in libraries **must include JSDoc comments** (`/** */`), following the
+  conventions in [DOCUMENTATION.md](./DOCUMENTATION.md) (W-Fragen, summary-line discipline,
+  examples live in stories).
 - All implementation changes must be **reflected in documentation**, including:
   - JSDoc comments
   - Design documents (if applicable, e.g., mermaid diagrams)
 - **Documentation must be version controlled**.
+
+---
+
+## The UI Development Flow: Design → Documentation → Testing
+
+We are building a timeless product, and that intent runs through every UI change as a
+three-step flow. Each step has an authoritative document and a supporting skill:
+
+1. **Design** — decide how it should look, feel, and move, in the terms of the design
+   language: the dual mandate of classical foundation and modern spark. Authority:
+   [DESIGN.md](./DESIGN.md). Skill: `design`.
+2. **Documentation** — demonstrate it. **Storybook is the living catalog of the design
+   system**: every reusable component ships stories for its meaningful states, and those
+   stories double as its primary documentation. Written docs (JSDoc, root documents) stay
+   in sync in the same pass. Authority: [DOCUMENTATION.md](./DOCUMENTATION.md).
+   Skill: `documentation`.
+3. **Testing** — defend it. Logic is unit-tested; interactions get play tests in a real
+   browser; stories are exercised across themes and viewports, so a change on one page
+   cannot silently break the look, layout, or motion of another.
+   Authority: [TESTING.md](./TESTING.md). Skill: `testing`.
+
+A UI change that skips a step is unfinished: undesigned UI drifts off-language,
+undocumented UI is invisible to the catalog and to review, untested UI regresses silently.
+
+**Be an advocate of the design language.** When building or reviewing any user-facing
+change, measure it against [DESIGN.md](./DESIGN.md) — does it feel timeless AND modern,
+trustworthy AND elegant? Use semantic tokens, the correct font roles, and the house motion
+conventions; flag drift toward either a legacy-institution look or a generic-startup look.
+Design conformance is part of code review, not a matter of taste left to chance (see
+**Design Language Review** below).
 
 ## Import Order Conventions
 
@@ -113,6 +145,11 @@ Error class names should follow consistent naming patterns based on the kind of 
 ## Library Code
 
 ### Testing
+
+> **Frontend tests:** the strict/uniform doctrine below applies to the frontend
+> too, with React/Vitest/Testing Library specifics. See [TESTING.md](./TESTING.md)
+> for the full frontend testing doctrine (query priority, `user-event`, shared
+> `src/test/` infra, coverage gate) and worked examples in this repo's style.
 
 - Write a **comprehensive unit test suite** for the implemented code.
 - If applicable, write **integration tests**.
@@ -281,7 +318,7 @@ This only needs to be done once per clone. Without it, git will still produce co
 ### Style & Documentation
 
 - Ensure style conventions are followed  
-- Check for meaningful comments and JSDoc  
+- Check for meaningful comments and JSDoc — verified against [DOCUMENTATION.md](./DOCUMENTATION.md)
 - Suggest clearer names and documentation where needed  
 
 ### Documentation Consistency
@@ -292,12 +329,35 @@ This only needs to be done once per clone. Without it, git will still produce co
 - Ensure new features or breaking changes are properly documented  
 - Make sure that any new added pages are included in the sitemap page and sitemap XML file
 
+### Design Language Review
+
+Every user-facing change is measured against [DESIGN.md](./DESIGN.md):
+
+- Does it hold the **dual mandate** — timeless AND modern, trustworthy AND elegant? Flag drift
+  toward either pole (legacy-institution stiffness or generic-startup gloss)
+- **Semantic tokens only** — flag raw hex or `oklch()` values in components (dark mode must keep working)
+- **Font roles** used correctly — `font-classic` reserved for voice/values moments, Inter for
+  working UI, `font-monospace` for numbers and tickers; running prose keeps its `65ch` justified measure
+- **Motion conventions** — buttons carry `.btn-tactile`; height animates via `grid-template-rows`
+  (`0fr` → `1fr`), never `display` toggles or the `max-height` trick — flag the wrong mechanism
+  even when it currently looks fine; accent and motion stay restrained and purposeful
+- **All themes and the component's breakpoints hold** — check the Storybook theme toggle and
+  viewport variants for layout-bearing changes (today that's dark and light; hold in every
+  theme the app ships, not just the one it was built in)
+- New reusable components ship **Storybook stories** for their meaningful states
+
 ### Testing Review
 
-- Confirm sufficient test coverage  
+The full doctrine lives in [TESTING.md](./TESTING.md); review against it:
+
+- Confirm sufficient test coverage — across the layers: unit (jsdom), interaction/play
+  (Storybook), and story coverage of meaningful states
 - Suggest missing edge cases or error condition tests
 - Ensure React components have appropriate tests (e.g., rendering, props, state changes)  
-- Verify tests follow the **"Arrange, Define, Act, Assert"** pattern
+- Verify tests follow the **"Arrange, Define, Act, Assert"** pattern with **exactly one
+  `expect` per test** and `should … when …` names
+- For UI changes: stories exist for new/changed states; interactive changes have a play test;
+  layout-bearing changes are exercised at their breakpoints and in all themes
 
 ### What NOT to Do
 
