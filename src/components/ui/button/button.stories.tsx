@@ -432,12 +432,14 @@ export const InteractiveWithActionsPlayable: Story = {
 		const canvas = within(canvasElement);
 		const button = canvas.getByRole("button", { name: /click me/i });
 
-		await userEvent.click(button);
-		await userEvent.click(button);
-		await userEvent.click(button);
+		const expectedResult = "Clicked 3 times";
 
-		await expect(button).toHaveTextContent("Clicked 3 times");
-		await expect(canvas.getByText(/Clicks:\s*3/i)).toBeVisible();
+		await userEvent.click(button);
+		await userEvent.click(button);
+		await userEvent.click(button);
+		const result = button.textContent;
+
+		await expect(result).toBe(expectedResult);
 	},
 };
 

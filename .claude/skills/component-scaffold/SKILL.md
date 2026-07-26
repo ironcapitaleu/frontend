@@ -84,7 +84,9 @@ export { {PascalName} };
 - `data-slot="{name}"` on root element
 - Accept `className` prop, merge via `cn()`
 - Spread remaining `...props`
-- JSDoc comment describing purpose
+- JSDoc comment describing purpose — follow `DOCUMENTATION.md` (summary line answering *Was?*
+  always, plus *Warum?/Wer?* when non-obvious — e.g. when-to-use with neighbour disambiguation
+  for `ui/` primitives; no `@example` blocks)
 - Base element type in `React.ComponentProps<"...">` matches the root HTML element
 
 ### Variants (`variants.ts`) — only when needed
@@ -125,34 +127,36 @@ import { describe, expect, it } from "vitest";
 import { {PascalName} } from ".";
 
 describe("{PascalName}", () => {
-  it("should render when mounted", () => {
+  it("should render its content when mounted", () => {
     render(<{PascalName}>Content</{PascalName}>);
 
-    const result = screen.getByText("Content");
+    const expectedResult = "Content";
 
-    expect(result).toBeInTheDocument();
+    const result = screen.getByText("Content").textContent;
+
+    expect(result).toBe(expectedResult);
   });
 
-  it("should apply custom className when provided", () => {
+  it("should merge a custom class when className is provided", () => {
     render(<{PascalName} className="custom-class">Content</{PascalName}>);
 
-    const expectedResult = "custom-class";
+    const expectedResult = true;
 
-    const result = screen.getByText("Content");
+    const result = screen.getByText("Content").className.includes("custom-class");
 
-    expect(result.className).toContain(expectedResult);
+    expect(result).toBe(expectedResult);
   });
 });
 ```
 
-**Test conventions:**
+**Test conventions** (full doctrine in `TESTING.md`; operational patterns in the `testing` skill):
 - Import from barrel (`"."`), not from the file directly
 - `describe("{PascalName}", () => { ... })`
 - `it("should ... when ...", () => { ... })` naming
-- Arrange, Define, Act, Assert pattern
-- ONE `expect()` per test
-- Use `userEvent.setup()` for interaction tests
-- Use `screen` queries (prefer `getByRole`, `getByText`, `getByLabelText`)
+- Arrange, Define (`expectedResult`), Act (`result`), Assert — blank lines between phases, no phase-label comments
+- Exactly ONE `expect()` per test — composite outcomes as a single structured object
+- Use `userEvent.setup()` for interaction tests; `await` every interaction
+- Use `screen` queries (prefer `getByRole`, `getByLabelText`; `getByTestId` last resort)
 
 ### Story (`{name}.stories.tsx`)
 
@@ -162,7 +166,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { {PascalName} } from ".";
 
 const meta: Meta<typeof {PascalName}> = {
-  title: "UI/{PascalName}",
+  title: "Components/{PascalName}",
   component: {PascalName},
   tags: ["autodocs"],
 };
@@ -178,14 +182,18 @@ export const Playground: Story = {
 };
 ```
 
-**Story conventions:**
+**Story conventions** (stories are the living documentation — see the `documentation` skill):
 - CSF3 format
 - Import `Meta` and `StoryObj` from `@storybook/react-vite`
 - `tags: ["autodocs"]` for auto-generated docs
-- `title: "UI/{PascalName}"` for UI components
+- `title: "Components/{PascalName}"` (matches every existing story in the catalog)
+- JSDoc above `meta` (renders as the autodocs intro) and above each story
 - First story is always `Playground` with sensible defaults
-- Add variant stories when component has variants (one per variant)
-- Add interaction tests via `play` function for stateful components
+- Add variant stories when component has variants (one per variant); use the shared
+  showcase decorators (`.storybook/utils/showcaseDecorators.tsx`) for variant/size grids
+- Add interaction tests via `play` function for stateful components — same AADA shape,
+  one composite assertion (see the `testing` skill)
+- Add viewport-variant stories for layout-bearing components (at the component's own breakpoints)
 
 ### Barrel Export (`index.ts`)
 
@@ -260,9 +268,34 @@ After scaffolding a component where the user corrects or refines the output:
 
 1. Ask: "Should I update the component-scaffold skill with this change?"
 2. If yes, update the relevant template or convention.
+3. Apply after user approval.
 
 Examples worth capturing:
 - New base patterns that emerge (e.g., compound components, context-based components)
 - Story patterns that work well (decorators, play functions)
 - Test patterns for specific component types (forms, modals, async)
 - Changes to the file set (e.g., if the team adds `.css` files or co-located types)
+
+**When and how to keep the templates current.** Tie the review to *use*, not a calendar —
+it's more reliable than a cadence nobody watches:
+
+- **On every invocation**, before generating, sanity-check the templates against one real,
+  recently-touched component of the same kind (open an actual `ui/` sibling). If the codebase
+  has moved on — a new convention, a changed story title, a different test shape — update the
+  template first, then scaffold. This makes drift self-correcting at exactly the moment it
+  would otherwise be copied forward.
+- **On a correction**, apply the ask-capture-apply loop above.
+
+(If the team ever wants an explicit freshness signal rather than use-triggered review, add a
+`last-reviewed:` date to this skill's frontmatter and treat anything older than a chosen window
+as due for a pass — but that's a heavier process to adopt deliberately, not a default.) The
+templates are authoritative guidance — they must reflect reality.
+
+**AGENTS.md, DOCUMENTATION.md, TESTING.md, and DESIGN.md take priority.** If a template
+diverges from them, they win; resolve conflicts in their favor.
+
+**Proactive divergence detection.** When scaffolding near existing components that diverge
+from the templates (missing stories, off-convention tests), flag or fix them proactively
+without waiting to be asked.
+
+This keeps the skill growing from real usage rather than speculation.

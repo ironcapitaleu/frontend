@@ -25,3 +25,6 @@ dist-ssr
 
 # Testing coverage
 coverage
+
+# Claude Code local (personal, per-session) settings
+.claude/settings.local.json

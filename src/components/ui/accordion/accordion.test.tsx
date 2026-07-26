@@ -22,9 +22,9 @@ describe("Accordion", () => {
 
 		const expectedResult = "Account";
 
-		const result = screen.getByText(expectedResult);
+		const result = screen.getByText("Account").textContent;
 
-		expect(result).toBeInTheDocument();
+		expect(result).toBe(expectedResult);
 	});
 
 	it("should not display content when no item has been opened", () => {
@@ -58,9 +58,9 @@ describe("Accordion", () => {
 		const expectedResult = "Account content";
 
 		await user.click(screen.getByText("Account"));
-		const result = screen.getByText(expectedResult);
+		const result = (await screen.findByText("Account content")).textContent;
 
-		expect(result).toBeInTheDocument();
+		expect(result).toBe(expectedResult);
 	});
 
 	it("should hide content when an open trigger is clicked again", async () => {
@@ -74,12 +74,13 @@ describe("Accordion", () => {
 		);
 		const user = userEvent.setup();
 
-		await user.click(screen.getByText("Account"));
-		await user.click(screen.getByText("Account"));
+		const expectedResult = null;
 
+		await user.click(screen.getByText("Account"));
+		await user.click(screen.getByText("Account"));
 		const result = screen.queryByText("Account content");
 
-		expect(result).toBeNull();
+		expect(result).toBe(expectedResult);
 	});
 
 	it("should render multiple items when given multiple accordion items", () => {
@@ -96,11 +97,13 @@ describe("Accordion", () => {
 			</Accordion>,
 		);
 
-		const expectedResult = ["Account", "Billing"];
+		const expectedResult = [true, true];
 
-		const result = expectedResult.map((title) => screen.getByText(title));
+		const result = ["Account", "Billing"].map(
+			(title) => screen.queryByText(title) !== null,
+		);
 
-		expect(result).toHaveLength(2);
+		expect(result).toEqual(expectedResult);
 	});
 
 	it("should close the first item when a second item is opened in single mode", async () => {
@@ -118,12 +121,13 @@ describe("Accordion", () => {
 		);
 		const user = userEvent.setup();
 
+		const expectedResult = null;
+
 		await user.click(screen.getByText("Account"));
 		await user.click(screen.getByText("Billing"));
-
 		const result = screen.queryByText("Account content");
 
-		expect(result).toBeNull();
+		expect(result).toBe(expectedResult);
 	});
 
 	it("should keep both items open when multiple prop is true", async () => {
@@ -141,12 +145,13 @@ describe("Accordion", () => {
 		);
 		const user = userEvent.setup();
 
+		const expectedResult = "Account content";
+
 		await user.click(screen.getByText("Account"));
 		await user.click(screen.getByText("Billing"));
+		const result = screen.getByText("Account content").textContent;
 
-		const result = screen.getByText("Account content");
-
-		expect(result).toBeInTheDocument();
+		expect(result).toBe(expectedResult);
 	});
 
 	it("should not open content when the item is disabled", async () => {
@@ -160,11 +165,12 @@ describe("Accordion", () => {
 		);
 		const user = userEvent.setup();
 
-		await user.click(screen.getByText("Account"));
+		const expectedResult = null;
 
+		await user.click(screen.getByText("Account"));
 		const result = screen.queryByText("Account content");
 
-		expect(result).toBeNull();
+		expect(result).toBe(expectedResult);
 	});
 
 	it("should open the item that matches the defaultValue when rendered", () => {
@@ -179,8 +185,8 @@ describe("Accordion", () => {
 
 		const expectedResult = "Account content";
 
-		const result = screen.getByText(expectedResult);
+		const result = screen.getByText("Account content").textContent;
 
-		expect(result).toBeInTheDocument();
+		expect(result).toBe(expectedResult);
 	});
 });
