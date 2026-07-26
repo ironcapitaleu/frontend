@@ -106,24 +106,32 @@ describe("filterStocks", () => {
 
 	it.each([
 		{
+			label: "quickRatioMin",
 			criterion: { quickRatioMin: "1.0" } as Partial<FilterState>,
 			expected: ["A"],
 		},
 		{
+			label: "currentRatioMin",
 			criterion: { currentRatioMin: "1.5" } as Partial<FilterState>,
 			expected: ["A"],
 		},
 		{
+			label: "buybackYieldMin",
 			criterion: { buybackYieldMin: "2" } as Partial<FilterState>,
 			expected: ["A"],
 		},
 		{
+			label: "dividendYieldMin",
 			criterion: { dividendYieldMin: "1" } as Partial<FilterState>,
 			expected: ["A"],
 		},
-		{ criterion: { peMin: "20" } as Partial<FilterState>, expected: ["B"] },
+		{
+			label: "peMin",
+			criterion: { peMin: "20" } as Partial<FilterState>,
+			expected: ["B"],
+		},
 	])(
-		"should keep only stocks meeting the lower bound $criterion",
+		"should keep only stocks meeting the lower bound when $label is set",
 		({ criterion, expected }) => {
 			const stocks = [
 				makeStock("A", {
@@ -153,17 +161,23 @@ describe("filterStocks", () => {
 	);
 
 	it.each([
-		{ criterion: { peMax: "20" } as Partial<FilterState>, expected: ["A"] },
 		{
+			label: "peMax",
+			criterion: { peMax: "20" } as Partial<FilterState>,
+			expected: ["A"],
+		},
+		{
+			label: "priceToCashMax",
 			criterion: { priceToCashMax: "10" } as Partial<FilterState>,
 			expected: ["A"],
 		},
 		{
+			label: "priceToFcfMax",
 			criterion: { priceToFcfMax: "10" } as Partial<FilterState>,
 			expected: ["A"],
 		},
 	])(
-		"should keep only stocks meeting the upper bound $criterion",
+		"should keep only stocks meeting the upper bound when $label is set",
 		({ criterion, expected }) => {
 			const stocks = [
 				makeStock("A", { peRatio: 10, priceToCash: 5, priceToFcf: 8 }),

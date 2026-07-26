@@ -196,9 +196,9 @@ export const OpensOnTrigger: Story = {
 		await userEvent.click(
 			canvas.getByRole("button", { name: "Open Alert Dialog" }),
 		);
-		const result = (await body.findByRole("alertdialog")).textContent;
+		const result = await body.findByRole("heading", { name: expectedResult });
 
-		await expect(result).toContain(expectedResult);
+		await expect(result).toHaveTextContent(expectedResult);
 	},
 };
 

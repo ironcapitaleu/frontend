@@ -15,10 +15,17 @@ export function useAuth(gateway: AuthGateway) {
 	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
-		gateway.getCurrentUser().then((currentUser) => {
-			setUser(currentUser);
-			setLoading(false);
-		});
+		gateway
+			.getCurrentUser()
+			.then((currentUser) => {
+				setUser(currentUser);
+				setLoading(false);
+			})
+			.catch(() => {
+				// Gateway unreachable — treat as signed-out and unblock the app
+				// rather than leaving it stuck on the loading state forever.
+				setLoading(false);
+			});
 
 		const unsubscribe = gateway.onUserChange((nextUser) => {
 			setUser(nextUser);
