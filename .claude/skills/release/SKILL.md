@@ -195,23 +195,30 @@ branches pile up.
 
 Do this at the end of **every** release:
 
-1. List feature branches that are now fully merged and safe to delete. A branch has no commit
-   `dev` lacks — so it is fully contained in `dev` — when `compare/dev...$b` reports `ahead_by`
-   0. Exclude **every** long-lived branch, not just `main` and `dev` (add any future protected
+1. List feature branches that are safe to delete. Feature branches land on `dev` with a
+   **squash** merge, so a merged branch's original commits never appear in `dev`'s history — a
+   commit-containment check (`compare/dev...$b` `ahead_by`) reports the branch as *ahead* even
+   after it merged, so it is the wrong signal here. The right signal is simpler: a branch is
+   safe to delete when it **has a merged PR**. List every still-existing branch that has one,
+   excluding **every** long-lived branch, not just `main` and `dev` (add any future protected
    branch, e.g. `staging`, to the `grep -vx` list):
 
 ```bash
 gh api "repos/ironcapitaleu/frontend/branches?per_page=100" \
   --jq '.[].name' | grep -vx -e main -e dev | while read -r b; do
-    if [ "$(gh api "repos/ironcapitaleu/frontend/compare/dev...$b" --jq .ahead_by)" = "0" ]; then
-      echo "$b (merged into dev — safe to delete)"
-    fi
+    n=$(gh pr list --repo ironcapitaleu/frontend --head "$b" --state merged \
+          --json number --jq '.[0].number // empty')
+    if [ -n "$n" ]; then echo "$b (merged in #$n — safe to delete)"; fi
   done
 ```
 
+   In a remote session `gh` may not be authenticated; use the GitHub MCP tools instead
+   (`mcp__github__list_branches`, then `mcp__github__list_pull_requests` with `state: closed`,
+   `head: <owner>:<branch>`, and check `merged`).
+
 2. **Never list `dev` or `main`.** The release PR head is `dev`; it stays. `main` stays. The
-   human does a quick visual check before deleting, so a rare false positive (a diverged,
-   force-pushed branch) is caught by them, not acted on blindly.
+   human does a quick visual check before deleting, so any false positive is caught by them,
+   not acted on blindly.
 3. Tell the human the exact branch names to delete, in one clear message. Example:
    "Merged and safe to delete: `chore/foo`, `fix/bar`. Please delete these 2 on GitHub."
 4. Ask them to confirm once they have done it (`AskUserQuestion`, or wait for their reply).
