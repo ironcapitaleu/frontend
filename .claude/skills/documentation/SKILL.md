@@ -6,7 +6,7 @@ description: >
   frontend — JSDoc, Storybook stories, or the root documents (README.md, DESIGN.md, TESTING.md).
   Supports documenting a specific component, module, recently written code, or running a
   compliance check against the documentation conventions.
-version: 0.1.0
+version: 0.2.0
 argument-hint: "[target-path or 'check' or 'recent']"
 allowed-tools: [Read, Write, Edit, Bash, AskUserQuestion, Agent]
 ---
@@ -72,6 +72,19 @@ These are loaded from `DOCUMENTATION.md` but summarized here for speed:
 - **No `@example` blocks** — examples live in stories, which are rendered and play-tested.
 - **Never name consumers** in a reusable component's docs; naming the external system an item
   serves (Supabase in `lib/supabase`) is fine.
+- **No temporal coupling** — describe what an item is now, never *when*. No "later", "deferred",
+  "first/minimal slice", "for now", "arrives with", or ticket/PR IDs. State a deliberate boundary
+  as a timeless property ("renders no data of its own").
+- **No positional / consumption coupling** — say what an item *is or does*, never where it sits
+  ("top-level wrapper", "innermost element") or how it is consumed ("shared across every page",
+  "embedded in the layout rather than used on its own"). Exception: when the relationships *are*
+  the item (a wrapper, provider, or layout that composes children), naming what it wraps *is* what
+  it does — describe it.
+- **Don't restate the code** — a type guard is obviously a boolean check, an optional prop is
+  visible in the signature. Do not narrate what the reader can see. Avoid empty jargon.
+- **Voice**: present tense, third person, concrete noun subject — "This hook subscribes to the
+  store", not "Subscribing to the store keeps …"; "Returns the parsed filings", not "This will
+  return …".
 - When unsure: look at documented siblings that already follow the conventions and match them.
 
 ### Stories (the living documentation)
@@ -123,6 +136,13 @@ Docs drift is a review item. The binding rules:
    - Exported components/hooks/utilities without JSDoc, or without a proper summary line
    - `@example` blocks in JSDoc (examples belong in stories)
    - Consumer names in a reusable component's docs (coupling)
+   - Temporal / roadmap references ("later", "deferred", "for now", "first slice", ticket/PR IDs) —
+     docs describe the current contract, not a timeline
+   - Positional / consumption references (where an item sits, or how it is consumed) instead of what
+     it is
+   - Docs that restate the signature (narrating an optional prop, a type guard, or a default value)
+   - JSDoc not in present-tense third person with a concrete noun subject (a gerund-phrase subject
+     instead of "This component …" / "Returns …")
    - Non-obvious props left undocumented on the props type
    - Missing when-to-use / neighbour disambiguation on confusable `ui/` primitives
    - Hooks that don't document their returned surface or subscription/cleanup behaviour
