@@ -1,24 +1,6 @@
-import type { AuthError, User } from "@supabase/supabase-js";
-
 import { supabase } from "../supabase";
-import { FailedAuthRequest, InvalidCredentials } from "./errors";
-import type { AuthFailure, AuthGateway, AuthUser } from "./gateway";
-
-/** Maps the vendor `User` down to the app's {@link AuthUser}. */
-function toAuthUser(user: User | null): AuthUser | null {
-	if (!user) {
-		return null;
-	}
-	return { id: user.id, email: user.email ?? null };
-}
-
-/** Maps a Supabase `AuthError` onto an app-owned {@link AuthFailure}. */
-function toAuthFailure(error: AuthError): AuthFailure {
-	if (error.code === "invalid_credentials") {
-		return new InvalidCredentials(error.message);
-	}
-	return new FailedAuthRequest(error.message);
-}
+import type { AuthGateway } from "./gateway";
+import { toAuthFailure, toAuthUser } from "./mappers";
 
 /**
  * The real {@link AuthGateway} adapter — the only place the Supabase auth client
