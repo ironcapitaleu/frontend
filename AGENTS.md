@@ -714,3 +714,7 @@ Real-world pages use both: Grid for page structure, Flexbox inside regions for c
 - Always include `aria-expanded` on trigger elements for accessibility.
 
 ---
+
+## Reporting
+
+When reporting information to the user, be extremely concise. Sacrifice grammar for the sake of concision. Follow the [`plain-english` skill](.claude/skills/plain-english/SKILL.md).
