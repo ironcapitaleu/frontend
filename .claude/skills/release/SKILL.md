@@ -195,7 +195,10 @@ branches pile up.
 
 Do this at the end of **every** release:
 
-1. List feature branches that are now fully merged and safe to delete:
+1. List feature branches that are now fully merged and safe to delete. A branch has no commit
+   `dev` lacks — so it is fully contained in `dev` — when `compare/dev...$b` reports `ahead_by`
+   0. Exclude **every** long-lived branch, not just `main` and `dev` (add any future protected
+   branch, e.g. `staging`, to the `grep -vx` list):
 
 ```bash
 gh api "repos/ironcapitaleu/frontend/branches?per_page=100" \
@@ -206,7 +209,9 @@ gh api "repos/ironcapitaleu/frontend/branches?per_page=100" \
   done
 ```
 
-2. **Never list `dev` or `main`.** The release PR head is `dev`; it stays. `main` stays.
+2. **Never list `dev` or `main`.** The release PR head is `dev`; it stays. `main` stays. The
+   human does a quick visual check before deleting, so a rare false positive (a diverged,
+   force-pushed branch) is caught by them, not acted on blindly.
 3. Tell the human the exact branch names to delete, in one clear message. Example:
    "Merged and safe to delete: `chore/foo`, `fix/bar`. Please delete these 2 on GitHub."
 4. Ask them to confirm once they have done it (`AskUserQuestion`, or wait for their reply).
