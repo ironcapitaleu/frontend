@@ -32,7 +32,7 @@ describe("toAuthUser", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should map a missing email to null", () => {
+	it("should map a missing email to null when the email is undefined", () => {
 		const user = makeUser({ email: undefined });
 
 		const expectedResult = { id: "user-1", email: null };
@@ -44,7 +44,7 @@ describe("toAuthUser", () => {
 });
 
 describe("toAuthFailure", () => {
-	it("should map the invalid_credentials code to InvalidCredentials", () => {
+	it("should map to InvalidCredentials when the error code is invalid_credentials", () => {
 		const error = new AuthError(
 			"Invalid login credentials",
 			400,
@@ -56,7 +56,7 @@ describe("toAuthFailure", () => {
 		expect(failure).toBeInstanceOf(InvalidCredentials);
 	});
 
-	it("should map any other code to FailedAuthRequest", () => {
+	it("should map to FailedAuthRequest when the error code is not invalid_credentials", () => {
 		const error = new AuthError("Service down", 503, "over_request_rate_limit");
 
 		const failure = toAuthFailure(error);
@@ -64,7 +64,7 @@ describe("toAuthFailure", () => {
 		expect(failure).toBeInstanceOf(FailedAuthRequest);
 	});
 
-	it("should carry the vendor message through as the reason", () => {
+	it("should carry the vendor message through as the reason when mapping an error", () => {
 		const error = new AuthError(
 			"Invalid login credentials",
 			400,

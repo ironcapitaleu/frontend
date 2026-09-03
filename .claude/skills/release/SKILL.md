@@ -142,6 +142,23 @@ gh pr view <N> --repo ironcapitaleu/frontend \
 Repeat with a plain `sleep 15` between calls until `ci` and `claude-auto-review` are `SUCCESS`
 and `mergeState` is `CLEAN`. If a check fails, stop and report it.
 
+### Step 5b — Drive the review with `pr-iterate`
+
+Do not merge on an unaddressed review round. Once the checks settle, read the `claude-auto-review`
+findings on the release PR and drive them with the **`pr-iterate`** skill. This step is not
+optional — a silent skip is how a real finding gets missed.
+
+A `dev → main` release PR is a pure promotion: its head is `dev`, so you cannot edit it. Never push
+to the release PR to address a finding — that means pushing to `dev`. Handle a finding by kind:
+
+- **Real defect in the promoted diff** (a bug, a security issue) → do not merge. Fix it on `dev`
+  first, through the normal `pr-iterate` loop on a fix PR into `dev`. Let the release PR pick the
+  fix up, then continue the release.
+- **Cosmetic nit about already-merged content** → tell the human as a follow-up. Never skip it
+  silently.
+
+Merge only after the review round is clean or every open finding is a nit you reported to the human.
+
 ### Step 6 — Merge (MERGE COMMIT)
 
 ```bash
@@ -192,6 +209,7 @@ User: "I just merged the dependabot batch into dev — ship it."
 → Step 3: changelog — "Dependencies: setup-node, dev-deps (13), prod-deps (15)".
 → Step 4: open `release: propagate dev to main`, mergeable/CLEAN.
 → Step 5: wait — ci + auto-review SUCCESS.
+→ Step 5b: review — `claude-auto-review` clean (no findings); proceed.
 → Step 6: `gh pr merge --merge`.
 → Step 7: `behind_by: 0` ✅, Cloudflare Pages deploy triggered on main.
 → Step 8: "Released 3 dependency updates to main (merge `abc1234`), deploy in progress."
