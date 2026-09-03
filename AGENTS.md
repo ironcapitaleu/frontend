@@ -324,6 +324,53 @@ When creating a pull request, always use the repository's PR template located at
 
 Never use a freeform PR body or a different structure.
 
+### PR Size Budget
+
+Review quality collapses on large diffs — defect detection per line drops sharply once the
+reviewer can no longer hold the change in their head. **PR size is a correctness concern, not a
+matter of taste.**
+
+- **Target ~200 reviewable LoC; 400 is the hard ceiling.**
+- **Reviewable LoC** = hand-written code a human must reason about. It **excludes** generated
+  scaffolding, `package-lock.json`, test fixtures and snapshots, vendored code, and pure
+  moves/renames with no behavioral change.
+- **Documentation and design docs are budgeted separately from code.** Reviewing prose is a
+  different activity than reviewing logic; do not let a large doc crowd out the code budget, or
+  vice versa. A doc has **no hard line ceiling**, but past **~400 lines changed** the PR must
+  include a short **reading guide**: which sections are new vs. moved, which carry decisions, and
+  what specifically needs scrutiny.
+- **One ticket → one branch → one PR.** Branch from the latest `dev`. A branch that cannot merge
+  within ~2 working days (5 maximum) was scoped too large — split the remaining work into a
+  follow-up and merge what is done. Pull `dev` into your branch regularly so divergence stays small.
+
+Work is committed to this budget **at ticket creation, not at PR time** — see the `linear` skill's
+"Ticket Sizing" section for the sizing test and how to split a ticket. Slicing once the code exists
+is when it costs the most.
+
+#### Exceeding the Ceiling
+
+An oversized PR is permitted **only with a declared exception** in the PR description, stating:
+
+1. **Why it cannot be split** — e.g. a rename that must land atomically to keep `dev` building.
+2. **How to review it** — commit-by-commit ordering, which files carry the real logic, and what
+   is mechanical.
+
+A silently oversized PR is itself a defect in the PR. If the answer to (1) is weak, split it.
+
+#### Before Opening a PR
+
+A diff can sit well under 200 lines and still overwhelm a reviewer when it bundles separable
+concerns or embeds many open decisions at once. Run this scope gate **before** opening:
+
+- **One-sentence scope test.** State the PR's purpose in a single sentence. If it needs an "and",
+  it is more than one PR.
+- **Mechanism before convention.** Ship a component or feature with minimal docs; refine contested
+  prose or a *new* convention in a follow-up. Convention debates are where review rounds multiply.
+- **No unrelated fixes.** A fix noticed in passing — an import order, a typo in another module —
+  rides its own PR, never the feature's.
+- **Stack, don't pile.** For genuinely sequential work, open a short stack of small PRs, each
+  reviewable in one sitting, rather than one PR that grows across review rounds.
+
 ### Branching and Propagation
 
 This repository uses a **two-branch flow**: feature branches → `dev` → `main`.
@@ -370,6 +417,22 @@ This only needs to be done once per clone. Without it, git will still produce co
 ---
 
 ## PR Review Guidelines
+
+### Review Budget & Rubber-Stamping
+
+An approval asserts that you checked the change. It is not a courtesy, and "looks good to me"
+without a per-item verdict is not a review.
+
+- **Review in sittings of at most ~400 LoC.** Concentration and defect detection degrade
+  measurably beyond that. Split a large review across sittings rather than skimming it in one.
+- **Never approve what you did not read.** If you reviewed only part, say which part, and approve
+  only that scope — or ask for a split.
+- **Review against the Definition of Done, not against vibes.** The ticket's DoD lists verifiable
+  assertions; the PR's Test Plan says how to check them. Confirm each item holds.
+- **Requesting a split is always legitimate.** A PR over the ceiling with no declared exception
+  should be sent back to be sliced, however good the code is. Reviewability is part of done.
+- **Raise the finding you are unsure about.** Ask the question rather than silently deferring to
+  the author.
 
 ### Code Quality Review
 
