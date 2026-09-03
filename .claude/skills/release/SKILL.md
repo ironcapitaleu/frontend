@@ -142,6 +142,23 @@ gh pr view <N> --repo ironcapitaleu/frontend \
 Repeat with a plain `sleep 15` between calls until `ci` and `claude-auto-review` are `SUCCESS`
 and `mergeState` is `CLEAN`. If a check fails, stop and report it.
 
+### Step 5b — Address the review (invoke `pr-iterate`)
+
+Do not merge on an unaddressed review round. Once the checks settle, read the `claude-auto-review`
+findings on the release PR and drive them with the **`pr-iterate`** skill. This step is not
+optional — a silent skip is how a real finding gets missed.
+
+A `dev → main` release PR is a pure promotion: its head is `dev`, so you cannot edit it. Never push
+to the release PR to address a finding — that means pushing to `dev`. Handle a finding by kind:
+
+- **Real defect in the promoted diff** (a bug, a security issue) → do not merge. Fix it on `dev`
+  first, through the normal `pr-iterate` loop on a fix PR into `dev`. Let the release PR pick the
+  fix up, then continue the release.
+- **Cosmetic nit about already-merged content** → tell the human as a follow-up. Never skip it
+  silently.
+
+Merge only after the review round is clean or every open finding is a nit you reported to the human.
+
 ### Step 6 — Merge (MERGE COMMIT)
 
 ```bash
