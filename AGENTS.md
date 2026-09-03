@@ -340,7 +340,7 @@ matter of taste.**
   include a short **reading guide**: which sections are new vs. moved, which carry decisions, and
   what specifically needs scrutiny.
 - **One ticket → one branch → one PR.** Branch from the latest `dev`. A branch that cannot merge
-  within ~2 working days (5 maximum) was scoped too large — split the remaining work into a
+  within ~2 working days (5 working days maximum) was scoped too large — split the remaining work into a
   follow-up and merge what is done. Pull `dev` into your branch regularly so divergence stays small.
 
 Work is committed to this budget **at ticket creation, not at PR time** — see the `linear` skill's
