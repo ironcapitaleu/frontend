@@ -9,7 +9,7 @@ description: >
   ledger that links to in-repo artifacts.
 version: 0.1.0
 argument-hint: "[project name] [define|refine]"
-allowed-tools: [Read, Write, Bash, AskUserQuestion, mcp__Linear__get_project, mcp__Linear__save_project, mcp__Linear__list_milestones, mcp__Linear__save_milestone, mcp__Linear__list_issues, mcp__Linear__save_issue, mcp__Linear__list_documents, mcp__Linear__save_document]
+allowed-tools: [Read, Write, Bash, AskUserQuestion, mcp__linear__get_project, mcp__linear__save_project, mcp__linear__list_milestones, mcp__linear__save_milestone, mcp__linear__list_issues, mcp__linear__save_issue, mcp__linear__list_documents, mcp__linear__save_document]
 ---
 
 # Epic Skill
@@ -165,10 +165,10 @@ artifacts, the milestones, and the first frontier of tickets.
    the UI and its behavior, use the `design` skill. For a new component's file set, use the
    `component-scaffold` skill.
 3. **Write the Project.** Create or update the Linear Project with the description template above
-   (`mcp__Linear__save_project`). State the destination in the User Story and the Description.
+   (`mcp__linear__save_project`). State the destination in the User Story and the Description.
 4. **Create milestones** from the artifacts, sequenced toward the destination (see "Milestones
    Follow the Artifacts"). Each milestone is one Definition-of-Done top-level item. Give each a
-   target date (`mcp__Linear__save_milestone`).
+   target date (`mcp__linear__save_milestone`).
 5. **Seed the decisions ledger** with decisions already made. Each entry links its in-repo artifact
    and the ticket that resolved it.
 6. **Seed the fog log** from the artifact categories. Apply the fog-versus-ticket test: create a
