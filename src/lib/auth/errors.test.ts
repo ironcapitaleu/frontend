@@ -25,7 +25,7 @@ describe("InvalidCredentials", () => {
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should take its own class name as the error name", () => {
+	it("should take its own class name as the error name when constructed without a reason", () => {
 		const failure = new InvalidCredentials();
 
 		const expectedResult = "InvalidCredentials";
@@ -59,7 +59,7 @@ describe("FailedAuthRequest", () => {
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should take its own class name as the error name", () => {
+	it("should take its own class name as the error name when constructed without a reason", () => {
 		const failure = new FailedAuthRequest();
 
 		const expectedResult = "FailedAuthRequest";
