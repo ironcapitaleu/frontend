@@ -51,21 +51,17 @@ describe("toAuthFailure", () => {
 			"invalid_credentials",
 		);
 
-		const expectedResult = true;
+		const failure = toAuthFailure(error);
 
-		const result = toAuthFailure(error) instanceof InvalidCredentials;
-
-		expect(result).toBe(expectedResult);
+		expect(failure).toBeInstanceOf(InvalidCredentials);
 	});
 
 	it("should map any other code to FailedAuthRequest", () => {
 		const error = new AuthError("Service down", 503, "over_request_rate_limit");
 
-		const expectedResult = true;
+		const failure = toAuthFailure(error);
 
-		const result = toAuthFailure(error) instanceof FailedAuthRequest;
-
-		expect(result).toBe(expectedResult);
+		expect(failure).toBeInstanceOf(FailedAuthRequest);
 	});
 
 	it("should carry the vendor message through as the reason", () => {

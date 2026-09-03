@@ -1,7 +1,10 @@
 import type { AuthError, User } from "@supabase/supabase-js";
 
-import type { AuthFailure } from "./errors";
-import { FailedAuthRequest, InvalidCredentials } from "./errors";
+import {
+	type AuthFailure,
+	FailedAuthRequest,
+	InvalidCredentials,
+} from "./errors";
 import type { AuthUser } from "./gateway";
 
 /**
