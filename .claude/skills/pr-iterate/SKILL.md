@@ -195,6 +195,8 @@ Do not wait to be asked — the goal is to get changes from feature branch → d
 
 **Branch hygiene:** Always verify you are on the correct branch before making changes or pushing. Run `git branch --show-current` if uncertain. When iterating on a PR, check out the branch that the PR is on — not an unrelated branch.
 
+**Branch cleanup:** Claude cannot delete branches from the remote environment (`git push --delete` → HTTP 403; no GitHub MCP delete-branch tool). A human deletes them. So after a feature PR merges into `dev`, name the merged branch and ask the human to delete it. The `release` skill's Step 9 also sweeps every merged feature branch and asks for a delete-and-confirm, so branches never pile up.
+
 ## Integration with CI
 
 The skill works alongside the `claude.yaml` workflow:

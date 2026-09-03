@@ -186,6 +186,39 @@ gh api repos/ironcapitaleu/frontend/compare/dev...main --jq '"behind_by(main mis
 Summarize: what shipped (changelog), the merge commit SHA, `behind_by: 0` confirmation, deploy
 status, and anything flagged (guard pauses, back-merge needed).
 
+### Step 9 — Branch cleanup reminder (mandatory)
+
+**Claude cannot delete branches from the remote Claude Code environment.** `git push --delete`
+returns HTTP 403 through the agent proxy, and the GitHub MCP has no delete-branch tool. So a
+human deletes them. This step makes sure that happens every time, instead of letting merged
+branches pile up.
+
+Do this at the end of **every** release:
+
+1. List feature branches that are now fully merged and safe to delete. A branch has no commit
+   `dev` lacks — so it is fully contained in `dev` — when `compare/dev...$b` reports `ahead_by`
+   0. Exclude **every** long-lived branch, not just `main` and `dev` (add any future protected
+   branch, e.g. `staging`, to the `grep -vx` list):
+
+```bash
+gh api "repos/ironcapitaleu/frontend/branches?per_page=100" \
+  --jq '.[].name' | grep -vx -e main -e dev | while read -r b; do
+    if [ "$(gh api "repos/ironcapitaleu/frontend/compare/dev...$b" --jq .ahead_by)" = "0" ]; then
+      echo "$b (merged into dev — safe to delete)"
+    fi
+  done
+```
+
+2. **Never list `dev` or `main`.** The release PR head is `dev`; it stays. `main` stays. The
+   human does a quick visual check before deleting, so a rare false positive (a diverged,
+   force-pushed branch) is caught by them, not acted on blindly.
+3. Tell the human the exact branch names to delete, in one clear message. Example:
+   "Merged and safe to delete: `chore/foo`, `fix/bar`. Please delete these 2 on GitHub."
+4. Ask them to confirm once they have done it (`AskUserQuestion`, or wait for their reply).
+   Do not treat the release as fully done until they confirm, so branches never accumulate.
+
+If the list is empty, say "No feature branches to clean up." and skip the confirmation.
+
 ## Guardrails
 
 - **Merge commit only** for `dev → main` — squash/rebase are bugs here.
@@ -213,3 +246,4 @@ User: "I just merged the dependabot batch into dev — ship it."
 → Step 6: `gh pr merge --merge`.
 → Step 7: `behind_by: 0` ✅, Cloudflare Pages deploy triggered on main.
 → Step 8: "Released 3 dependency updates to main (merge `abc1234`), deploy in progress."
+→ Step 9: "Merged and safe to delete: `chore/deps-batch`. Please delete it on GitHub, then confirm."
