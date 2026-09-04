@@ -137,6 +137,12 @@ For a multi-screen feature, the milestones follow the screens in order:
 - Build the third screen and its transition from the second.
 - Finalize the design docs and the flow.
 
+**Sequence an abstraction before its implementation.** When an implementation depends on an
+abstraction, the abstraction settles in an earlier milestone. A component's props or a port settles
+before the concrete component or adapter that implements it. The ports settle before their vendor
+adapter — an `AuthGateway` before its Supabase adapter. This does not override the screen order
+above.
+
 Each milestone is a coherent increment the epic can reach and show. Propose the milestones. The user
 confirms or corrects them.
 
@@ -151,6 +157,30 @@ Tickets have two sources:
 When a milestone is the next to reach, break it into tickets. Do not break every milestone at the
 start. A full upfront breakdown is a premature backlog. Cut the current milestone's tickets. Defer
 the later milestones.
+
+### The Development Cycle
+
+Every unit of work runs the same fixed cycle. Cut its tickets in this order.
+
+1. **Clear the fog.** If the unit is uncertain, cut a SPIKE. After the SPIKE, if the design needs
+   its own step, cut a DESIGN ticket. These produce the findings and the high-level design — the
+   `DESIGN.md` section and the Storybook states.
+2. **Settle the abstraction.** If the unit has an abstraction — a component's props, a hook, or a
+   port that hides an external system — cut a ticket to name and implement it, and a ticket to test
+   it through a fake injected as a dependency (the ports-and-fakes doctrine in `TESTING.md`).
+   Refactor the abstraction until it is stable, because changing it later forces every dependent to
+   change with it.
+3. **Build the implementation.** Cut a ticket for the concrete component, page, or adapter behind
+   the abstraction.
+
+A pure presentational component or a value with validation has no abstraction, so it skips step 2. A
+shared `Button` is implementation only. An `AuthGateway` is a port, so it runs the full cycle: the
+interface, the fake, then the real Supabase adapter.
+
+Each step maps to a skill. The `design` skill produces the design document and the Storybook states.
+The `component-scaffold` skill generates a component with its tests and stories. The `testing` skill
+carries the ports-and-fakes seam. The abstraction and its fake settle before the implementation, the
+same order the milestones follow.
 
 ## Mode: Define
 
