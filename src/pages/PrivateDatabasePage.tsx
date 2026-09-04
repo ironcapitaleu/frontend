@@ -12,7 +12,8 @@ import {
 } from "lucide-react";
 
 import { useAuthContext } from "@/contexts/AuthContext";
-import { supabase } from "@/lib/supabase";
+import type { NotesGateway, UserNote } from "@/lib/notes/gateway";
+import { supabaseNotesGateway } from "@/lib/notes/supabaseNotesGateway";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -27,14 +28,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-
-interface UserNote {
-	id: string;
-	title: string;
-	content: string;
-	created_at: string;
-	user_id: string;
-}
 
 function AuthRequiredState() {
 	return (
@@ -200,7 +193,21 @@ function NotesList({ notes, loading, onDelete }: NotesListProps) {
 	);
 }
 
-function PrivateDatabasePage() {
+/** The default notes backend — a real Supabase adapter, created once so the page's callbacks stay stable. */
+const defaultNotesGateway = supabaseNotesGateway();
+
+export interface PrivateDatabasePageProps {
+	/**
+	 * The notes backend to read and write through. Defaults to the real Supabase
+	 * adapter; a test injects a fake to drive the empty, populated, and error
+	 * paths without a network.
+	 */
+	notesGateway?: NotesGateway;
+}
+
+function PrivateDatabasePage({
+	notesGateway = defaultNotesGateway,
+}: PrivateDatabasePageProps = {}) {
 	const [notes, setNotes] = useState<UserNote[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -213,19 +220,13 @@ function PrivateDatabasePage() {
 		try {
 			setLoading(true);
 			setError(null);
-			const { data, error } = await supabase
-				.from("user_notes")
-				.select("*")
-				.order("created_at", { ascending: false });
-
-			if (error) throw error;
-			setNotes(data || []);
+			setNotes(await notesGateway.listNotes());
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Failed to fetch notes");
 		} finally {
 			setLoading(false);
 		}
-	}, []);
+	}, [notesGateway]);
 
 	useEffect(() => {
 		if (user) {
@@ -240,13 +241,11 @@ function PrivateDatabasePage() {
 
 		try {
 			setSaving(true);
-			const { error } = await supabase.from("user_notes").insert({
+			await notesGateway.addNote({
 				title: newTitle.trim(),
 				content: newContent.trim(),
-				user_id: user.id,
+				userId: user.id,
 			});
-
-			if (error) throw error;
 
 			setNewTitle("");
 			setNewContent("");
@@ -260,9 +259,7 @@ function PrivateDatabasePage() {
 
 	async function deleteNote(id: string) {
 		try {
-			const { error } = await supabase.from("user_notes").delete().eq("id", id);
-
-			if (error) throw error;
+			await notesGateway.deleteNote(id);
 			fetchNotes();
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Failed to delete note");
