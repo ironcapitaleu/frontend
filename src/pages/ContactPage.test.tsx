@@ -55,7 +55,7 @@ describe("ContactPage", () => {
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should keep the submit button disabled until a Turnstile token is present", () => {
+	it("should keep the submit button disabled when no Turnstile token is present", () => {
 		render(<ContactPage />);
 
 		const expectedResult = true;
@@ -65,7 +65,7 @@ describe("ContactPage", () => {
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should enable the submit button once a Turnstile token is present", () => {
+	it("should enable the submit button when a Turnstile token is present", () => {
 		render(<ContactPage initialTurnstileToken={VERIFIED} />);
 
 		const expectedResult = false;
