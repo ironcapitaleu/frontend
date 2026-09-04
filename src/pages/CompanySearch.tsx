@@ -301,7 +301,7 @@ function CompanySearch({ companies = SAMPLE_COMPANIES }: CompanySearchProps) {
 		setIsSearching(false);
 	};
 
-	const handleKeyPress = (e: React.KeyboardEvent) => {
+	const handleKeyDown = (e: React.KeyboardEvent) => {
 		if (e.key === "Enter") {
 			handleSearch();
 		}
@@ -328,8 +328,11 @@ function CompanySearch({ companies = SAMPLE_COMPANIES }: CompanySearchProps) {
 								type="text"
 								placeholder="Search by company name or symbol (e.g., Apple, AAPL)"
 								value={searchTerm}
-								onChange={(e) => setSearchTerm(e.target.value)}
-								onKeyDown={handleKeyPress}
+								onChange={(e) => {
+									setSearchTerm(e.target.value);
+									setHasSearched(false);
+								}}
+								onKeyDown={handleKeyDown}
 							/>
 							<Button
 								onClick={handleSearch}
