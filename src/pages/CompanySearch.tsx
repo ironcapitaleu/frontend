@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
-interface CompanyResult {
+export interface CompanyResult {
 	symbol: string;
 	name: string;
 	description: string;
@@ -27,7 +27,7 @@ interface CompanyResult {
 	website?: string;
 }
 
-const mockCompanies: CompanyResult[] = [
+const SAMPLE_COMPANIES: readonly CompanyResult[] = [
 	{
 		symbol: "AAPL",
 		name: "Apple Inc.",
@@ -266,7 +266,17 @@ function NoResultsState({ searchTerm }: { searchTerm: string }) {
 	);
 }
 
-function CompanySearch() {
+interface CompanySearchProps {
+	/**
+	 * The company universe to search. Defaults to the built-in
+	 * {@link SAMPLE_COMPANIES} placeholder; a real data source (or a test's fake
+	 * dataset) is passed in so the search behaviour stays independent of the data
+	 * it happens to show.
+	 */
+	companies?: readonly CompanyResult[];
+}
+
+function CompanySearch({ companies = SAMPLE_COMPANIES }: CompanySearchProps) {
 	const [searchTerm, setSearchTerm] = useState("");
 	const [selectedCompany, setSelectedCompany] = useState<CompanyResult | null>(
 		null,
@@ -279,7 +289,7 @@ function CompanySearch() {
 		setIsSearching(true);
 		await new Promise((resolve) => setTimeout(resolve, 500));
 
-		const results = mockCompanies.filter(
+		const results = companies.filter(
 			(company) =>
 				company.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
 				company.name.toLowerCase().includes(searchTerm.toLowerCase()),
