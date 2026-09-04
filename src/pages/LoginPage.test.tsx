@@ -84,11 +84,9 @@ describe("LoginPage", () => {
 		await user.click(
 			screen.getByRole("button", { name: /Continue with passkey/i }),
 		);
-		const result = (
-			screen.getByRole("button", {
-				name: /Continue with passkey/i,
-			}) as HTMLButtonElement
-		).disabled;
+		const result = screen
+			.getByRole("button", { name: /Continue with passkey/i })
+			.hasAttribute("disabled");
 
 		expect(result).toBe(expectedResult);
 	});
@@ -101,10 +99,10 @@ describe("LoginPage", () => {
 
 		await user.click(screen.getByRole("button", { name: "Create an account" }));
 		await user.click(screen.getByRole("button", { name: "Sign in" }));
-		const result = (
-			await screen.findByRole("heading", { name: "Sign in to your account" })
-		).textContent;
+		const result = await screen.findByRole("heading", {
+			name: "Sign in to your account",
+		});
 
-		expect(result).toBe(expectedResult);
+		expect(result).toHaveTextContent(expectedResult);
 	});
 });
