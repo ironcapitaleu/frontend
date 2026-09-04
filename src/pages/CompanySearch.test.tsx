@@ -132,4 +132,21 @@ describe("CompanySearch", () => {
 
 		expect(result).toBe(expectedResult);
 	});
+
+	it("should hide the no-results message when the query is changed after a search returned nothing", async () => {
+		const user = userEvent.setup();
+		render(<CompanySearch companies={fakeCompanySearchResults} />);
+
+		const expectedResult = false;
+
+		await user.type(searchField(), "ZZZZ");
+		await user.click(searchButton());
+		await screen.findByRole("heading", { name: /no results found/i });
+		await user.clear(searchField());
+		await user.type(searchField(), "Alfa");
+		const result =
+			screen.queryByRole("heading", { name: /no results found/i }) !== null;
+
+		expect(result).toBe(expectedResult);
+	});
 });
