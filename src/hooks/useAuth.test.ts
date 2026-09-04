@@ -106,15 +106,15 @@ describe("useAuth", () => {
 		const gateway = alwaysUnauthenticatedAuth();
 		const { result: hook } = renderHook(() => useAuth(gateway));
 
-		const expectedResult = true;
+		const expectedError = InvalidCredentials;
 
 		const outcome = await hook.current.signInWithEmail(
 			"investor@ironcapital.test",
 			"wrong-password",
 		);
-		const result = outcome.error instanceof InvalidCredentials;
+		const result = outcome.error;
 
-		expect(result).toBe(expectedResult);
+		expect(result).toBeInstanceOf(expectedError);
 	});
 
 	it("should report success when signing up through the gateway", async () => {
