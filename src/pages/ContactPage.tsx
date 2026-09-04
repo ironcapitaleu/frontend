@@ -67,9 +67,42 @@ interface ContactFormState {
 	privacyConsent: boolean;
 }
 
+/** The validated message handed to {@link ContactFormProps.sendMessage}. */
+export interface ContactMessage {
+	fullName: string;
+	email: string;
+	subject: string;
+	message: string;
+	turnstileToken: string | null;
+}
+
+export interface ContactFormProps {
+	/**
+	 * The action that delivers a validated message. Defaults to the built-in
+	 * stub (a 1.5s delay — there is no real gateway or email service yet). A
+	 * test injects a fake to drive the success or failure path without a
+	 * network.
+	 */
+	sendMessage?: (message: ContactMessage) => Promise<void>;
+	/**
+	 * Seeds the Turnstile token so the submit button can be enabled without the
+	 * Cloudflare widget, whose `onSuccess` never fires in jsdom. Production
+	 * leaves this `null`; the real widget sets the token at runtime.
+	 */
+	initialTurnstileToken?: string | null;
+}
+
 const SUBJECTS = ["General", "Technical"] as const;
 
-function ContactForm() {
+/** The stub used until a real message gateway is wired up (see the TODOs). */
+const stubSendMessage = async (): Promise<void> => {
+	await new Promise((resolve) => setTimeout(resolve, 1500));
+};
+
+function ContactForm({
+	sendMessage = stubSendMessage,
+	initialTurnstileToken = null,
+}: ContactFormProps) {
 	const [form, setForm] = useState<ContactFormState>({
 		fullName: "",
 		email: "",
@@ -79,6 +112,7 @@ function ContactForm() {
 	});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isSubmitted, setIsSubmitted] = useState(false);
+	const [submitError, setSubmitError] = useState<string | null>(null);
 	const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
 	const [errors, setErrors] = useState<{
 		fullName?: string;
@@ -87,7 +121,9 @@ function ContactForm() {
 		message?: string;
 		privacyConsent?: string;
 	}>({});
-	const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+	const [turnstileToken, setTurnstileToken] = useState<string | null>(
+		initialTurnstileToken,
+	);
 	const turnstileRef = useRef<TurnstileInstance>(null);
 	const [isShaking, setIsShaking] = useState(false);
 
@@ -173,14 +209,24 @@ function ContactForm() {
 		}
 
 		setIsSubmitting(true);
+		setSubmitError(null);
 
 		try {
-			// TODO: wire up to third-party service (Resend, Formspree, EmailJS)
-			// TODO: [SECURITY] Send `turnstileToken` in the payload and verify server-side via
-			//   POST https://challenges.cloudflare.com/turnstile/v0/siteverify
-			//   with your secret key — client-side token presence alone is NOT sufficient protection.
-			await new Promise((resolve) => setTimeout(resolve, 1500));
+			// TODO: [SECURITY] The default `sendMessage` stub does nothing with the
+			//   token. A real gateway must send `turnstileToken` in the payload and
+			//   verify it server-side via POST
+			//   https://challenges.cloudflare.com/turnstile/v0/siteverify with the
+			//   secret key — client-side token presence alone is NOT sufficient.
+			await sendMessage({
+				fullName: form.fullName,
+				email: form.email,
+				subject: form.subject,
+				message: form.message,
+				turnstileToken,
+			});
 			setIsSubmitted(true);
+		} catch {
+			setSubmitError("We couldn't send your message. Please try again.");
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -196,6 +242,7 @@ function ContactForm() {
 			privacyConsent: false,
 		});
 		setErrors({});
+		setSubmitError(null);
 		setHasAttemptedSubmit(false);
 		setTurnstileToken(null);
 		turnstileRef.current?.reset();
@@ -357,6 +404,12 @@ function ContactForm() {
 					</div>
 				</div>
 
+				{submitError && (
+					<p role="alert" className="text-xs text-destructive">
+						{submitError}
+					</p>
+				)}
+
 				<div className="mt-2 w-full">
 					<Button
 						type="submit"
@@ -398,7 +451,7 @@ function ContactForm() {
 	);
 }
 
-function ContactPage() {
+function ContactPage({ sendMessage, initialTurnstileToken }: ContactFormProps) {
 	return (
 		<div className="flex-1 bg-background">
 			<div className="max-w-6xl mx-auto px-6 py-12 lg:py-16 grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24">
@@ -426,7 +479,10 @@ function ContactPage() {
 					</div>
 				</div>
 
-				<ContactForm />
+				<ContactForm
+					sendMessage={sendMessage}
+					initialTurnstileToken={initialTurnstileToken}
+				/>
 			</div>
 		</div>
 	);
