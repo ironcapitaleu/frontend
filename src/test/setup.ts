@@ -10,6 +10,14 @@ expect.extend(matchers);
 vi.stubEnv("VITE_SUPABASE_URL", "https://stub.supabase.co");
 vi.stubEnv("VITE_SUPABASE_ANON_KEY", "stub-anon-key");
 
+// jsdom implements neither pointer capture nor scrollIntoView, both of which
+// Radix primitives (Select, …) call while opening. Stub them so those
+// components can be driven with user-event exactly as in a real browser.
+Element.prototype.hasPointerCapture = vi.fn(() => false);
+Element.prototype.setPointerCapture = vi.fn();
+Element.prototype.releasePointerCapture = vi.fn();
+Element.prototype.scrollIntoView = vi.fn();
+
 // jsdom does not implement window.matchMedia — provide a no-op stub
 Object.defineProperty(window, "matchMedia", {
 	writable: true,
