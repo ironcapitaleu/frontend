@@ -1,14 +1,14 @@
 /**
- * A private note, in the app's own vocabulary. The `user_id` and `created_at`
- * fields keep the snake_case the row is stored under, so the value the adapter
- * reads back needs no remapping before the page renders it.
+ * A private note, in the app's own vocabulary. The vendor's column names never
+ * cross this boundary; the real adapter maps its snake_case row onto these
+ * camelCase fields.
  */
 export interface UserNote {
 	id: string;
 	title: string;
 	content: string;
-	created_at: string;
-	user_id: string;
+	createdAt: string;
+	userId: string;
 }
 
 /** The fields the app supplies to create a note; the row's id and timestamp are assigned by the backend. */

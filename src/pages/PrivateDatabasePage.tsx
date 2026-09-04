@@ -138,7 +138,7 @@ function NoteItem({ note, onDelete }: NoteItemProps) {
 			<div>
 				<h3>{note.title}</h3>
 				{note.content && <p>{note.content}</p>}
-				<p>{new Date(note.created_at).toLocaleString()}</p>
+				<p>{new Date(note.createdAt).toLocaleString()}</p>
 			</div>
 			<Button variant="destructive" size="sm" onClick={() => onDelete(note.id)}>
 				<Trash2 />
@@ -205,6 +205,7 @@ export interface PrivateDatabasePageProps {
 	notesGateway?: NotesGateway;
 }
 
+/** Displays and manages the signed-in user's private notes, gated behind authentication. */
 function PrivateDatabasePage({
 	notesGateway = defaultNotesGateway,
 }: PrivateDatabasePageProps = {}) {
@@ -249,7 +250,7 @@ function PrivateDatabasePage({
 
 			setNewTitle("");
 			setNewContent("");
-			fetchNotes();
+			await fetchNotes();
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Failed to add note");
 		} finally {
@@ -260,7 +261,7 @@ function PrivateDatabasePage({
 	async function deleteNote(id: string) {
 		try {
 			await notesGateway.deleteNote(id);
-			fetchNotes();
+			await fetchNotes();
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Failed to delete note");
 		}
