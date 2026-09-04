@@ -6,13 +6,15 @@ import { render, screen } from "../test/render";
 import CompanySearch from "./CompanySearch";
 
 /** The search field, found by its placeholder. */
-function searchField(): HTMLElement {
-	return screen.getByPlaceholderText(/company name or symbol/i);
+function searchField(): HTMLInputElement {
+	return screen.getByPlaceholderText(
+		/company name or symbol/i,
+	) as HTMLInputElement;
 }
 
 /** The Search button in the search bar. */
-function searchButton(): HTMLElement {
-	return screen.getByRole("button", { name: /^search/i });
+function searchButton(): HTMLButtonElement {
+	return screen.getByRole("button", { name: /^search/i }) as HTMLButtonElement;
 }
 
 describe("CompanySearch", () => {
@@ -33,7 +35,7 @@ describe("CompanySearch", () => {
 
 		const expectedResult = true;
 
-		const result = (searchButton() as HTMLButtonElement).disabled;
+		const result = searchButton().disabled;
 
 		expect(result).toBe(expectedResult);
 	});
@@ -113,7 +115,20 @@ describe("CompanySearch", () => {
 		const expectedResult = "AAPL";
 
 		await user.click(screen.getByRole("button", { name: /apple/i }));
-		const result = (searchField() as HTMLInputElement).value;
+		const result = searchField().value;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should not show the no-results message when a query is typed but not yet searched", async () => {
+		const user = userEvent.setup();
+		render(<CompanySearch companies={fakeCompanySearchResults} />);
+
+		const expectedResult = false;
+
+		await user.type(searchField(), "ZZZZ");
+		const result =
+			screen.queryByRole("heading", { name: /no results found/i }) !== null;
 
 		expect(result).toBe(expectedResult);
 	});

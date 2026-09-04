@@ -282,10 +282,12 @@ function CompanySearch({ companies = SAMPLE_COMPANIES }: CompanySearchProps) {
 		null,
 	);
 	const [isSearching, setIsSearching] = useState(false);
+	const [hasSearched, setHasSearched] = useState(false);
 
 	const handleSearch = async () => {
 		if (!searchTerm.trim()) return;
 
+		setHasSearched(true);
 		setIsSearching(true);
 		await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -327,7 +329,7 @@ function CompanySearch({ companies = SAMPLE_COMPANIES }: CompanySearchProps) {
 								placeholder="Search by company name or symbol (e.g., Apple, AAPL)"
 								value={searchTerm}
 								onChange={(e) => setSearchTerm(e.target.value)}
-								onKeyPress={handleKeyPress}
+								onKeyDown={handleKeyPress}
 							/>
 							<Button
 								onClick={handleSearch}
@@ -347,7 +349,7 @@ function CompanySearch({ companies = SAMPLE_COMPANIES }: CompanySearchProps) {
 				</section>
 			)}
 
-			{!selectedCompany && searchTerm && !isSearching && (
+			{hasSearched && !selectedCompany && searchTerm && !isSearching && (
 				<section>
 					<NoResultsState searchTerm={searchTerm} />
 				</section>
