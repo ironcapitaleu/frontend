@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
-interface CompanyResult {
+export interface CompanyResult {
 	symbol: string;
 	name: string;
 	description: string;
@@ -27,7 +27,7 @@ interface CompanyResult {
 	website?: string;
 }
 
-const mockCompanies: CompanyResult[] = [
+const SAMPLE_COMPANIES: readonly CompanyResult[] = [
 	{
 		symbol: "AAPL",
 		name: "Apple Inc.",
@@ -266,20 +266,32 @@ function NoResultsState({ searchTerm }: { searchTerm: string }) {
 	);
 }
 
-function CompanySearch() {
+interface CompanySearchProps {
+	/**
+	 * The company universe to search. Defaults to the built-in
+	 * {@link SAMPLE_COMPANIES} placeholder; a real data source (or a test's fake
+	 * dataset) is passed in so the search behaviour stays independent of the data
+	 * it happens to show.
+	 */
+	companies?: readonly CompanyResult[];
+}
+
+function CompanySearch({ companies = SAMPLE_COMPANIES }: CompanySearchProps) {
 	const [searchTerm, setSearchTerm] = useState("");
 	const [selectedCompany, setSelectedCompany] = useState<CompanyResult | null>(
 		null,
 	);
 	const [isSearching, setIsSearching] = useState(false);
+	const [hasSearched, setHasSearched] = useState(false);
 
 	const handleSearch = async () => {
 		if (!searchTerm.trim()) return;
 
+		setHasSearched(true);
 		setIsSearching(true);
 		await new Promise((resolve) => setTimeout(resolve, 500));
 
-		const results = mockCompanies.filter(
+		const results = companies.filter(
 			(company) =>
 				company.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
 				company.name.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -317,7 +329,7 @@ function CompanySearch() {
 								placeholder="Search by company name or symbol (e.g., Apple, AAPL)"
 								value={searchTerm}
 								onChange={(e) => setSearchTerm(e.target.value)}
-								onKeyPress={handleKeyPress}
+								onKeyDown={handleKeyPress}
 							/>
 							<Button
 								onClick={handleSearch}
@@ -337,7 +349,7 @@ function CompanySearch() {
 				</section>
 			)}
 
-			{!selectedCompany && searchTerm && !isSearching && (
+			{hasSearched && !selectedCompany && searchTerm && !isSearching && (
 				<section>
 					<NoResultsState searchTerm={searchTerm} />
 				</section>
