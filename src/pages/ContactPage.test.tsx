@@ -16,8 +16,10 @@ async function selectSubject(
 	await user.click(await screen.findByRole("option", { name }));
 }
 
-/** Fills every field with valid input, leaving the form ready to submit. */
-async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
+/** Fills name, email, message, and subject — but not the privacy-consent box. */
+async function fillFormWithoutConsent(
+	user: ReturnType<typeof userEvent.setup>,
+) {
 	await user.type(screen.getByLabelText("Full Name"), "Ada Lovelace");
 	await user.type(screen.getByLabelText("Email"), "ada@example.com");
 	await user.type(
@@ -25,6 +27,11 @@ async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
 		"I would like to learn more about your tools.",
 	);
 	await selectSubject(user);
+}
+
+/** Fills every field with valid input, leaving the form ready to submit. */
+async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
+	await fillFormWithoutConsent(user);
 	await user.click(screen.getByLabelText(/i have read and accept/i));
 }
 
@@ -94,7 +101,7 @@ describe("ContactPage", () => {
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should reject an email that is not a valid address", async () => {
+	it("should show a format error when the email is not a valid address", async () => {
 		const user = userEvent.setup();
 		render(<ContactPage initialTurnstileToken={VERIFIED} />);
 
@@ -135,7 +142,7 @@ describe("ContactPage", () => {
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should reject a message shorter than ten characters", async () => {
+	it("should show a length error when the message is shorter than ten characters", async () => {
 		const user = userEvent.setup();
 		render(<ContactPage initialTurnstileToken={VERIFIED} />);
 
@@ -156,13 +163,7 @@ describe("ContactPage", () => {
 
 		const expectedResult = "Please accept the Privacy Policy to continue.";
 
-		await user.type(screen.getByLabelText("Full Name"), "Ada Lovelace");
-		await user.type(screen.getByLabelText("Email"), "ada@example.com");
-		await user.type(
-			screen.getByLabelText("Message"),
-			"I would like to learn more about your tools.",
-		);
-		await selectSubject(user);
+		await fillFormWithoutConsent(user);
 		await user.click(submitButton());
 		const result = (
 			await screen.findByText("Please accept the Privacy Policy to continue.")
