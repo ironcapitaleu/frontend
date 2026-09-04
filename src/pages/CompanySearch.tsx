@@ -307,6 +307,11 @@ function CompanySearch({ companies = SAMPLE_COMPANIES }: CompanySearchProps) {
 		}
 	};
 
+	const handleSearchTermChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setSearchTerm(e.target.value);
+		setHasSearched(false);
+	};
+
 	const handleQuickSearch = (term: string) => {
 		setSearchTerm(term);
 	};
@@ -328,10 +333,7 @@ function CompanySearch({ companies = SAMPLE_COMPANIES }: CompanySearchProps) {
 								type="text"
 								placeholder="Search by company name or symbol (e.g., Apple, AAPL)"
 								value={searchTerm}
-								onChange={(e) => {
-									setSearchTerm(e.target.value);
-									setHasSearched(false);
-								}}
+								onChange={handleSearchTermChange}
 								onKeyDown={handleKeyDown}
 							/>
 							<Button
