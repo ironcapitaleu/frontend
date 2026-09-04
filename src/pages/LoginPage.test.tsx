@@ -60,4 +60,49 @@ describe("LoginPage", () => {
 
 		expect(result).toHaveTextContent(expectedResult);
 	});
+
+	it("should not surface an error when a passkey submit completes", async () => {
+		render(<LoginPage />);
+		const user = userEvent.setup();
+
+		const expectedResult = null;
+
+		await user.click(
+			screen.getByRole("button", { name: /Continue with passkey/i }),
+		);
+		const result = screen.queryByRole("alert");
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should keep the passkey button ready after a passkey submit completes", async () => {
+		render(<LoginPage />);
+		const user = userEvent.setup();
+
+		const expectedResult = false;
+
+		await user.click(
+			screen.getByRole("button", { name: /Continue with passkey/i }),
+		);
+		const result = screen
+			.getByRole("button", { name: /Continue with passkey/i })
+			.hasAttribute("disabled");
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should return to the sign-in heading when the toggle is switched back", async () => {
+		render(<LoginPage />);
+		const user = userEvent.setup();
+
+		const expectedResult = "Sign in to your account";
+
+		await user.click(screen.getByRole("button", { name: "Create an account" }));
+		await user.click(screen.getByRole("button", { name: "Sign in" }));
+		const result = await screen.findByRole("heading", {
+			name: "Sign in to your account",
+		});
+
+		expect(result).toHaveTextContent(expectedResult);
+	});
 });

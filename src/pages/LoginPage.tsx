@@ -28,6 +28,8 @@ export default function LoginPage() {
 			// TODO: implement passkey authentication
 			await Promise.resolve();
 		} catch (_err) {
+			// Unreachable until real passkey auth lands: the stub above cannot
+			// throw, so this error path (and the alert it drives) has no test yet.
 			setError("An unexpected error occurred");
 		} finally {
 			setLoading(false);
