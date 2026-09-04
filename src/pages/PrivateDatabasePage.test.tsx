@@ -136,7 +136,9 @@ describe("PrivateDatabasePage", () => {
 		const titleInput = await screen.findByLabelText<HTMLInputElement>("Title");
 		await user.type(titleInput, "New note");
 		await user.click(screen.getByRole("button", { name: "Add Note" }));
-		await waitFor(() => titleInput.value === "");
+		await waitFor(() => {
+			if (titleInput.value !== "") throw new Error("Title not cleared");
+		});
 		const result = titleInput.value;
 
 		expect(result).toBe(expectedResult);
