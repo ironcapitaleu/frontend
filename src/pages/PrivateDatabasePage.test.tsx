@@ -99,10 +99,10 @@ describe("PrivateDatabasePage", () => {
 			gateway: alwaysAuthenticatedAuth(),
 		});
 
-		const expectedResult = "Failed to reach the notes service.";
+		const expectedResult = "We couldn't load your notes. Please try again.";
 
 		const result = (
-			await screen.findByText("Failed to reach the notes service.")
+			await screen.findByText("We couldn't load your notes. Please try again.")
 		).textContent;
 
 		expect(result).toBe(expectedResult);
@@ -114,12 +114,13 @@ describe("PrivateDatabasePage", () => {
 			gateway: alwaysAuthenticatedAuth(),
 		});
 
-		const expectedResult = "Failed to save the note.";
+		const expectedResult = "We couldn't save your note. Please try again.";
 
 		await user.type(await screen.findByLabelText("Title"), "New note");
 		await user.click(screen.getByRole("button", { name: "Add Note" }));
-		const result = (await screen.findByText("Failed to save the note."))
-			.textContent;
+		const result = (
+			await screen.findByText("We couldn't save your note. Please try again.")
+		).textContent;
 
 		expect(result).toBe(expectedResult);
 	});
@@ -135,7 +136,12 @@ describe("PrivateDatabasePage", () => {
 		const titleInput = await screen.findByLabelText<HTMLInputElement>("Title");
 		await user.type(titleInput, "New note");
 		await user.click(screen.getByRole("button", { name: "Add Note" }));
-		await waitFor(() => expect(titleInput.value).toBe(expectedResult));
+		await waitFor(() => {
+			if (titleInput.value !== "") throw new Error("Title not cleared");
+		});
+		const result = titleInput.value;
+
+		expect(result).toBe(expectedResult);
 	});
 
 	it("should surface an error when deleting a note fails", async () => {
@@ -144,14 +150,15 @@ describe("PrivateDatabasePage", () => {
 			gateway: alwaysAuthenticatedAuth(),
 		});
 
-		const expectedResult = "Failed to delete the note.";
+		const expectedResult = "We couldn't delete your note. Please try again.";
 
 		const deleteButtons = await screen.findAllByRole("button", {
 			name: /delete/i,
 		});
 		await user.click(deleteButtons[0]);
-		const result = (await screen.findByText("Failed to delete the note."))
-			.textContent;
+		const result = (
+			await screen.findByText("We couldn't delete your note. Please try again.")
+		).textContent;
 
 		expect(result).toBe(expectedResult);
 	});

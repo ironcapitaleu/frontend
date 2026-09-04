@@ -222,8 +222,8 @@ function PrivateDatabasePage({
 			setLoading(true);
 			setError(null);
 			setNotes(await notesGateway.listNotes());
-		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to fetch notes");
+		} catch {
+			setError("We couldn't load your notes. Please try again.");
 		} finally {
 			setLoading(false);
 		}
@@ -251,8 +251,8 @@ function PrivateDatabasePage({
 			setNewTitle("");
 			setNewContent("");
 			await fetchNotes();
-		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to add note");
+		} catch {
+			setError("We couldn't save your note. Please try again.");
 		} finally {
 			setSaving(false);
 		}
@@ -262,8 +262,8 @@ function PrivateDatabasePage({
 		try {
 			await notesGateway.deleteNote(id);
 			await fetchNotes();
-		} catch (err) {
-			setError(err instanceof Error ? err.message : "Failed to delete note");
+		} catch {
+			setError("We couldn't delete your note. Please try again.");
 		}
 	}
 
