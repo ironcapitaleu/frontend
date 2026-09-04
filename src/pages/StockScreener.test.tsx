@@ -61,7 +61,7 @@ describe("StockScreener", () => {
 		await user.click(screen.getByRole("button", { name: /filters/i }));
 		await user.type(screen.getByPlaceholderText(/symbol or name/i), "ZZZZ");
 		const result =
-			screen.getByText(/no results match the current filters/i) !== null;
+			screen.queryByText(/no results match the current filters/i) !== null;
 
 		expect(result).toBe(expectedResult);
 	});
@@ -89,7 +89,7 @@ describe("StockScreener", () => {
 
 		await user.click(screen.getByRole("button", { name: /filters/i }));
 		await user.type(screen.getByPlaceholderText(/symbol or name/i), "Beta");
-		const result = screen.getByRole("button", { name: /reset/i }) !== null;
+		const result = screen.queryByRole("button", { name: /reset/i }) !== null;
 
 		expect(result).toBe(expectedResult);
 	});
@@ -150,7 +150,7 @@ describe("StockScreener", () => {
 
 		await user.click(screen.getByRole("button", { name: /filters/i }));
 		await user.type(screen.getByPlaceholderText(/symbol or name/i), "Omega");
-		const result = screen.getByText("Near Low") !== null;
+		const result = screen.queryByText("Near Low") !== null;
 
 		expect(result).toBe(expectedResult);
 	});
@@ -188,7 +188,7 @@ describe("StockScreener", () => {
 		const expectedResult = true;
 
 		await user.click(screen.getByText("Beta Industries"));
-		const result = screen.getByText(/company detail page/i) !== null;
+		const result = screen.queryByText(/company detail page/i) !== null;
 
 		expect(result).toBe(expectedResult);
 	});
