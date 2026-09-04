@@ -37,7 +37,7 @@ import {
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const MOCK_STOCKS: readonly Stock[] = [
+const SAMPLE_STOCKS: readonly Stock[] = [
 	{
 		symbol: "AAPL",
 		name: "Apple Inc.",
@@ -338,7 +338,18 @@ function SortableHeader({
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 
-export default function StockScreener() {
+interface StockScreenerProps {
+	/**
+	 * The universe to screen. Defaults to the built-in {@link SAMPLE_STOCKS}
+	 * placeholder; a real data source (or a test's fake dataset) is passed in so
+	 * the screener's behaviour stays independent of the data it happens to show.
+	 */
+	stocks?: readonly Stock[];
+}
+
+export default function StockScreener({
+	stocks = SAMPLE_STOCKS,
+}: StockScreenerProps) {
 	const navigate = useNavigate();
 	const [filtersOpen, setFiltersOpen] = useState(false);
 	const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
@@ -361,11 +372,11 @@ export default function StockScreener() {
 	};
 
 	const results = useMemo(() => {
-		const filtered = filterStocks(MOCK_STOCKS, filters);
+		const filtered = filterStocks(stocks, filters);
 		return sortConfig
 			? sortStocks(filtered, sortConfig.field, sortConfig.direction)
 			: filtered;
-	}, [filters, sortConfig]);
+	}, [stocks, filters, sortConfig]);
 
 	const activeCount = countActiveFilters(filters);
 	const colClass = (field: keyof Stock) =>
