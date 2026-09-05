@@ -418,23 +418,41 @@ describe("countActiveFilters", () => {
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should count a numeric down-last-month value as an active filter", () => {
-		const filters = withFilters({ downLastMonth: "5" });
+	const numericFields: (keyof FilterState)[] = [
+		"peMin",
+		"peMax",
+		"priceToCashMax",
+		"priceToFcfMax",
+		"quickRatioMin",
+		"currentRatioMin",
+		"buybackYieldMin",
+		"dividendYieldMin",
+		"downLastMonth",
+	];
 
-		const expectedResult = 1;
+	it.each(numericFields)(
+		"should count a parseable number as an active filter when %s is set",
+		(field) => {
+			const filters = withFilters({ [field]: "5" });
 
-		const result = countActiveFilters(filters);
+			const expectedResult = 1;
 
-		expect(result).toBe(expectedResult);
-	});
+			const result = countActiveFilters(filters);
 
-	it("should not count a non-numeric down-last-month value as an active filter", () => {
-		const filters = withFilters({ downLastMonth: "abc" });
+			expect(result).toBe(expectedResult);
+		},
+	);
 
-		const expectedResult = 0;
+	it.each(numericFields)(
+		"should not count a non-numeric value as an active filter when %s is set",
+		(field) => {
+			const filters = withFilters({ [field]: "abc" });
 
-		const result = countActiveFilters(filters);
+			const expectedResult = 0;
 
-		expect(result).toBe(expectedResult);
-	});
+			const result = countActiveFilters(filters);
+
+			expect(result).toBe(expectedResult);
+		},
+	);
 });

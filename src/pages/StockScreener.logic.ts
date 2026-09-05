@@ -78,30 +78,38 @@ export function isNearFiftyTwoWeekLow(stock: Stock): boolean {
 }
 
 /**
+ * Whether a numeric filter string is set to a value that actually filters —
+ * non-empty and parseable as a number. A non-numeric string counts as inactive,
+ * mirroring the NaN guard in {@link filterStocks} so the badge can't show a
+ * phantom filter.
+ */
+export function isActiveNumericFilter(value: string): boolean {
+	return value !== "" && !Number.isNaN(parseFloat(value));
+}
+
+/**
  * How many filter criteria are currently active — drives the count badge on the
- * Filters button. A criterion counts when its string is non-empty or its
- * boolean is true. Exception: `downLastMonth` requires a parseable number — a
- * non-numeric string is treated as inactive to mirror the NaN guard in
- * {@link filterStocks}.
+ * Filters button. A text criterion (`search`, `country`, `sector`) counts when
+ * its string is non-empty, and `nearFiftyTwoWeekLow` counts when true. A numeric
+ * criterion counts only when its string parses to a number — a non-numeric value
+ * is treated as inactive (see {@link isActiveNumericFilter}), so the badge never
+ * counts a filter that {@link filterStocks} would ignore.
  */
 export function countActiveFilters(filters: FilterState): number {
 	return [
 		filters.search,
 		filters.country,
 		filters.sector,
-		filters.peMin,
-		filters.peMax,
-		filters.priceToCashMax,
-		filters.priceToFcfMax,
-		filters.quickRatioMin,
-		filters.currentRatioMin,
-		filters.buybackYieldMin,
-		filters.dividendYieldMin,
 		filters.nearFiftyTwoWeekLow,
-		// Count down-last-month only when it parses to a number, mirroring the
-		// NaN guard in filterStocks so the badge can't show a phantom filter.
-		filters.downLastMonth !== "" &&
-			!Number.isNaN(parseFloat(filters.downLastMonth)),
+		isActiveNumericFilter(filters.peMin),
+		isActiveNumericFilter(filters.peMax),
+		isActiveNumericFilter(filters.priceToCashMax),
+		isActiveNumericFilter(filters.priceToFcfMax),
+		isActiveNumericFilter(filters.quickRatioMin),
+		isActiveNumericFilter(filters.currentRatioMin),
+		isActiveNumericFilter(filters.buybackYieldMin),
+		isActiveNumericFilter(filters.dividendYieldMin),
+		isActiveNumericFilter(filters.downLastMonth),
 	].filter(Boolean).length;
 }
 
