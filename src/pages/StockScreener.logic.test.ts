@@ -6,6 +6,7 @@ import {
 	type Stock,
 	countActiveFilters,
 	filterStocks,
+	isActiveNumericFilter,
 	isNearFiftyTwoWeekLow,
 	sortStocks,
 } from "./StockScreener.logic";
@@ -389,6 +390,36 @@ describe("isNearFiftyTwoWeekLow", () => {
 			const expectedResult = expected;
 
 			const result = isNearFiftyTwoWeekLow(stock);
+
+			expect(result).toBe(expectedResult);
+		},
+	);
+});
+
+describe("isActiveNumericFilter", () => {
+	it.each([
+		{ value: "5", label: "a positive integer", expected: true },
+		{ value: "0", label: "zero", expected: true },
+		{ value: "-3.5", label: "a negative decimal", expected: true },
+		{ value: "1e5", label: "scientific notation", expected: true },
+	])("should report active when the value is $label", ({ value, expected }) => {
+		const expectedResult = expected;
+
+		const result = isActiveNumericFilter(value);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it.each([
+		{ value: "", label: "an empty string", expected: false },
+		{ value: " ", label: "only whitespace", expected: false },
+		{ value: "abc", label: "a non-numeric string", expected: false },
+	])(
+		"should report inactive when the value is $label",
+		({ value, expected }) => {
+			const expectedResult = expected;
+
+			const result = isActiveNumericFilter(value);
 
 			expect(result).toBe(expectedResult);
 		},
