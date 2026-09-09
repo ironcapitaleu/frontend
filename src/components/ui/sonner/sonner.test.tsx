@@ -72,4 +72,19 @@ describe("Toaster", () => {
 			).toBe(expectedResult),
 		);
 	});
+
+	it("should remove the toast when its close button is clicked", async () => {
+		render(<Toaster />);
+		act(() => {
+			toast.success("Company saved to your list.");
+		});
+		await screen.findByText("Company saved to your list.");
+		act(() => {
+			document.querySelector<HTMLButtonElement>("[data-close-button]")?.click();
+		});
+
+		await waitFor(() =>
+			expect(screen.queryByText("Company saved to your list.")).toBeNull(),
+		);
+	});
 });
