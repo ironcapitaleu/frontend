@@ -1,5 +1,6 @@
-import { cn } from "@/lib/utils";
 import { Progress as ProgressPrimitive } from "@base-ui/react/progress";
+
+import { cn } from "@/lib/utils";
 import {
 	progressIndicatorStyles,
 	progressVariants,

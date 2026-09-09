@@ -15,8 +15,9 @@ type SpinnerProps = React.ComponentProps<"svg"> &
  * `Progress` instead when the completion amount is known, and `Skeleton` when a
  * placeholder should hold the shape of the content itself.
  *
- * It inherits its color from the current text color, so `text-*` on the element
- * (or an ancestor) recolors it; `size` sets the diameter.
+ * Its strokes use `currentColor` with a `text-muted-foreground` default, so a
+ * `text-*` class on the element (or an ancestor) recolors it; `size` sets the
+ * diameter.
  */
 function Spinner({
 	className,
