@@ -1,15 +1,20 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ReactNode } from "react";
 import { describe, expect, it } from "vitest";
 
-import { Tooltip, TooltipContent, TooltipTrigger } from ".";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from ".";
 
-function renderTooltip() {
+function renderTooltip(content?: ReactNode) {
 	return render(
-		<Tooltip>
-			<TooltipTrigger>Gross margin</TooltipTrigger>
-			<TooltipContent>Revenue minus cost of goods sold</TooltipContent>
-		</Tooltip>,
+		<TooltipProvider delay={0}>
+			<Tooltip>
+				<TooltipTrigger>Gross margin</TooltipTrigger>
+				{content ?? (
+					<TooltipContent>Revenue minus cost of goods sold</TooltipContent>
+				)}
+			</Tooltip>
+		</TooltipProvider>,
 	);
 }
 
@@ -55,6 +60,22 @@ describe("Tooltip", () => {
 		await user.hover(screen.getByRole("button"));
 
 		const result = (await screen.findByText(expectedResult)).textContent;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should place the content on the requested side when opened", async () => {
+		renderTooltip(
+			<TooltipContent side="right">
+				Revenue minus cost of goods sold
+			</TooltipContent>,
+		);
+		screen.getByRole("button").focus();
+
+		const expectedResult = "right";
+
+		const content = await screen.findByText("Revenue minus cost of goods sold");
+		const result = content.closest("[data-side]")?.getAttribute("data-side");
 
 		expect(result).toBe(expectedResult);
 	});

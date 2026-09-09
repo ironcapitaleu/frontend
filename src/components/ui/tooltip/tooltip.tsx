@@ -5,12 +5,12 @@ import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
 import { cn } from "@/lib/utils";
 
 /**
- * Shares one hover delay across every tooltip below it. Once one tooltip
- * opens, the neighbouring ones open at once, so a row of metrics does not make
- * the reader wait again on each cell.
+ * Shares one hover delay across every tooltip below it. Once one tooltip opens,
+ * the neighbouring ones open at once, so a row of metrics does not make the
+ * reader wait again on each cell. `delay` sets that shared wait in milliseconds.
  *
- * `Tooltip` mounts its own provider, so reach for this only to group several
- * tooltips under one delay.
+ * Mount it once around a group. A lone `Tooltip` outside any provider still
+ * works and falls back to base-ui's own hover delay.
  */
 function TooltipProvider({
 	delay = 0,
@@ -32,14 +32,11 @@ function TooltipProvider({
  *
  * Use it for a hint that helps but is not required to read the page, such as
  * the full name behind an abbreviated financial-statement metric. Never hide
- * text that the reader must have inside a tooltip.
+ * text that the reader must have inside a tooltip. To give several tooltips a
+ * shared delay and group-open, wrap them in one `TooltipProvider`.
  */
 function Tooltip(props: TooltipPrimitive.Root.Props) {
-	return (
-		<TooltipProvider>
-			<TooltipPrimitive.Root data-slot="tooltip" {...props} />
-		</TooltipProvider>
-	);
+	return <TooltipPrimitive.Root data-slot="tooltip" {...props} />;
 }
 
 /**
@@ -54,12 +51,14 @@ function TooltipTrigger(props: TooltipPrimitive.Trigger.Props) {
 /**
  * The floating panel that holds the tooltip text, with an arrow that points
  * back at the trigger. `side` places it above, below, or beside the trigger and
- * flips to stay on screen. `sideOffset` sets the gap from the trigger.
+ * flips to stay on screen. `sideOffset` sets the gap from the trigger, and
+ * `align` shifts it along that side.
  */
 function TooltipContent({
 	className,
 	side = "top",
 	sideOffset = 8,
+	align = "center",
 	children,
 	...props
 }: TooltipPrimitive.Popup.Props &
@@ -69,7 +68,7 @@ function TooltipContent({
 			<TooltipPrimitive.Positioner
 				side={side}
 				sideOffset={sideOffset}
-				align={props.align}
+				align={align}
 				className="isolate z-50"
 			>
 				<TooltipPrimitive.Popup
