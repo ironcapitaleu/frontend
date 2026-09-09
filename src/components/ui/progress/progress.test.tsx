@@ -28,7 +28,7 @@ describe("Progress", () => {
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should scale the reported value against a custom max when max is set", () => {
+	it("should report the max when a custom max is set", () => {
 		render(<Progress value={30} max={60} aria-label="Steps" />);
 
 		const expectedResult = "60";
