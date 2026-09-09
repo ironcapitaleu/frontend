@@ -39,7 +39,7 @@ function Slider({
 			<SliderPrimitive.Control
 				data-slot="slider-control"
 				className={cn(
-					"flex w-full touch-none items-center py-2 select-none data-disabled:opacity-50 data-[orientation=vertical]:h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col data-[orientation=vertical]:px-2",
+					"relative flex w-full touch-none items-center py-2 select-none data-disabled:opacity-50 data-[orientation=vertical]:h-44 data-[orientation=vertical]:w-auto data-[orientation=vertical]:flex-col data-[orientation=vertical]:px-2",
 					className,
 				)}
 			>
