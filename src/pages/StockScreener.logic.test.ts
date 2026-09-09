@@ -38,6 +38,62 @@ function withFilters(overrides: Partial<FilterState>): FilterState {
 }
 
 describe("filterStocks", () => {
+	const numericBounds: {
+		label: keyof FilterState;
+		value: string;
+		kept: Partial<Stock>;
+		excluded: Partial<Stock>;
+	}[] = [
+		{
+			label: "peMin",
+			value: "20",
+			kept: { peRatio: 30 },
+			excluded: { peRatio: 10 },
+		},
+		{
+			label: "peMax",
+			value: "20",
+			kept: { peRatio: 10 },
+			excluded: { peRatio: 30 },
+		},
+		{
+			label: "priceToCashMax",
+			value: "10",
+			kept: { priceToCash: 5 },
+			excluded: { priceToCash: 20 },
+		},
+		{
+			label: "priceToFcfMax",
+			value: "10",
+			kept: { priceToFcf: 8 },
+			excluded: { priceToFcf: 40 },
+		},
+		{
+			label: "quickRatioMin",
+			value: "1.5",
+			kept: { quickRatio: 2 },
+			excluded: { quickRatio: 1 },
+		},
+		{
+			label: "currentRatioMin",
+			value: "1.5",
+			kept: { currentRatio: 2 },
+			excluded: { currentRatio: 1 },
+		},
+		{
+			label: "buybackYieldMin",
+			value: "2",
+			kept: { buybackYield: 4 },
+			excluded: { buybackYield: 1 },
+		},
+		{
+			label: "dividendYieldMin",
+			value: "1",
+			kept: { dividendYield: 3 },
+			excluded: { dividendYield: 0.5 },
+		},
+	];
+
 	it("should return every stock when no criteria are set", () => {
 		const stocks = [makeStock("AAA"), makeStock("BBB")];
 
@@ -258,6 +314,36 @@ describe("filterStocks", () => {
 
 		expect(result).toEqual(expectedResult);
 	});
+
+	it.each(numericBounds)(
+		"should ignore the $label filter when its value is not a number",
+		({ label, kept, excluded }) => {
+			const stocks = [makeStock("KEEP", kept), makeStock("DROP", excluded)];
+
+			const expectedResult = ["KEEP", "DROP"];
+
+			const result = filterStocks(stocks, withFilters({ [label]: "abc" })).map(
+				(s) => s.symbol,
+			);
+
+			expect(result).toEqual(expectedResult);
+		},
+	);
+
+	it.each(numericBounds)(
+		"should still filter on the $label bound when its value is a parseable number",
+		({ label, value, kept, excluded }) => {
+			const stocks = [makeStock("KEEP", kept), makeStock("DROP", excluded)];
+
+			const expectedResult = ["KEEP"];
+
+			const result = filterStocks(stocks, withFilters({ [label]: value })).map(
+				(s) => s.symbol,
+			);
+
+			expect(result).toEqual(expectedResult);
+		},
+	);
 
 	it("should apply every active criterion together with AND semantics", () => {
 		const stocks = [

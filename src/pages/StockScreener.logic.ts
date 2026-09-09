@@ -115,7 +115,9 @@ export function countActiveFilters(filters: FilterState): number {
 
 /**
  * Returns the stocks matching every active criterion in `filters`, preserving
- * input order. Empty criteria are ignored; numeric bounds exclude rows whose
+ * input order. Empty criteria are ignored, and a numeric criterion whose string
+ * does not parse to a number is ignored too (see {@link isActiveNumericFilter}),
+ * so a stray value can't empty the table; numeric bounds exclude rows whose
  * value is `null` (the metric is unavailable).
  *
  * @param stocks the universe to filter — not mutated
@@ -140,35 +142,35 @@ export function filterStocks(
 	if (filters.sector) {
 		list = list.filter((s) => s.sector === filters.sector);
 	}
-	if (filters.peMin) {
+	if (isActiveNumericFilter(filters.peMin)) {
 		const min = parseFloat(filters.peMin);
 		list = list.filter((s) => s.peRatio !== null && s.peRatio >= min);
 	}
-	if (filters.peMax) {
+	if (isActiveNumericFilter(filters.peMax)) {
 		const max = parseFloat(filters.peMax);
 		list = list.filter((s) => s.peRatio !== null && s.peRatio <= max);
 	}
-	if (filters.priceToCashMax) {
+	if (isActiveNumericFilter(filters.priceToCashMax)) {
 		const max = parseFloat(filters.priceToCashMax);
 		list = list.filter((s) => s.priceToCash !== null && s.priceToCash <= max);
 	}
-	if (filters.priceToFcfMax) {
+	if (isActiveNumericFilter(filters.priceToFcfMax)) {
 		const max = parseFloat(filters.priceToFcfMax);
 		list = list.filter((s) => s.priceToFcf !== null && s.priceToFcf <= max);
 	}
-	if (filters.quickRatioMin) {
+	if (isActiveNumericFilter(filters.quickRatioMin)) {
 		const min = parseFloat(filters.quickRatioMin);
 		list = list.filter((s) => s.quickRatio !== null && s.quickRatio >= min);
 	}
-	if (filters.currentRatioMin) {
+	if (isActiveNumericFilter(filters.currentRatioMin)) {
 		const min = parseFloat(filters.currentRatioMin);
 		list = list.filter((s) => s.currentRatio !== null && s.currentRatio >= min);
 	}
-	if (filters.buybackYieldMin) {
+	if (isActiveNumericFilter(filters.buybackYieldMin)) {
 		const min = parseFloat(filters.buybackYieldMin);
 		list = list.filter((s) => s.buybackYield !== null && s.buybackYield >= min);
 	}
-	if (filters.dividendYieldMin) {
+	if (isActiveNumericFilter(filters.dividendYieldMin)) {
 		const min = parseFloat(filters.dividendYieldMin);
 		list = list.filter(
 			(s) => s.dividendYield !== null && s.dividendYield >= min,
@@ -177,11 +179,9 @@ export function filterStocks(
 	if (filters.nearFiftyTwoWeekLow) {
 		list = list.filter(isNearFiftyTwoWeekLow);
 	}
-	if (filters.downLastMonth) {
+	if (isActiveNumericFilter(filters.downLastMonth)) {
 		const threshold = parseFloat(filters.downLastMonth);
-		if (!Number.isNaN(threshold)) {
-			list = list.filter((s) => s.changePercent1M <= -threshold);
-		}
+		list = list.filter((s) => s.changePercent1M <= -threshold);
 	}
 
 	return list;
