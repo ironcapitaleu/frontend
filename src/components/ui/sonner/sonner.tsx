@@ -3,12 +3,17 @@ import { Toaster as SonnerToaster, type ToasterProps } from "sonner";
 
 /**
  * Maps a neutral toast surface onto the design system's `popover` tokens, so an
- * ordinary toast matches the rest of the palette in both themes.
+ * ordinary toast matches the rest of the palette in both themes, and moves the
+ * close button to the top-right corner. The reveal-on-hover styling for that
+ * button lives in `index.css`.
  */
 const TOKEN_STYLE: CSSProperties = {
 	"--normal-bg": "var(--popover)",
 	"--normal-text": "var(--popover-foreground)",
 	"--normal-border": "var(--border)",
+	"--toast-close-button-start": "unset",
+	"--toast-close-button-end": "0",
+	"--toast-close-button-transform": "translate(35%, -35%)",
 } as CSSProperties;
 
 /**
@@ -18,7 +23,8 @@ const TOKEN_STYLE: CSSProperties = {
  *
  * The toaster follows the app's class-based theme: it reads the `.dark` class on
  * the document root and repaints when that class changes. Neutral toasts take
- * the design system's `popover` tokens.
+ * the design system's `popover` tokens. Each toast carries a close button that
+ * stays hidden until the reader hovers or focuses the toast.
  *
  * Deviation (AGENTS.md "Deviations", DESIGN.md "semantic tokens only"): the
  * `success`, `error`, and `info` accents come from sonner's `richColors`
@@ -34,6 +40,7 @@ function Toaster({ style, ...props }: ToasterProps) {
 		<SonnerToaster
 			theme={isDark ? "dark" : "light"}
 			richColors
+			closeButton
 			style={{ ...TOKEN_STYLE, ...style }}
 			{...props}
 		/>
