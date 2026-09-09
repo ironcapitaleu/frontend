@@ -85,16 +85,15 @@ describe("Slider", () => {
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should keep its value when it is disabled and the reader presses a key", async () => {
+	it("should keep the thumb out of the tab order when it is disabled", async () => {
 		const user = userEvent.setup();
 		render(<Slider aria-label="Weighting" defaultValue={40} disabled />);
 
-		const expectedResult = "40";
+		const expectedResult = false;
 
 		await user.tab();
-		await user.keyboard("{ArrowRight}");
 
-		const result = screen.getByRole("slider").getAttribute("aria-valuenow");
+		const result = screen.getByRole("slider") === document.activeElement;
 
 		expect(result).toBe(expectedResult);
 	});

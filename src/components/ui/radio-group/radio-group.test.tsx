@@ -69,6 +69,22 @@ describe("RadioGroup", () => {
 		expect(result).toBe(expectedResult);
 	});
 
+	it("should move the selection to the next option when the reader presses the down arrow", async () => {
+		const user = userEvent.setup();
+		renderRadioGroup({ defaultValue: "quarterly" });
+
+		const expectedResult = "true";
+
+		await user.tab();
+		await user.keyboard("{ArrowDown}");
+
+		const result = screen
+			.getByRole("radio", { name: "Yearly" })
+			.getAttribute("aria-checked");
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should report the selected value when the reader clicks an option", async () => {
 		const user = userEvent.setup();
 		const onValueChange = vi.fn();

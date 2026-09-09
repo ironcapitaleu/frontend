@@ -32,6 +32,7 @@ const meta: Meta<typeof RadioGroup> = {
 		className: { control: { disable: true } },
 	},
 	args: {
+		"aria-label": "Reporting period",
 		defaultValue: "quarterly",
 		disabled: false,
 	},
@@ -69,7 +70,7 @@ export const Default: Story = {
  */
 export const OneOptionDisabled: Story = {
 	render: () => (
-		<RadioGroup defaultValue="quarterly">
+		<RadioGroup aria-label="Reporting period" defaultValue="quarterly">
 			<div className="flex items-center gap-2">
 				<RadioGroupItem value="quarterly" id="single-quarterly" />
 				<Label htmlFor="single-quarterly">Quarterly</Label>
@@ -92,7 +93,7 @@ export const OneOptionDisabled: Story = {
  */
 export const GroupDisabled: Story = {
 	render: () => (
-		<RadioGroup defaultValue="yearly" disabled>
+		<RadioGroup aria-label="Reporting period" defaultValue="yearly" disabled>
 			<div className="flex items-center gap-2">
 				<RadioGroupItem value="quarterly" id="off-quarterly" />
 				<Label htmlFor="off-quarterly">Quarterly</Label>

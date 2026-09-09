@@ -54,6 +54,20 @@ describe("Switch", () => {
 		expect(result).toBe(expectedResult);
 	});
 
+	it("should turn on when the reader focuses it and presses Space", async () => {
+		const user = userEvent.setup();
+		render(<Switch aria-label="Live prices" />);
+
+		const expectedResult = "true";
+
+		await user.tab();
+		await user.keyboard("{ }");
+
+		const result = screen.getByRole("switch").getAttribute("aria-checked");
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should stay off when it is disabled and the reader clicks it", async () => {
 		const user = userEvent.setup();
 		render(<Switch aria-label="Live prices" disabled />);

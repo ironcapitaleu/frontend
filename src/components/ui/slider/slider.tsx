@@ -21,8 +21,6 @@ function Slider({
 	className,
 	value,
 	defaultValue,
-	min = 0,
-	max = 100,
 	...props
 }: SliderPrimitive.Root.Props) {
 	const thumbCount = countThumbs(value ?? defaultValue);
@@ -32,8 +30,6 @@ function Slider({
 			data-slot="slider"
 			value={value}
 			defaultValue={defaultValue}
-			min={min}
-			max={max}
 			{...props}
 		>
 			<SliderPrimitive.Control

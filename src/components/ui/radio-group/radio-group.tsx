@@ -16,6 +16,10 @@ import { cn } from "@/lib/utils";
  *
  * Use it for a handful of options the reader compares side by side, such as a
  * reporting period. Past about six options, a `Select` reads better.
+ *
+ * Name the group itself with an `aria-label`, or point `aria-labelledby` at the
+ * heading above it. Without one, a screen reader lists the options and leaves
+ * out the question they answer.
  */
 function RadioGroup({ className, ...props }: RadioGroupPrimitive.Props) {
 	return (
