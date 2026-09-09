@@ -7,13 +7,14 @@ import { cn } from "@/lib/utils";
 /**
  * Shares one hover delay across every tooltip below it. Once one tooltip opens,
  * the neighbouring ones open at once, so a row of metrics does not make the
- * reader wait again on each cell. `delay` sets that shared wait in milliseconds.
+ * reader wait again on each cell. `delay` sets that shared wait in milliseconds
+ * and defaults to a short pause, so a passing cursor does not flash the panel.
  *
  * Mount it once around a group. A lone `Tooltip` outside any provider still
  * works and falls back to base-ui's own hover delay.
  */
 function TooltipProvider({
-	delay = 0,
+	delay = 300,
 	...props
 }: TooltipPrimitive.Provider.Props) {
 	return (
@@ -74,7 +75,7 @@ function TooltipContent({
 				<TooltipPrimitive.Popup
 					data-slot="tooltip-content"
 					className={cn(
-						"bg-primary text-primary-foreground data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 w-fit origin-(--transform-origin) rounded-md px-3 py-1.5 text-xs text-balance shadow-md duration-100",
+						"bg-primary text-primary-foreground data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 w-fit origin-(--transform-origin) rounded-md px-3 py-1.5 text-xs text-balance shadow-md duration-150 ease-out data-closed:ease-in",
 						className,
 					)}
 					{...props}

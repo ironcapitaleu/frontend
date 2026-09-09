@@ -3,6 +3,13 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Button } from "../button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from ".";
 
+type TooltipStoryArgs = {
+	side: "top" | "right" | "bottom" | "left";
+	align: "start" | "center" | "end";
+	sideOffset: number;
+	delay: number;
+};
+
 /**
  * A `Tooltip` reveals extra detail about the element it wraps, on hover and on
  * keyboard focus. base-ui drives both triggers, so a mouse and the Tab key both
@@ -11,37 +18,69 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from ".";
  *
  * The panel follows the app's class-based theme, so it repaints with the
  * Storybook theme toggle. `side` places it above, below, or beside the trigger
- * and flips to stay on screen.
+ * and flips to stay on screen, `align` shifts it along that side, and `delay`
+ * sets the shared hover wait in milliseconds.
  */
-const meta: Meta<typeof Tooltip> = {
+const meta: Meta<TooltipStoryArgs> = {
 	title: "Components/Tooltip",
 	component: Tooltip,
 	tags: ["autodocs"],
 	parameters: {
 		layout: "centered",
 	},
+	argTypes: {
+		side: {
+			control: "inline-radio",
+			options: ["top", "right", "bottom", "left"],
+			description: "Which side of the trigger the panel opens on.",
+		},
+		align: {
+			control: "inline-radio",
+			options: ["start", "center", "end"],
+			description: "How the panel aligns along its side.",
+		},
+		sideOffset: {
+			control: { type: "number", min: 0, max: 24, step: 1 },
+			description: "Gap in pixels between the trigger and the panel.",
+		},
+		delay: {
+			control: { type: "number", min: 0, max: 1000, step: 50 },
+			description: "Shared hover wait in milliseconds before the panel opens.",
+		},
+	},
+	args: {
+		side: "top",
+		align: "center",
+		sideOffset: 8,
+		delay: 300,
+	},
 };
 
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<TooltipStoryArgs>;
 
 /**
- * Hover the trigger or tab to it with the keyboard. Both open the same panel.
+ * Drive the placement and timing from the Controls panel. Hover the trigger or
+ * tab to it with the keyboard. Both open the same panel.
  */
 export const Default: Story = {
-	render: () => (
-		<Tooltip>
-			<TooltipTrigger
-				render={<Button variant="outline">Gross margin</Button>}
-			/>
-			<TooltipContent>Revenue minus cost of goods sold</TooltipContent>
-		</Tooltip>
+	render: ({ side, align, sideOffset, delay }) => (
+		<TooltipProvider delay={delay}>
+			<Tooltip>
+				<TooltipTrigger
+					render={<Button variant="outline">Gross margin</Button>}
+				/>
+				<TooltipContent side={side} align={align} sideOffset={sideOffset}>
+					Revenue minus cost of goods sold
+				</TooltipContent>
+			</Tooltip>
+		</TooltipProvider>
 	),
 };
 
 /**
- * The four placements. One provider gives them a shared delay, so once one
- * opens the neighbours open at once.
+ * The four placements side by side. One provider gives them a shared delay, so
+ * once one opens the neighbours open at once.
  */
 export const Placements: Story = {
 	render: () => (
