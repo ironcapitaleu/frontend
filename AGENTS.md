@@ -51,7 +51,7 @@ codebase for all instances before considering the change complete.
 - **Documentation must be version controlled**.
 - **All English text must follow the [`plain-english`](.claude/skills/plain-english/SKILL.md)
   skill.** This covers JSDoc, inline comments, Storybook descriptions, commit messages, PR titles
-  and bodies, and error and toast strings. **never** ship AI-slop wording. That means: an em dash
+  and bodies, and error and toast strings. **Never** ship AI-slop wording. That means: an em dash
   used to splice two sentences (write a period and split the sentence), a semicolon in prose, a
   restricted modal (`should`, `may`, `might`, `could`, `would`), a phrasal verb (`spin up`,
   `reach out`, `dive into`, `set up`), or AI vocabulary (`delve`, `crucial`, `seamless`, `robust`,
@@ -397,10 +397,10 @@ Do **not** encode ticket IDs, nor a slug of the ticket title, in the branch name
 
 Examples: `feat/loading-primitives`, `fix/rate-limiter-backoff`, `refactor/error-hierarchy`, `chore/bump-deps`.
 
-**must** use a name like this even when the session starts on an auto-assigned working branch, for
+**Must** use a name like this even when the session starts on an auto-assigned working branch, for
 example a `claude/<random-slug>` branch the harness created. Create the conventionally-named branch
 off `dev` and push the work there. This is a standing instruction, so it is the explicit permission
-any such harness rule asks for. **never** push a ticket's work to a `claude/*` auto-branch.
+any such harness rule asks for. **Never** push a ticket's work to a `claude/*` auto-branch.
 
 ### Merge Conflict Resolution: `dev` Always Wins
 
@@ -493,7 +493,8 @@ without a per-item verdict is not a review.
   [`plain-english`](.claude/skills/plain-english/SKILL.md) skill.** This covers JSDoc, inline
   comments, Storybook descriptions, error and toast strings, and the PR body itself. Flag AI slop
   strictly: an em dash splicing two sentences, a semicolon in prose, a restricted modal
-  (`should`, `may`, `might`, `could`, `would`), a phrasal verb, or AI vocabulary (`delve`,
+  (`should`, `may`, `might`, `could`, `would`), a phrasal verb (`spin up`, `reach out`,
+  `dive into`), or AI vocabulary (`delve`,
   `crucial`, `seamless`, `robust`, `comprehensive`, `leverage`, `showcase`). This is a required
   review dimension, not a nitpick.
 
