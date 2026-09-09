@@ -31,12 +31,12 @@ function CalendarChevron({
 const calendarClassNames = {
 	months: "relative flex flex-col gap-4",
 	month: "flex w-full flex-col gap-4",
-	nav: "absolute inset-x-0 top-0 flex items-center justify-between",
+	nav: "absolute right-0 top-0 flex items-center gap-1",
 	button_previous:
 		"text-muted-foreground hover:text-foreground inline-flex size-7 items-center justify-center rounded-md transition-colors disabled:pointer-events-none disabled:opacity-50",
 	button_next:
 		"text-muted-foreground hover:text-foreground inline-flex size-7 items-center justify-center rounded-md transition-colors disabled:pointer-events-none disabled:opacity-50",
-	month_caption: "flex h-7 items-center justify-center",
+	month_caption: "flex h-7 items-center justify-start",
 	caption_label: "text-sm font-medium",
 	month_grid: "w-full border-collapse",
 	weekdays: "flex",
