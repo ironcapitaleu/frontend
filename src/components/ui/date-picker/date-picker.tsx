@@ -121,7 +121,9 @@ function DatePicker(props: DatePickerProps) {
 						data-slot="date-picker-trigger"
 						data-empty={selectedDate ? undefined : true}
 						className={cn(
-							"w-56 justify-start font-normal data-empty:text-muted-foreground",
+							// Match the calendar popup width (w-62) so the trigger and the
+							// calendar line up on both edges.
+							"w-62 justify-start font-normal data-empty:text-muted-foreground",
 							className,
 						)}
 					/>
@@ -140,7 +142,7 @@ function DatePicker(props: DatePickerProps) {
 					<PopoverPrimitive.Popup
 						data-slot="date-picker-content"
 						className={cn(
-							"bg-popover text-popover-foreground data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 ring-foreground/10 origin-(--transform-origin) rounded-lg p-3 shadow-md ring-1 duration-100",
+							"bg-popover text-popover-foreground data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 ring-foreground/10 w-62 origin-(--transform-origin) rounded-lg p-3 shadow-md ring-1 duration-100",
 						)}
 					>
 						<DayPicker
