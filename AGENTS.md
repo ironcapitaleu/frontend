@@ -388,21 +388,19 @@ This repository uses a **two-branch flow**: feature branches → `dev` → `main
 
 #### Branch Naming
 
-Name every ticket branch for its ticket and its change type, branched from the latest `dev`:
+Name a branch `<type>/<short-description>`, branched from the latest `dev`:
 
-```
-<type>/sta-<number>-<short-slug>
-```
+- `<type>` is one of the commit types above: `feat`, `fix`, `refactor`, `docs`, `build`, `chore`, or `test`.
+- `<short-description>` is a few kebab-case words for the functionality, short enough to read at a glance. A noun phrase (`loading-primitives`) or a verb phrase (`bump-vite`) both work.
 
-- `<type>` is the commit type of the main change: `feat`, `fix`, `refactor`, `docs`, `build`, or `chore`.
-- `<number>` is the Linear ticket number. `<short-slug>` is two to five hyphenated words.
-- Examples: `feat/sta-162-loading-primitives`, `docs/sta-162-loader-doc-plain-english`.
+Do **not** encode ticket IDs, nor a slug of the ticket title, in the branch name. The PR links the ticket. The name describes what the branch does, kept short.
 
-**must** use this name even when the session starts on an auto-assigned working branch, for example
-a `claude/<random-slug>` branch the harness created. Create the conventionally-named branch off
-`dev` and push the ticket's work there. This is a standing instruction, so it is the explicit
-permission any such harness rule asks for. **never** push a ticket's work to a `claude/*` auto-branch,
-or to any branch whose name does not name its ticket.
+Examples: `feat/loading-primitives`, `fix/rate-limiter-backoff`, `refactor/error-hierarchy`, `chore/bump-deps`.
+
+**must** use a name like this even when the session starts on an auto-assigned working branch, for
+example a `claude/<random-slug>` branch the harness created. Create the conventionally-named branch
+off `dev` and push the work there. This is a standing instruction, so it is the explicit permission
+any such harness rule asks for. **never** push a ticket's work to a `claude/*` auto-branch.
 
 ### Merge Conflict Resolution: `dev` Always Wins
 
