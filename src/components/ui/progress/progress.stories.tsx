@@ -35,7 +35,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /**
- * Interactive playground — drag `value` to move the bar.
+ * Interactive playground. Drag `value` to move the bar.
  */
 export const Playground: Story = {};
 

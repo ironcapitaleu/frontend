@@ -10,12 +10,12 @@ import {
 type ProgressProps = ProgressPrimitive.Root.Props & ProgressVariants;
 
 /**
- * `Progress` is a determinate loading bar — it shows how far along a known task
- * is, from `0` to `max` (default `100`). Pass `value={null}` for an
- * indeterminate task whose length is unknown: the bar fills and pulses.
+ * `Progress` is a determinate loading bar. It shows how far a known task has
+ * advanced, from `0` to `max` (default `100`). Pass `value={null}` for a task
+ * whose length is unknown, and the bar fills and pulses instead.
  *
- * Reach for `Spinner` for a compact indeterminate wait, and `Skeleton` when a
- * placeholder should hold the shape of the content itself.
+ * Use `Spinner` for a compact indeterminate wait, and `Skeleton` when a
+ * placeholder must hold the shape of the content itself.
  */
 function Progress({ className, size, value, ...props }: ProgressProps) {
 	return (
