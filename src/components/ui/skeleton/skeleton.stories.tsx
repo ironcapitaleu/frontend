@@ -6,7 +6,7 @@ import { Skeleton } from ".";
  * A `Skeleton` is a pulsing placeholder that reserves space for content still
  * loading, so the layout stays stable instead of collapsing or jumping.
  *
- * The primitive is a single neutral shape — width, height, and radius come from
+ * The primitive is a single neutral shape. Width, height, and radius come from
  * `className`. The stories below show how a page composes it into text lines, an
  * avatar, and a card.
  */
@@ -26,7 +26,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /**
- * Interactive playground — set `className` to size and shape the placeholder.
+ * Interactive playground. Set `className` to size and shape the placeholder.
  */
 export const Playground: Story = {};
 

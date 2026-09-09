@@ -6,9 +6,9 @@ import { Spinner } from ".";
 const SPINNER_SIZES = ["sm", "default", "lg", "xl"] as const;
 
 /**
- * A `Spinner` is an indeterminate loading indicator — a rotating ring for waits
- * whose duration is unknown. It inherits the current text color, so a `text-*`
- * class recolors it, and `size` sets its diameter.
+ * A `Spinner` is an indeterminate loading indicator, a rotating ring for a wait
+ * whose duration is unknown. Its default color is `text-muted-foreground`, and a
+ * `text-*` class recolors it. The `size` prop sets its diameter.
  */
 const meta: Meta<typeof Spinner> = {
 	title: "Components/Spinner",

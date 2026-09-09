@@ -10,14 +10,14 @@ type SpinnerProps = React.ComponentProps<"svg"> &
 	};
 
 /**
- * `Spinner` is an indeterminate loading indicator — a rotating ring for waits
- * whose length is unknown (a submit in flight, a page fetching). Reach for
- * `Progress` instead when the completion amount is known, and `Skeleton` when a
- * placeholder should hold the shape of the content itself.
+ * `Spinner` is an indeterminate loading indicator, a rotating ring for a wait
+ * whose length is unknown (a submit in flight, a page fetching). Use `Progress`
+ * instead when the completion amount is known, and `Skeleton` when a placeholder
+ * must hold the shape of the content itself.
  *
  * Its strokes use `currentColor` with a `text-muted-foreground` default, so a
- * `text-*` class on the element (or an ancestor) recolors it; `size` sets the
- * diameter.
+ * `text-*` class on the element or an ancestor recolors it. The `size` prop sets
+ * the diameter.
  */
 function Spinner({
 	className,
