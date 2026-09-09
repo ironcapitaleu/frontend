@@ -239,6 +239,29 @@
 	max-height: 65vh;
 }
 
+/* Sonner toast close button: kept out of sight until the reader hovers or
+   focuses the toast, then revealed with a light press response. Position comes
+   from the --toast-close-button-* variables set on the Toaster. */
+[data-sonner-toast] [data-close-button] {
+	opacity: 0;
+	transition:
+		opacity 0.15s ease,
+		transform 0.15s ease;
+}
+[data-sonner-toast]:hover [data-close-button],
+[data-sonner-toast]:focus-within [data-close-button] {
+	opacity: 1;
+}
+/* Touch pointers have no hover, so keep the button visible there. */
+@media (hover: none) {
+	[data-sonner-toast] [data-close-button] {
+		opacity: 1;
+	}
+}
+[data-sonner-toast] [data-close-button]:active {
+	transform: var(--toast-close-button-transform) scale(0.92);
+}
+
 /* Custom animation for the AI glowing border effect */
 @keyframes gradient-flow {
 	0% {
