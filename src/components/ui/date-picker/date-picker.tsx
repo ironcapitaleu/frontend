@@ -40,9 +40,9 @@ const calendarClassNames = {
 	caption_label: "text-sm font-medium",
 	month_grid: "w-full border-collapse",
 	weekdays: "flex",
-	weekday: "text-muted-foreground w-8 text-[0.8rem] font-normal",
+	weekday: "text-muted-foreground flex-1 text-center text-[0.8rem] font-normal",
 	week: "mt-1 flex w-full",
-	day: "size-8 p-0 text-center text-sm",
+	day: "flex flex-1 items-center justify-center p-0 text-sm",
 	day_button:
 		"hover:bg-accent hover:text-accent-foreground focus-visible:border-ring focus-visible:ring-ring/50 inline-flex size-8 items-center justify-center rounded-md font-normal transition-colors outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50",
 	selected:
@@ -121,8 +121,6 @@ function DatePicker(props: DatePickerProps) {
 						data-slot="date-picker-trigger"
 						data-empty={selectedDate ? undefined : true}
 						className={cn(
-							// Match the calendar popup width (w-62) so the trigger and the
-							// calendar line up on both edges.
 							"w-62 justify-start font-normal data-empty:text-muted-foreground",
 							className,
 						)}
@@ -142,7 +140,7 @@ function DatePicker(props: DatePickerProps) {
 					<PopoverPrimitive.Popup
 						data-slot="date-picker-content"
 						className={cn(
-							"bg-popover text-popover-foreground data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 ring-foreground/10 w-62 origin-(--transform-origin) rounded-lg p-3 shadow-md ring-1 duration-100",
+							"bg-popover text-popover-foreground data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 ring-foreground/10 w-(--anchor-width) min-w-62 origin-(--transform-origin) rounded-lg p-3 shadow-md ring-1 duration-100",
 						)}
 					>
 						<DayPicker
