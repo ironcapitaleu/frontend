@@ -44,7 +44,9 @@ const calendarClassNames = {
 	week: "mt-1 flex w-full",
 	day: "size-8 p-0 text-center text-sm",
 	day_button:
-		"hover:bg-accent hover:text-accent-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-selected:bg-primary aria-selected:text-primary-foreground aria-selected:hover:bg-primary/90 inline-flex size-8 items-center justify-center rounded-md font-normal transition-colors outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50",
+		"hover:bg-accent hover:text-accent-foreground focus-visible:border-ring focus-visible:ring-ring/50 inline-flex size-8 items-center justify-center rounded-md font-normal transition-colors outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50",
+	selected:
+		"[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary/90 [&>button]:hover:text-primary-foreground",
 	today: "[&>button]:border-accent-foreground/40 [&>button]:border",
 	outside: "text-muted-foreground opacity-50",
 	disabled: "text-muted-foreground opacity-50",

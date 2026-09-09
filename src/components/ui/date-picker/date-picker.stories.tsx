@@ -14,7 +14,7 @@ import { DatePicker } from ".";
  * `id`, so the field reads to a screen reader.
  */
 const meta: Meta<typeof DatePicker> = {
-	title: "Components/DatePicker",
+	title: "Components/Date Picker",
 	component: DatePicker,
 	tags: ["autodocs"],
 	parameters: {
@@ -78,7 +78,7 @@ export const Empty: Story = {
  */
 export const Selected: Story = {
 	args: {
-		defaultValue: new Date(2026, 8, 9),
+		defaultValue: new Date(2026, 8, 15),
 	},
 };
 
@@ -88,7 +88,7 @@ export const Selected: Story = {
  */
 export const Disabled: Story = {
 	args: {
-		defaultValue: new Date(2026, 8, 9),
+		defaultValue: new Date(2026, 8, 15),
 		disabled: true,
 	},
 };
