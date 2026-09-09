@@ -49,6 +49,13 @@ codebase for all instances before considering the change complete.
   - JSDoc comments
   - Design documents (if applicable, e.g., mermaid diagrams)
 - **Documentation must be version controlled**.
+- **All English text must follow the [`plain-english`](.claude/skills/plain-english/SKILL.md)
+  skill.** This covers JSDoc, inline comments, Storybook descriptions, commit messages, PR titles
+  and bodies, and error and toast strings. **Never** ship AI-slop wording. That means: an em dash
+  used to splice two sentences (write a period and split the sentence), a semicolon in prose, a
+  restricted modal (`should`, `may`, `might`, `could`, `would`), a phrasal verb (`spin up`,
+  `reach out`, `dive into`, `set up`), or AI vocabulary (`delve`, `crucial`, `seamless`, `robust`,
+  `comprehensive`, `leverage`, `showcase`).
 
 ---
 
@@ -379,6 +386,22 @@ This repository uses a **two-branch flow**: feature branches → `dev` → `main
 - After a feature PR merges into `dev`, **proactively create a PR from `dev` → `main`** to keep the release path unblocked.
 - Do not let changes sit in `dev` without propagating — the goal is fast, clean flow from feature branch → dev → main.
 
+#### Branch Naming
+
+Name a branch `<type>/<short-description>`, branched from the latest `dev`:
+
+- `<type>` is one of the commit types above: `feat`, `fix`, `refactor`, `docs`, `build`, `chore`, or `test`.
+- `<short-description>` is a few kebab-case words for the functionality, short enough to read at a glance. A noun phrase (`loading-primitives`) or a verb phrase (`bump-vite`) both work.
+
+Do **not** encode ticket IDs, nor a slug of the ticket title, in the branch name. The PR links the ticket. The name describes what the branch does, kept short.
+
+Examples: `feat/loading-primitives`, `fix/rate-limiter-backoff`, `refactor/error-hierarchy`, `chore/bump-deps`.
+
+**Must** use a name like this even when the session starts on an auto-assigned working branch, for
+example a `claude/<random-slug>` branch the harness created. Create the conventionally-named branch
+off `dev` and push the work there. This is a standing instruction, so it is the explicit permission
+any such harness rule asks for. **Never** push a ticket's work to a `claude/*` auto-branch.
+
 ### Merge Conflict Resolution: `dev` Always Wins
 
 When merging `dev` into `main`, **`dev` always takes precedence**. This is a structural rule:
@@ -466,6 +489,14 @@ without a per-item verdict is not a review.
 - Ensure style conventions are followed  
 - Check for meaningful comments and JSDoc — verified against [DOCUMENTATION.md](./DOCUMENTATION.md)
 - Suggest clearer names and documentation where needed  
+- **Check every English string the PR adds or changes against the
+  [`plain-english`](.claude/skills/plain-english/SKILL.md) skill.** This covers JSDoc, inline
+  comments, Storybook descriptions, error and toast strings, and the PR body itself. Flag AI slop
+  strictly: an em dash splicing two sentences, a semicolon in prose, a restricted modal
+  (`should`, `may`, `might`, `could`, `would`), a phrasal verb (`spin up`, `reach out`,
+  `dive into`), or AI vocabulary (`delve`,
+  `crucial`, `seamless`, `robust`, `comprehensive`, `leverage`, `showcase`). This is a required
+  review dimension, not a nitpick.
 
 ### Documentation Consistency
 
