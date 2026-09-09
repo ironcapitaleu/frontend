@@ -2,6 +2,45 @@ import { type CSSProperties, useEffect, useState } from "react";
 import { Toaster as SonnerToaster, type ToasterProps } from "sonner";
 
 /**
+ * Maps a neutral toast surface onto the design system's `popover` tokens, so an
+ * ordinary toast matches the rest of the palette in both themes.
+ */
+const TOKEN_STYLE: CSSProperties = {
+	"--normal-bg": "var(--popover)",
+	"--normal-text": "var(--popover-foreground)",
+	"--normal-border": "var(--border)",
+} as CSSProperties;
+
+/**
+ * `Toaster` mounts the toast portal once near the app root. Any module then
+ * raises non-blocking feedback through the re-exported `toast` API, so a form
+ * submission or a save reports its outcome without a modal.
+ *
+ * The toaster follows the app's class-based theme: it reads the `.dark` class on
+ * the document root and repaints when that class changes. Neutral toasts take
+ * the design system's `popover` tokens.
+ *
+ * Deviation (AGENTS.md "Deviations", DESIGN.md "semantic tokens only"): the
+ * `success`, `error`, and `info` accents come from sonner's `richColors`
+ * palette, not from semantic tokens. The design system defines only a
+ * `destructive` token, with no `success`, `info`, or `warning` counterpart, so
+ * there is no token set to map the three feedback kinds onto. `richColors` ships
+ * both a light and a dark palette, so the accents still track the theme.
+ */
+function Toaster({ style, ...props }: ToasterProps) {
+	const isDark = useDarkTheme();
+
+	return (
+		<SonnerToaster
+			theme={isDark ? "dark" : "light"}
+			richColors
+			style={{ ...TOKEN_STYLE, ...style }}
+			{...props}
+		/>
+	);
+}
+
+/**
  * Reads whether the app's class-based dark theme is active.
  *
  * The app carries its theme as a `.dark` class on the document root, the same
@@ -26,35 +65,6 @@ function useDarkTheme(): boolean {
 	}, []);
 
 	return isDark;
-}
-
-/**
- * `Toaster` mounts the toast portal once near the app root. Any module then
- * raises non-blocking feedback through the re-exported `toast` API, so a form
- * submission or a save reports its outcome without a modal.
- *
- * The toaster follows the app's class-based theme: it reads the `.dark` class on
- * the document root and repaints when that class changes. Neutral toasts take
- * the design system's `popover` tokens, and `richColors` gives `toast.success`,
- * `toast.error`, and `toast.info` their matching accents.
- */
-function Toaster(props: ToasterProps) {
-	const isDark = useDarkTheme();
-
-	return (
-		<SonnerToaster
-			theme={isDark ? "dark" : "light"}
-			richColors
-			style={
-				{
-					"--normal-bg": "var(--popover)",
-					"--normal-text": "var(--popover-foreground)",
-					"--normal-border": "var(--border)",
-				} as CSSProperties
-			}
-			{...props}
-		/>
-	);
 }
 
 export { Toaster };

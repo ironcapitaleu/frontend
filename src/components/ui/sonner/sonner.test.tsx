@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { Toaster, toast } from ".";
@@ -50,5 +50,26 @@ describe("Toaster", () => {
 			?.getAttribute("data-sonner-theme");
 
 		expect(result).toBe(expectedResult);
+	});
+
+	it("should repaint the toaster when the dark class is toggled after mount", async () => {
+		render(<Toaster />);
+		act(() => {
+			toast.info("New filings arrived overnight.");
+		});
+		await screen.findByText("New filings arrived overnight.");
+		act(() => {
+			document.documentElement.classList.add("dark");
+		});
+
+		const expectedResult = "dark";
+
+		await waitFor(() =>
+			expect(
+				document
+					.querySelector("[data-sonner-toaster]")
+					?.getAttribute("data-sonner-theme"),
+			).toBe(expectedResult),
+		);
 	});
 });
