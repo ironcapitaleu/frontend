@@ -74,17 +74,21 @@ describe("Toaster", () => {
 	});
 
 	it("should remove the toast when its close button is clicked", async () => {
+		const message = "Company saved to your list.";
 		render(<Toaster />);
 		act(() => {
-			toast.success("Company saved to your list.");
+			toast.success(message);
 		});
-		await screen.findByText("Company saved to your list.");
+		await screen.findByText(message);
+
+		const expectedResult = null;
+
 		act(() => {
 			document.querySelector<HTMLButtonElement>("[data-close-button]")?.click();
 		});
 
 		await waitFor(() =>
-			expect(screen.queryByText("Company saved to your list.")).toBeNull(),
+			expect(screen.queryByText(message)).toBe(expectedResult),
 		);
 	});
 });

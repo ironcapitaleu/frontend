@@ -252,8 +252,14 @@
 [data-sonner-toast]:focus-within [data-close-button] {
 	opacity: 1;
 }
+/* Touch pointers have no hover, so keep the button visible there. */
+@media (hover: none) {
+	[data-sonner-toast] [data-close-button] {
+		opacity: 1;
+	}
+}
 [data-sonner-toast] [data-close-button]:active {
-	transform: translate(35%, -35%) scale(0.92);
+	transform: var(--toast-close-button-transform) scale(0.92);
 }
 
 /* Custom animation for the AI glowing border effect */

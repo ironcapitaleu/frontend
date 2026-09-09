@@ -6,8 +6,8 @@ import { Toaster, toast } from ".";
 /**
  * A `Toaster` mounts the toast portal once near the app root, then any module
  * raises non-blocking feedback through the `toast` API. Use it for the outcome
- * of an action, such as a saved form or a failed request, when a modal would
- * interrupt more than the message is worth.
+ * of an action, such as a saved form or a failed request, when a modal
+ * interrupts more than the message is worth.
  *
  * The toaster follows the app's class-based theme, so the toasts repaint with
  * the Storybook theme toggle. `richColors` gives success, error, and info their
@@ -16,8 +16,8 @@ import { Toaster, toast } from ".";
  * `sonner` holds one global toast store shared by every `Toaster`, so a raised
  * toast lives until its own timeout regardless of which story is open. The
  * single story below raises all three kinds from one toaster for that reason,
- * rather than splitting them across stories that would show each other's
- * leftovers.
+ * rather than splitting them across separate stories that leak each other's
+ * toasts.
  */
 const meta: Meta<typeof Toaster> = {
 	title: "Components/Toaster",
@@ -44,10 +44,7 @@ export const Default: Story = {
 			>
 				Show success
 			</Button>
-			<Button
-				variant="outline"
-				onClick={() => toast.error("The save could not be completed.")}
-			>
+			<Button variant="outline" onClick={() => toast.error("The save failed.")}>
 				Show error
 			</Button>
 			<Button
