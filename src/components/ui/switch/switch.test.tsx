@@ -68,6 +68,16 @@ describe("Switch", () => {
 		expect(result).toBe(expectedResult);
 	});
 
+	it("should mark itself disabled for styling when the disabled prop is set", () => {
+		render(<Switch aria-label="Live prices" disabled />);
+
+		const expectedResult = true;
+
+		const result = screen.getByRole("switch").hasAttribute("data-disabled");
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should stay off when it is disabled and the reader clicks it", async () => {
 		const user = userEvent.setup();
 		render(<Switch aria-label="Live prices" disabled />);

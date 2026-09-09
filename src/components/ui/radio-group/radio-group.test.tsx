@@ -99,6 +99,18 @@ describe("RadioGroup", () => {
 		expect(result).toBe(expectedResult);
 	});
 
+	it("should mark each option disabled for styling when the group is disabled", () => {
+		renderRadioGroup({ disabled: true });
+
+		const expectedResult = true;
+
+		const result = screen
+			.getByRole("radio", { name: "Yearly" })
+			.hasAttribute("data-disabled");
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should keep its selection when the group is disabled and the reader clicks another option", async () => {
 		const user = userEvent.setup();
 		renderRadioGroup({ defaultValue: "quarterly", disabled: true });
