@@ -82,25 +82,30 @@ type DatePickerProps = {
  * date. The trigger and the calendar read from semantic tokens, so both track
  * the theme. Pass `disabled` to lock it, and a `placeholder` for the empty state.
  */
-function DatePicker({
-	value,
-	defaultValue,
-	onValueChange,
-	disabled = false,
-	placeholder = "Pick a date",
-	dateFormat = "PPP",
-	id,
-	className,
-}: DatePickerProps) {
+function DatePicker(props: DatePickerProps) {
+	const {
+		defaultValue,
+		onValueChange,
+		disabled = false,
+		placeholder = "Pick a date",
+		dateFormat = "PPP",
+		id,
+		className,
+	} = props;
+
+	const isControlled = "value" in props;
+
 	const [open, setOpen] = useState(false);
 	const [internalDate, setInternalDate] = useState<Date | undefined>(
 		defaultValue,
 	);
 
-	const selectedDate = value ?? internalDate;
+	const selectedDate = isControlled ? props.value : internalDate;
 
 	const handleSelect = (date: Date | undefined) => {
-		setInternalDate(date);
+		if (!isControlled) {
+			setInternalDate(date);
+		}
 		onValueChange?.(date);
 		setOpen(false);
 	};

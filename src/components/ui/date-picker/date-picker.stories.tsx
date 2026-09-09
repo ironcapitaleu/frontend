@@ -29,6 +29,11 @@ const meta: Meta<typeof DatePicker> = {
 			control: "boolean",
 			description: "Whether the picker ignores clicks and dims the trigger.",
 		},
+		dateFormat: {
+			control: "text",
+			description:
+				"A date-fns format string for the trigger label. Defaults to a long date.",
+		},
 		value: { control: { disable: true } },
 		defaultValue: { control: { disable: true } },
 		onValueChange: { control: { disable: true } },

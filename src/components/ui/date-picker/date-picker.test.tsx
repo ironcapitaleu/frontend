@@ -90,6 +90,66 @@ describe("DatePicker", () => {
 		expect(result).toBeNull();
 	});
 
+	it("should report an empty date when the reader clicks the selected day", async () => {
+		const user = userEvent.setup();
+		const onValueChange = vi.fn();
+		render(
+			<DatePicker
+				defaultValue={new Date(2026, 8, 15)}
+				onValueChange={onValueChange}
+			/>,
+		);
+
+		const expectedResult = undefined;
+
+		await user.click(screen.getByRole("button"));
+		await user.click(
+			await screen.findByRole("button", {
+				name: "Tuesday, September 15th, 2026, selected",
+			}),
+		);
+
+		const result = onValueChange.mock.calls[0]?.[0];
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should show the placeholder when a controlled parent clears the value after a pick", async () => {
+		const user = userEvent.setup();
+		const { rerender } = render(
+			<DatePicker value={new Date(2026, 8, 15)} placeholder="Pick a date" />,
+		);
+
+		const expectedResult = "Pick a date";
+
+		await user.click(screen.getByRole("button"));
+		await user.click(
+			await screen.findByRole("button", {
+				name: "Thursday, September 10th, 2026",
+			}),
+		);
+		rerender(<DatePicker value={undefined} placeholder="Pick a date" />);
+
+		const result = screen.getByRole("button").textContent;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should format the trigger label with a custom date format", () => {
+		render(
+			<DatePicker
+				defaultValue={new Date(2026, 8, 15)}
+				dateFormat="yyyy-MM-dd"
+			/>,
+		);
+
+		const expectedResult = "2026-09-15";
+
+		const result = screen.getByRole("button").textContent;
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should dim the trigger for the reader when disabled", () => {
 		render(<DatePicker defaultValue={new Date(2026, 8, 9)} disabled />);
 
