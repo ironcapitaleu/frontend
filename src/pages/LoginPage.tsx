@@ -5,6 +5,8 @@ import { KeyRound } from "lucide-react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Heading } from "@/components/ui/heading";
+import { Text, TextLink } from "@/components/ui/text";
 import { useAuthContext } from "../contexts/AuthContext";
 
 export default function LoginPage() {
@@ -38,7 +40,7 @@ export default function LoginPage() {
 
 	return (
 		<div className="flex-1 flex flex-col items-center justify-center px-6 lg:px-8">
-			<div className="sm:mx-auto sm:w-full sm:max-w-sm flex flex-col items-center">
+			<div className="sm:mx-auto sm:w-full sm:max-w-sm flex flex-col items-center gap-8">
 				<Link to="/" aria-label="Iron Capital home">
 					<img
 						src="/icon.svg"
@@ -46,9 +48,9 @@ export default function LoginPage() {
 						className="w-12 h-12 rounded-full object-cover"
 					/>
 				</Link>
-				<h2 className="mt-8 text-center text-2xl/9 font-bold font-classic sm:text-3xl/9 tracking-tight text-foreground">
+				<Heading level={1} variant="section" className="text-center">
 					{isSignUp ? "Create an account" : "Sign in to your account"}
-				</h2>
+				</Heading>
 			</div>
 
 			<div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm flex flex-col gap-6">
@@ -66,19 +68,24 @@ export default function LoginPage() {
 					{loading ? "Continuing..." : "Continue with passkey"}
 				</Button>
 
-				<p className="mt-2 text-center text-sm text-muted-foreground">
+				<Text font="sans" size="sm" className="text-center">
 					{isSignUp ? "Already a member? " : "Not a member? "}
-					<button
-						type="button"
-						onClick={() => {
-							setIsSignUp(!isSignUp);
-							setError(null);
-						}}
-						className="font-medium text-foreground hover:text-primary transition-colors cursor-pointer"
+					<TextLink
+						variant="subtle"
+						className="font-medium cursor-pointer"
+						render={
+							<button
+								type="button"
+								onClick={() => {
+									setIsSignUp(!isSignUp);
+									setError(null);
+								}}
+							/>
+						}
 					>
 						{isSignUp ? "Sign in" : "Create an account"}
-					</button>
-				</p>
+					</TextLink>
+				</Text>
 			</div>
 		</div>
 	);
