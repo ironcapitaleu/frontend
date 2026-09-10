@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * A paragraph of copy with the house font, size, and tone. Renders a `<p>` by
- * default; pass `render` for another element (for example `render={<span />}`).
+ * default. Pass `render` for another element (for example `render={<span />}`).
  */
 function Text({
 	className,
@@ -33,7 +33,7 @@ function Text({
 }
 
 /**
- * An inline link for running copy. Renders an `<a>` by default; pass `render`
+ * An inline link for running copy. Renders an `<a>` by default. Pass `render`
  * to route through the client (for example `render={<Link to="/contact" />}`).
  */
 function TextLink({

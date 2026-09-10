@@ -11,7 +11,7 @@ type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
  * A typographic heading that carries the classical voice of the product. The
  * `level` prop sets the document level (the rendered `<h1>`–`<h6>`) so the
  * outline stays correct while the look is chosen by `variant`. Defaults to an
- * `<h2>`; pass `render` for full control over the element.
+ * `<h2>`. Pass `render` for full control over the element.
  */
 function Heading({
 	className,

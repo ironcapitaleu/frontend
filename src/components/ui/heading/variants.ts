@@ -5,7 +5,7 @@ export const headingVariants = cva("text-foreground", {
 		// Visual role of the heading, from the largest classical title down to
 		// the small uppercase label.
 		variant: {
-			// Classical page title (About section titles, Privacy and Sitemap heroes).
+			// Classical page title (the Privacy and Sitemap heroes).
 			page: "font-classic text-4xl md:text-5xl font-semibold",
 			// A prominent classical section title.
 			feature: "font-classic text-5xl font-semibold",
@@ -13,7 +13,7 @@ export const headingVariants = cva("text-foreground", {
 			section: "font-classic text-2xl font-semibold",
 			// A quieter classical sub-heading.
 			subsection: "font-classic font-medium",
-			// A small uppercase label that groups a list.
+			// An uppercase label that groups a list.
 			overline: "text-3xl font-semibold uppercase tracking-widest",
 			// A serif hero title for the working, modern pages.
 			hero: "font-serif text-5xl font-medium tracking-tight",
