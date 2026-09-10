@@ -190,6 +190,18 @@ describe("ContactPage", () => {
 		expect(result).toBe(expectedResult);
 	});
 
+	it("should point the privacy-policy link at the privacy page", () => {
+		render(<ContactPage />);
+
+		const expectedResult = "/privacy";
+
+		const result = screen
+			.getByRole("link", { name: /privacy policy/i })
+			.getAttribute("href");
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should surface an error when the submit action fails", async () => {
 		const user = userEvent.setup();
 		render(
