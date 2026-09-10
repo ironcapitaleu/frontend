@@ -196,10 +196,12 @@ production (the `release` skill's sign-off gate calls back to this practice).
   grid of states: both themes (light and dark) and both a mobile width (about 390px) and a
   desktop width (about 1280px). A page in one theme at one width is not enough. Missing a theme
   or a breakpoint is how a regression ships.
-- **Capture through Storybook with the pre-installed Chromium.** The `run` skill covers launching
-  Storybook and the story-id and iframe mechanics. Load each story at
-  `iframe.html?id=<story-id>&globals=theme:dark&viewMode=story`, swap `theme:dark` for
-  `theme:light` for the other theme, and screenshot full-page at each viewport.
+- **Capture through Storybook with the pre-installed Chromium.** Start Storybook, then load each
+  story by its id through the iframe endpoint:
+  `iframe.html?id=<story-id>&globals=theme:dark&viewMode=story`. Swap `theme:dark` for
+  `theme:light` for the other theme, and screenshot full-page at each viewport. The story id
+  comes from Storybook's `index.json`. The built-in `run` skill launches the app and Storybook
+  when you need the launch steps.
 - **Send them as one batch.** Deliver every capture in a single message with a caption that names
   the order (page, then theme, then viewport), so the user reviews the whole set at once.
 - **Ask for the decision, do not infer it.** Solicit the sign-off with the structured

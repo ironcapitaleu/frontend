@@ -182,6 +182,10 @@ Merge only after the review round is clean or every open finding is a nit you re
 
 ### Step 6 — Merge (MERGE COMMIT)
 
+For any **user-facing UI** in the diff, run the **Visual sign-off gate** (above) and get the
+user's approve decision **before** this merge. Never merge user-facing UI on your own read of
+the appearance. A release with no user-facing UI change skips the gate.
+
 ```bash
 gh pr merge <N> --repo ironcapitaleu/frontend --merge
 ```
