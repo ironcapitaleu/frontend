@@ -80,6 +80,48 @@ describe("Tooltip", () => {
 		expect(result).toBe(expectedResult);
 	});
 
+	it("should align the content on the requested alignment when opened", async () => {
+		renderTooltip(
+			<TooltipContent align="start">
+				Revenue minus cost of goods sold
+			</TooltipContent>,
+		);
+		screen.getByRole("button").focus();
+
+		const expectedResult = "start";
+
+		const content = await screen.findByText("Revenue minus cost of goods sold");
+		const result = content.closest("[data-align]")?.getAttribute("data-align");
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should hold the content closed on hover until the provider default delay elapses", async () => {
+		const user = userEvent.setup();
+		render(
+			<TooltipProvider>
+				<Tooltip>
+					<TooltipTrigger>Gross margin</TooltipTrigger>
+					<TooltipContent>Revenue minus cost of goods sold</TooltipContent>
+				</Tooltip>
+			</TooltipProvider>,
+		);
+		await user.hover(screen.getByRole("button"));
+
+		const expectedResult = {
+			beforeDelay: null,
+			afterDelay: "Revenue minus cost of goods sold",
+		};
+
+		const beforeDelay = screen.queryByText("Revenue minus cost of goods sold");
+		const afterDelay = (
+			await screen.findByText("Revenue minus cost of goods sold")
+		).textContent;
+		const result = { beforeDelay, afterDelay };
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should hide the content when focus leaves the trigger", async () => {
 		renderTooltip();
 		const trigger = screen.getByRole("button");
