@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, screen, waitFor, within } from "storybook/test";
 
 import { Button } from "../button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from ".";
@@ -76,6 +77,57 @@ export const Default: Story = {
 			</Tooltip>
 		</TooltipProvider>
 	),
+};
+
+/**
+ * Play test: a non-default `sideOffset` widens the gap between the trigger and
+ * the panel. jsdom runs no layout, so this gap is measured in a real browser by
+ * the storybook project.
+ */
+export const SideOffsetGap: Story = {
+	parameters: {
+		controls: { disable: true },
+	},
+	render: () => (
+		<TooltipProvider delay={0}>
+			<Tooltip>
+				<TooltipTrigger
+					render={<Button variant="outline">Gross margin</Button>}
+				/>
+				<TooltipContent side="top" sideOffset={20}>
+					Revenue minus cost of goods sold
+				</TooltipContent>
+			</Tooltip>
+		</TooltipProvider>
+	),
+	play: async ({ canvasElement }) => {
+		const trigger = within(canvasElement).getByRole("button");
+		trigger.focus();
+		await screen.findByText("Revenue minus cost of goods sold");
+
+		// 16 sits above the default gap of 8 and below the configured 20, so it
+		// distinguishes the non-default offset with room for rounding.
+		const expectedMinimumGap = 16;
+
+		await waitFor(() => {
+			const popup = screen
+				.getByText("Revenue minus cost of goods sold")
+				.closest("[data-side]");
+			const side = popup?.getAttribute("data-side");
+			const t = trigger.getBoundingClientRect();
+			const p = (popup ?? trigger).getBoundingClientRect();
+			const gap =
+				side === "top"
+					? t.top - p.bottom
+					: side === "bottom"
+						? p.top - t.bottom
+						: side === "left"
+							? t.left - p.right
+							: p.left - t.right;
+
+			expect(Math.round(gap)).toBeGreaterThanOrEqual(expectedMinimumGap);
+		});
+	},
 };
 
 /**

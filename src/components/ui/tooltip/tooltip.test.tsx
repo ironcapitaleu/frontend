@@ -1,7 +1,13 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import {
+	act,
+	fireEvent,
+	render,
+	screen,
+	waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from ".";
 
@@ -19,6 +25,10 @@ function renderTooltip(content?: ReactNode) {
 }
 
 describe("Tooltip", () => {
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
 	it("should render the trigger when mounted", () => {
 		renderTooltip();
 
@@ -78,6 +88,64 @@ describe("Tooltip", () => {
 		const result = content.closest("[data-side]")?.getAttribute("data-side");
 
 		expect(result).toBe(expectedResult);
+	});
+
+	it("should align the content on the requested alignment when opened", async () => {
+		renderTooltip(
+			<TooltipContent align="start">
+				Revenue minus cost of goods sold
+			</TooltipContent>,
+		);
+		screen.getByRole("button").focus();
+
+		const expectedResult = "start";
+
+		const content = await screen.findByText("Revenue minus cost of goods sold");
+		const result = content.closest("[data-align]")?.getAttribute("data-align");
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should reveal the content only once the 300ms provider default delay elapses when hovered", async () => {
+		vi.useFakeTimers();
+		render(
+			<TooltipProvider>
+				<Tooltip>
+					<TooltipTrigger>Gross margin</TooltipTrigger>
+					<TooltipContent>Revenue minus cost of goods sold</TooltipContent>
+				</Tooltip>
+			</TooltipProvider>,
+		);
+		const trigger = screen.getByRole("button");
+		// userEvent.hover deadlocks under fake timers, so dispatch the hover
+		// sequence base-ui listens for directly.
+		act(() => {
+			fireEvent.pointerOver(trigger, { pointerType: "mouse" });
+			fireEvent.pointerEnter(trigger, { pointerType: "mouse" });
+			fireEvent.mouseOver(trigger);
+			fireEvent.mouseEnter(trigger);
+			fireEvent.pointerMove(trigger, { pointerType: "mouse" });
+			fireEvent.mouseMove(trigger);
+		});
+
+		const expectedResult = {
+			at299: null,
+			at300: "Revenue minus cost of goods sold",
+		};
+
+		act(() => {
+			vi.advanceTimersByTime(299);
+		});
+		const at299 = screen.queryByText("Revenue minus cost of goods sold");
+		act(() => {
+			vi.advanceTimersByTime(1);
+		});
+		const at300 =
+			screen.queryByText("Revenue minus cost of goods sold")?.textContent ??
+			null;
+		const result = { at299, at300 };
+
+		expect(result).toEqual(expectedResult);
 	});
 
 	it("should hide the content when focus leaves the trigger", async () => {
