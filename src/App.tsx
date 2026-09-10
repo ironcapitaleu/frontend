@@ -8,7 +8,6 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import PrivacyPage from "./pages/PrivacyPage";
-import PrivateDatabasePage from "./pages/PrivateDatabasePage";
 import SitemapPage from "./pages/SitemapPage";
 import StockScreener from "./pages/StockScreener";
 
@@ -29,7 +28,6 @@ function App() {
 				<Route path="/contact" element={<ContactPage />} />
 				<Route path="/login" element={<LoginPage />} />
 				<Route path="/about" element={<AboutPage />} />
-				<Route path="/private" element={<PrivateDatabasePage />} />
 				<Route path="/privacy" element={<PrivacyPage />} />
 				<Route path="/sitemap" element={<SitemapPage />} />
 				<Route path="/screener" element={<StockScreener />} />
