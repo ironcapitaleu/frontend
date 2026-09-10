@@ -105,7 +105,9 @@ export const SideOffsetGap: Story = {
 		trigger.focus();
 		await screen.findByText("Revenue minus cost of goods sold");
 
-		const expectedResult = true;
+		// 16 sits above the default gap of 8 and below the configured 20, so it
+		// distinguishes the non-default offset with room for rounding.
+		const expectedMinimumGap = 16;
 
 		await waitFor(() => {
 			const popup = screen
@@ -123,9 +125,7 @@ export const SideOffsetGap: Story = {
 							? t.left - p.right
 							: p.left - t.right;
 
-			// 16 sits above the default gap of 8 and below the configured 20,
-			// so it distinguishes the non-default offset with room for rounding.
-			expect(Math.round(gap) >= 16).toBe(expectedResult);
+			expect(Math.round(gap)).toBeGreaterThanOrEqual(expectedMinimumGap);
 		});
 	},
 };
