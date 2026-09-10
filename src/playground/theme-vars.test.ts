@@ -18,64 +18,64 @@ describe("themeVars", () => {
 		// Arrange
 		const controls: ThemeControls = { ...BASE_CONTROLS, radius: 16 };
 		// Define
-		const expected = "16px";
+		const expectedResult = "16px";
 
 		// Act
 		const vars = themeVars(controls);
 
 		// Assert
-		expect(vars["--radius"]).toBe(expected);
+		expect(vars["--radius"]).toBe(expectedResult);
 	});
 
 	it("should write the spacing as a rem token when given a spacing", () => {
 		// Arrange
 		const controls: ThemeControls = { ...BASE_CONTROLS, spacing: 0.4 };
 		// Define
-		const expected = "0.4rem";
+		const expectedResult = "0.4rem";
 
 		// Act
 		const vars = themeVars(controls);
 
 		// Assert
-		expect(vars["--spacing"]).toBe(expected);
+		expect(vars["--spacing"]).toBe(expectedResult);
 	});
 
 	it("should set the primary token when the control holds a color", () => {
 		// Arrange
 		const controls: ThemeControls = { ...BASE_CONTROLS, primary: "#ff0000" };
 		// Define
-		const expected = "#ff0000";
+		const expectedResult = "#ff0000";
 
 		// Act
 		const vars = themeVars(controls);
 
 		// Assert
-		expect(vars["--primary"]).toBe(expected);
+		expect(vars["--primary"]).toBe(expectedResult);
 	});
 
 	it("should omit a color token when the control is empty", () => {
 		// Arrange
 		const controls: ThemeControls = { ...BASE_CONTROLS, secondary: "" };
 		// Define
-		const expected = false;
+		const expectedResult = false;
 
 		// Act
 		const vars = themeVars(controls);
 
 		// Assert
-		expect("--secondary" in vars).toBe(expected);
+		expect("--secondary" in vars).toBe(expectedResult);
 	});
 
 	it("should omit a color token when the control holds only whitespace", () => {
 		// Arrange
 		const controls: ThemeControls = { ...BASE_CONTROLS, background: "   " };
 		// Define
-		const expected = false;
+		const expectedResult = false;
 
 		// Act
 		const vars = themeVars(controls);
 
 		// Assert
-		expect("--background" in vars).toBe(expected);
+		expect("--background" in vars).toBe(expectedResult);
 	});
 });
