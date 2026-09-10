@@ -14,6 +14,16 @@ describe("HomePage", () => {
 		expect(result).toHaveTextContent(expectedResult);
 	});
 
+	it("should render the brand heading at document level 1", () => {
+		render(<HomePage />);
+
+		const expectedResult = "Iron Capital";
+
+		const result = screen.getByRole("heading", { level: 1 });
+
+		expect(result).toHaveTextContent(expectedResult);
+	});
+
 	it("should render the product tagline", () => {
 		render(<HomePage />);
 
