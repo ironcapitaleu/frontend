@@ -130,7 +130,7 @@ function ThemeShowcase(controls: ThemeControls) {
 			className="bg-background text-foreground flex max-w-3xl flex-col gap-6 rounded-xl border p-6"
 		>
 			<div className="flex flex-col gap-1">
-				<h2 className="font-serif">Theme playground</h2>
+				<h2>Theme playground</h2>
 				<p className="text-muted-foreground max-w-none text-left">
 					Drive the theme settings from the Controls panel. Every primitive
 					below reads the same tokens the app ships.
@@ -239,17 +239,16 @@ export const Default: Story = {
 };
 
 /**
- * A preset that sets a warm primary, a soft background, a wider radius, and
- * looser spacing, so the effect of a theme change reads at a glance next to the
- * default. Every value still lands on the story wrapper alone.
+ * A preset that layers a warm accent, a warm border, a wider radius, and looser
+ * spacing over the active theme, so the effect reads at a glance next to the
+ * default. It leaves the page and card surfaces on their theme tokens, so the
+ * preset holds in both light and dark. Every value still lands on the story
+ * wrapper alone.
  */
 export const WarmPreset: Story = {
 	args: {
 		primary: "#c2410c",
 		primaryForeground: "#fff7ed",
-		secondary: "#fed7aa",
-		background: "#fffbf5",
-		foreground: "#431407",
 		border: "#fdba74",
 		radius: 18,
 		spacing: 0.3,
