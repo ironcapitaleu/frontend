@@ -1,7 +1,7 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from ".";
 
@@ -19,6 +19,10 @@ function renderTooltip(content?: ReactNode) {
 }
 
 describe("Tooltip", () => {
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
 	it("should render the trigger when mounted", () => {
 		renderTooltip();
 
@@ -96,8 +100,8 @@ describe("Tooltip", () => {
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should hold the content closed on hover until the provider default delay elapses", async () => {
-		const user = userEvent.setup();
+	it("should reveal the content only once the 300ms provider default delay elapses when hovered", async () => {
+		vi.useFakeTimers();
 		render(
 			<TooltipProvider>
 				<Tooltip>
@@ -106,18 +110,34 @@ describe("Tooltip", () => {
 				</Tooltip>
 			</TooltipProvider>,
 		);
-		await user.hover(screen.getByRole("button"));
+		const trigger = screen.getByRole("button");
+		// userEvent.hover deadlocks under fake timers, so dispatch the hover
+		// sequence base-ui listens for directly.
+		act(() => {
+			fireEvent.pointerOver(trigger, { pointerType: "mouse" });
+			fireEvent.pointerEnter(trigger, { pointerType: "mouse" });
+			fireEvent.mouseOver(trigger);
+			fireEvent.mouseEnter(trigger);
+			fireEvent.pointerMove(trigger, { pointerType: "mouse" });
+			fireEvent.mouseMove(trigger);
+		});
 
 		const expectedResult = {
-			beforeDelay: null,
-			afterDelay: "Revenue minus cost of goods sold",
+			at299: null,
+			at300: "Revenue minus cost of goods sold",
 		};
 
-		const beforeDelay = screen.queryByText("Revenue minus cost of goods sold");
-		const afterDelay = (
-			await screen.findByText("Revenue minus cost of goods sold")
-		).textContent;
-		const result = { beforeDelay, afterDelay };
+		act(() => {
+			vi.advanceTimersByTime(299);
+		});
+		const at299 = screen.queryByText("Revenue minus cost of goods sold");
+		act(() => {
+			vi.advanceTimersByTime(1);
+		});
+		const at300 =
+			screen.queryByText("Revenue minus cost of goods sold")?.textContent ??
+			null;
+		const result = { at299, at300 };
 
 		expect(result).toEqual(expectedResult);
 	});

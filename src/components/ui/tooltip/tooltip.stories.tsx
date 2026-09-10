@@ -123,6 +123,8 @@ export const SideOffsetGap: Story = {
 							? t.left - p.right
 							: p.left - t.right;
 
+			// 16 sits above the default gap of 8 and below the configured 20,
+			// so it distinguishes the non-default offset with room for rounding.
 			expect(Math.round(gap) >= 16).toBe(expectedResult);
 		});
 	},
