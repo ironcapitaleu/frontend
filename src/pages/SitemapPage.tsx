@@ -1,5 +1,9 @@
 import { Link } from "react-router";
 
+import { Heading } from "@/components/ui/heading";
+import { Container, Section } from "@/components/ui/section";
+import { TextLink } from "@/components/ui/text";
+
 interface SitemapLink {
 	label: string;
 	to: string;
@@ -13,18 +17,17 @@ interface SitemapSectionProps {
 function SitemapSection({ title, links }: SitemapSectionProps) {
 	return (
 		<div className="flex flex-col gap-4">
-			<h2 className="text-3xl font-semibold uppercase tracking-widest text-foreground">
-				{title}
-			</h2>
+			<Heading variant="overline">{title}</Heading>
 			<ul className="flex flex-col gap-3 list-none m-0 p-0">
 				{links.map(({ label, to }) => (
 					<li key={to}>
-						<Link
-							to={to}
-							className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+						<TextLink
+							render={<Link to={to} />}
+							variant="subtle"
+							className="text-sm font-medium"
 						>
 							{label}
-						</Link>
+						</TextLink>
 					</li>
 				))}
 			</ul>
@@ -57,25 +60,28 @@ const SITEMAP_SECTIONS: SitemapSectionProps[] = [
 
 function HeroSection() {
 	return (
-		<section className="px-6 py-20 border-b border-border/50">
-			<div className="max-w-6xl mx-auto">
-				<h1 className="font-classic font-semibold text-4xl md:text-5xl text-foreground">
+		<Section spacing="lg" divider="bottom">
+			<Container width="wide">
+				<Heading level={1} variant="page">
 					Sitemap
-				</h1>
-			</div>
-		</section>
+				</Heading>
+			</Container>
+		</Section>
 	);
 }
 
 function LinksSection() {
 	return (
-		<section className="px-6 py-16">
-			<div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12">
+		<Section>
+			<Container
+				width="wide"
+				className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12"
+			>
 				{SITEMAP_SECTIONS.map((section) => (
 					<SitemapSection key={section.title} {...section} />
 				))}
-			</div>
-		</section>
+			</Container>
+		</Section>
 	);
 }
 

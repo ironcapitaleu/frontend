@@ -1,62 +1,54 @@
 import { Link } from "react-router";
 
+import { Heading } from "@/components/ui/heading";
+import { Container, Section } from "@/components/ui/section";
+import { Text, TextLink } from "@/components/ui/text";
+
 function HeroSection() {
 	return (
-		<section className="flex flex-col items-center justify-center px-6 py-20 border-b border-border/50 text-center">
-			<div className="max-w-prose flex flex-col gap-3">
-				<h1 className="font-classic font-semibold text-4xl md:text-5xl text-foreground">
+		<Section spacing="lg" divider="bottom" className="text-center">
+			<Container className="flex flex-col gap-3">
+				<Heading level={1} variant="page">
 					Privacy Policy
-				</h1>
-				<p className="text-sm text-muted-foreground">
+				</Heading>
+				<Text font="sans" size="sm">
 					Last updated: 18 March 2026
-				</p>
-			</div>
-		</section>
+				</Text>
+			</Container>
+		</Section>
 	);
 }
 
 function WhoWeAreSection() {
 	return (
-		<section className="flex flex-col items-center px-6 py-16 border-t border-border/50">
-			<div className="max-w-prose flex flex-col gap-6 w-full">
-				<h2 className="font-classic font-semibold text-2xl text-foreground">
-					Who We Are
-				</h2>
-				<p className="font-classic text-muted-foreground leading-relaxed">
+		<Section divider="top">
+			<Container className="flex flex-col gap-6">
+				<Heading variant="section">Who We Are</Heading>
+				<Text>
 					Iron Capital is the data controller responsible for the personal data
 					you provide through this website. We are based in Zürich, Switzerland.
 					You can reach us at{" "}
-					<a
-						href="mailto:contact@ironcapital.eu"
-						className="underline hover:text-foreground transition-colors"
-					>
+					<TextLink href="mailto:contact@ironcapital.eu">
 						contact@ironcapital.eu
-					</a>
+					</TextLink>
 					.
-				</p>
-			</div>
-		</section>
+				</Text>
+			</Container>
+		</Section>
 	);
 }
 
 function DataWeCollectSection() {
 	return (
-		<section className="flex flex-col items-center px-6 py-16 border-t border-border/50">
-			<div className="max-w-prose flex flex-col gap-6 w-full">
-				<h2 className="font-classic font-semibold text-2xl text-foreground">
-					Data We Collect
-				</h2>
-				<p className="font-classic text-muted-foreground leading-relaxed">
+		<Section divider="top">
+			<Container className="flex flex-col gap-6">
+				<Heading variant="section">Data We Collect</Heading>
+				<Text>
 					When you submit our{" "}
-					<Link
-						to="/contact"
-						className="underline hover:text-foreground transition-colors"
-					>
-						contact form
-					</Link>
-					, we collect the following personal data:
-				</p>
-				<ul className="font-classic text-muted-foreground leading-relaxed list-disc pl-5 flex flex-col gap-2">
+					<TextLink render={<Link to="/contact" />}>contact form</TextLink>, we
+					collect the following personal data:
+				</Text>
+				<Text render={<ul />} className="list-disc pl-5 flex flex-col gap-2">
 					<li>
 						<strong className="text-foreground font-medium">Full name</strong> —
 						to address you by name in our reply.
@@ -73,128 +65,117 @@ function DataWeCollectSection() {
 						</strong>{" "}
 						— the subject and body of your inquiry.
 					</li>
-				</ul>
-				<p className="font-classic text-muted-foreground leading-relaxed">
+				</Text>
+				<Text>
 					We do not collect any personal data through other sections of this
 					website unless you explicitly provide it.
-				</p>
-			</div>
-		</section>
+				</Text>
+			</Container>
+		</Section>
 	);
 }
 
 function PurposeSection() {
 	return (
-		<section className="flex flex-col items-center px-6 py-16 border-t border-border/50">
-			<div className="max-w-prose flex flex-col gap-6 w-full">
-				<h2 className="font-classic font-semibold text-2xl text-foreground">
-					Purpose & Legal Basis
-				</h2>
-				<p className="font-classic text-muted-foreground leading-relaxed">
+		<Section divider="top">
+			<Container className="flex flex-col gap-6">
+				<Heading variant="section">Purpose & Legal Basis</Heading>
+				<Text>
 					We process your data solely to respond to your inquiry. The legal
 					basis for this processing is your explicit consent, given when you
 					check the consent checkbox on the contact form (Art. 6(1)(a) GDPR and
 					nDSG Art. 31).
-				</p>
-				<p className="font-classic text-muted-foreground leading-relaxed">
+				</Text>
+				<Text>
 					You may withdraw your consent at any time by contacting us at{" "}
-					<a
-						href="mailto:contact@ironcapital.eu"
-						className="underline hover:text-foreground transition-colors"
-					>
+					<TextLink href="mailto:contact@ironcapital.eu">
 						contact@ironcapital.eu
-					</a>
+					</TextLink>
 					. Withdrawal does not affect the lawfulness of any processing carried
 					out before the withdrawal.
-				</p>
-			</div>
-		</section>
+				</Text>
+			</Container>
+		</Section>
 	);
 }
 
 function ThirdPartyProcessorsSection() {
 	return (
-		<section className="flex flex-col items-center px-6 py-16 border-t border-border/50">
-			<div className="max-w-prose flex flex-col gap-6 w-full">
-				<h2 className="font-classic font-semibold text-2xl text-foreground">
-					Third-Party Processors
-				</h2>
-				<p className="font-classic text-muted-foreground leading-relaxed">
+		<Section divider="top">
+			<Container className="flex flex-col gap-6">
+				<Heading variant="section">Third-Party Processors</Heading>
+				<Text>
 					We use the following third-party services to operate the contact form:
-				</p>
+				</Text>
 				<div className="flex flex-col gap-5">
 					<div className="flex flex-col gap-2">
-						<h3 className="font-classic font-medium text-foreground">Resend</h3>
-						<p className="font-classic text-sm text-muted-foreground leading-relaxed">
+						<Heading level={3} variant="subsection">
+							Resend
+						</Heading>
+						<Text size="sm">
 							We use{" "}
-							<a
+							<TextLink
 								href="https://resend.com"
 								target="_blank"
 								rel="noopener noreferrer"
-								className="underline hover:text-foreground transition-colors"
 							>
 								Resend
-							</a>{" "}
+							</TextLink>{" "}
 							to deliver your message to our inbox. Your name, email address,
 							and message are transmitted to Resend's servers. Resend processes
 							data under standard contractual clauses (SCCs) where applicable.
 							See the{" "}
-							<a
+							<TextLink
 								href="https://resend.com/legal/privacy-policy"
 								target="_blank"
 								rel="noopener noreferrer"
-								className="underline hover:text-foreground transition-colors"
 							>
 								Resend Privacy Policy
-							</a>{" "}
+							</TextLink>{" "}
 							for full details.
-						</p>
+						</Text>
 					</div>
 					<div className="flex flex-col gap-2">
-						<h3 className="font-classic font-medium text-foreground">
+						<Heading level={3} variant="subsection">
 							Cloudflare Turnstile
-						</h3>
-						<p className="font-classic text-sm text-muted-foreground leading-relaxed">
+						</Heading>
+						<Text size="sm">
 							We use{" "}
-							<a
+							<TextLink
 								href="https://www.cloudflare.com/products/turnstile/"
 								target="_blank"
 								rel="noopener noreferrer"
-								className="underline hover:text-foreground transition-colors"
 							>
 								Cloudflare Turnstile
-							</a>{" "}
+							</TextLink>{" "}
 							to protect the contact form from automated submissions. Turnstile
 							may process your IP address and browser signals (user agent,
 							interaction patterns) for bot detection purposes. No CAPTCHA image
 							is shown. Turnstile does not have access to your name, email, or
 							message content. Cloudflare's own retention practices are governed
 							by the{" "}
-							<a
+							<TextLink
 								href="https://www.cloudflare.com/privacypolicy/"
 								target="_blank"
 								rel="noopener noreferrer"
-								className="underline hover:text-foreground transition-colors"
 							>
 								Cloudflare Privacy Policy
-							</a>
+							</TextLink>
 							, which we do not control.
-						</p>
+						</Text>
 					</div>
 				</div>
-			</div>
-		</section>
+			</Container>
+		</Section>
 	);
 }
 
 function RetentionSection() {
 	return (
-		<section className="flex flex-col items-center px-6 py-16 border-t border-border/50">
-			<div className="max-w-prose flex flex-col gap-6 w-full">
-				<h2 className="font-classic font-semibold text-2xl text-foreground">
-					Data Retention
-				</h2>
-				<p className="font-classic text-muted-foreground leading-relaxed">
+		<Section divider="top">
+			<Container className="flex flex-col gap-6">
+				<Heading variant="section">Data Retention</Heading>
+				<Text>
 					We retain the personal data you submit through the contact form for a
 					maximum of{" "}
 					<strong className="text-foreground font-medium">90 days</strong> from
@@ -203,24 +184,22 @@ function RetentionSection() {
 					data that Iron Capital directly holds. Third-party processors listed
 					above retain data according to their own policies, which we do not
 					control.
-				</p>
-			</div>
-		</section>
+				</Text>
+			</Container>
+		</Section>
 	);
 }
 
 function YourRightsSection() {
 	return (
-		<section className="flex flex-col items-center px-6 py-16 border-t border-border/50">
-			<div className="max-w-prose flex flex-col gap-6 w-full">
-				<h2 className="font-classic font-semibold text-2xl text-foreground">
-					Your Rights
-				</h2>
-				<p className="font-classic text-muted-foreground leading-relaxed">
+		<Section divider="top">
+			<Container className="flex flex-col gap-6">
+				<Heading variant="section">Your Rights</Heading>
+				<Text>
 					Under the GDPR and the Swiss Federal Act on Data Protection (nDSG),
 					you have the following rights regarding your personal data:
-				</p>
-				<ul className="font-classic text-muted-foreground leading-relaxed list-disc pl-5 flex flex-col gap-2">
+				</Text>
+				<Text render={<ul />} className="list-disc pl-5 flex flex-col gap-2">
 					<li>
 						<strong className="text-foreground font-medium">Access</strong> —
 						request a copy of the data we hold about you.
@@ -253,42 +232,36 @@ function YourRightsSection() {
 						</strong>{" "}
 						— file a complaint with the Swiss Federal Data Protection and
 						Information Commissioner (
-						<a
+						<TextLink
 							href="https://www.edoeb.admin.ch"
 							target="_blank"
 							rel="noopener noreferrer"
-							className="underline hover:text-foreground transition-colors"
 						>
 							FDPIC
-						</a>
+						</TextLink>
 						) or your local EU supervisory authority.
 					</li>
-				</ul>
-			</div>
-		</section>
+				</Text>
+			</Container>
+		</Section>
 	);
 }
 
 function ContactSection() {
 	return (
-		<section className="flex flex-col items-center px-6 py-16 border-t border-border/50">
-			<div className="max-w-prose flex flex-col gap-6 w-full">
-				<h2 className="font-classic font-semibold text-2xl text-foreground">
-					Contact Us
-				</h2>
-				<p className="font-classic text-muted-foreground leading-relaxed">
+		<Section divider="top">
+			<Container className="flex flex-col gap-6">
+				<Heading variant="section">Contact Us</Heading>
+				<Text>
 					For any questions about this Privacy Policy or to exercise your data
 					rights, please contact us at{" "}
-					<a
-						href="mailto:contact@ironcapital.eu"
-						className="underline hover:text-foreground transition-colors"
-					>
+					<TextLink href="mailto:contact@ironcapital.eu">
 						contact@ironcapital.eu
-					</a>
+					</TextLink>
 					.
-				</p>
-			</div>
-		</section>
+				</Text>
+			</Container>
+		</Section>
 	);
 }
 
