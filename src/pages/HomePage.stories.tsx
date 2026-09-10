@@ -6,7 +6,8 @@ import HomePage from "./HomePage";
  * The landing page: a centered hero with the brand title, the product tagline,
  * and the `SearchBar`. It holds no state and takes no props, so its single
  * meaningful state is the rendered hero, captured here for the visual (Layer 2)
- * record.
+ * record. The decorator mirrors `Layout` (a full-height flex column) so the
+ * hero centers in the viewport the way it does in the running app.
  */
 const meta: Meta<typeof HomePage> = {
 	title: "Pages/HomePage",
@@ -15,6 +16,13 @@ const meta: Meta<typeof HomePage> = {
 	parameters: {
 		layout: "fullscreen",
 	},
+	decorators: [
+		(Story) => (
+			<div className="min-h-screen flex flex-col">
+				<Story />
+			</div>
+		),
+	],
 };
 
 export default meta;
