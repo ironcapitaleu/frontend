@@ -43,6 +43,8 @@ pr-iterate should hand off to this skill rather than opening the release PR ad h
 - A **release freeze** is in effect.
 - The divergence includes a **main-only config change that `dev` lacks** (see the guard below) —
   releasing would revert it.
+- The release carries **user-facing UI that has not had the user's visual sign-off** (see the
+  sign-off gate below).
 
 Modes: `check` = assess and report only (no PR, no merge). `release` (default) = full flow.
 
@@ -56,6 +58,25 @@ Modes: `check` = assess and report only (no PR, no merge). `release` (default) =
   most important rule here.
 - **Never force-push. Never commit directly to `main`.** All promotion goes through the release PR.
 - Update nothing else in the release PR — it is purely a `dev → main` merge.
+
+## Visual sign-off gate (user-facing UI)
+
+A release promotes to production, so a release that carries **user-facing UI changes** needs the
+user's explicit **visual sign-off** first. This gate runs before the merge in Step 6 (get it
+before opening the release PR when you can, so a rejection costs nothing).
+
+1. Present the captures from the `design` skill's **visual gate** (the full matrix: every changed
+   page or component, both themes, mobile and desktop, sent as one batch).
+2. Ask for the decision with a structured **approve-or-change** `AskUserQuestion`, never a
+   free-text ask. Lead with the approve option and your recommendation:
+   - **"Approved, release to main"** — proceed with the release.
+   - **"Changes needed first"** — the user names what to adjust. Fix it on `dev` through the
+     normal `pr-iterate` loop, re-capture, and ask again.
+3. Merge to `main` only after the user picks approve. Never promote user-facing UI on your own
+   read of the appearance.
+
+A release with no user-facing UI change (dependencies, tooling, backend-only config) does not
+need this gate.
 
 ## Procedure
 
