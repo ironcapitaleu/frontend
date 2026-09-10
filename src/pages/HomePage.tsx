@@ -1,13 +1,17 @@
 import SearchBar from "@/components/SearchBar";
+import { Heading } from "@/components/ui/heading";
+import { Text } from "@/components/ui/text";
 
 function HeroSection() {
 	return (
 		<section className="flex flex-col items-center gap-8 text-center w-full max-w-3xl">
 			<div className="flex flex-col items-center">
-				<h1>Iron Capital</h1>
-				<p className="text-muted-foreground text-center mb-0 max-w-sm">
+				<Heading level={1} variant="hero">
+					Iron Capital
+				</Heading>
+				<Text font="sans" tone="muted" className="text-center max-w-sm">
 					Research businesses.
-				</p>
+				</Text>
 			</div>
 			<SearchBar />
 		</section>
