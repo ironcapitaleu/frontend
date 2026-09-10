@@ -34,8 +34,16 @@ const meta: Meta<typeof ContactPage> = {
 export default meta;
 type Story = StoryObj<typeof ContactPage>;
 
-/** The contact form in its production state, before the Turnstile token lands. */
-export const Default: Story = {};
+/**
+ * The contact form before a Turnstile token lands, so the submit button is
+ * disabled. The always-block test key holds that state in a real browser too,
+ * where the hidden widget otherwise resolves and enables the button.
+ */
+export const Default: Story = {
+	args: {
+		turnstileSiteKey: "2x00000000000000000000AB",
+	},
+};
 
 /** The ready-to-send state, with a Turnstile token seeded so the button is live. */
 export const ReadyToSend: Story = {
