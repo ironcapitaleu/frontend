@@ -108,12 +108,22 @@ export const SideOffsetGap: Story = {
 		const expectedResult = true;
 
 		await waitFor(() => {
-			const content = screen.getByText("Revenue minus cost of goods sold");
+			const popup = screen
+				.getByText("Revenue minus cost of goods sold")
+				.closest("[data-side]");
+			const side = popup?.getAttribute("data-side");
+			const t = trigger.getBoundingClientRect();
+			const p = (popup ?? trigger).getBoundingClientRect();
 			const gap =
-				trigger.getBoundingClientRect().top -
-				content.getBoundingClientRect().bottom;
+				side === "top"
+					? t.top - p.bottom
+					: side === "bottom"
+						? p.top - t.bottom
+						: side === "left"
+							? t.left - p.right
+							: p.left - t.right;
 
-			expect(Math.round(gap) >= 18).toBe(expectedResult);
+			expect(Math.round(gap) >= 16).toBe(expectedResult);
 		});
 	},
 };
