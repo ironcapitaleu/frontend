@@ -4,6 +4,11 @@ import { describe, expect, it, vi } from "vitest";
 
 import { DatePicker } from ".";
 
+// Day buttons are matched by a regex on the weekday-qualified name, not an exact
+// string. react-day-picker prefixes the current day's label with "Today," and
+// suffixes a selected day with ", selected", so an exact match would break on the
+// dates the suite runs. The weekday form ("Thursday, …") never matches the trigger
+// label, which carries no weekday.
 describe("DatePicker", () => {
 	it("should show the placeholder when no date is chosen", () => {
 		render(<DatePicker placeholder="Pick a date" />);
@@ -50,7 +55,7 @@ describe("DatePicker", () => {
 
 		await user.click(screen.getByRole("button"));
 		await user.click(
-			screen.getByRole("button", { name: "Thursday, September 10th, 2026" }),
+			screen.getByRole("button", { name: /Thursday, September 10th, 2026/ }),
 		);
 
 		const result = onValueChange.mock.calls[0]?.[0];
@@ -66,7 +71,7 @@ describe("DatePicker", () => {
 
 		await user.click(screen.getByRole("button"));
 		await user.click(
-			screen.getByRole("button", { name: "Thursday, September 10th, 2026" }),
+			screen.getByRole("button", { name: /Thursday, September 10th, 2026/ }),
 		);
 
 		const result = screen.getByRole("button").textContent;
@@ -80,7 +85,7 @@ describe("DatePicker", () => {
 
 		await user.click(screen.getByRole("button"));
 		await user.click(
-			screen.getByRole("button", { name: "Thursday, September 10th, 2026" }),
+			screen.getByRole("button", { name: /Thursday, September 10th, 2026/ }),
 		);
 
 		const result = screen.queryByRole("button", {
@@ -105,7 +110,7 @@ describe("DatePicker", () => {
 		await user.click(screen.getByRole("button"));
 		await user.click(
 			await screen.findByRole("button", {
-				name: "Tuesday, September 15th, 2026, selected",
+				name: /Tuesday, September 15th, 2026/,
 			}),
 		);
 
@@ -125,7 +130,7 @@ describe("DatePicker", () => {
 		await user.click(screen.getByRole("button"));
 		await user.click(
 			await screen.findByRole("button", {
-				name: "Thursday, September 10th, 2026",
+				name: /Thursday, September 10th, 2026/,
 			}),
 		);
 		rerender(<DatePicker value={undefined} placeholder="Pick a date" />);
