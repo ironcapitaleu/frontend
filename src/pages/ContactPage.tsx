@@ -6,12 +6,6 @@ import type { TurnstileInstance } from "@marsidev/react-turnstile";
 import { Mail, MapPin, Send } from "lucide-react";
 import { Link } from "react-router";
 
-import { Button } from "@/components/ui/button";
-import { Heading } from "@/components/ui/heading";
-import { Section, Container } from "@/components/ui/section";
-import { Text, TextLink } from "@/components/ui/text";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
 	AlertDialog,
 	AlertDialogContent,
@@ -21,6 +15,11 @@ import {
 	AlertDialogFooter,
 	AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Heading } from "@/components/ui/heading";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Section, Container } from "@/components/ui/section";
 import {
 	Select,
 	SelectContent,
@@ -28,6 +27,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Text, TextLink } from "@/components/ui/text";
 import { Textarea } from "@/components/ui/textarea";
 
 interface ContactInfoItemProps {
