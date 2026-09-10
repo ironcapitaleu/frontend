@@ -37,7 +37,7 @@ type Story = StoryObj<typeof ContactPage>;
 /**
  * The contact form before a Turnstile token lands, so the submit button is
  * disabled. The always-block test key holds that state in a real browser too,
- * where the widget would otherwise resolve.
+ * where the hidden widget otherwise resolves and enables the button.
  */
 export const Default: Story = {
 	args: {
