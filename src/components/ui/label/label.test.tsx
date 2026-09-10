@@ -2,7 +2,6 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { Label } from ".";
-import { Switch } from "../switch";
 
 describe("Label", () => {
 	it("should render its children as text when given content", () => {
@@ -25,36 +24,17 @@ describe("Label", () => {
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should carry the sibling dimming variant when paired with a disabled base-ui control", () => {
-		render(
-			<div>
-				<Switch aria-label="Live prices" className="peer" disabled />
-				<Label>Live prices</Label>
-			</div>,
-		);
+	it("should include the sibling and ancestor bare data-disabled dimming variants in its class list", () => {
+		render(<Label>Email</Label>);
 
-		const expectedResult = true;
+		const expectedResult = { sibling: true, ancestor: true };
 
-		const result = screen
-			.getByText("Live prices")
-			.classList.contains("peer-data-[disabled]:opacity-50");
+		const classList = screen.getByText("Email").classList;
+		const result = {
+			sibling: classList.contains("peer-data-[disabled]:opacity-50"),
+			ancestor: classList.contains("group-data-[disabled]:opacity-50"),
+		};
 
-		expect(result).toBe(expectedResult);
-	});
-
-	it("should carry the ancestor dimming variant when nested in a disabled group", () => {
-		render(
-			<div className="group" data-disabled>
-				<Label>Email</Label>
-			</div>,
-		);
-
-		const expectedResult = true;
-
-		const result = screen
-			.getByText("Email")
-			.classList.contains("group-data-[disabled]:opacity-50");
-
-		expect(result).toBe(expectedResult);
+		expect(result).toEqual(expectedResult);
 	});
 });

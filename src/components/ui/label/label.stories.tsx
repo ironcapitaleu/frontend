@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import * as React from "react";
+import { expect, within } from "storybook/test";
 
 import { Label } from "./label";
 import { Input } from "../input";
@@ -147,6 +148,16 @@ export const PeerDisabledControl: Story = {
 				</p>
 			</div>
 		);
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const label = canvas.getByText("Live prices");
+
+		const expectedResult = "0.5";
+
+		const result = getComputedStyle(label).opacity;
+
+		await expect(result).toBe(expectedResult);
 	},
 };
 
