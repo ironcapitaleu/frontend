@@ -74,7 +74,7 @@ export const Default: Story = {
 };
 
 /**
- * Demonstrates the `group-data-[disabled=true]` styles on Label.
+ * Demonstrates the `group-data-[disabled]` styles on Label.
  * This is useful when a parent "field" is disabled.
  */
 export const GroupDisabled: Story = {
@@ -93,6 +93,16 @@ export const GroupDisabled: Story = {
 				</p>
 			</div>
 		);
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const label = canvas.getByText("Email");
+
+		const expectedResult = "0.5";
+
+		const result = getComputedStyle(label).opacity;
+
+		await expect(result).toBe(expectedResult);
 	},
 };
 
