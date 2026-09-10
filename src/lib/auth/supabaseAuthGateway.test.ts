@@ -78,6 +78,16 @@ describe("supabaseAuthGateway", () => {
 
 			expect(result).toBeInstanceOf(InvalidCredentials);
 		});
+
+		it("should forward the submitted credentials to the vendor when signing in", async () => {
+			auth.signInWithPassword.mockResolvedValue({ error: null });
+
+			const expectedArgs = { email: "a@b.test", password: "pw" };
+
+			await supabaseAuthGateway().signInWithEmail("a@b.test", "pw");
+
+			expect(auth.signInWithPassword).toHaveBeenCalledWith(expectedArgs);
+		});
 	});
 
 	describe("signUpWithEmail", () => {
@@ -104,6 +114,16 @@ describe("supabaseAuthGateway", () => {
 
 			expect(result).toBeInstanceOf(FailedAuthRequest);
 		});
+
+		it("should forward the submitted credentials to the vendor when signing up", async () => {
+			auth.signUp.mockResolvedValue({ error: null });
+
+			const expectedArgs = { email: "a@b.test", password: "pw" };
+
+			await supabaseAuthGateway().signUpWithEmail("a@b.test", "pw");
+
+			expect(auth.signUp).toHaveBeenCalledWith(expectedArgs);
+		});
 	});
 
 	describe("signOut", () => {
@@ -129,7 +149,7 @@ describe("supabaseAuthGateway", () => {
 	});
 
 	describe("onUserChange", () => {
-		it("should pass the mapped user to the listener when the vendor reports a sign-in", () => {
+		it("should pass the mapped user to the listener when the vendor emits a session with a user", () => {
 			let vendorCallback: (event: string, session: Session | null) => void =
 				() => {};
 			auth.onAuthStateChange.mockImplementation((callback) => {
@@ -152,7 +172,7 @@ describe("supabaseAuthGateway", () => {
 			expect(result).toEqual(expectedResult);
 		});
 
-		it("should pass null to the listener when the vendor reports a sign-out", () => {
+		it("should pass null to the listener when the vendor emits a null session", () => {
 			let vendorCallback: (event: string, session: Session | null) => void =
 				() => {};
 			auth.onAuthStateChange.mockImplementation((callback) => {
