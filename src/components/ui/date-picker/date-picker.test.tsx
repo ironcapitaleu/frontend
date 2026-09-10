@@ -6,9 +6,9 @@ import { DatePicker } from ".";
 
 // Day buttons are matched by a regex on the weekday-qualified name, not an exact
 // string. react-day-picker prefixes the current day's label with "Today," and
-// suffixes a selected day with ", selected", so an exact match would break on the
-// dates the suite runs. The weekday form ("Thursday, …") never matches the trigger
-// label, which carries no weekday.
+// suffixes a selected day with ", selected", so an exact match no longer finds the
+// button on the dates the suite runs. The weekday form ("Thursday, …") never matches
+// the trigger label, which carries no weekday.
 describe("DatePicker", () => {
 	it("should show the placeholder when no date is chosen", () => {
 		render(<DatePicker placeholder="Pick a date" />);
