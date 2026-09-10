@@ -3,6 +3,7 @@ import * as React from "react";
 
 import { Label } from "./label";
 import { Input } from "../input";
+import { Switch } from "../switch";
 
 /**
  * A `Label` is a text element that describes or identifies a corresponding form field or input, helping users understand what data they need to provide.
@@ -117,6 +118,32 @@ export const PeerDisabled: Story = {
 				<Label htmlFor={id}>Email</Label>
 				<p className="text-muted-foreground text-xs">
 					Label reacts to the disabled peer input.
+				</p>
+			</div>
+		);
+	},
+};
+
+/**
+ * Demonstrates the `peer-data-[disabled]` styles on Label.
+ * A base-ui control such as `Switch` marks itself with a bare `data-disabled`
+ * when disabled, and the following label dims with it.
+ */
+export const PeerDisabledControl: Story = {
+	parameters: {
+		controls: { disable: true },
+	},
+	render: () => {
+		const id = React.useId();
+
+		return (
+			<div className="max-w-sm space-y-2">
+				<div className="flex items-center gap-2">
+					<Switch id={id} disabled />
+					<Label htmlFor={id}>Live prices</Label>
+				</div>
+				<p className="text-muted-foreground text-xs">
+					Label dims beside the disabled switch.
 				</p>
 			</div>
 		);
