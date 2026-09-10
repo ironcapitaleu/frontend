@@ -6,9 +6,6 @@ import type { TurnstileInstance } from "@marsidev/react-turnstile";
 import { Mail, MapPin, Send } from "lucide-react";
 import { Link } from "react-router";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
 	AlertDialog,
 	AlertDialogContent,
@@ -18,6 +15,11 @@ import {
 	AlertDialogFooter,
 	AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Heading } from "@/components/ui/heading";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Section, Container } from "@/components/ui/section";
 import {
 	Select,
 	SelectContent,
@@ -25,6 +27,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Text, TextLink } from "@/components/ui/text";
 import { Textarea } from "@/components/ui/textarea";
 
 interface ContactInfoItemProps {
@@ -36,7 +39,9 @@ function ContactInfoItem({ icon, value }: ContactInfoItemProps) {
 	return (
 		<div className="flex items-center gap-3">
 			<span className="text-muted-foreground">{icon}</span>
-			<span className="text-sm text-muted-foreground">{value}</span>
+			<Text render={<span />} font="sans" size="sm" tone="muted">
+				{value}
+			</Text>
 		</div>
 	);
 }
@@ -54,7 +59,9 @@ function ContactLinkItem({ icon, value, href }: ContactLinkItemProps) {
 			className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition-colors"
 		>
 			{icon}
-			<span className="text-sm">{value}</span>
+			<Text render={<span />} font="sans" size="sm" tone="default">
+				{value}
+			</Text>
 		</a>
 	);
 }
@@ -387,12 +394,9 @@ function ContactForm({
 							className="text-sm text-muted-foreground cursor-pointer leading-snug"
 						>
 							I have read and accept the{" "}
-							<Link
-								to="/privacy"
-								className="underline hover:text-foreground transition-colors"
-							>
+							<TextLink render={<Link to="/privacy" />}>
 								Privacy Policy
-							</Link>{" "}
+							</TextLink>{" "}
 							and consent to Iron Capital processing my data to handle this
 							inquiry.
 						</label>
@@ -453,17 +457,20 @@ function ContactForm({
 
 function ContactPage({ sendMessage, initialTurnstileToken }: ContactFormProps) {
 	return (
-		<div className="flex-1 bg-background">
-			<div className="max-w-6xl mx-auto px-6 py-12 lg:py-16 grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24">
+		<Section className="flex-1 bg-background">
+			<Container
+				width="wide"
+				className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24"
+			>
 				<div className="flex flex-col gap-10">
 					<div className="flex flex-col gap-4">
-						<h1 className="font-classic text-4xl md:text-5xl font-semibold text-foreground leading-tight">
+						<Heading level={1} variant="page" className="leading-tight">
 							Get in touch
-						</h1>
-						<p className="text-muted-foreground text-base leading-relaxed max-w-sm">
+						</Heading>
+						<Text font="sans" tone="muted" className="max-w-sm">
 							Connect with our team for questions about our tools. We typically
 							respond within 24 hours.
-						</p>
+						</Text>
 					</div>
 
 					<div className="flex flex-col gap-4">
@@ -483,8 +490,8 @@ function ContactPage({ sendMessage, initialTurnstileToken }: ContactFormProps) {
 					sendMessage={sendMessage}
 					initialTurnstileToken={initialTurnstileToken}
 				/>
-			</div>
-		</div>
+			</Container>
+		</Section>
 	);
 }
 
