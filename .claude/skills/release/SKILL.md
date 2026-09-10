@@ -43,8 +43,9 @@ pr-iterate should hand off to this skill rather than opening the release PR ad h
 - A **release freeze** is in effect.
 - The divergence includes a **main-only config change that `dev` lacks** (see the guard below) —
   releasing would revert it.
-- The release carries **user-facing UI** without the user's **visual sign-off**. Do not merge
-  until you have it (run the sign-off gate below). Starting the release does not need the sign-off.
+
+User-facing UI without the user's **visual sign-off** is not an abort. Start the release and run
+the flow, then hold the Step 6 merge until the sign-off is in (see the sign-off gate below).
 
 Modes: `check` = assess and report only (no PR, no merge). `release` (default) = full flow.
 
