@@ -43,8 +43,8 @@ import { type ThemeControls, themeVars } from "./theme-vars";
  * The controls set CSS custom properties on a single wrapper element that this
  * story renders, so the change reaches only the playground. Every other story
  * keeps the shared theme. The primitives themselves read the semantic tokens,
- * the same ones the app ships, so what you see here is what a real theme change
- * would produce.
+ * the same ones the app ships, so what you see here matches a real theme
+ * change.
  *
  * Leave a color control empty to keep that token at its active-theme value. The
  * Storybook theme toggle still switches the playground between light and dark,
@@ -57,7 +57,7 @@ const meta: Meta<ThemeControls> = {
 		primary: {
 			control: "color",
 			description:
-				"The accent color for primary buttons, badges, and focus rings. Empty keeps the theme value.",
+				"The accent color for primary buttons and badges. Empty keeps the theme value.",
 		},
 		primaryForeground: {
 			control: "color",
@@ -108,7 +108,7 @@ const meta: Meta<ThemeControls> = {
 export default meta;
 type Story = StoryObj<ThemeControls>;
 
-/** The four account roles the showcase select offers. */
+/** The three account roles the showcase select offers. */
 const ROLE_ITEMS = [
 	{ value: "admin", label: "Admin" },
 	{ value: "editor", label: "Editor" },

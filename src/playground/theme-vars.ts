@@ -19,7 +19,7 @@
  * and their defaults match the shared theme.
  */
 export interface ThemeControls {
-	/** The accent color for primary buttons, badges, and rings. */
+	/** The accent color for primary buttons and badges. */
 	primary: string;
 	/** The text color that sits on a primary surface. */
 	primaryForeground: string;
