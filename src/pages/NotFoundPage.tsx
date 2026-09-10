@@ -1,22 +1,24 @@
 import { Link } from "react-router";
 
 import { Button } from "@/components/ui/button";
+import { Heading } from "@/components/ui/heading";
+import { Text } from "@/components/ui/text";
 
 function NotFoundPage() {
 	return (
-		<main className="flex-1 flex items-center justify-center px-4">
+		<div className="flex-1 flex items-center justify-center px-4">
 			<section className="flex flex-col items-center text-center max-w-2xl mx-auto">
-				<span className="text-8xl md:text-[120px] font-serif font-bold text-foreground/10 mb-4 select-none">
+				<span className="text-8xl md:text-9xl font-serif font-bold text-foreground/10 mb-4 select-none">
 					404
 				</span>
 
-				<h1 className="font-serif md:text-5xl font-medium tracking-tight mb-4">
+				<Heading level={1} variant="hero" className="mb-4">
 					The page you're looking for can't be found.
-				</h1>
+				</Heading>
 
-				<p className="text-muted-foreground text-lg mb-8">
+				<Text font="sans" size="lg" className="mb-8">
 					It might have been moved or deleted. Let's get you back on track.
-				</p>
+				</Text>
 
 				<Button
 					size="lg"
@@ -27,7 +29,7 @@ function NotFoundPage() {
 					Return to homepage
 				</Button>
 			</section>
-		</main>
+		</div>
 	);
 }
 

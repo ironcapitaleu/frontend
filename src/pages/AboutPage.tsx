@@ -1,24 +1,34 @@
+import { Heading } from "@/components/ui/heading";
+import { Container, Section } from "@/components/ui/section";
+import { Text } from "@/components/ui/text";
+
 function StatementSection() {
 	return (
-		<section className="flex flex-col items-center justify-center px-6 py-24 text-center">
-			<p className="font-classic text-5xl md:text-7xl font-medium leading-tight max-w-4xl text-foreground text-center">
+		<Section spacing="xl" className="text-center">
+			<Text
+				size="display"
+				tone="foreground"
+				className="mx-auto max-w-4xl text-center"
+			>
 				Every successful investment begins with a deep understanding of the
 				business.
-			</p>
-		</section>
+			</Text>
+		</Section>
 	);
 }
 
 function PhilosophySection() {
 	return (
-		<section className="flex flex-col items-center px-6 py-16 border-t border-border/50">
-			<div className="max-w-prose flex flex-col gap-6 text-center">
-				<h1 className="font-classic font-semibold">Timeless Principles</h1>
-				<p className="font-classic text-muted-foreground leading-relaxed">
+		<Section divider="top">
+			<Container className="flex flex-col gap-6 text-center">
+				<Heading level={1} variant="feature">
+					Timeless Principles
+				</Heading>
+				<Text>
 					Everything we do is grounded in principles that have endured through
 					time and continue to guide our judgment about the future.
-				</p>
-				<p className="font-classic text-muted-foreground leading-relaxed">
+				</Text>
+				<Text>
 					It is rarely wise to project the past into the future. But the past
 					does contain something valuable: patterns that refuse to change. Human
 					behavior, incentives, and the fundamental drivers of value have
@@ -26,62 +36,66 @@ function PhilosophySection() {
 					these. Markets shift, industries transform, technologies disrupt — but
 					the forces that govern how businesses create and destroy value
 					persist.
-				</p>
-				<p className="font-classic text-muted-foreground leading-relaxed">
+				</Text>
+				<Text>
 					We dedicate ourselves to these principles and apply them with patience
 					and discipline.
-				</p>
-			</div>
-		</section>
+				</Text>
+			</Container>
+		</Section>
 	);
 }
 
 function SecurityAnalysisSection() {
 	return (
-		<section className="flex flex-col items-center px-6 py-16 border-t border-border/50">
-			<div className="max-w-prose flex flex-col gap-6 text-center">
-				<h1 className="font-classic font-semibold">Security Analysis</h1>
-				<p className="font-classic text-muted-foreground leading-relaxed">
+		<Section divider="top">
+			<Container className="flex flex-col gap-6 text-center">
+				<Heading level={1} variant="feature">
+					Security Analysis
+				</Heading>
+				<Text>
 					A security is not a blinking number on a screen — it represents a
 					claim on a real business, with real economics, real risks, and a real
 					future.
-				</p>
-				<p className="font-classic text-muted-foreground leading-relaxed">
+				</Text>
+				<Text>
 					The discipline of security analysis, as practiced by its earliest and
 					most rigorous thinkers, asks one central question: what is this
 					business actually worth? Answering it demands patience, accounting
 					literacy, and a refusal to confuse price with value.
-				</p>
-			</div>
-		</section>
+				</Text>
+			</Container>
+		</Section>
 	);
 }
 
 function MethodSection() {
 	return (
-		<section className="flex flex-col items-center px-6 py-16 border-t border-border/50">
-			<div className="max-w-prose flex flex-col gap-8 text-center">
-				<h1 className="font-classic font-semibold">Our Method</h1>
-				<div className="flex flex-col gap-5 text-muted-foreground">
-					<p className="font-classic text-muted-foreground leading-relaxed">
+		<Section divider="top">
+			<Container className="flex flex-col gap-8 text-center">
+				<Heading level={1} variant="feature">
+					Our Method
+				</Heading>
+				<div className="flex flex-col gap-5">
+					<Text>
 						We build tools for people who want to understand businesses — their
 						economics, their competitive positions, their capital allocation,
 						and their long-term prospects.
-					</p>
-					<p className="font-classic leading-relaxed">
+					</Text>
+					<Text>
 						Information and facts about a company — not a ticker symbol.
-					</p>
-					<p className="font-classic leading-relaxed">
+					</Text>
+					<Text>
 						Financial data rooted in accounting fundamentals, not price
 						movements.
-					</p>
-					<p className="font-classic leading-relaxed">
+					</Text>
+					<Text>
 						A consistent framework for thinking about business quality, year
 						after year.
-					</p>
+					</Text>
 				</div>
-			</div>
-		</section>
+			</Container>
+		</Section>
 	);
 }
 
