@@ -97,6 +97,13 @@ export interface ContactFormProps {
 	 * leaves this `null`; the real widget sets the token at runtime.
 	 */
 	initialTurnstileToken?: string | null;
+	/**
+	 * The Cloudflare Turnstile site key. Defaults to `VITE_TURNSTILE_SITE_KEY`,
+	 * or Cloudflare's always-pass test key when that is unset (the production
+	 * path). A story passes the always-block test key so the submit button holds
+	 * its disabled state in a real browser, where the widget resolves.
+	 */
+	turnstileSiteKey?: string;
 }
 
 const SUBJECTS = ["General", "Technical"] as const;
@@ -109,6 +116,8 @@ const stubSendMessage = async (): Promise<void> => {
 function ContactForm({
 	sendMessage = stubSendMessage,
 	initialTurnstileToken = null,
+	turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY ??
+		"1x00000000000000000000AA",
 }: ContactFormProps) {
 	const [form, setForm] = useState<ContactFormState>({
 		fullName: "",
@@ -356,10 +365,7 @@ function ContactForm({
 				<div className="hidden">
 					<Turnstile
 						ref={turnstileRef}
-						siteKey={
-							import.meta.env.VITE_TURNSTILE_SITE_KEY ??
-							"1x00000000000000000000AA"
-						}
+						siteKey={turnstileSiteKey}
 						onSuccess={(token) => setTurnstileToken(token)}
 						onExpire={() => setTurnstileToken(null)}
 						onError={() => setTurnstileToken(null)}
@@ -455,7 +461,11 @@ function ContactForm({
 	);
 }
 
-function ContactPage({ sendMessage, initialTurnstileToken }: ContactFormProps) {
+function ContactPage({
+	sendMessage,
+	initialTurnstileToken,
+	turnstileSiteKey,
+}: ContactFormProps) {
 	return (
 		<Section className="flex-1 bg-background">
 			<Container
@@ -489,6 +499,7 @@ function ContactPage({ sendMessage, initialTurnstileToken }: ContactFormProps) {
 				<ContactForm
 					sendMessage={sendMessage}
 					initialTurnstileToken={initialTurnstileToken}
+					turnstileSiteKey={turnstileSiteKey}
 				/>
 			</Container>
 		</Section>
