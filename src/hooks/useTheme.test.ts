@@ -1,5 +1,5 @@
 import { act, renderHook } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { THEME_STORAGE_KEY } from "../lib/theme/theme";
 import { useTheme } from "./useTheme";
@@ -11,6 +11,7 @@ describe("useTheme", () => {
 	});
 
 	afterEach(() => {
+		vi.restoreAllMocks();
 		window.localStorage.clear();
 		document.documentElement.classList.remove("dark");
 	});
@@ -68,6 +69,35 @@ describe("useTheme", () => {
 		const expectedResult = "light";
 
 		const result = hook.current.resolvedTheme;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should default the choice to 'system' when reading storage throws", () => {
+		vi.spyOn(window.localStorage, "getItem").mockImplementation(() => {
+			throw new Error("storage blocked");
+		});
+		const { result: hook } = renderHook(() => useTheme());
+
+		const expectedResult = "system";
+
+		const result = hook.current.choice;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should still apply the choice when writing storage throws", () => {
+		vi.spyOn(window.localStorage, "setItem").mockImplementation(() => {
+			throw new Error("storage blocked");
+		});
+		const { result: hook } = renderHook(() => useTheme());
+
+		const expectedResult = "dark";
+
+		act(() => {
+			hook.current.setChoice("dark");
+		});
+		const result = hook.current.choice;
 
 		expect(result).toBe(expectedResult);
 	});

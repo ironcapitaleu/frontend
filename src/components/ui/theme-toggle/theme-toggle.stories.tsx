@@ -102,3 +102,23 @@ export const SelectsThemeOnClick: Story = {
 		await expect(result).toBe(expectedResult);
 	},
 };
+
+/**
+ * Play test: clicking the pressed option keeps it pressed, so a theme stays
+ * applied instead of leaving the control with nothing selected.
+ */
+export const KeepsSelectionWhenPressedAgain: Story = {
+	args: { initial: "dark" },
+	parameters: { controls: { disable: true } },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const dark = canvas.getByRole("button", { name: "Dark theme" });
+
+		const expectedResult = "true";
+
+		await userEvent.click(dark);
+		const result = dark.getAttribute("aria-pressed");
+
+		await expect(result).toBe(expectedResult);
+	},
+};

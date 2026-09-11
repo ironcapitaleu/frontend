@@ -12,6 +12,31 @@ import {
 /** The media query that reports the operating system dark preference. */
 const DARK_QUERY = "(prefers-color-scheme: dark)";
 
+/**
+ * Reads the OS dark preference, defaulting to `false` when `matchMedia` is
+ * absent or throws. The pre-paint script in `index.html` guards the same call.
+ */
+function systemPrefersDark(): boolean {
+	try {
+		return window.matchMedia(DARK_QUERY).matches;
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * Reads the stored choice, defaulting to `system` when storage access throws.
+ * Some privacy contexts throw on `window.localStorage` access, and the app must
+ * still mount there, so this mirrors the guard in the pre-paint script.
+ */
+function readChoiceSafely(): ThemeChoice {
+	try {
+		return readStoredChoice(window.localStorage);
+	} catch {
+		return "system";
+	}
+}
+
 /** The theme state a consumer reads and drives. */
 export interface ThemeState {
 	/** The visitor's current choice. */
@@ -33,15 +58,16 @@ export interface ThemeState {
  * @returns The {@link ThemeState} to expose through the provider.
  */
 export function useTheme(): ThemeState {
-	const [choice, setChoiceState] = useState<ThemeChoice>(() =>
-		readStoredChoice(window.localStorage),
-	);
-	const [prefersDark, setPrefersDark] = useState<boolean>(
-		() => window.matchMedia(DARK_QUERY).matches,
-	);
+	const [choice, setChoiceState] = useState<ThemeChoice>(readChoiceSafely);
+	const [prefersDark, setPrefersDark] = useState<boolean>(systemPrefersDark);
 
 	useEffect(() => {
-		const media = window.matchMedia(DARK_QUERY);
+		let media: MediaQueryList;
+		try {
+			media = window.matchMedia(DARK_QUERY);
+		} catch {
+			return;
+		}
 		const handleChange = (event: MediaQueryListEvent) => {
 			setPrefersDark(event.matches);
 		};
@@ -56,7 +82,11 @@ export function useTheme(): ThemeState {
 	}, [resolvedTheme]);
 
 	const setChoice = useCallback((next: ThemeChoice) => {
-		storeChoice(window.localStorage, next);
+		try {
+			storeChoice(window.localStorage, next);
+		} catch {
+			// Ignore write failures and keep applying the choice in-session.
+		}
 		setChoiceState(next);
 	}, []);
 
