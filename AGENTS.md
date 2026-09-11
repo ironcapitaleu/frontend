@@ -140,9 +140,17 @@ levels it sits at, and take it to the highest level you can:
    remembered. This is the weakest level. AI drift is statistical, and a rule
    that lives only in prose erodes without anyone noticing.
 
-A convention left at level 3 that a script could enforce at level 1 is a latent
+A convention left at level 3 that a script can enforce at level 1 is a latent
 regression. When you add a rule here, take it to the highest level it reaches,
 and state why if you stop short.
+
+Worked example from this file: story presence sits at level 1 (the
+`check:stories` gate), because "does this folder have a story" is a yes-or-no a
+script decides. Its sibling rule, "new logic means a unit test", stays at level 3
+on purpose. Whether a component owns logic worth a separate test is a judgment,
+not a file-presence check, so no script decides it without either forcing
+boilerplate tests or guessing. The coverage-threshold gate (STA-137) is the
+mechanical backstop for that rule.
 
 ---
 

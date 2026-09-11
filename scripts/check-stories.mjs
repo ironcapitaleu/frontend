@@ -6,6 +6,10 @@
 // both undocumented and untested. This script promotes that convention from a
 // written rule to a CI gate. It fails when any immediate child folder of
 // src/components/ui/ has no *.stories.tsx file.
+//
+// Granularity: the check is one story per immediate folder, not per component
+// file, and it does not recurse into subfolders (components are flat today). A
+// folder passes as soon as it holds one *.stories.tsx.
 
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -17,19 +21,30 @@ const UI_DIR = "src/components/ui";
 // the escape hatch never turns into silent story rot.
 const IGNORED = new Set([]);
 
-function foldersWithoutStory() {
-	const entries = readdirSync(UI_DIR, { withFileTypes: true });
-
-	return entries
+function componentFolders() {
+	return readdirSync(UI_DIR, { withFileTypes: true })
 		.filter((entry) => entry.isDirectory() && !IGNORED.has(entry.name))
-		.filter((entry) => {
-			const files = readdirSync(join(UI_DIR, entry.name));
-			return !files.some((file) => file.endsWith(".stories.tsx"));
-		})
 		.map((entry) => entry.name);
 }
 
-const missing = foldersWithoutStory();
+function hasStory(folder) {
+	return readdirSync(join(UI_DIR, folder)).some((file) =>
+		file.endsWith(".stories.tsx"),
+	);
+}
+
+const folders = componentFolders();
+
+// A gate that enforces nothing is worse than no gate: it goes green while the
+// convention rots. If the path moved or the directory emptied, fail loud.
+if (folders.length === 0) {
+	console.error(
+		`Story-presence gate found no component folders under ${UI_DIR}/. The path likely moved. Update scripts/check-stories.mjs.`,
+	);
+	process.exit(1);
+}
+
+const missing = folders.filter((folder) => !hasStory(folder));
 
 if (missing.length > 0) {
 	console.error(
@@ -44,10 +59,6 @@ if (missing.length > 0) {
 	process.exit(1);
 }
 
-const checked = readdirSync(UI_DIR, { withFileTypes: true }).filter(
-	(entry) => entry.isDirectory() && !IGNORED.has(entry.name),
-).length;
-
 console.log(
-	`Story-presence gate passed: ${checked} component folder(s) under ${UI_DIR}/, all with a story.`,
+	`Story-presence gate passed: ${folders.length} component folder(s) under ${UI_DIR}/, all with a story.`,
 );
