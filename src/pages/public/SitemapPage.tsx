@@ -3,15 +3,16 @@ import { Link } from "react-router";
 import { Heading } from "@/components/ui/heading";
 import { Container, Section } from "@/components/ui/section";
 import { TextLink } from "@/components/ui/text";
+import { discoverSitemapMembers, type SitemapMember } from "./sitemap";
 
-interface SitemapLink {
-	label: string;
-	to: string;
-}
+// The order the group headings appear in. A member whose group is not listed
+// here would not render, so sitemap.test.ts checks the rendered links against
+// the registry and fails if a new group is missing from this list.
+const GROUP_ORDER = ["Iron Capital", "Tools", "More"];
 
 interface SitemapSectionProps {
 	title: string;
-	links: SitemapLink[];
+	links: SitemapMember[];
 }
 
 function SitemapSection({ title, links }: SitemapSectionProps) {
@@ -19,10 +20,10 @@ function SitemapSection({ title, links }: SitemapSectionProps) {
 		<div className="flex flex-col gap-4">
 			<Heading variant="overline">{title}</Heading>
 			<ul className="flex flex-col gap-3 list-none m-0 p-0">
-				{links.map(({ label, to }) => (
-					<li key={to}>
+				{links.map(({ label, path }) => (
+					<li key={path}>
 						<TextLink
-							render={<Link to={to} />}
+							render={<Link to={path} />}
 							variant="subtle"
 							className="text-sm font-medium"
 						>
@@ -34,29 +35,6 @@ function SitemapSection({ title, links }: SitemapSectionProps) {
 		</div>
 	);
 }
-
-const SITEMAP_SECTIONS: SitemapSectionProps[] = [
-	{
-		title: "Iron Capital",
-		links: [
-			{ label: "Home", to: "/" },
-			{ label: "About", to: "/about" },
-			{ label: "Contact", to: "/contact" },
-			{ label: "Privacy Policy", to: "/privacy" },
-		],
-	},
-	{
-		title: "Tools",
-		links: [
-			{ label: "Screener", to: "/screener" },
-			{ label: "API", to: "/api" },
-		],
-	},
-	{
-		title: "Account",
-		links: [{ label: "Sign In", to: "/login" }],
-	},
-];
 
 function HeroSection() {
 	return (
@@ -71,13 +49,21 @@ function HeroSection() {
 }
 
 function LinksSection() {
+	// The sitemap page is generated from the discovered registry members, so it
+	// stays in step with the real pages without a hand-maintained list here.
+	const members = discoverSitemapMembers();
+	const sections = GROUP_ORDER.map((title) => ({
+		title,
+		links: members.filter((member) => member.group === title),
+	})).filter((section) => section.links.length > 0);
+
 	return (
 		<Section>
 			<Container
 				width="wide"
 				className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12"
 			>
-				{SITEMAP_SECTIONS.map((section) => (
+				{sections.map((section) => (
 					<SitemapSection key={section.title} {...section} />
 				))}
 			</Container>

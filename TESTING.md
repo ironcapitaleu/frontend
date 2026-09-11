@@ -433,15 +433,15 @@ that test cleanly with a single `toEqual`, leaving the component a thin shell.
 Coverage is measured by the v8 provider and **gated** via
 `coverage.thresholds` (both configured in [`vite.config.ts`](./vite.config.ts)).
 `npm run test:ci` runs with `--coverage`, so a drop below any floor **fails the
-build**. The current floors, set just under the baseline the first slice of
-tests established:
+build**. The current floors sit just below the coverage the unit tests reach
+today:
 
 | Metric | Floor |
 | --- | --- |
-| Statements | 26% |
-| Branches | 17% |
-| Functions | 19% |
-| Lines | 26% |
+| Statements | 66% |
+| Branches | 57% |
+| Functions | 58% |
+| Lines | 65% |
 
 Working with the gate:
 
