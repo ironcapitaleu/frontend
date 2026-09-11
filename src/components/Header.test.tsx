@@ -26,6 +26,16 @@ describe("Header", () => {
 		expect(result).toHaveAttribute("href", expectedResult);
 	});
 
+	it("should render no API item after the dead route was removed", () => {
+		render(<Header />);
+
+		const expectedResult = null;
+
+		const result = screen.queryByRole("link", { name: "API" });
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should label the hamburger control 'Open menu' when the mobile menu is closed", () => {
 		render(<Header />);
 
