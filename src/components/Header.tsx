@@ -2,8 +2,8 @@ import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, NavLink } from "react-router";
 
-import { useThemeContext } from "../contexts/ThemeContext";
 import { ThemeToggle } from "./ui/theme-toggle";
+import { useThemeContext } from "../contexts/ThemeContext";
 
 const NAV_LINKS = [
 	{ label: "Home", to: "/" },

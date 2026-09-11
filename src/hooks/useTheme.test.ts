@@ -103,7 +103,7 @@ describe("useTheme", () => {
 	});
 
 	it("should re-resolve to dark when the OS preference changes to dark on the system choice", () => {
-		const changeListeners = stubMatchMedia();
+		const changeListeners = stubMatchMedia(false);
 		const { result: hook } = renderHook(() => useTheme());
 
 		const expectedResult = "dark";
@@ -119,7 +119,7 @@ describe("useTheme", () => {
 	});
 
 	it("should apply the 'dark' class when the OS preference changes to dark on the system choice", () => {
-		const changeListeners = stubMatchMedia();
+		const changeListeners = stubMatchMedia(false);
 		renderHook(() => useTheme());
 
 		const expectedResult = true;
@@ -133,21 +133,40 @@ describe("useTheme", () => {
 
 		expect(result).toBe(expectedResult);
 	});
+
+	it("should re-resolve to light when the OS preference changes to light on the system choice", () => {
+		const changeListeners = stubMatchMedia(true);
+		const { result: hook } = renderHook(() => useTheme());
+
+		const expectedResult = "light";
+
+		act(() => {
+			for (const notify of changeListeners) {
+				notify({ matches: false } as MediaQueryListEvent);
+			}
+		});
+		const result = hook.current.resolvedTheme;
+
+		expect(result).toBe(expectedResult);
+	});
 });
 
 /**
- * Replaces `window.matchMedia` with a stub that starts unmatched and collects
- * the `change` listeners the hook registers, so a test fires them by hand.
+ * Replaces `window.matchMedia` with a stub that collects the `change` listeners
+ * the hook registers, so a test fires them by hand.
  *
+ * @param matches - The preference the query reports at mount time.
  * @returns The collected listeners, filled once the hook has mounted.
  */
-function stubMatchMedia(): Array<(event: MediaQueryListEvent) => void> {
+function stubMatchMedia(
+	matches: boolean,
+): Array<(event: MediaQueryListEvent) => void> {
 	const changeListeners: Array<(event: MediaQueryListEvent) => void> = [];
 
 	vi.spyOn(window, "matchMedia").mockImplementation(
 		(query: string) =>
 			({
-				matches: false,
+				matches,
 				media: query,
 				onchange: null,
 				addListener: vi.fn(),
