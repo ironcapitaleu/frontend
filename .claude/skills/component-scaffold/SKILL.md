@@ -37,7 +37,7 @@ src/components/ui/{name}/
 └── index.ts                # Barrel export
 ```
 
-**The story is mandatory; the unit test is conditional.** Stories are the
+**The story is mandatory. The unit test is conditional.** Stories are the
 contract for visual components (AGENTS.md "Component Testing & Documentation",
 TESTING.md), so every component gets a `.stories.tsx` and it doubles as the
 render test. Generate a `.test.tsx` file **only when the component owns logic
@@ -244,7 +244,7 @@ Create all files following the templates above. Adapt based on:
 - Interactive → adds state, event handlers, play functions in stories
 - Children vs self-closing → adjusts props type and rendering
 - Logic → adds `{name}.test.tsx` only when the component owns logic to assert
-  apart from its render (see "File Set Generated" above); a presentational
+  apart from its render (see "File Set Generated" above). A presentational
   component ships a story and no test file
 
 ### Step 3: Verify

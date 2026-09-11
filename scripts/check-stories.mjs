@@ -9,7 +9,9 @@
 //
 // Granularity: the check is one story per immediate folder, not per component
 // file, and it does not recurse into subfolders (components are flat today). A
-// folder passes as soon as it holds one *.stories.tsx.
+// folder passes as soon as it holds one *.stories.tsx. This gate proves a story
+// exists, not that it is meaningful. Content validity (a story that renders and
+// asserts) is the job of the Vitest Storybook project, which runs after it.
 
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -21,25 +23,40 @@ const UI_DIR = "src/components/ui";
 // the escape hatch never turns into silent story rot.
 const IGNORED = new Set([]);
 
+// Read a directory, failing loud with guidance instead of a raw stack trace.
+// A gate that enforces nothing is worse than no gate, so a read that throws
+// (a moved path, or a folder removed mid-run) ends the process with a message
+// that names the path and keeps the cause visible for a non-ENOENT failure.
+function readDirOrExit(path, options) {
+	try {
+		return readdirSync(path, options);
+	} catch (error) {
+		console.error(
+			`Story-presence gate could not read ${path}/. The path likely moved. Update scripts/check-stories.mjs. Cause: ${error.code ?? error.message}.`,
+		);
+		process.exit(1);
+	}
+}
+
 function componentFolders() {
-	return readdirSync(UI_DIR, { withFileTypes: true })
+	return readDirOrExit(UI_DIR, { withFileTypes: true })
 		.filter((entry) => entry.isDirectory() && !IGNORED.has(entry.name))
 		.map((entry) => entry.name);
 }
 
 function hasStory(folder) {
-	return readdirSync(join(UI_DIR, folder)).some((file) =>
+	return readDirOrExit(join(UI_DIR, folder)).some((file) =>
 		file.endsWith(".stories.tsx"),
 	);
 }
 
 const folders = componentFolders();
 
-// A gate that enforces nothing is worse than no gate: it goes green while the
-// convention rots. If the path moved or the directory emptied, fail loud.
+// The directory exists but holds no component folders (emptied, or all ignored).
+// Fail loud rather than pass vacuously.
 if (folders.length === 0) {
 	console.error(
-		`Story-presence gate found no component folders under ${UI_DIR}/. The path likely moved. Update scripts/check-stories.mjs.`,
+		`Story-presence gate found no component folders under ${UI_DIR}/. The directory is empty or every folder is ignored. Update scripts/check-stories.mjs.`,
 	);
 	process.exit(1);
 }

@@ -67,11 +67,11 @@ jobs:
     - name: Build Check
       run: npm run build
 
-    - name: Unit Tests
-      run: npm run test:ci
-
     - name: Story Presence Check
       run: npm run check:stories
+
+    - name: Unit Tests
+      run: npm run test:ci
 
     - name: UI Component Testing
       run: npm run test:storybook
