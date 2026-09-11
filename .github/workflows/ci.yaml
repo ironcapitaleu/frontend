@@ -70,5 +70,8 @@ jobs:
     - name: Unit Tests
       run: npm run test:ci
 
+    - name: Story Presence Check
+      run: npm run check:stories
+
     - name: UI Component Testing
       run: npm run test:storybook
