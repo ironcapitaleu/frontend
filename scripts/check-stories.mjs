@@ -9,7 +9,9 @@
 //
 // Granularity: the check is one story per immediate folder, not per component
 // file, and it does not recurse into subfolders (components are flat today). A
-// folder passes as soon as it holds one *.stories.tsx.
+// folder passes as soon as it holds one *.stories.tsx. This gate proves a story
+// exists, not that it is meaningful. Content validity (a story that renders and
+// asserts) is the job of the Vitest Storybook project, which runs after it.
 
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -22,7 +24,20 @@ const UI_DIR = "src/components/ui";
 const IGNORED = new Set([]);
 
 function componentFolders() {
-	return readdirSync(UI_DIR, { withFileTypes: true })
+	let entries;
+	try {
+		entries = readdirSync(UI_DIR, { withFileTypes: true });
+	} catch {
+		// A gate that enforces nothing is worse than no gate: it goes green while
+		// the convention rots. A missing directory means the path moved, so fail
+		// loud with guidance rather than a raw stack trace.
+		console.error(
+			`Story-presence gate could not read ${UI_DIR}/. The path likely moved. Update scripts/check-stories.mjs.`,
+		);
+		process.exit(1);
+	}
+
+	return entries
 		.filter((entry) => entry.isDirectory() && !IGNORED.has(entry.name))
 		.map((entry) => entry.name);
 }
@@ -35,11 +50,11 @@ function hasStory(folder) {
 
 const folders = componentFolders();
 
-// A gate that enforces nothing is worse than no gate: it goes green while the
-// convention rots. If the path moved or the directory emptied, fail loud.
+// The directory exists but holds no component folders (emptied, or all ignored).
+// Fail loud rather than pass vacuously.
 if (folders.length === 0) {
 	console.error(
-		`Story-presence gate found no component folders under ${UI_DIR}/. The path likely moved. Update scripts/check-stories.mjs.`,
+		`Story-presence gate found no component folders under ${UI_DIR}/. The directory is empty or every folder is ignored. Update scripts/check-stories.mjs.`,
 	);
 	process.exit(1);
 }
