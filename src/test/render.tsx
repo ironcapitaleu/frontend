@@ -3,6 +3,7 @@ import type { ReactElement, ReactNode } from "react";
 import { MemoryRouter } from "react-router";
 
 import { AuthProvider } from "../contexts/AuthContext";
+import { ThemeProvider } from "../contexts/ThemeContext";
 import type { AuthGateway } from "../lib/auth/gateway";
 import { alwaysUnauthenticatedAuth } from "./fixtures/auth/always-unauthenticated";
 
@@ -31,9 +32,13 @@ export function render(
 ) {
 	function Wrapper({ children }: { children: ReactNode }) {
 		return (
-			<AuthProvider gateway={gateway}>
-				<MemoryRouter initialEntries={initialEntries}>{children}</MemoryRouter>
-			</AuthProvider>
+			<ThemeProvider>
+				<AuthProvider gateway={gateway}>
+					<MemoryRouter initialEntries={initialEntries}>
+						{children}
+					</MemoryRouter>
+				</AuthProvider>
+			</ThemeProvider>
 		);
 	}
 

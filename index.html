@@ -1,10 +1,31 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <style>
-      html { color-scheme: dark; background-color: oklch(0.13 0.028 261.692); color: oklch(0.985 0.002 247.839); }
-    </style>
+    <script>
+      // Pre-paint theme: read the stored choice, resolve `system` against the OS
+      // preference, and set the `.dark` class before first paint so there is no
+      // flash of the wrong theme. The storage key matches THEME_STORAGE_KEY in
+      // src/lib/theme/theme.ts.
+      (() => {
+        const root = document.documentElement;
+        try {
+          const stored = localStorage.getItem("theme");
+          const choice =
+            stored === "light" || stored === "dark" || stored === "system"
+              ? stored
+              : "system";
+          const prefersDark = window.matchMedia(
+            "(prefers-color-scheme: dark)",
+          ).matches;
+          const dark = choice === "dark" || (choice === "system" && prefersDark);
+          root.classList.toggle("dark", dark);
+          root.style.colorScheme = dark ? "dark" : "light";
+        } catch {
+          /* Ignore storage or matchMedia errors and keep the default theme. */
+        }
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Iron Capital - Investment Partnership</title>

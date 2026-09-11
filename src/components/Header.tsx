@@ -2,10 +2,12 @@ import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, NavLink } from "react-router";
 
+import { ThemeToggle } from "./ui/theme-toggle";
+import { useThemeContext } from "../contexts/ThemeContext";
+
 const NAV_LINKS = [
 	{ label: "Home", to: "/" },
 	{ label: "Screener", to: "/screener" },
-	{ label: "API", to: "/api" },
 	{ label: "About", to: "/about" },
 	{ label: "Contact", to: "/contact" },
 	{ label: "Sign in", to: "/login" },
@@ -13,6 +15,7 @@ const NAV_LINKS = [
 
 function Header() {
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
+	const { choice, setChoice } = useThemeContext();
 
 	useEffect(() => {
 		const mediaQuery = window.matchMedia("(min-width: 768px)");
@@ -38,35 +41,44 @@ function Header() {
 						/>
 					</Link>
 
-					{/* Desktop nav */}
-					<ul className="hidden md:flex items-center gap-6 list-none m-0 p-0">
-						{NAV_LINKS.map(({ label, to }) => (
-							<li key={to}>
-								<NavLink
-									to={to}
-									className={({ isActive }) =>
-										isActive
-											? "text-sm text-foreground transition-colors"
-											: "text-sm text-muted-foreground hover:text-foreground transition-colors"
-									}
-								>
-									{label}
-								</NavLink>
-							</li>
-						))}
-					</ul>
+					<div className="flex items-center gap-6">
+						{/* Desktop nav */}
+						<ul className="hidden md:flex items-center gap-6 list-none m-0 p-0">
+							{NAV_LINKS.map(({ label, to }) => (
+								<li key={to}>
+									<NavLink
+										to={to}
+										className={({ isActive }) =>
+											isActive
+												? "text-sm text-foreground transition-colors"
+												: "text-sm text-muted-foreground hover:text-foreground transition-colors"
+										}
+									>
+										{label}
+									</NavLink>
+								</li>
+							))}
+						</ul>
 
-					{/* Hamburger button */}
-					<button
-						type="button"
-						aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-						aria-expanded={isMenuOpen}
-						aria-controls="mobile-menu"
-						onClick={() => setIsMenuOpen((prev) => !prev)}
-						className="md:hidden flex items-center justify-center w-11 h-11 text-muted-foreground hover:text-foreground transition-colors"
-					>
-						{isMenuOpen ? <X size={22} /> : <Menu size={22} />}
-					</button>
+						{/* Desktop theme toggle */}
+						<ThemeToggle
+							value={choice}
+							onChange={setChoice}
+							className="hidden md:flex"
+						/>
+
+						{/* Hamburger button */}
+						<button
+							type="button"
+							aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+							aria-expanded={isMenuOpen}
+							aria-controls="mobile-menu"
+							onClick={() => setIsMenuOpen((prev) => !prev)}
+							className="md:hidden flex items-center justify-center w-11 h-11 text-muted-foreground hover:text-foreground transition-colors"
+						>
+							{isMenuOpen ? <X size={22} /> : <Menu size={22} />}
+						</button>
+					</div>
 				</nav>
 			</div>
 
@@ -77,25 +89,31 @@ function Header() {
 				{...(!isMenuOpen && { inert: true })}
 				className={`mobile-menu md:hidden border-t border-border${isMenuOpen ? " open" : ""}`}
 			>
-				<ul className="flex flex-col list-none m-0 p-0 overflow-hidden">
-					{NAV_LINKS.map(({ label, to }) => (
-						<li key={to}>
-							<NavLink
-								to={to}
-								onClick={() => setTimeout(() => setIsMenuOpen(false), 300)}
-								className={({ isActive }) =>
-									`block px-6 py-4 text-sm transition-colors ${
-										isActive
-											? "text-foreground"
-											: "text-muted-foreground hover:text-foreground"
-									}`
-								}
-							>
-								{label}
-							</NavLink>
-						</li>
-					))}
-				</ul>
+				<div className="overflow-hidden">
+					<ul className="flex flex-col list-none m-0 p-0">
+						{NAV_LINKS.map(({ label, to }) => (
+							<li key={to}>
+								<NavLink
+									to={to}
+									onClick={() => setTimeout(() => setIsMenuOpen(false), 300)}
+									className={({ isActive }) =>
+										`block px-6 py-4 text-sm transition-colors ${
+											isActive
+												? "text-foreground"
+												: "text-muted-foreground hover:text-foreground"
+										}`
+									}
+								>
+									{label}
+								</NavLink>
+							</li>
+						))}
+					</ul>
+					<div className="flex items-center justify-between px-6 py-4 border-t border-border">
+						<span className="text-sm text-muted-foreground">Theme</span>
+						<ThemeToggle value={choice} onChange={setChoice} />
+					</div>
+				</div>
 			</nav>
 		</header>
 	);
