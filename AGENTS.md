@@ -388,27 +388,29 @@ All structured logs must be formatted as **JSON documents** with exactly **five 
 
 ### Sitemap
 
-Every public page is a top-level module under `src/pages/`. The registry in
-`src/pages/sitemap.ts` (`SITEMAP_MEMBERS`) is the single source of truth for the
-sitemap: the sitemap page (`src/pages/SitemapPage.tsx`) renders its links from
-it, and the sitemap XML (`public/sitemap.xml`) is checked against it. Correct
-sitemap data matters for SEO and for readers who navigate the site by it.
+Every public page is a top-level module under `src/pages/public/`. The registry
+in `src/pages/public/sitemap.ts` (`SITEMAP_MEMBERS`) is the single source of
+truth for the sitemap: the sitemap page (`src/pages/public/SitemapPage.tsx`)
+renders its links from it, and the sitemap XML (`public/sitemap.xml`) is checked
+against it. Correct sitemap data matters for SEO and for readers who navigate the
+site by it.
 
-**To add a public page:** put its module at the top level of `src/pages/`, add
-an entry to `SITEMAP_MEMBERS`, and add its URL to `public/sitemap.xml`.
+**To add a public page:** put its module at the top level of `src/pages/public/`,
+add an entry to `SITEMAP_MEMBERS`, and add its URL to `public/sitemap.xml`.
 
 **For a page that must NOT appear in the sitemap** (an auth-only page, or the
-catch-all 404): put it in `src/pages/internal/`. Discovery does not look into
-that subfolder, so it stays off the sitemap.
+catch-all 404): put it in `src/pages/internal/`. Discovery is scoped to
+`src/pages/public/`, so a sibling folder like `internal/` sits outside it and
+stays off the sitemap.
 
-The sitemap-consistency gate is a unit test (`src/pages/sitemap.test.ts`, run by
-`npm run test:ci`), so it needs no separate CI step. `discoverPageModules()`
-walks the top level of `src/pages/` and the test locks three things together:
-the discovered page modules equal the registry, and the registry paths equal the
-`<loc>` URLs in `public/sitemap.xml`. Adding a page to the folder without
-registering it, or registering one that does not exist, or a sitemap XML that
-drifts from the registry, all fail the test. This is why it enforces the sitemap
-is correct, not merely that someone remembered to touch the files.
+The sitemap-consistency gate is a unit test (`src/pages/public/sitemap.test.ts`,
+run by `npm run test:ci`), so it needs no separate CI step. `discoverPageModules()`
+walks the top level of `src/pages/public/` and the test locks three things
+together: the discovered page modules equal the registry, and the registry paths
+equal the `<loc>` URLs in `public/sitemap.xml`. Adding a page to the folder
+without registering it, or registering one that does not exist, or a sitemap XML
+that drifts from the registry, all fail the test. This is why it enforces the
+sitemap is correct, not merely that someone remembered to touch the files.
 
 ---
 

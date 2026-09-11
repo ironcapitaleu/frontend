@@ -1,7 +1,7 @@
 // The sitemap registry and page discovery.
 //
 // The sitemap must list every public page and nothing else. Three sources have
-// to agree: the page modules that exist under src/pages/, the URLs in
+// to agree: the page modules that exist under src/pages/public/, the URLs in
 // public/sitemap.xml, and the links the sitemap page renders. Keeping them in
 // sync by hand is the convention that used to live only in AGENTS.md. This
 // module makes the registry below the single source of truth, and sitemap.test.ts
@@ -9,9 +9,9 @@
 //
 // How a page joins the sitemap: add its module to SITEMAP_MEMBERS and add its
 // URL to public/sitemap.xml. A page that must NOT appear in the sitemap (an
-// auth-only page, or the catch-all 404) belongs in src/pages/internal/, which
-// discovery does not look into. Forgetting either step fails the test, so the
-// sitemap cannot drift out of sync in silence.
+// auth-only page, or the catch-all 404) belongs in src/pages/internal/, a
+// sibling of src/pages/public/ that discovery does not scan. Forgetting either
+// step fails the test, so the sitemap cannot drift out of sync in silence.
 
 export interface SitemapMember {
 	/** The page module's file name without extension, e.g. "AboutPage". */
@@ -58,10 +58,11 @@ export const SITEMAP_MEMBERS: SitemapMember[] = [
 	{ module: "SitemapPage", path: "/sitemap", label: "Sitemap", group: "More" },
 ];
 
-// Every top-level *.tsx under src/pages/, minus its test and story companions.
-// The pattern is single-level, so the internal/ subfolder (pages kept out of
-// the sitemap) is never matched. Discovery reads only the keys (file paths), so
-// the circular import with SitemapPage is harmless: no page module is
+// Every top-level *.tsx here (src/pages/public/), minus its test and story
+// companions. The glob is relative to this file, so it scans only this folder:
+// a top-level .tsx here is treated as a public page, and sibling folders like
+// src/pages/internal/ sit outside it. Discovery reads only the keys (file
+// paths), so the circular import with SitemapPage is harmless: no page module is
 // dereferenced here. `eager` matches how App.tsx already imports every page
 // statically, which avoids an ineffective dynamic-import chunk at build time.
 const PAGE_FILES = import.meta.glob(
@@ -70,8 +71,9 @@ const PAGE_FILES = import.meta.glob(
 );
 
 /**
- * The page module names that actually exist at the top level of src/pages/,
- * sorted. This is the "discovered" set the registry is checked against.
+ * The page module names that actually exist at the top level of
+ * src/pages/public/, sorted. This is the "discovered" set the registry is
+ * checked against.
  */
 export function discoverPageModules(): string[] {
 	return Object.keys(PAGE_FILES)
