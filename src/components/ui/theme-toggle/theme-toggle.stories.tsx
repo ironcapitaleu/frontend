@@ -8,7 +8,7 @@ import { ThemeToggle } from "./theme-toggle";
 
 /**
  * A stateful wrapper so the control behaves like it does in the header: the
- * pressed option follows the selection.
+ * trigger and the checked item follow the selection.
  */
 function ThemeToggleStory({ initial }: { initial: ThemeChoice }) {
 	const [choice, setChoice] = useState<ThemeChoice>(initial);
@@ -17,10 +17,12 @@ function ThemeToggleStory({ initial }: { initial: ThemeChoice }) {
 }
 
 /**
- * The `Theme Toggle` is a segmented control that switches the site between
- * light, dark, and a system option that follows the operating system
- * preference. It is controlled: the header wires it to the theme source, so the
- * pressed option reads the active choice and each selection persists it.
+ * The `Theme Toggle` selects the light, dark, or system theme. The system
+ * option follows the operating system preference. The trigger names the active
+ * choice, so the control reads clearly before it is opened.
+ *
+ * It is controlled: the header wires it to the theme source, so the checked
+ * item reflects the active choice and each pick persists it.
  */
 const meta: Meta<typeof ThemeToggleStory> = {
 	title: "Components/Theme Toggle",
@@ -57,7 +59,7 @@ export const Playground: Story = {};
 // ==========================================
 
 /**
- * The light option pressed.
+ * The light theme selected.
  */
 export const Light: Story = {
 	args: { initial: "light" },
@@ -65,7 +67,7 @@ export const Light: Story = {
 };
 
 /**
- * The dark option pressed.
+ * The dark theme selected.
  */
 export const Dark: Story = {
 	args: { initial: "dark" },
@@ -73,7 +75,7 @@ export const Dark: Story = {
 };
 
 /**
- * The system option pressed, which follows the operating system preference.
+ * The system option selected, which follows the operating system preference.
  */
 export const System: Story = {
 	args: { initial: "system" },
@@ -85,39 +87,43 @@ export const System: Story = {
 // ==========================================
 
 /**
- * Play test: selecting the dark option moves the pressed state onto it.
+ * The open menu, showing all three options with the active one checked.
  */
-export const SelectsThemeOnClick: Story = {
+export const MenuOpen: Story = {
 	args: { initial: "system" },
 	parameters: { controls: { disable: true } },
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
-		const dark = canvas.getByRole("button", { name: "Dark theme" });
 
 		const expectedResult = "true";
 
-		await userEvent.click(dark);
-		const result = dark.getAttribute("aria-pressed");
+		await userEvent.click(canvas.getByRole("button"));
+		const system = await within(document.body).findByRole("menuitemradio", {
+			name: "System",
+		});
+		const result = system.getAttribute("aria-checked");
 
 		await expect(result).toBe(expectedResult);
 	},
 };
 
 /**
- * Play test: clicking the pressed option keeps it pressed, so a theme stays
- * applied instead of leaving the control with nothing selected.
+ * Play test: picking an option from the menu moves the selection to it.
  */
-export const KeepsSelectionWhenPressedAgain: Story = {
-	args: { initial: "dark" },
+export const SelectsThemeFromMenu: Story = {
+	args: { initial: "system" },
 	parameters: { controls: { disable: true } },
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
-		const dark = canvas.getByRole("button", { name: "Dark theme" });
 
-		const expectedResult = "true";
+		const expectedResult = "Theme: Dark";
 
+		await userEvent.click(canvas.getByRole("button"));
+		const dark = await within(document.body).findByRole("menuitemradio", {
+			name: "Dark",
+		});
 		await userEvent.click(dark);
-		const result = dark.getAttribute("aria-pressed");
+		const result = canvas.getByRole("button").getAttribute("aria-label");
 
 		await expect(result).toBe(expectedResult);
 	},
