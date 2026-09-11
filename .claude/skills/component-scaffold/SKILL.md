@@ -31,11 +31,21 @@ For a UI component named `{name}` (kebab-case):
 ```
 src/components/ui/{name}/
 ├── {name}.tsx              # Component implementation
-├── {name}.test.tsx         # Unit tests
-├── {name}.stories.tsx      # Storybook stories
+├── {name}.stories.tsx      # Storybook stories (always — a story is the render test)
+├── {name}.test.tsx         # Unit tests (only when the component owns logic — see below)
 ├── variants.ts             # CVA variants (if component has multiple visual variants)
 └── index.ts                # Barrel export
 ```
+
+**The story is mandatory; the unit test is conditional.** Stories are the
+contract for visual components (AGENTS.md "Component Testing & Documentation",
+TESTING.md), so every component gets a `.stories.tsx` and it doubles as the
+render test. Generate a `.test.tsx` file **only when the component owns logic
+worth asserting apart from its render** (a hook, a reducer, conditional
+branching, an error path, a pure helper). A purely presentational component gets
+a story, not a boilerplate unit test that duplicates it. When logic is buried in
+the render and awkward to reach, extract it into a pure function and unit-test
+that (TESTING.md §6).
 
 ## Naming Conventions
 
@@ -43,7 +53,7 @@ src/components/ui/{name}/
 |------|-----------|---------|
 | Folder name | kebab-case | `date-picker/` |
 | Component file | kebab-case.tsx | `date-picker.tsx` |
-| Test file | kebab-case.test.tsx | `date-picker.test.tsx` |
+| Test file (only when logic warrants) | kebab-case.test.tsx | `date-picker.test.tsx` |
 | Story file | kebab-case.stories.tsx | `date-picker.stories.tsx` |
 | Variants file | `variants.ts` (always) | `variants.ts` |
 | Barrel export | `index.ts` (always) | `index.ts` |
@@ -117,7 +127,13 @@ type {PascalName}Variants = VariantProps<typeof {camelName}Variants>;
 export { {camelName}Variants, type {PascalName}Variants };
 ```
 
-### Test (`{name}.test.tsx`)
+### Test (`{name}.test.tsx`) — only when the component owns logic
+
+Skip this file for a purely presentational component (the story is its render
+test). Generate it when there is logic to assert apart from the render, and drop
+the `renders its content` / `merges a custom class` boilerplate below in favor of
+tests that name the real logic. The two examples here show the AADA shape, not a
+required minimum.
 
 ```tsx
 import { render, screen } from "@testing-library/react";
@@ -227,6 +243,9 @@ Create all files following the templates above. Adapt based on:
 - Variants → adds `variants.ts`, updates component to accept variant props
 - Interactive → adds state, event handlers, play functions in stories
 - Children vs self-closing → adjusts props type and rendering
+- Logic → adds `{name}.test.tsx` only when the component owns logic to assert
+  apart from its render (see "File Set Generated" above); a presentational
+  component ships a story and no test file
 
 ### Step 3: Verify
 
@@ -234,6 +253,7 @@ After generating:
 1. Run `npm run typing:check` to verify no type errors
 2. Run `npm run test:ci` to verify tests pass
 3. Run `npm run lint:check` to verify formatting/linting
+4. Run `npm run check:stories` to verify the story-presence gate passes
 
 Report any issues and fix them.
 
