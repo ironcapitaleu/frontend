@@ -23,27 +23,29 @@ const UI_DIR = "src/components/ui";
 // the escape hatch never turns into silent story rot.
 const IGNORED = new Set([]);
 
-function componentFolders() {
-	let entries;
+// Read a directory, failing loud with guidance instead of a raw stack trace.
+// A gate that enforces nothing is worse than no gate, so a read that throws
+// (a moved path, or a folder removed mid-run) ends the process with a message
+// that names the path and keeps the cause visible for a non-ENOENT failure.
+function readDirOrExit(path, options) {
 	try {
-		entries = readdirSync(UI_DIR, { withFileTypes: true });
-	} catch {
-		// A gate that enforces nothing is worse than no gate: it goes green while
-		// the convention rots. A missing directory means the path moved, so fail
-		// loud with guidance rather than a raw stack trace.
+		return readdirSync(path, options);
+	} catch (error) {
 		console.error(
-			`Story-presence gate could not read ${UI_DIR}/. The path likely moved. Update scripts/check-stories.mjs.`,
+			`Story-presence gate could not read ${path}/. The path likely moved. Update scripts/check-stories.mjs. Cause: ${error.code ?? error.message}.`,
 		);
 		process.exit(1);
 	}
+}
 
-	return entries
+function componentFolders() {
+	return readDirOrExit(UI_DIR, { withFileTypes: true })
 		.filter((entry) => entry.isDirectory() && !IGNORED.has(entry.name))
 		.map((entry) => entry.name);
 }
 
 function hasStory(folder) {
-	return readdirSync(join(UI_DIR, folder)).some((file) =>
+	return readDirOrExit(join(UI_DIR, folder)).some((file) =>
 		file.endsWith(".stories.tsx"),
 	);
 }
