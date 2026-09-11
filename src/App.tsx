@@ -1,15 +1,15 @@
 import { Route, Routes } from "react-router";
 
 import Layout from "./components/Layout";
-import AboutPage from "./pages/AboutPage";
-import CompanySearch from "./pages/CompanySearch";
-import ContactPage from "./pages/ContactPage";
-import HomePage from "./pages/HomePage";
-import LoginPage from "./pages/LoginPage";
-import NotFoundPage from "./pages/NotFoundPage";
-import PrivacyPage from "./pages/PrivacyPage";
-import SitemapPage from "./pages/SitemapPage";
-import StockScreener from "./pages/StockScreener";
+import AboutPage from "./pages/public/AboutPage";
+import CompanySearch from "./pages/public/CompanySearch";
+import ContactPage from "./pages/public/ContactPage";
+import HomePage from "./pages/public/HomePage";
+import LoginPage from "./pages/internal/LoginPage";
+import NotFoundPage from "./pages/internal/NotFoundPage";
+import PrivacyPage from "./pages/public/PrivacyPage";
+import SitemapPage from "./pages/public/SitemapPage";
+import StockScreener from "./pages/public/StockScreener";
 
 /**
  * The application's route table.

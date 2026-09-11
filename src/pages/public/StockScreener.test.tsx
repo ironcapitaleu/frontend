@@ -2,8 +2,8 @@ import userEvent from "@testing-library/user-event";
 import { Route, Routes } from "react-router";
 import { describe, expect, it } from "vitest";
 
-import { fakeStockScreenerResults } from "../test/fixtures/stocks/fake-stock-screener-results";
-import { render, screen, within } from "../test/render";
+import { fakeStockScreenerResults } from "../../test/fixtures/stocks/fake-stock-screener-results";
+import { render, screen, within } from "../../test/render";
 import StockScreener from "./StockScreener";
 
 /** The toolbar count, read from the "N result(s)" summary the user sees. */

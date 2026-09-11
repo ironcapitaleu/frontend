@@ -2,8 +2,8 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import { MemoryRouter } from "react-router";
 
-import { AuthProvider } from "../contexts/AuthContext";
-import { alwaysUnauthenticatedAuth } from "../test/fixtures/auth/always-unauthenticated";
+import { AuthProvider } from "../../contexts/AuthContext";
+import { alwaysUnauthenticatedAuth } from "../../test/fixtures/auth/always-unauthenticated";
 import LoginPage from "./LoginPage";
 
 /**

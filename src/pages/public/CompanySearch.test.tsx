@@ -1,8 +1,8 @@
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
-import { fakeCompanySearchResults } from "../test/fixtures/companies/fake-company-search-results";
-import { render, screen } from "../test/render";
+import { fakeCompanySearchResults } from "../../test/fixtures/companies/fake-company-search-results";
+import { render, screen } from "../../test/render";
 import CompanySearch from "./CompanySearch";
 
 /** The search field, found by its placeholder. */

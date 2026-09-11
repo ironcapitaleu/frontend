@@ -2,8 +2,8 @@ import userEvent from "@testing-library/user-event";
 import { Route, Routes } from "react-router";
 import { describe, expect, it } from "vitest";
 
-import { alwaysAuthenticatedAuth } from "../test/fixtures/auth/always-authenticated";
-import { render, screen } from "../test/render";
+import { alwaysAuthenticatedAuth } from "../../test/fixtures/auth/always-authenticated";
+import { render, screen } from "../../test/render";
 import LoginPage from "./LoginPage";
 
 describe("LoginPage", () => {

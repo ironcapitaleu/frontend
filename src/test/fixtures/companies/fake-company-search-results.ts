@@ -1,4 +1,4 @@
-import type { CompanyResult } from "../../../pages/CompanySearch";
+import type { CompanyResult } from "../../../pages/public/CompanySearch";
 
 /**
  * A fixed, deliberately-shaped set of companies for CompanySearch tests. Its

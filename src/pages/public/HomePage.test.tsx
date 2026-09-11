@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { render, screen } from "../test/render";
+import { render, screen } from "../../test/render";
 import HomePage from "./HomePage";
 
 describe("HomePage", () => {

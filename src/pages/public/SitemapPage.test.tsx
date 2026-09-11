@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { render, screen } from "../test/render";
+import { render, screen } from "../../test/render";
 import SitemapPage from "./SitemapPage";
+import { SITEMAP_MEMBERS } from "./sitemap";
 
 describe("SitemapPage", () => {
 	it("should render the Sitemap title", () => {
@@ -32,5 +33,18 @@ describe("SitemapPage", () => {
 		const result = screen.getByRole("heading", { name: "Iron Capital" });
 
 		expect(result).toHaveTextContent(expectedResult);
+	});
+
+	it("should render a link for exactly the registered sitemap members", () => {
+		render(<SitemapPage />);
+
+		const expectedResult = SITEMAP_MEMBERS.map((member) => member.path).sort();
+
+		const result = screen
+			.getAllByRole("link")
+			.map((link) => link.getAttribute("href"))
+			.sort();
+
+		expect(result).toEqual(expectedResult);
 	});
 });
