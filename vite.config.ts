@@ -59,6 +59,15 @@ export default defineConfig({
 			},
 			{
 				extends: true,
+				// The visual regression helper (.storybook/utils/visualSnapshot.ts)
+				// runs in the browser, where `import.meta.env` carries only the
+				// VITE_-prefixed variables. This hands the VISUAL flag across that
+				// boundary for the `storybook` project alone, so the app bundle never
+				// sees it. Without the flag the helper returns straight away and
+				// `npm run test:storybook` behaves exactly as it did before.
+				define: {
+					"import.meta.env.VISUAL": JSON.stringify(process.env.VISUAL ?? ""),
+				},
 				plugins: [
 					// The plugin will run tests for the stories defined in your Storybook config
 					// See options at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon#storybooktest

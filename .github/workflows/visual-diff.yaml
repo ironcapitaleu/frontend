@@ -1,0 +1,125 @@
+# Pixel-level visual regression over the Storybook stories (STA-180).
+#
+# This job runs BESIDE the `ci` workflow and never gates a merge. It renders the
+# covered stories, commits whatever moved, and puts the images in front of a
+# reviewer. The human PR review is the gate, which is level 3 of the enforcement
+# ladder in AGENTS.md. The STA-143 findings document records why this layer stops
+# there rather than failing a build: a missing baseline is hardcoded to fail in
+# `@vitest/browser`, so a gating job would turn every new story red on the push
+# that adds it.
+#
+# The job lives in its own file because it needs `contents: write` to push the
+# baselines back. The `ci` workflow keeps `contents: read`.
+#
+# Only this job writes baselines. Font rendering differs between operating
+# systems, so an image generated on a developer machine fails against this
+# Linux container. To redo the baselines by hand, run this workflow from the
+# Actions tab rather than committing a local run.
+
+name: Visual Diff
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  visual-diff:
+    runs-on: ubuntu-22.04
+    # A pull request from a fork gets a read-only GITHUB_TOKEN, so the push and
+    # the comment below are skipped and the artifact carries the whole report.
+    env:
+      CAN_WRITE: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository }}
+      BRANCH: ${{ github.head_ref || github.ref_name }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # A pull_request event checks out a detached merge commit, which
+          # cannot be pushed back. Name the branch instead.
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+          npm run install:playwright
+
+      # The comparison run. It reports every story whose pixels moved and writes
+      # the rendered image and the red-pixel overlay into .vitest-attachments/.
+      # A mismatch is the whole point of this job, so a failure here is expected
+      # and never ends the run.
+      - name: Compare Against The Committed Baselines
+        run: npm run test:visual
+        continue-on-error: true
+
+      # Runs while the working tree still holds the old baselines, so the report
+      # can carry the old image, the new image, and the overlay side by side.
+      - name: Collect The Report
+        run: node scripts/collect-visual-diffs.mjs
+
+      - name: Write The New Baselines
+        run: npm run test:visual:update
+        continue-on-error: true
+
+      - name: Upload The Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diff-report
+          path: visual-diff-report/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Commit The Baselines
+        if: env.CAN_WRITE == 'true'
+        run: |
+          git add -- 'src/**/__screenshots__'
+
+          if git diff --cached --quiet; then
+            echo "No baseline moved, nothing to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "test(visual): update baselines"
+          git push origin "HEAD:${BRANCH}"
+
+      # One comment per pull request, rewritten on every push. The marker in the
+      # body is how the next run finds it, so repeat pushes never stack up.
+      - name: Report On The Pull Request
+        if: env.CAN_WRITE == 'true' && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          BODY_FILE=visual-diff-report/comment.md
+
+          if [ ! -s "$BODY_FILE" ]; then
+            echo "No baseline moved, nothing to report."
+            exit 0
+          fi
+
+          jq -Rs '{body: .}' "$BODY_FILE" > /tmp/visual-diff-comment.json
+
+          COMMENT_ID=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate \
+            --jq '.[] | select(.body | contains("<!-- visual-diff -->")) | .id' | head -1)
+
+          if [ -n "$COMMENT_ID" ]; then
+            gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${COMMENT_ID}" \
+              --input /tmp/visual-diff-comment.json
+          else
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+              --input /tmp/visual-diff-comment.json
+          fi

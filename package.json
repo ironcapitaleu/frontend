@@ -23,6 +23,8 @@
 		"install:playwright": "npx playwright install",
 		"setup": "npm install && npx playwright install",
 		"test:storybook": "vitest --run --project storybook",
+		"test:visual": "VISUAL=1 vitest --run --project storybook",
+		"test:visual:update": "VISUAL=1 vitest --run --project storybook --update",
 		"check:stories": "node scripts/check-stories.mjs",
 		"preview": "vite preview"
 	},
