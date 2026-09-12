@@ -36,6 +36,10 @@ import { page } from "vitest/browser";
  * needs the scrollbar margin handled: a scrollbar takes about 15 pixels off the
  * usable width, so a viewport of exactly 768 renders as 753 and drops to the
  * layout below it. Pick a width a little above the breakpoint, never on it.
+ *
+ * Every size here has to fit inside the Playwright page that `vite.config.ts`
+ * sets. A viewport larger than that page is scaled down to fit, and the capture
+ * records the scaled pixels rather than the real ones.
  */
 export const VISUAL_VIEWPORTS = {
 	mobile: { width: 390, height: 844 },

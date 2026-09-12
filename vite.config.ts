@@ -80,7 +80,20 @@ export default defineConfig({
 					browser: {
 						enabled: true,
 						headless: true,
-						provider: playwright({}),
+						// The tester runs inside an iframe on a Playwright page. When a
+						// story asks for a viewport larger than that page, the iframe is
+						// scaled down to fit and the screenshot records the scaled
+						// pixels: Playwright's default page is 1280 by 720, which turned
+						// a 1440 by 900 capture into 1152 by 720 and a 390 by 844 one
+						// into 333 by 720. Downscaling blurs an image, which is the
+						// opposite of what a pixel comparison needs.
+						//
+						// This page is larger than every viewport in
+						// .storybook/utils/visualSnapshot.ts, so each capture is one to
+						// one. Raise it before adding a viewport bigger than this.
+						provider: playwright({
+							contextOptions: { viewport: { width: 1600, height: 1000 } },
+						}),
 						instances: [
 							{
 								browser: "chromium",
