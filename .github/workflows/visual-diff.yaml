@@ -5,8 +5,8 @@
 # reviewer. The human PR review is the gate, which is level 3 of the enforcement
 # ladder in AGENTS.md. The STA-143 findings document records why this layer stops
 # there rather than failing a build: a missing baseline is hardcoded to fail in
-# `@vitest/browser`, so a gating job would turn every new story red on the push
-# that adds it.
+# `@vitest/browser`, so a gating job turns every new story red on the push that
+# adds it.
 #
 # The job lives in its own file because it needs `contents: write` to push the
 # baselines back. The `ci` workflow keeps `contents: read`.
@@ -29,13 +29,27 @@ permissions:
   contents: write
   pull-requests: write
 
+# One run per branch. Two runs racing to rewrite the same baselines end in a
+# rejected push and a red job.
+concurrency:
+  group: visual-diff-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   visual-diff:
     runs-on: ubuntu-22.04
-    # A pull request from a fork gets a read-only GITHUB_TOKEN, so the push and
-    # the comment below are skipped and the artifact carries the whole report.
+    # The push and the comment below need a writable token and a branch that
+    # takes commits. Three cases fail one of those tests:
+    #
+    #   A fork gets a read-only GITHUB_TOKEN, and so does dependabot.
+    #   The dev to main release pull request has dev as its head, so a push
+    #   would land a baseline commit on dev mid-release.
+    #   A manual run while main is selected would commit straight to main,
+    #   around the two-branch flow the merge policy exists to enforce.
+    #
+    # Each of those falls back to the artifact, which carries the whole report.
     env:
-      CAN_WRITE: ${{ github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository }}
+      CAN_WRITE: ${{ github.actor != 'dependabot[bot]' && github.base_ref != 'main' && github.ref_name != 'main' && (github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository) }}
       BRANCH: ${{ github.head_ref || github.ref_name }}
 
     steps:
@@ -61,17 +75,23 @@ jobs:
       # A mismatch is the whole point of this job, so a failure here is expected
       # and never ends the run.
       - name: Compare Against The Committed Baselines
+        id: compare
         run: npm run test:visual
         continue-on-error: true
 
-      # Runs while the working tree still holds the old baselines, so the report
-      # can carry the old image, the new image, and the overlay side by side.
-      - name: Collect The Report
-        run: node scripts/collect-visual-diffs.mjs
-
+      # Writes the new baselines into the working tree. A failure here is the
+      # same expected kind, because the run still reports the stories it wrote.
       - name: Write The New Baselines
         run: npm run test:visual:update
         continue-on-error: true
+
+      # Reads what git says the two runs did to the baselines, and gathers the
+      # old image, the new image, and the overlay for each one.
+      - name: Collect The Report
+        id: collect
+        env:
+          VISUAL_COMPARE_OUTCOME: ${{ steps.compare.outcome }}
+        run: node scripts/collect-visual-diffs.mjs
 
       - name: Upload The Report
         uses: actions/upload-artifact@v4
@@ -84,7 +104,11 @@ jobs:
       - name: Commit The Baselines
         if: env.CAN_WRITE == 'true'
         run: |
-          git add -- 'src/**/__screenshots__'
+          # The pathspec needs the trailing glob. Without it git matches the
+          # folder name and nothing inside it, then fails the step outright.
+          # The `|| true` covers the run where no baseline moved at all, which
+          # git also reports as a pathspec that matched nothing.
+          git add -- 'src/**/__screenshots__/**' || true
 
           if git diff --cached --quiet; then
             echo "No baseline moved, nothing to commit."
@@ -94,6 +118,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "test(visual): update baselines"
+
+          # Another push can land while this job renders, so take it and retry
+          # rather than ending on a rejected non-fast-forward.
+          git pull --rebase origin "${BRANCH}"
           git push origin "HEAD:${BRANCH}"
 
       # One comment per pull request, rewritten on every push. The marker in the
@@ -123,3 +151,15 @@ jobs:
             gh api -X POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
               --input /tmp/visual-diff-comment.json
           fi
+
+      # A green, silent job has to mean "nothing moved", never "the run never
+      # compared anything". A comparison that fails without moving a single
+      # baseline is the second case, so it ends the job red. The verdict is read
+      # from the collect step, because the commit step stages the baselines and
+      # git stops calling them changed. This gates nothing, because `visual-diff`
+      # is not a required check.
+      - name: Fail When The Run Compared Nothing
+        if: steps.collect.outputs.compared-nothing == 'true'
+        run: |
+          echo "::error::The visual run failed without comparing anything. This layer covered nothing on this push."
+          exit 1

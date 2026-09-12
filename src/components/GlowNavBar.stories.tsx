@@ -43,14 +43,18 @@ export const Default: Story = {};
 //
 // One story per theme, because the theme is a story global rather than
 // something a play function switches. The helper loops the viewports.
+//
+// The baseline name is the story id rather than a hand-written string. Two
+// stories in one file cannot then collide on one baseline, which would
+// otherwise make each run overwrite the other and commit churn forever.
 
 /** Captures the nav bar on the light theme, at every covered viewport. */
 export const VisualLightTheme: Story = {
 	name: "Visual: light theme",
 	tags: ["!dev", "!autodocs"],
 	globals: { theme: "light" },
-	play: async () => {
-		await captureVisualSnapshots("glow-nav-bar-light");
+	play: async ({ id }) => {
+		await captureVisualSnapshots(id);
 	},
 };
 
@@ -59,7 +63,7 @@ export const VisualDarkTheme: Story = {
 	name: "Visual: dark theme",
 	tags: ["!dev", "!autodocs"],
 	globals: { theme: "dark" },
-	play: async () => {
-		await captureVisualSnapshots("glow-nav-bar-dark");
+	play: async ({ id }) => {
+		await captureVisualSnapshots(id);
 	},
 };

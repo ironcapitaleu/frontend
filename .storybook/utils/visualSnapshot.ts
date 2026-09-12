@@ -18,18 +18,24 @@
 // gating `ci` job and on a developer machine behaves exactly as it did before
 // this file existed.
 
-import { page } from "vitest/browser";
+// `expect` comes from vitest rather than `storybook/test`, which is what every
+// other play function in this repository uses. The `toMatchScreenshot`
+// assertion is part of Vitest browser mode and is not re-exported there.
 import { expect } from "vitest";
+import { page } from "vitest/browser";
 
 /**
  * Viewport widths the capture loops over, with the height each one renders at.
  *
- * The widths follow the Tailwind breakpoints the components themselves use
- * (`sm` 640, `md` 768, `lg` 1024, `xl` 1280) rather than a device list. Each
- * one sits well inside a range instead of on its edge, because a scrollbar
- * takes about 15 pixels off the usable width: a viewport of exactly 768 renders
- * as 753 and drops to the layout below it, which makes the baseline depend on
- * whether the story happens to overflow.
+ * Two widths to start: one below every Tailwind breakpoint the components use
+ * (`sm` 640, `md` 768, `lg` 1024, `xl` 1280) and one above all of them, so a
+ * layout change at any breakpoint lands on one side or the other.
+ *
+ * TESTING.md section 4.1 asks for a component's own breakpoints rather than a
+ * device list, which is what the second part of this rollout adds. Doing that
+ * needs the scrollbar margin handled: a scrollbar takes about 15 pixels off the
+ * usable width, so a viewport of exactly 768 renders as 753 and drops to the
+ * layout below it. Pick a width a little above the breakpoint, never on it.
  */
 export const VISUAL_VIEWPORTS = {
 	mobile: { width: 390, height: 844 },
@@ -37,6 +43,19 @@ export const VISUAL_VIEWPORTS = {
 } as const;
 
 type ViewportName = keyof typeof VISUAL_VIEWPORTS;
+
+/**
+ * The size the page is handed back at.
+ *
+ * Storybook runs every story of a run in one browser page, so a viewport left
+ * at the last captured size is the size the next story renders at. This is the
+ * size this project starts a run at, measured by reading `window.innerWidth`
+ * and `window.innerHeight` in a story that changes nothing.
+ */
+const DEFAULT_VIEWPORT = { width: 1200, height: 900 } as const;
+
+/** Identifies the stylesheet the capture adds, so it can be taken out again. */
+const FREEZE_STYLE_ID = "visual-snapshot-freeze";
 
 /**
  * The share of pixels allowed to differ before a capture counts as changed.
@@ -83,16 +102,27 @@ const FREEZE_STYLE = `
 
 /** Adds the freeze stylesheet once, however many stories call the helper. */
 function freezeMotion(): void {
-	const id = "visual-snapshot-freeze";
-
-	if (document.getElementById(id) !== null) {
+	if (document.getElementById(FREEZE_STYLE_ID) !== null) {
 		return;
 	}
 
 	const style = document.createElement("style");
-	style.id = id;
+	style.id = FREEZE_STYLE_ID;
 	style.textContent = FREEZE_STYLE;
 	document.head.appendChild(style);
+}
+
+/**
+ * Puts the page back the way it was found.
+ *
+ * Every story of a run shares one browser page, so a story that leaves the
+ * motion frozen or the viewport at 1440 hands both to whichever story runs
+ * next. That turns into a failure in an unrelated story that depends on file
+ * ordering, which is the hardest kind to read.
+ */
+async function restorePage(): Promise<void> {
+	document.getElementById(FREEZE_STYLE_ID)?.remove();
+	await page.viewport(DEFAULT_VIEWPORT.width, DEFAULT_VIEWPORT.height);
 }
 
 /**
@@ -161,8 +191,6 @@ export async function captureVisualSnapshots(name: string): Promise<void> {
 		return;
 	}
 
-	freezeMotion();
-
 	const viewports = Object.keys(VISUAL_VIEWPORTS) as ViewportName[];
 
 	const expectedResult = Object.fromEntries(
@@ -170,11 +198,17 @@ export async function captureVisualSnapshots(name: string): Promise<void> {
 	);
 
 	const result: Record<string, string> = {};
-	for (const viewport of viewports) {
-		const { width, height } = VISUAL_VIEWPORTS[viewport];
-		await page.viewport(width, height);
-		await settle();
-		result[viewport] = await captureViewport(name, viewport);
+	try {
+		freezeMotion();
+
+		for (const viewport of viewports) {
+			const { width, height } = VISUAL_VIEWPORTS[viewport];
+			await page.viewport(width, height);
+			await settle();
+			result[viewport] = await captureViewport(name, viewport);
+		}
+	} finally {
+		await restorePage();
 	}
 
 	expect(result).toEqual(expectedResult);
