@@ -80,13 +80,12 @@ export default defineConfig({
 					browser: {
 						enabled: true,
 						headless: true,
-						// The tester runs inside an iframe on a Playwright page. When a
-						// story asks for a viewport larger than that page, the iframe is
-						// scaled down to fit and the screenshot records the scaled
-						// pixels: Playwright's default page is 1280 by 720, which turned
-						// a 1440 by 900 capture into 1152 by 720 and a 390 by 844 one
-						// into 333 by 720. Downscaling blurs an image, which is the
-						// opposite of what a pixel comparison needs.
+						// The tester runs inside an iframe on a Playwright page. A story
+						// asking for a viewport larger than that page gets its iframe
+						// scaled down to fit, and the screenshot then records the scaled
+						// pixels: the default page of 1280 by 720 turned a 1440 by 900
+						// capture into 1152 by 720. Downscaling blurs an image, which is
+						// the opposite of what a pixel comparison needs.
 						//
 						// This page is larger than every viewport in
 						// .storybook/utils/visualSnapshot.ts, so each capture is one to
@@ -94,6 +93,28 @@ export default defineConfig({
 						provider: playwright({
 							contextOptions: { viewport: { width: 1600, height: 1000 } },
 						}),
+						expect: {
+							toMatchScreenshot: {
+								// No capture is compared against a committed file. Each one is
+								// written wherever VISUAL_OUT_DIR points, and the visual-diff
+								// job compares two such runs afterwards. Vite refuses a path
+								// outside the project, so this stays under the root.
+								resolveScreenshotPath: ({
+									arg,
+									ext,
+									root,
+									testFileDirectory,
+									testFileName,
+								}) =>
+									path.resolve(
+										root,
+										process.env.VISUAL_OUT_DIR ?? ".visual-run/head",
+										testFileDirectory,
+										testFileName,
+										`${arg}${ext}`,
+									),
+							},
+						},
 						instances: [
 							{
 								browser: "chromium",

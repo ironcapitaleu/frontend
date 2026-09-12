@@ -1,26 +1,18 @@
 # Pixel-level visual regression over the Storybook stories (STA-180).
 #
 # This job runs BESIDE the `ci` workflow and never gates a merge. It renders the
-# covered stories, commits whatever moved, and puts the images in front of a
-# reviewer. The human PR review is the gate, which is level 3 of the enforcement
-# ladder in AGENTS.md. The STA-143 findings document records why this layer stops
-# there rather than failing a build: a missing baseline is hardcoded to fail in
-# `@vitest/browser`, so a gating job turns every new story red on the push that
-# adds it.
+# covered stories twice, once from the base branch and once from this branch,
+# compares the two, and puts the images in front of a reviewer. The human PR
+# review is the gate, which is level 3 of the enforcement ladder in AGENTS.md.
 #
-# The job lives in its own file because it needs `contents: write` to push the
-# baselines back. The `ci` workflow keeps `contents: read`.
+# Nothing is stored between runs. No screenshot is committed, so the repository
+# does not grow by a byte however often a rendered story changes. That is the
+# point of rendering the reference rather than keeping one: a committed baseline
+# is a permanent blob, PNG files do not delta-compress, and deleting them later
+# reclaims nothing.
 #
-# Only this job writes baselines. Font rendering differs between operating
-# systems, so an image generated on a developer machine fails against this
-# Linux container. To redo the baselines by hand, run this workflow from the
-# Actions tab rather than committing a local run.
-#
-# Optional secret: VISUAL_DIFF_DEPLOY_KEY, the private half of a repository
-# deploy key that has write access. Without it the job still pushes the
-# baselines, but the commit it pushes carries no checks of its own until a
-# maintainer approves its workflow runs. See the checkout step for the whole
-# story.
+# Because nothing is written back, this job needs no write access, no token, and
+# no push. It reads, renders, and comments.
 
 name: Visual Diff
 
@@ -32,11 +24,10 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: write
 
-# One run per branch. Two runs racing to rewrite the same baselines end in a
-# rejected push and a red job.
+# One run per branch. A superseded run has nothing left to say.
 concurrency:
   group: visual-diff-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
@@ -44,43 +35,14 @@ concurrency:
 jobs:
   visual-diff:
     runs-on: ubuntu-22.04
-    # The push and the comment below need a writable token and a branch that
-    # takes commits. Three cases fail one of those tests:
-    #
-    #   A fork gets a read-only GITHUB_TOKEN, and so does dependabot.
-    #   The dev to main release pull request has dev as its head, so a push
-    #   would land a baseline commit on dev mid-release.
-    #   A manual run while main is selected would commit straight to main,
-    #   around the two-branch flow the merge policy exists to enforce.
-    #
-    # Each of those falls back to the artifact, which carries the whole report.
     env:
-      CAN_WRITE: ${{ github.actor != 'dependabot[bot]' && github.base_ref != 'main' && github.ref_name != 'main' && (github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository) }}
-      BRANCH: ${{ github.head_ref || github.ref_name }}
+      BASE_BRANCH: ${{ github.base_ref || github.event.repository.default_branch }}
 
     steps:
       - uses: actions/checkout@v7
         with:
-          # A pull_request event checks out a detached merge commit, which
-          # cannot be pushed back. Name the branch instead.
-          ref: ${{ github.head_ref || github.ref_name }}
-          # A push made with GITHUB_TOKEN does not start the workflows that
-          # would otherwise run on the new head, so the commit this job pushes
-          # ends up carrying no checks of its own.
-          #
-          # A deploy key is not GITHUB_TOKEN, so a push made with it starts the
-          # workflows the way any other push does. A deploy key never expires,
-          # it reaches this one repository and nothing else, and checkout sets
-          # it up and keeps it for the push from this one input.
-          #
-          # An empty value here makes checkout fall back to the token, so the
-          # job keeps working before the secret exists. The baselines are still
-          # pushed, and their commit waits for a maintainer to approve its
-          # workflow runs in the Actions tab.
-          #
-          # This changes who pushes, never who wrote the commit. The commit step
-          # below sets the author to github-actions[bot] either way.
-          ssh-key: ${{ secrets.VISUAL_DIFF_DEPLOY_KEY }}
+          # The base branch has to be in the clone, because this job renders it.
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -93,30 +55,43 @@ jobs:
           npm ci
           npm run install:playwright
 
-      # The comparison run. It reports every story whose pixels moved and writes
-      # the rendered image and the red-pixel overlay into .vitest-attachments/.
-      # A mismatch is the whole point of this job, so a failure here is expected
-      # and never ends the run.
-      - name: Compare Against The Committed Baselines
-        id: compare
-        run: npm run test:visual
-        continue-on-error: true
-
-      # Writes the new baselines into the working tree. A failure here is the
-      # same expected kind, because the run still reports the stories it wrote.
-      - name: Write The New Baselines
-        run: npm run test:visual:update
-        continue-on-error: true
-
-      # Reads what git says the two runs did to the baselines, and gathers the
-      # old image, the new image, and the overlay for each one.
-      - name: Collect The Report
-        id: collect
+      - name: Render This Branch
         env:
-          VISUAL_COMPARE_OUTCOME: ${{ steps.compare.outcome }}
-          VISUAL_HEAD_BRANCH: ${{ github.head_ref || github.ref_name }}
-          VISUAL_BASE_BRANCH: ${{ github.base_ref }}
-        run: node scripts/collect-visual-diffs.mjs
+          VISUAL_OUT_DIR: .visual-run/head
+        run: npm run test:visual
+
+      # The base branch is rendered in its own worktree, so its stories, its
+      # components, and its config are the ones that run. A pull request that
+      # adds the first visual story finds nothing here, and every capture is
+      # then reported as added rather than changed.
+      - name: Render The Base Branch
+        run: |
+          git worktree add ../base "origin/${BASE_BRANCH}"
+
+          # The base render needs dependencies. Sharing this checkout's
+          # node_modules is both faster and correct while the lockfiles agree.
+          # When the pull request changes them, the base gets its own install so
+          # it renders with the dependencies it actually declares.
+          if diff -q package-lock.json ../base/package-lock.json > /dev/null 2>&1; then
+            ln -s "$(pwd)/node_modules" ../base/node_modules
+          else
+            echo "The lockfile differs, so the base branch gets its own install."
+            (cd ../base && npm ci)
+          fi
+
+          # A base branch without the visual layer captures nothing, and that is
+          # a normal first-pull-request state rather than a failure.
+          (cd ../base && VISUAL_OUT_DIR=.visual-run/base npm run test:visual) || true
+
+          if [ -d ../base/.visual-run/base ]; then
+            mkdir -p .visual-run
+            cp -r ../base/.visual-run/base .visual-run/base
+          else
+            echo "The base branch captured nothing. Every story reports as added."
+          fi
+
+      - name: Compare The Two Runs
+        run: node scripts/compare-visual-runs.mjs
 
       - name: Upload The Report
         uses: actions/upload-artifact@v4
@@ -126,33 +101,12 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      - name: Commit The Baselines
-        if: env.CAN_WRITE == 'true'
-        run: |
-          # The pathspec needs the trailing glob. Without it git matches the
-          # folder name and nothing inside it, then fails the step outright.
-          # The `|| true` covers the run where no baseline moved at all, which
-          # git also reports as a pathspec that matched nothing.
-          git add -- 'src/**/__screenshots__/**' || true
-
-          if git diff --cached --quiet; then
-            echo "No baseline moved, nothing to commit."
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "test(visual): update baselines"
-
-          # Another push can land while this job renders, so take it and retry
-          # rather than ending on a rejected non-fast-forward.
-          git pull --rebase origin "${BRANCH}"
-          git push origin "HEAD:${BRANCH}"
-
       # One comment per pull request, rewritten on every push. The marker in the
-      # body is how the next run finds it, so repeat pushes never stack up.
+      # body is how the next run finds it, so repeat pushes never stack up. A
+      # fork gets a read-only token, so the comment is skipped and the artifact
+      # carries the whole report.
       - name: Report On The Pull Request
-        if: env.CAN_WRITE == 'true' && github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -160,7 +114,7 @@ jobs:
           BODY_FILE=visual-diff-report/comment.md
 
           if [ ! -s "$BODY_FILE" ]; then
-            echo "No baseline moved, nothing to report."
+            echo "Nothing changed, nothing to report."
             exit 0
           fi
 
@@ -177,14 +131,12 @@ jobs:
               --input /tmp/visual-diff-comment.json
           fi
 
-      # A green, silent job has to mean "nothing moved", never "the run never
-      # compared anything". A comparison that fails without moving a single
-      # baseline is the second case, so it ends the job red. The verdict is read
-      # from the collect step, because the commit step stages the baselines and
-      # git stops calling them changed. This gates nothing, because `visual-diff`
-      # is not a required check.
-      - name: Fail When The Run Compared Nothing
-        if: steps.collect.outputs.compared-nothing == 'true'
+      # A green, silent job has to mean "nothing moved", never "the render never
+      # happened". A run that captured nothing at all on this branch means the
+      # layer covered nothing on this push, which has to read differently.
+      - name: Fail When This Branch Captured Nothing
         run: |
-          echo "::error::The visual run failed without comparing anything. This layer covered nothing on this push."
-          exit 1
+          if [ -z "$(find .visual-run/head -name '*.png' 2>/dev/null)" ]; then
+            echo "::error::This branch captured no story images, so this layer covered nothing on this push."
+            exit 1
+          fi

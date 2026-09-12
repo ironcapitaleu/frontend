@@ -26,12 +26,13 @@ dist-ssr
 # Testing coverage
 coverage
 
-# Vitest browser-mode attachments. The visual regression run writes the actual
-# and diff images here on a mismatch. Only the baselines under
-# src/**/__screenshots__/ are committed, and only ever by CI.
+# Vitest browser-mode attachments.
 .vitest-attachments
 
-# Images the visual-diff job gathers for its workflow artifact.
+# Story images the visual-diff job renders, and the report it builds from them.
+# None of this is ever committed: the job renders both sides of the comparison
+# on every run, so no screenshot lives in the repository.
+.visual-run
 visual-diff-report
 
 # Claude Code local (personal, per-session) settings

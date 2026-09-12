@@ -5,14 +5,23 @@
 // needs no new runner and no new dependency: `toMatchScreenshot` already ships
 // with Vitest browser mode.
 //
-// Two rules from the STA-143 spike shape everything here:
+// Nothing is stored between runs. The `visual-diff` job renders the covered
+// stories twice, once from the base branch and once from the pull request head,
+// and compares the two. No screenshot is committed, so the repository does not
+// grow by a byte however often a rendered story changes. A committed baseline
+// would be a permanent blob, because PNG files do not delta-compress and
+// deleting them later reclaims nothing.
 //
-// 1. Only CI writes baselines. Font rendering differs between operating
-//    systems, so a baseline generated on a developer machine breaks the Linux
-//    CI job. Run `npm run test:visual:update` in the CI container, never
-//    locally.
-// 2. Nothing in this layer fails a build. The `visual-diff` job runs beside
-//    `ci`, commits what changed, and reports. The human PR review is the gate.
+// Two rules follow from that:
+//
+// 1. This helper captures, it does not compare. Each call writes one image per
+//    viewport, and scripts/compare-visual-runs.mjs decides what changed.
+// 2. Nothing in this layer fails a build. The job runs beside `ci` and reports.
+//    The human PR review is the gate.
+//
+// Font rendering differs between operating systems, which no longer breaks
+// anything: both sides of every comparison are rendered in the same container
+// on the same run.
 //
 // The capture is opt-in through VISUAL=1, so `npm run test:storybook` in the
 // gating `ci` job and on a developer machine behaves exactly as it did before
@@ -61,18 +70,8 @@ const DEFAULT_VIEWPORT = { width: 1200, height: 900 } as const;
 /** Identifies the stylesheet the capture adds, so it can be taken out again. */
 const FREEZE_STYLE_ID = "visual-snapshot-freeze";
 
-/**
- * The share of pixels allowed to differ before a capture counts as changed.
- *
- * The spike ran the same story three times and got zero mismatched pixels every
- * time, so this is not headroom for expected drift. It is a margin for the rare
- * sub-pixel difference in text rendering. At the 1440 by 900 desktop viewport it
- * works out at about 260 pixels, which is far below anything a reviewer sees.
- */
-const ALLOWED_MISMATCHED_PIXEL_RATIO = 0.0002;
-
-/** The outcome recorded for a viewport that matched its baseline. */
-const MATCHES_BASELINE = "matches baseline";
+/** The outcome recorded for a viewport that was captured. */
+const CAPTURED = "captured";
 
 /**
  * Whether the capture runs at all.
@@ -143,42 +142,38 @@ async function settle(): Promise<void> {
 }
 
 /**
- * Captures one viewport and turns the assertion into a value.
+ * Writes one viewport to disk and turns the outcome into a value.
  *
  * TESTING.md section 1.2 allows exactly one `expect` per test, so the helper
  * cannot assert once per viewport. It records the outcome of each one instead
  * and compares the whole set in a single assertion, which is the composite
- * outcome pattern that section already describes. The failure message is kept
- * as the recorded value, so a mismatch still names the pixel count and the file
- * it wrote.
+ * outcome pattern that section already describes.
+ *
+ * The run always passes `--update`, so `toMatchScreenshot` writes the image
+ * rather than comparing it. `vite.config.ts` sends it to VISUAL_OUT_DIR, which
+ * the job points at one directory for this branch and another for the base.
  */
 async function captureViewport(name: string, viewport: ViewportName) {
 	try {
 		await expect(page.elementLocator(document.body)).toMatchScreenshot(
 			`${name}-${viewport}`,
-			{
-				comparatorOptions: {
-					allowedMismatchedPixelRatio: ALLOWED_MISMATCHED_PIXEL_RATIO,
-				},
-			},
 		);
 
-		return MATCHES_BASELINE;
+		return CAPTURED;
 	} catch (error) {
 		return error instanceof Error ? error.message : String(error);
 	}
 }
 
 /**
- * Captures the story at every viewport and asserts that all of them match their
- * committed baseline.
+ * Captures the story at every viewport and asserts that all of them were
+ * written.
  *
  * Call it as the last step of a play function. It ends the play function in one
  * assertion, and it does nothing at all unless VISUAL=1 is set.
  *
- * @param name - The baseline file name, without the viewport, browser, or
- *   platform parts. Vitest writes each image to
- *   `<story dir>/__screenshots__/<story file>/<name>-<viewport>-<browser>-<platform>.png`.
+ * @param name - The image file name, without the viewport part. Each image is
+ *   written to `<VISUAL_OUT_DIR>/<story dir>/<story file>/<name>-<viewport>.png`.
  *
  * @example
  * ```ts
@@ -198,7 +193,7 @@ export async function captureVisualSnapshots(name: string): Promise<void> {
 	const viewports = Object.keys(VISUAL_VIEWPORTS) as ViewportName[];
 
 	const expectedResult = Object.fromEntries(
-		viewports.map((viewport) => [viewport, MATCHES_BASELINE]),
+		viewports.map((viewport) => [viewport, CAPTURED]),
 	);
 
 	const result: Record<string, string> = {};
