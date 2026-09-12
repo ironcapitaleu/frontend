@@ -15,6 +15,11 @@
 # systems, so an image generated on a developer machine fails against this
 # Linux container. To redo the baselines by hand, run this workflow from the
 # Actions tab rather than committing a local run.
+#
+# Optional secret: VISUAL_DIFF_TOKEN, a fine-grained token with `contents:
+# write` on this repository. Without it the job still pushes the baselines, but
+# the commit it pushes carries no checks of its own until a maintainer approves
+# its workflow runs. See the checkout step for the whole story.
 
 name: Visual Diff
 
@@ -58,6 +63,19 @@ jobs:
           # A pull_request event checks out a detached merge commit, which
           # cannot be pushed back. Name the branch instead.
           ref: ${{ github.head_ref || github.ref_name }}
+          # A push made with GITHUB_TOKEN does not start the workflows that
+          # would otherwise run on the new head, so the commit this job pushes
+          # ends up carrying no checks of its own. VISUAL_DIFF_TOKEN is a
+          # fine-grained token with `contents: write` on this repository, and a
+          # push made with it comes from a real identity, so the checks run.
+          #
+          # The fallback keeps the job working before that secret exists. The
+          # baselines are still pushed, and their commit still waits for a
+          # maintainer to approve its workflow runs in the Actions tab.
+          #
+          # This changes who pushes, never who wrote the commit. The commit step
+          # below sets the author to github-actions[bot] either way.
+          token: ${{ secrets.VISUAL_DIFF_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
