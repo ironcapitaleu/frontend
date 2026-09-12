@@ -240,9 +240,9 @@ regressed silently:
 Play tests catch *behavioural* breakage; only pixel comparison catches "the
 spacing jumped", "the gradient stopped flowing", "the serif fell back". A
 snapshot-diffing layer over the rendered stories would close that gap — but
-**adopting one is an open decision, not part of the current doctrine.** Tool
-choice (Chromatic — whose Storybook addon happens to ship in our config —
-Percy, Lost Pixel, self-hosted Playwright screenshots), cost, and the
+**it is decided, not built, so it is not doctrine yet.** Tool choice
+(Chromatic — whose Storybook addon happens to ship in our config — Percy,
+Lost Pixel, self-hosted Playwright screenshots), cost, and the
 baseline-review workflow all needed a spike first. That spike is done, and its
 findings document is attached to STA-143. It recommends the self-hosted option:
 pixel comparison inside the existing Storybook Vitest project. The
