@@ -243,10 +243,10 @@ snapshot-diffing layer over the rendered stories would close that gap — but
 **adopting one is an open decision, not part of the current doctrine.** Tool
 choice (Chromatic — whose Storybook addon happens to ship in our config —
 Percy, Lost Pixel, self-hosted Playwright screenshots), cost, and the
-baseline-review workflow all need a spike first. That evaluation is written up
-in [docs/visual-regression-findings.md](./docs/visual-regression-findings.md)
-(STA-143), which recommends a tool. The recommendation is not accepted yet, so
-nothing here changes until it is.
+baseline-review workflow all need a spike first. That evaluation is done, and
+the findings document hangs off the spike ticket (STA-143). It recommends a
+tool. The recommendation is not accepted yet, so nothing here changes until it
+is.
 
 What **is** doctrine today: stories are the visual record, and any future
 snapshot layer will consume them story-by-story. That is why **story coverage
