@@ -87,8 +87,10 @@ Authoritative source: `TESTING.md`. Summary:
    viewport variants, axe checks via `addon-a11y`.
 
 A third, pixel-level visual-regression layer (snapshot-diffing the rendered stories) is
-**planned but not adopted** — tool choice and workflow are to be spiked first (see TESTING.md §3
-and STA-140). Do not present it as existing infrastructure. Story coverage stays mandatory
+**planned but not adopted**. The tool spike is done and its findings document is attached to
+STA-143: it recommends pixel comparison inside the existing Storybook Vitest project, and the
+implementation is tracked in STA-180 (see TESTING.md §3). Do not present it as existing
+infrastructure until that work lands. Story coverage stays mandatory
 regardless: stories are the visual record any future snapshot layer will consume.
 
 When reviewing a UI change, ask: which layers cover it? A change is complete when its logic is
