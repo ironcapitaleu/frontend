@@ -26,5 +26,14 @@ dist-ssr
 # Testing coverage
 coverage
 
+# Vitest browser-mode attachments.
+.vitest-attachments
+
+# Story images the visual-diff job renders, and the report it builds from them.
+# None of this is ever committed: the job renders both sides of the comparison
+# on every run, so no screenshot lives in the repository.
+.visual-run
+visual-diff-report
+
 # Claude Code local (personal, per-session) settings
 .claude/settings.local.json

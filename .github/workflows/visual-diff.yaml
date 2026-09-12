@@ -1,0 +1,142 @@
+# Pixel-level visual regression over the Storybook stories (STA-180).
+#
+# This job runs BESIDE the `ci` workflow and never gates a merge. It renders the
+# covered stories twice, once from the base branch and once from this branch,
+# compares the two, and puts the images in front of a reviewer. The human PR
+# review is the gate, which is level 3 of the enforcement ladder in AGENTS.md.
+#
+# Nothing is stored between runs. No screenshot is committed, so the repository
+# does not grow by a byte however often a rendered story changes. That is the
+# point of rendering the reference rather than keeping one: a committed baseline
+# is a permanent blob, PNG files do not delta-compress, and deleting them later
+# reclaims nothing.
+#
+# Because nothing is written back, this job needs no write access, no token, and
+# no push. It reads, renders, and comments.
+
+name: Visual Diff
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+# One run per branch. A superseded run has nothing left to say.
+concurrency:
+  group: visual-diff-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  visual-diff:
+    runs-on: ubuntu-22.04
+    env:
+      BASE_BRANCH: ${{ github.base_ref || github.event.repository.default_branch }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The base branch has to be in the clone, because this job renders it.
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+          npm run install:playwright
+
+      - name: Render This Branch
+        env:
+          VISUAL_OUT_DIR: .visual-run/head
+        run: npm run test:visual
+
+      # The base branch is rendered in its own worktree, so its stories, its
+      # components, and its config are the ones that run. A pull request that
+      # adds the first visual story finds nothing here, and every capture is
+      # then reported as added rather than changed.
+      - name: Render The Base Branch
+        run: |
+          git worktree add ../base "origin/${BASE_BRANCH}"
+
+          # The base render needs dependencies. Sharing this checkout's
+          # node_modules is both faster and correct while the lockfiles agree.
+          # When the pull request changes them, the base gets its own install so
+          # it renders with the dependencies it actually declares.
+          if diff -q package-lock.json ../base/package-lock.json > /dev/null 2>&1; then
+            ln -s "$(pwd)/node_modules" ../base/node_modules
+          else
+            echo "The lockfile differs, so the base branch gets its own install."
+            (cd ../base && npm ci)
+          fi
+
+          # A base branch without the visual layer captures nothing, and that is
+          # a normal first-pull-request state rather than a failure.
+          (cd ../base && VISUAL_OUT_DIR=.visual-run/base npm run test:visual) || true
+
+          if [ -d ../base/.visual-run/base ]; then
+            mkdir -p .visual-run
+            cp -r ../base/.visual-run/base .visual-run/base
+          else
+            echo "The base branch captured nothing. Every story reports as added."
+          fi
+
+      - name: Compare The Two Runs
+        run: node scripts/compare-visual-runs.mjs
+
+      - name: Upload The Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diff-report
+          path: visual-diff-report/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      # One comment per pull request, rewritten on every push. The marker in the
+      # body is how the next run finds it, so repeat pushes never stack up. A
+      # fork gets a read-only token, so the comment is skipped and the artifact
+      # carries the whole report.
+      - name: Report On The Pull Request
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          BODY_FILE=visual-diff-report/comment.md
+
+          if [ ! -s "$BODY_FILE" ]; then
+            echo "Nothing changed, nothing to report."
+            exit 0
+          fi
+
+          jq -Rs '{body: .}' "$BODY_FILE" > /tmp/visual-diff-comment.json
+
+          COMMENT_ID=$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" --paginate \
+            --jq '.[] | select(.body | contains("<!-- visual-diff -->")) | .id' | head -1)
+
+          if [ -n "$COMMENT_ID" ]; then
+            gh api -X PATCH "repos/${GITHUB_REPOSITORY}/issues/comments/${COMMENT_ID}" \
+              --input /tmp/visual-diff-comment.json
+          else
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+              --input /tmp/visual-diff-comment.json
+          fi
+
+      # A green, silent job has to mean "nothing moved", never "the render never
+      # happened". A run that captured nothing at all on this branch means the
+      # layer covered nothing on this push, which has to read differently.
+      - name: Fail When This Branch Captured Nothing
+        run: |
+          if [ -z "$(find .visual-run/head -name '*.png' 2>/dev/null)" ]; then
+            echo "::error::This branch captured no story images, so this layer covered nothing on this push."
+            exit 1
+          fi

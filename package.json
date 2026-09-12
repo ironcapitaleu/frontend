@@ -23,6 +23,7 @@
 		"install:playwright": "npx playwright install",
 		"setup": "npm install && npx playwright install",
 		"test:storybook": "vitest --run --project storybook",
+		"test:visual": "VISUAL=1 vitest --run --project storybook --update",
 		"check:stories": "node scripts/check-stories.mjs",
 		"preview": "vite preview"
 	},
@@ -68,7 +69,9 @@
 		"@vitest/browser-playwright": "^4.1.11",
 		"@vitest/coverage-v8": "^4.1.10",
 		"jsdom": "^30.0.1",
+		"pixelmatch": "^7.2.0",
 		"playwright": "^1.62.1",
+		"pngjs": "^7.0.0",
 		"shadcn": "^4.21.0",
 		"storybook": "^10.2.6",
 		"typescript": "~7.0.2",
