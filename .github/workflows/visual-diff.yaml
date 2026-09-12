@@ -16,10 +16,11 @@
 # Linux container. To redo the baselines by hand, run this workflow from the
 # Actions tab rather than committing a local run.
 #
-# Optional secret: VISUAL_DIFF_TOKEN, a fine-grained token with `contents:
-# write` on this repository. Without it the job still pushes the baselines, but
-# the commit it pushes carries no checks of its own until a maintainer approves
-# its workflow runs. See the checkout step for the whole story.
+# Optional secret: VISUAL_DIFF_DEPLOY_KEY, the private half of a repository
+# deploy key that has write access. Without it the job still pushes the
+# baselines, but the commit it pushes carries no checks of its own until a
+# maintainer approves its workflow runs. See the checkout step for the whole
+# story.
 
 name: Visual Diff
 
@@ -65,17 +66,21 @@ jobs:
           ref: ${{ github.head_ref || github.ref_name }}
           # A push made with GITHUB_TOKEN does not start the workflows that
           # would otherwise run on the new head, so the commit this job pushes
-          # ends up carrying no checks of its own. VISUAL_DIFF_TOKEN is a
-          # fine-grained token with `contents: write` on this repository, and a
-          # push made with it comes from a real identity, so the checks run.
+          # ends up carrying no checks of its own.
           #
-          # The fallback keeps the job working before that secret exists. The
-          # baselines are still pushed, and their commit still waits for a
-          # maintainer to approve its workflow runs in the Actions tab.
+          # A deploy key is not GITHUB_TOKEN, so a push made with it starts the
+          # workflows the way any other push does. A deploy key never expires,
+          # it reaches this one repository and nothing else, and checkout sets
+          # it up and keeps it for the push from this one input.
+          #
+          # An empty value here makes checkout fall back to the token, so the
+          # job keeps working before the secret exists. The baselines are still
+          # pushed, and their commit waits for a maintainer to approve its
+          # workflow runs in the Actions tab.
           #
           # This changes who pushes, never who wrote the commit. The commit step
           # below sets the author to github-actions[bot] either way.
-          token: ${{ secrets.VISUAL_DIFF_TOKEN || secrets.GITHUB_TOKEN }}
+          ssh-key: ${{ secrets.VISUAL_DIFF_DEPLOY_KEY }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -109,6 +114,8 @@ jobs:
         id: collect
         env:
           VISUAL_COMPARE_OUTCOME: ${{ steps.compare.outcome }}
+          VISUAL_HEAD_BRANCH: ${{ github.head_ref || github.ref_name }}
+          VISUAL_BASE_BRANCH: ${{ github.base_ref }}
         run: node scripts/collect-visual-diffs.mjs
 
       - name: Upload The Report

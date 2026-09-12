@@ -18,9 +18,13 @@
 // The old image comes from `git show`, so no copy has to be made before the
 // update run. The overlay is present only when the comparator produced one.
 //
-// The overlay is the one view GitHub cannot render from a file diff, which is
-// why it travels in the workflow artifact. Showing it inline in the comment
-// needs a branch to host the images and is left to a follow-up ticket.
+// The comment itself shows the before and the after inline, by linking the
+// committed baselines on the base and head branches. That needs no hosting,
+// because the repository is public and the images are committed files.
+//
+// The overlay is the one image that is not committed anywhere, so it is the one
+// view the comment cannot show. It travels in the workflow artifact, and putting
+// it inline is left to a follow-up ticket.
 
 import { execFileSync } from "node:child_process";
 import {
@@ -44,6 +48,67 @@ const COMMENT_MARKER = "<!-- visual-diff -->";
 // moved baseline to show for it means the run never got far enough to compare
 // anything, which has to read differently from a clean run.
 const comparisonFailed = process.env.VISUAL_COMPARE_OUTCOME === "failure";
+
+// Set by the workflow. The repository is public, so raw.githubusercontent.com
+// serves the committed baselines without a token and GitHub renders them inside
+// the comment. The head branch holds the new image and the base branch the old
+// one, which is every view a reviewer needs except the overlay.
+const REPOSITORY = process.env.GITHUB_REPOSITORY;
+const HEAD_BRANCH = process.env.VISUAL_HEAD_BRANCH;
+const BASE_BRANCH = process.env.VISUAL_BASE_BRANCH;
+
+// Past this many baselines the images stop being a help and turn the comment
+// into a wall. The list and the artifact still carry all of them.
+const MAX_INLINE_BASELINES = 8;
+
+/**
+ * A link that serves one committed file straight from a branch.
+ *
+ * The `refs/heads/` prefix is what makes a branch name holding a slash, such as
+ * `test/visual-regression`, resolve. Without it the path after the repository
+ * is ambiguous and the image comes back as a 404.
+ */
+function rawUrl(branch, path) {
+	const encoded = path.split("/").map(encodeURIComponent).join("/");
+
+	return `https://raw.githubusercontent.com/${REPOSITORY}/refs/heads/${branch}/${encoded}`;
+}
+
+/** Whether the comment can show images at all. */
+function canEmbed() {
+	return (
+		REPOSITORY !== undefined && HEAD_BRANCH !== undefined && HEAD_BRANCH !== ""
+	);
+}
+
+/** A before and after pair, or just the after when there is no before. */
+function imageBlock(path, hasOldVersion) {
+	const newImage = `<img src="${rawUrl(HEAD_BRANCH, path)}" width="420" alt="new">`;
+
+	if (!hasOldVersion || BASE_BRANCH === undefined || BASE_BRANCH === "") {
+		return [
+			`<details><summary><code>${path}</code></summary>`,
+			"",
+			newImage,
+			"",
+			"</details>",
+			"",
+		];
+	}
+
+	const oldImage = `<img src="${rawUrl(BASE_BRANCH, path)}" width="420" alt="old">`;
+
+	return [
+		`<details><summary><code>${path}</code></summary>`,
+		"",
+		"| Before | After |",
+		"| --- | --- |",
+		`| ${oldImage} | ${newImage} |`,
+		"",
+		"</details>",
+		"",
+	];
+}
 
 /** Every file under a directory, recursively. Absent directory means no files. */
 function walk(dir) {
@@ -171,26 +236,40 @@ function commentBody(moved, added) {
 		"",
 	];
 
+	const embed =
+		canEmbed() && moved.length + added.length <= MAX_INLINE_BASELINES;
+
 	if (moved.length > 0) {
 		lines.push(`### ${moved.length} baseline(s) moved`, "");
+
 		for (const path of moved) {
-			lines.push(`- \`${path}\``);
+			lines.push(...(embed ? imageBlock(path, true) : [`- \`${path}\``]));
 		}
+
 		lines.push(
 			"",
-			"The new baselines are committed to this branch, so the file diff above shows every one of them. Use the 2-up, swipe, or onion-skin view to read a change.",
+			"Open each one above, or read them in the Files changed tab, which gives you the 2-up, swipe, and onion-skin views.",
 			"",
 		);
 	}
 
 	if (added.length > 0) {
 		lines.push(`### ${added.length} baseline(s) added`, "");
+
 		for (const path of added) {
-			lines.push(`- \`${path}\``);
+			lines.push(...(embed ? imageBlock(path, false) : [`- \`${path}\``]));
 		}
+
 		lines.push(
 			"",
 			"A story with no baseline always reports as changed on its first run. There is nothing to compare it against yet.",
+			"",
+		);
+	}
+
+	if (!embed && moved.length + added.length > MAX_INLINE_BASELINES) {
+		lines.push(
+			`More than ${MAX_INLINE_BASELINES} baselines moved, so the images are left out of this comment. Read them in the Files changed tab.`,
 			"",
 		);
 	}
