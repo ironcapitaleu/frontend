@@ -86,12 +86,22 @@ Authoritative source: `TESTING.md`. Summary:
    play tests in real browsers: interactions, all themes (the class-based theming decorator),
    viewport variants, axe checks via `addon-a11y`.
 
-A third, pixel-level visual-regression layer (snapshot-diffing the rendered stories) is
-**decided but not built**. The tool spike is done and its findings document is attached to
-STA-143: it recommends pixel comparison inside the existing Storybook Vitest project. That
-recommendation is accepted, and the implementation is tracked in STA-180 (see TESTING.md §3).
-Do not present it as existing infrastructure until that work lands. Story coverage stays
-mandatory regardless: stories are the visual record any future snapshot layer will consume.
+A third, pixel-level visual-regression layer (snapshot-diffing the rendered stories) was
+**built and rejected**. The spike is STA-143, the implementation is STA-180 and pull request
+234, closed unmerged, and the findings document attached to STA-143 carries the reasoning
+(see TESTING.md §3). Never present it as existing infrastructure, and never propose rebuilding
+it without reading that document first.
+
+What covers that gap instead, and what to run in its place:
+
+- **The visual gate in the `design` skill.** Capture the full matrix, both themes at a mobile
+  and a desktop width, for every page or component the change touches, and put it to the user
+  for sign-off. Run it while the change is in development, not only at the release gate.
+- **The Cloudflare Pages preview deploy.** It is a check on every pull request. A red or
+  missing preview deploy blocks the pull request the same as a red `ci`, because the preview
+  is what a reviewer opens to judge the appearance.
+
+Story coverage stays mandatory regardless: stories are the visual record the gate reads.
 
 When reviewing a UI change, ask: which layers cover it? A change is complete when its logic is
 unit-tested, its states have stories, its interactions have a play test, and it holds at its

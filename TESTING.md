@@ -235,19 +235,39 @@ regressed silently:
   is `test: "todo"` (violations surface in the test UI); the goal is `"error"`
   once existing violations are cleared. New components should pass from day one.
 
-### Planned third layer — pixel-level visual regression (not yet adopted)
+### Third layer — pixel-level visual regression (tried, not adopted)
 
-Play tests catch *behavioural* breakage; only pixel comparison catches "the
+Play tests catch *behavioural* breakage. Only pixel comparison catches "the
 spacing jumped", "the gradient stopped flowing", "the serif fell back". A
-snapshot-diffing layer over the rendered stories would close that gap — but
-**it is decided, not built, so it is not doctrine yet.** Tool choice
-(Chromatic — whose Storybook addon happens to ship in our config — Percy,
-Lost Pixel, self-hosted Playwright screenshots), cost, and the
-baseline-review workflow all needed a spike first. That spike is done, and its
-findings document is attached to STA-143. It recommends the self-hosted option:
-pixel comparison inside the existing Storybook Vitest project. The
-recommendation is accepted and the work is tracked in STA-180. This section
-changes when that work lands, not before.
+snapshot-diffing layer over the rendered stories closes that gap, and **we
+built one and decided against keeping it.** The spike (STA-143) and the
+implementation (STA-180, pull request 234, closed unmerged) are both done, and
+the findings document attached to STA-143 carries the full reasoning.
+
+The short version: the value of the layer was the review experience, a before,
+an after, and a red-pixel overlay sitting beside the code diff. GitHub renders
+an image inside a pull request only from a committed file, and committed
+baseline images were ruled out because they grow the repository without bound.
+PNG files do not delta-compress, so every re-render is a new permanent blob.
+Rendering both sides of the comparison on each run fixes the size at zero and
+takes the rendering away, which leaves a check that asks a reviewer to download
+a zip. A check nobody opens is noise.
+
+Two things cover this gap today, and both are already in place:
+
+- **The human visual gate.** Before sign-off on a change that alters
+  appearance, a person reads the full matrix: every touched page or component,
+  in both themes, at a mobile width and a desktop width. The `design` skill
+  holds the procedure and the `release` skill calls it at the release gate.
+- **The Cloudflare Pages preview deploy.** Every pull request gets a running
+  preview. A green deploy proves the change builds and renders, and the preview
+  URL is what a reviewer opens to judge it.
+
+This is level 3 of the enforcement ladder, review discipline, and it stops
+there on purpose. What it gives up is written down: a pixel shift in a
+component nobody opens reaches `dev` unseen. That is accepted while the
+repository is small enough that a person reads every pull request. The findings
+document names the conditions that reopen the question.
 
 What **is** doctrine today: stories are the visual record, and any future
 snapshot layer will consume them story-by-story. That is why **story coverage
