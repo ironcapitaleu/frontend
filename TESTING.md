@@ -200,8 +200,9 @@ with its validation) rather than every trivial leaf in isolation.
 The frontend has failure modes a backend does not: a page can be logically
 correct and still **look wrong** — a layout that collapses on mobile, an
 animation that jumps, a serif heading that silently fell back to sans. One
-environment cannot catch all of that, so tests live in two layers today (with
-a third planned — see below). Each layer answers one question, and every UI
+environment cannot catch all of that, so tests live in two layers today (a
+third, pixel-level layer was tried and not adopted — see below). Each layer
+answers one question, and every UI
 change should be able to say which layers cover it.
 
 | Layer | Runs in | Question it answers | Where |
@@ -250,19 +251,22 @@ an image inside a pull request only from a committed file, and committed
 baseline images were ruled out because they grow the repository without bound.
 PNG files do not delta-compress, so every re-render is a new permanent blob.
 Rendering both sides of the comparison on each run fixes the size at zero and
-takes the rendering away, which leaves a check that asks a reviewer to download
-a zip. A check nobody opens is noise.
+leaves nothing for GitHub to display, so the check asks a reviewer to download a
+zip. A check nobody opens is noise.
 
 Two things cover this gap today, and both are already in place:
 
 - **The human visual gate.** Before sign-off on a change that alters
   appearance, a person reads the full matrix: every touched page or component,
   in both themes, at a mobile width and a desktop width. The `design` skill
-  holds the procedure and the `release` skill calls it at the release gate.
+  holds the procedure. It runs while the change is in development and again at
+  the release gate, which the `release` skill calls.
 - **The Cloudflare Pages preview deploy.** Cloudflare builds every pull request
   and posts a preview URL, including a pull request that changes no application
   source. A green deploy proves the change builds and renders, and the preview
-  URL is what a reviewer opens to judge it.
+  URL is what a reviewer opens to judge it. The build is configured in the
+  Cloudflare dashboard rather than in this repository, so nothing here fails if
+  someone switches it off.
 
 On the enforcement ladder (AGENTS.md) this sits at level 2: the `design` skill
 carries the procedure and the `release` skill calls it, with the preview deploy
@@ -324,6 +328,9 @@ A UI change is complete when:
 4. It reads correctly against [DESIGN.md](./DESIGN.md) — semantic tokens, the
    right font role, the motion conventions. Design conformance is part of
    review, not an afterthought.
+5. The visual gate ran on it (§3): a person read the full matrix, both themes
+   at a mobile and a desktop width, and the Cloudflare Pages preview on the
+   pull request is green.
 
 ---
 
@@ -613,4 +620,5 @@ not a bag of booleans that hides what actually failed.
 - [ ] New/changed components have stories for their meaningful states; interactive ones have a play test.
 - [ ] Layout-bearing changes hold at the component's breakpoints and in all themes.
 - [ ] The change reads correctly against [DESIGN.md](./DESIGN.md) — tokens, font roles, motion conventions.
+- [ ] An appearance change passed the visual gate (§3): the full matrix was read in both themes at a mobile and a desktop width, and the Cloudflare Pages preview is green.
 - [ ] `npm run test:ci` and `npm run test:storybook` pass; coverage stays at or above the floor.

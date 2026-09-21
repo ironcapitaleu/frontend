@@ -161,8 +161,10 @@ gh pr view <N> --repo ironcapitaleu/frontend \
   --jq '{mergeState: .mergeStateStatus, checks: [.statusCheckRollup[]? | (.name // .context)+" = "+(.conclusion // .state // "pending")]}'
 ```
 
-Repeat with a plain `sleep 15` between calls until `ci` and `claude-auto-review` are `SUCCESS`
-and `mergeState` is `CLEAN`. If a check fails, stop and report it.
+Repeat with a plain `sleep 15` between calls until `ci`, `claude-auto-review` and
+`Cloudflare Pages` are `SUCCESS` and `mergeState` is `CLEAN`. A red preview deploy blocks the
+release the same as a red `ci`: it is the mechanical half of the only appearance defence
+(TESTING.md §3). If a check fails, stop and report it.
 
 ### Step 5b — Drive the review with `pr-iterate`
 

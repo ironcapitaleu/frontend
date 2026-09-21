@@ -310,8 +310,8 @@ For layout-bearing components, add viewport-variant stories at the component's *
 breakpoints (where its layout genuinely changes — e.g. where the nav collapses into the
 mobile menu), not a fixed device list. Give each variant a story so it is exercised by play
 tests and read at the visual gate. Test motion by its
-**endpoints** (menu closed → click → menu open); the animation itself is carried by the
-catalog and review until a pixel-diffing layer exists.
+**endpoints** (menu closed → click → menu open). No automated check covers the transition
+itself, so the Storybook catalog and review carry it.
 
 ## Proactive Behavior
 
