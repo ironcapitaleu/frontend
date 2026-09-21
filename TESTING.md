@@ -259,21 +259,24 @@ Two things cover this gap today, and both are already in place:
   appearance, a person reads the full matrix: every touched page or component,
   in both themes, at a mobile width and a desktop width. The `design` skill
   holds the procedure and the `release` skill calls it at the release gate.
-- **The Cloudflare Pages preview deploy.** Every pull request gets a running
-  preview. A green deploy proves the change builds and renders, and the preview
+- **The Cloudflare Pages preview deploy.** Cloudflare builds every pull request
+  and posts a preview URL, including a pull request that changes no application
+  source. A green deploy proves the change builds and renders, and the preview
   URL is what a reviewer opens to judge it.
 
-This is level 3 of the enforcement ladder, review discipline, and it stops
-there on purpose. What it gives up is written down: a pixel shift in a
-component nobody opens reaches `dev` unseen. That is accepted while the
+On the enforcement ladder (AGENTS.md) this sits at level 2: the `design` skill
+carries the procedure and the `release` skill calls it, with the preview deploy
+as the mechanical half. It stops short of level 1 on purpose, because no script
+decides whether a rendered page looks right. What it gives up is written down: a
+pixel shift in a component nobody opens reaches `dev` unseen. That is accepted while the
 repository is small enough that a person reads every pull request. The findings
 document names the conditions that reopen the question.
 
-What **is** doctrine today: stories are the visual record, and any future
-snapshot layer will consume them story-by-story. That is why **story coverage
-is test coverage** — a component without stories for its meaningful states is
-undocumented now and invisible to that layer later. Keep story coverage
-complete so the layer can be switched on without a backfill.
+What **is** doctrine today: stories are the visual record, and the visual gate
+reads them story by story. That is why **story coverage is test coverage** — a
+component without stories for its meaningful states is undocumented now and
+missing from the matrix a person signs off on. Keep story coverage complete, so
+the gate reads the whole component.
 
 ---
 
@@ -288,13 +291,13 @@ panel animation stutters. The doctrine for defending against them:
 - Layout is built desktop-and-mobile from the start (AGENTS.md's responsive
   methodology); tests must exercise **both**. Stories for layout-bearing
   components define viewport variants — the same story at a mobile width and a
-  desktop width — so play tests and visual snapshots cover each breakpoint the
+  desktop width — so play tests and the visual gate cover each breakpoint the
   component actually responds to.
 - Test at the component's **own** breakpoints (where its layout genuinely
   changes), not a fixed device list.
 - In jsdom, `window.matchMedia` is stubbed (see `src/test/setup.ts`). Logic
   that branches on a media query can be unit-tested by configuring that stub —
-  but layout produced by CSS breakpoints cannot, and belongs in layer 2/3.
+  but layout produced by CSS breakpoints cannot, and belongs in layer 2.
 
 ### 4.2 Motion
 
@@ -302,9 +305,9 @@ Motion is part of the design language (DESIGN.md §5), so it gets defended like
 one:
 
 - Test motion **by its observable endpoints**, not its pixels: the filter panel
-  is closed, the trigger is clicked, the panel's content is visible/hidden. The
-  transition itself is a job for pixel-level visual regression once adopted;
-  until then, the Storybook catalog and review carry it.
+  is closed, the trigger is clicked, the panel's content is visible/hidden. No
+  automated check covers the transition itself (§3). The Storybook catalog and
+  review carry it.
 - The house conventions — height animated via `grid-template-rows`
   (`0fr` → `1fr`), never `display` toggles or the `max-height` trick;
   `.btn-tactile` on buttons — are **review items** (see AGENTS.md § PR Review):
@@ -478,8 +481,8 @@ Working with the gate:
   low relative to how well-tested the components actually are — do not read the
   global percentage as the whole story.
 - **Story coverage is the layer-2 metric.** Every component's meaningful states
-  having stories is the coverage measure for layer 2 (and for any future
-  visual-regression layer), and is checked in review — not by this gate.
+  having stories is the coverage measure for layer 2, and the matrix the visual
+  gate reads (§3). Both are checked in review — not by this gate.
 
 ---
 

@@ -307,7 +307,7 @@ export const OpensOnClick: Story = {
 For layout-bearing components, add viewport-variant stories at the component's **own**
 breakpoints (where its layout genuinely changes — e.g. where the nav collapses into the
 mobile menu), not a fixed device list. Give each variant a story so it is exercised by play
-tests (and captured by visual regression once that layer is adopted). Test motion by its
+tests and read at the visual gate. Test motion by its
 **endpoints** (menu closed → click → menu open); the animation itself is carried by the
 catalog and review until a pixel-diffing layer exists.
 
