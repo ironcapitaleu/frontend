@@ -189,8 +189,16 @@ up as an idea? Say which you think it is, and why.
 ## Visual gate: capture the full matrix before sign-off
 
 When a change alters user-facing appearance, the user's visual sign-off is the appearance
-authority, above any automated test. Run this gate before a release that promotes the change to
-production (the `release` skill's sign-off gate calls back to this practice).
+authority, above any automated test. No automated check compares rendered pixels, so this gate
+and the preview deploy below are the whole defence against a spacing jump, a broken gradient,
+or a font fallback (TESTING.md §3 holds the boundary and what reopens it).
+
+Run it twice:
+
+- **While the change is in development**, before asking for review on the pull request. Catching
+  a shifted layout here costs one more commit. Catching it at the release gate costs a revert.
+- **Before a release that promotes the change to production** (the `release` skill's sign-off
+  gate calls back to this practice).
 
 - **Capture the full matrix.** For every page or component the change touches, capture the whole
   grid of states: both themes (light and dark) and both a mobile width (about 390px) and a
@@ -207,6 +215,12 @@ production (the `release` skill's sign-off gate calls back to this practice).
 - **Ask for the decision, do not infer it.** Solicit the sign-off with the structured
   approve-or-change question (the `release` skill's sign-off gate), never a free-text ask. Never
   promote user-facing UI to production on your own read of the appearance.
+- **Check the Cloudflare Pages preview deploy on the pull request.** It is the mechanical half
+  of this gate. A green preview proves the change builds and renders outside the test runner,
+  and the preview URL is what a reviewer opens. Treat a red preview deploy as a blocker, the
+  same as a red `ci`, and never ask for visual sign-off while it is red. Cloudflare builds every
+  pull request, so a preview that never arrives is a problem to chase rather than a verdict on
+  the change.
 
 ## Self-Improvement
 
