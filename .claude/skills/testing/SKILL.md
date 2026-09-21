@@ -106,8 +106,9 @@ from scratch.
 Story coverage stays mandatory regardless: stories are the matrix the gate reads.
 
 When reviewing a UI change, ask: which layers cover it? A change is complete when its logic is
-unit-tested, its states have stories, its interactions have a play test, and it holds at its
-breakpoints in all themes.
+unit-tested, its states have stories, its interactions have a play test, it holds at its
+breakpoints in all themes, and, when it alters appearance, the visual gate ran on it and the
+Cloudflare Pages preview is green (TESTING.md §4.3).
 
 ## Baseline Tests (apply to ALL components)
 

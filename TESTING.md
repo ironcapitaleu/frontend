@@ -202,8 +202,8 @@ correct and still **look wrong** — a layout that collapses on mobile, an
 animation that jumps, a serif heading that silently fell back to sans. One
 environment cannot catch all of that, so tests live in two layers today (a
 third, pixel-level layer was tried and not adopted — see below). Each layer
-answers one question, and every UI
-change should be able to say which layers cover it.
+answers one question, and every UI change should be able to say which layers
+cover it.
 
 | Layer | Runs in | Question it answers | Where |
 | --- | --- | --- | --- |
@@ -216,8 +216,8 @@ Hooks, contexts, `lib/` utilities, pure functions, presentational components,
 and page-level logic. Fast, deterministic, no real rendering engine. **Know its
 limits:** jsdom does not compute CSS, so it cannot see Tailwind breakpoints,
 animations, or layout. Anything whose correctness depends on *rendered
-appearance* belongs in layer 2 or 3 — do not fake it in jsdom by asserting
-class strings.
+appearance* belongs in layer 2 — do not fake it in jsdom by asserting class
+strings.
 
 ### Layer 2 — interaction & visual behaviour (Storybook play tests)
 
@@ -328,9 +328,9 @@ A UI change is complete when:
 4. It reads correctly against [DESIGN.md](./DESIGN.md) — semantic tokens, the
    right font role, the motion conventions. Design conformance is part of
    review, not an afterthought.
-5. The visual gate ran on it (§3): a person read the full matrix, both themes
-   at a mobile and a desktop width, and the Cloudflare Pages preview on the
-   pull request is green.
+5. If it alters appearance, the visual gate ran on it (§3): a person read the
+   full matrix, both themes at a mobile and a desktop width, and the Cloudflare
+   Pages preview on the pull request is green.
 
 ---
 
