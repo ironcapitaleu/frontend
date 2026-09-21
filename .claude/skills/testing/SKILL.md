@@ -86,22 +86,24 @@ Authoritative source: `TESTING.md`. Summary:
    play tests in real browsers: interactions, all themes (the class-based theming decorator),
    viewport variants, axe checks via `addon-a11y`.
 
-A third, pixel-level visual-regression layer (snapshot-diffing the rendered stories) was
-**built and rejected**. The spike is STA-143, the implementation is STA-180 and pull request
-234, closed unmerged, and the findings document attached to STA-143 carries the reasoning
-(see TESTING.md §3). Never present it as existing infrastructure, and never propose rebuilding
-it without reading that document first.
-
-What covers that gap instead, and what to run in its place:
+There is no third, pixel-level layer. Nothing compares rendered pixels, so no automated check
+catches a spacing jump, a broken gradient, or a serif falling back to a sans. Two things carry
+that instead, and both need a person:
 
 - **The visual gate in the `design` skill.** Capture the full matrix, both themes at a mobile
   and a desktop width, for every page or component the change touches, and put it to the user
   for sign-off. Run it while the change is in development, not only at the release gate.
-- **The Cloudflare Pages preview deploy.** It is a check on every pull request. A red or
-  missing preview deploy blocks the pull request the same as a red `ci`, because the preview
-  is what a reviewer opens to judge the appearance.
+- **The Cloudflare Pages preview deploy.** Cloudflare builds every pull request and posts a
+  preview URL. A red preview blocks the pull request the same as a red `ci`, because the
+  preview is what a reviewer opens to judge appearance.
 
-Story coverage stays mandatory regardless: stories are the visual record the gate reads.
+**The boundary.** This holds while a person reads every pull request. A pixel shift in a
+component nobody opens reaches `dev` unseen, and that is accepted today. The question reopens
+when the repository outgrows that, or when a service renders the comparison inside the pull
+request itself. TESTING.md §3 holds what has already been measured, so start there rather than
+from scratch.
+
+Story coverage stays mandatory regardless: stories are the matrix the gate reads.
 
 When reviewing a UI change, ask: which layers cover it? A change is complete when its logic is
 unit-tested, its states have stories, its interactions have a play test, and it holds at its

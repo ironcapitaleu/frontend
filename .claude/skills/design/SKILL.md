@@ -189,9 +189,9 @@ up as an idea? Say which you think it is, and why.
 ## Visual gate: capture the full matrix before sign-off
 
 When a change alters user-facing appearance, the user's visual sign-off is the appearance
-authority, above any automated test. No pixel comparison runs in CI, and TESTING.md §3 records
-why and what reopens the question, so this gate and the preview deploy below are the whole
-defence against a spacing jump, a broken gradient, or a font fallback.
+authority, above any automated test. No automated check compares rendered pixels, so this gate
+and the preview deploy below are the whole defence against a spacing jump, a broken gradient,
+or a font fallback (TESTING.md §3 holds the boundary and what reopens it).
 
 Run it twice:
 
