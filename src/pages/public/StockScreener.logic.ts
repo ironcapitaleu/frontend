@@ -215,3 +215,132 @@ export function sortStocks(
 			: (bv as number) - (av as number);
 	});
 }
+
+/** A named, ready-made screen the reader applies in one click. */
+export interface StrategyPreset {
+	readonly id: string;
+	readonly label: string;
+	readonly filters: FilterState;
+}
+
+/**
+ * The strategies offered above the results. Each one is a plain
+ * {@link FilterState}, so applying a preset is the same as setting its filters
+ * by hand, and the reader can refine it afterwards. The list is fixed in code
+ * until strategies become user data.
+ */
+export const STRATEGY_PRESETS: readonly StrategyPreset[] = [
+	{
+		id: "deep-value",
+		label: "Deep value",
+		filters: { ...EMPTY_FILTERS, peMax: "12", priceToFcfMax: "12" },
+	},
+	{
+		id: "fair-price-income",
+		label: "Income at a fair price",
+		filters: { ...EMPTY_FILTERS, peMax: "20", dividendYieldMin: "2" },
+	},
+	{
+		id: "cash-rich",
+		label: "Cash-rich",
+		filters: { ...EMPTY_FILTERS, quickRatioMin: "1", currentRatioMin: "1.5" },
+	},
+	{
+		id: "beaten-down",
+		label: "Beaten down",
+		filters: {
+			...EMPTY_FILTERS,
+			nearFiftyTwoWeekLow: true,
+			downLastMonth: "3",
+		},
+	},
+];
+
+/**
+ * The preset whose filters equal `filters` exactly, or `null` when the reader
+ * has changed the screen away from every preset. The page uses it to mark the
+ * active preset button.
+ */
+export function findActivePreset(filters: FilterState): StrategyPreset | null {
+	return (
+		STRATEGY_PRESETS.find((preset) =>
+			(Object.keys(EMPTY_FILTERS) as (keyof FilterState)[]).every(
+				(field) => preset.filters[field] === filters[field],
+			),
+		) ?? null
+	);
+}
+
+/**
+ * The median of the numbers in `values`, ignoring `null` entries. Returns
+ * `null` when no number is left, so a caller renders a dash instead of a
+ * misleading zero.
+ */
+export function median(values: readonly (number | null)[]): number | null {
+	const sorted = values
+		.filter((value): value is number => value !== null)
+		.sort((a, b) => a - b);
+	if (sorted.length === 0) return null;
+	const middle = Math.floor(sorted.length / 2);
+	return sorted.length % 2 === 1
+		? sorted[middle]
+		: (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+/** One active filter criterion, worded for a chip or a list. */
+export interface FilterDescription {
+	readonly field: keyof FilterState;
+	readonly label: string;
+	/** The bound as the reader reads it, for example `≤ 20` or `≥ 2%`. Empty for a switch. */
+	readonly value: string;
+}
+
+/**
+ * Describes each active criterion in `filters`, in the order of the filter
+ * rail. The filter chips and the "Why it matched" list render these entries. A
+ * numeric criterion counts only when it parses (see
+ * {@link isActiveNumericFilter}), the same rule {@link filterStocks} applies.
+ */
+export function describeActiveFilters(
+	filters: FilterState,
+): FilterDescription[] {
+	const descriptions: FilterDescription[] = [];
+	const addText = (field: keyof FilterState, label: string) => {
+		const value = filters[field];
+		if (typeof value === "string" && value !== "") {
+			descriptions.push({ field, label, value });
+		}
+	};
+	const addBound = (
+		field: keyof FilterState,
+		label: string,
+		format: (bound: number) => string,
+	) => {
+		const value = filters[field];
+		if (typeof value === "string" && isActiveNumericFilter(value)) {
+			descriptions.push({ field, label, value: format(parseFloat(value)) });
+		}
+	};
+
+	addText("search", "Search");
+	addText("country", "Country");
+	addText("sector", "Sector");
+	addBound("peMin", "P/E", (bound) => `≥ ${bound}`);
+	addBound("peMax", "P/E", (bound) => `≤ ${bound}`);
+	addBound("priceToFcfMax", "P/FCF", (bound) => `≤ ${bound}`);
+	addBound("priceToCashMax", "P/Cash", (bound) => `≤ ${bound}`);
+	addBound("quickRatioMin", "Quick ratio", (bound) => `≥ ${bound}`);
+	addBound("currentRatioMin", "Current ratio", (bound) => `≥ ${bound}`);
+	addBound("dividendYieldMin", "Dividend yield", (bound) => `≥ ${bound}%`);
+	addBound("buybackYieldMin", "Buyback yield", (bound) => `≥ ${bound}%`);
+	addBound("downLastMonth", "1M change", (bound) => `≤ −${bound}%`);
+	if (filters.nearFiftyTwoWeekLow) {
+		descriptions.push({
+			field: "nearFiftyTwoWeekLow",
+			label: "Near 52-week low",
+			value: "",
+		});
+	}
+
+	return descriptions;
+}

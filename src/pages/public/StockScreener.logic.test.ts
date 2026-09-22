@@ -4,10 +4,14 @@ import {
 	EMPTY_FILTERS,
 	type FilterState,
 	type Stock,
+	STRATEGY_PRESETS,
 	countActiveFilters,
+	describeActiveFilters,
 	filterStocks,
+	findActivePreset,
 	isActiveNumericFilter,
 	isNearFiftyTwoWeekLow,
+	median,
 	sortStocks,
 } from "./StockScreener.logic";
 
@@ -572,4 +576,133 @@ describe("countActiveFilters", () => {
 			expect(result).toBe(expectedResult);
 		},
 	);
+});
+
+describe("median", () => {
+	it("should return the middle value when the count is odd", () => {
+		const values = [9, 1, 5];
+
+		const expectedResult = 5;
+
+		const result = median(values);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should return the mean of the two middle values when the count is even", () => {
+		const values = [4, 1, 3, 2];
+
+		const expectedResult = 2.5;
+
+		const result = median(values);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should ignore null entries when some values are missing", () => {
+		const values = [null, 7, null, 3, 5];
+
+		const expectedResult = 5;
+
+		const result = median(values);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should return null when no number is present", () => {
+		const values = [null, null];
+
+		const expectedResult = null;
+
+		const result = median(values);
+
+		expect(result).toBe(expectedResult);
+	});
+});
+
+describe("findActivePreset", () => {
+	it("should return the preset when the filters equal its filters", () => {
+		const preset = STRATEGY_PRESETS[1];
+
+		const expectedResult = preset.id;
+
+		const result = findActivePreset({ ...preset.filters })?.id;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should return null when the filters differ from every preset", () => {
+		const filters = withFilters({
+			...STRATEGY_PRESETS[1].filters,
+			sector: "Energy",
+		});
+
+		const expectedResult = null;
+
+		const result = findActivePreset(filters);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should return null when no filter is active", () => {
+		const expectedResult = null;
+
+		const result = findActivePreset(EMPTY_FILTERS);
+
+		expect(result).toBe(expectedResult);
+	});
+});
+
+describe("describeActiveFilters", () => {
+	it("should return no entries when no filter is active", () => {
+		const expectedResult: never[] = [];
+
+		const result = describeActiveFilters(EMPTY_FILTERS);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should word each active criterion in rail order when several are set", () => {
+		const filters = withFilters({
+			country: "DE",
+			peMax: "20",
+			dividendYieldMin: "2.5",
+			downLastMonth: "3",
+			nearFiftyTwoWeekLow: true,
+		});
+
+		const expectedResult = [
+			{ field: "country", label: "Country", value: "DE" },
+			{ field: "peMax", label: "P/E", value: "≤ 20" },
+			{ field: "dividendYieldMin", label: "Dividend yield", value: "≥ 2.5%" },
+			{ field: "downLastMonth", label: "1M change", value: "≤ −3%" },
+			{ field: "nearFiftyTwoWeekLow", label: "Near 52-week low", value: "" },
+		];
+
+		const result = describeActiveFilters(filters);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should skip a numeric criterion when its value does not parse", () => {
+		const filters = withFilters({ peMax: "abc", quickRatioMin: "1" });
+
+		const expectedResult = [
+			{ field: "quickRatioMin", label: "Quick ratio", value: "≥ 1" },
+		];
+
+		const result = describeActiveFilters(filters);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should describe both P/E bounds when a two-sided range is set", () => {
+		const filters = withFilters({ peMin: "5", peMax: "15" });
+
+		const expectedResult = ["≥ 5", "≤ 15"];
+
+		const result = describeActiveFilters(filters).map((entry) => entry.value);
+
+		expect(result).toEqual(expectedResult);
+	});
 });
