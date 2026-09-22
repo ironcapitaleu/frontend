@@ -157,4 +157,23 @@ describe("CompanyPreview", () => {
 
 		expect(result).toBe(expectedResult);
 	});
+
+	it("should link to the company page when it opens", () => {
+		render(
+			<CompanyPreview
+				stock={alfa}
+				filters={EMPTY_FILTERS}
+				open
+				onOpenChange={() => {}}
+			/>,
+		);
+
+		const expectedResult = "/companies/ALFA";
+
+		const result = screen
+			.getByRole("link", { name: "Open company page" })
+			.getAttribute("href");
+
+		expect(result).toBe(expectedResult);
+	});
 });
