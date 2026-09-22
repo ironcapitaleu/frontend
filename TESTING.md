@@ -287,8 +287,8 @@ the gate reads the whole component.
 ## 4. Responsive, motion, and visual regressions
 
 The regressions that hurt most are the ones no unit test sees: a change on one
-page shifts a shared component, and suddenly the mobile nav jumps or the filter
-panel animation stutters. The doctrine for defending against them:
+page shifts a shared component, and suddenly the mobile nav jumps or the sheet
+animation stutters. The doctrine for defending against them:
 
 ### 4.1 Responsive
 
@@ -308,8 +308,8 @@ panel animation stutters. The doctrine for defending against them:
 Motion is part of the design language (DESIGN.md §5), so it gets defended like
 one:
 
-- Test motion **by its observable endpoints**, not its pixels: the filter panel
-  is closed, the trigger is clicked, the panel's content is visible/hidden. No
+- Test motion **by its observable endpoints**, not its pixels: the mobile menu
+  is closed, the trigger is clicked, the menu's links are visible/hidden. No
   automated check covers the transition itself (§3). The Storybook catalog and
   review carry it.
 - The house conventions — height animated via `grid-template-rows`

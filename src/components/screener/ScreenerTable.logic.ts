@@ -22,14 +22,21 @@ export interface NumberColumn {
 	 * hairline on its left, and the group runs until the next named column.
 	 */
 	readonly group?: string;
+	/** The column width in px, for the fixed table layout. */
+	readonly width: number;
 	readonly format: (stock: Stock) => string;
 	readonly toneOf?: (stock: Stock) => string;
 }
 
 /** A column for a key figure, labelled and formatted from {@link METRICS}. */
-function metricColumn(field: MetricField, group?: string): NumberColumn {
+function metricColumn(
+	field: MetricField,
+	width: number,
+	group?: string,
+): NumberColumn {
 	return {
 		field,
+		width,
 		label: METRICS[field].short,
 		group,
 		format: (stock) => formatMetric(stock[field], field),
@@ -37,22 +44,24 @@ function metricColumn(field: MetricField, group?: string): NumberColumn {
 }
 
 export const NUMBER_COLUMNS: readonly NumberColumn[] = [
-	metricColumn("marketCap", "Valuation"),
-	metricColumn("peRatio"),
-	metricColumn("priceToFcf"),
-	metricColumn("priceToCash"),
-	metricColumn("quickRatio", "Balance sheet"),
-	metricColumn("currentRatio"),
-	metricColumn("dividendYield", "Shareholder yield"),
-	metricColumn("buybackYield"),
+	metricColumn("marketCap", 68, "Valuation"),
+	metricColumn("peRatio", 48),
+	metricColumn("priceToFcf", 56),
+	metricColumn("priceToCash", 60),
+	metricColumn("quickRatio", 52, "Balance sheet"),
+	metricColumn("currentRatio", 62),
+	metricColumn("dividendYield", 68, "Shareholder yield"),
+	metricColumn("buybackYield", 68),
 	{
 		field: "price",
+		width: 70,
 		label: "Price",
 		group: "Price",
 		format: (stock) => formatPrice(stock.price),
 	},
 	{
 		field: "changePercent1M",
+		width: 58,
 		label: "1M",
 		format: (stock) => formatSignedPercent(stock.changePercent1M),
 		toneOf: (stock) => CHANGE_TONE_CLASS[changeTone(stock.changePercent1M)],

@@ -67,7 +67,14 @@ function ScreenerTable({
 			)}
 			{...props}
 		>
-			<Table className="min-w-[60rem] text-base">
+			<Table className="min-w-[880px] table-fixed text-base">
+				<colgroup>
+					<col style={{ width: 150 }} />
+					{NUMBER_COLUMNS.map((column) => (
+						<col key={column.field} style={{ width: column.width }} />
+					))}
+					<col style={{ width: 120 }} />
+				</colgroup>
 				<TableHeader className="bg-muted/60 [&_tr]:border-0 [&_tr:last-child]:border-b">
 					<TableRow className="hover:bg-transparent">
 						{COLUMN_GROUPS.map((group, index) => (
@@ -86,7 +93,7 @@ function ScreenerTable({
 						))}
 					</TableRow>
 					<TableRow className="hover:bg-transparent">
-						<TableHead scope="col" className="w-52 px-4 text-muted-foreground">
+						<TableHead scope="col" className="px-4 text-muted-foreground">
 							Company
 						</TableHead>
 						{NUMBER_COLUMNS.map((column) => (
@@ -99,7 +106,7 @@ function ScreenerTable({
 						))}
 						<TableHead
 							scope="col"
-							className="w-40 pr-4 pl-3 text-muted-foreground"
+							className="w-28 pr-4 pl-2 text-muted-foreground"
 						>
 							52-week range
 						</TableHead>
@@ -147,7 +154,7 @@ function ScreenerTable({
 												event.stopPropagation();
 												onSelect(stock.symbol);
 											}}
-											className="flex max-w-48 cursor-pointer flex-col items-start gap-0.5 rounded-sm text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+											className="flex max-w-full cursor-pointer flex-col items-start gap-0.5 rounded-sm text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
 										>
 											<span className="font-monospace text-lg font-medium">
 												{stock.symbol}
@@ -163,7 +170,7 @@ function ScreenerTable({
 											<TableCell
 												key={column.field}
 												className={cn(
-													"text-right font-monospace",
+													"px-1.5 text-right font-monospace",
 													column.group && "border-l border-border",
 													isSorted(column.field) &&
 														!isSelected &&
@@ -177,7 +184,7 @@ function ScreenerTable({
 											</TableCell>
 										);
 									})}
-									<TableCell className="pr-4 pl-3">
+									<TableCell className="pr-4 pl-2">
 										<RangeBar
 											aria-label={`${stock.symbol} 52-week range`}
 											formatBound={formatPrice}
@@ -220,7 +227,7 @@ function SortableHead({
 						: undefined
 			}
 			className={cn(
-				"px-2 text-right",
+				"px-1.5 text-right",
 				column.group && "border-l border-border",
 				direction && "bg-muted/60",
 			)}

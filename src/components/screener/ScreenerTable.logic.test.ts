@@ -13,6 +13,7 @@ import {
 
 const numberColumn = (group?: string): NumberColumn => ({
 	field: "price",
+	width: 60,
 	label: "Price",
 	group,
 	format: () => "",
