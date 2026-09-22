@@ -10,7 +10,7 @@ import { FilterChip } from ".";
  * quiet tag next to the result count.
  *
  * The remove button is labelled "Remove {label} filter" for screen readers.
- * Its hit area is 44 px tall and stays inside the chip's right edge.
+ * Its hit area is 44 by 44 px and stays inside the chip's right edge.
  */
 const meta: Meta<typeof FilterChip> = {
 	title: "Components/FilterChip",
@@ -64,8 +64,8 @@ export const LongLabel: Story = {
  */
 export const Row: Story = {
 	render: (args) => (
-		<div className="flex w-72 flex-wrap gap-x-1.5 gap-y-2">
-			<FilterChip label="P/E" value="≤ 20" onRemove={args.onRemove} />
+		<div className="flex w-72 flex-wrap gap-x-1.5 gap-y-3">
+			<FilterChip {...args} />
 			<FilterChip
 				label="Dividend yield"
 				value="≥ 2%"
@@ -75,6 +75,27 @@ export const Row: Story = {
 			<FilterChip label="Near 52-week low" onRemove={args.onRemove} />
 		</div>
 	),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const chip = canvas
+			.getByText("P/E")
+			.closest<HTMLElement>('[data-slot="filter-chip"]');
+		const box = chip?.getBoundingClientRect();
+
+		const expectedResult = false;
+
+		// Deviation from TESTING.md §2.2: a hit area has no accessible query, so
+		// a hit test just past the chip's right edge checks its geometry.
+		const hit = box
+			? canvasElement.ownerDocument.elementFromPoint(
+					box.right + 1,
+					box.top + box.height / 2,
+				)
+			: null;
+		const result = chip ? chip.contains(hit) : true;
+
+		await expect(result).toBe(expectedResult);
+	},
 };
 
 /** Clicking the remove button calls `onRemove` once. */
