@@ -33,9 +33,11 @@ const DIVIDEND_YIELDS = [
  * The readout beside the label states the bound in words, or `Any` when both
  * thumbs rest at the ends.
  *
- * While the slider narrows the range, the bars wholly inside it take the `chart-3`
- * accent. The rest stay in the quiet `border` token. This histogram is the
- * one accent on the screener page, so it marks exactly what the reader chose.
+ * While the slider narrows the range, only the bars wholly inside it take the
+ * `chart-3` accent. The rest stay in the quiet `border` token. A bar that the
+ * range only partly covers stays quiet, so the accent never runs past a thumb.
+ * It can stop up to one bar short of a thumb. This histogram is the one accent
+ * on the screener page.
  *
  * The component is controlled. Each story below keeps its range in state.
  */
@@ -138,10 +140,11 @@ export const KeyboardMovesUpperThumb: Story = {
 };
 
 /**
- * The upper thumb at 19 on a track of four bars. The bar that holds 19 is only
- * partly inside the range, so it stays quiet and the accent stops at the thumb.
+ * The upper thumb at 19 on a track of four bars. The bar from 10 to 20 is only
+ * partly inside the range, so it stays quiet. The accent ends at 10, short of
+ * the thumb.
  */
-export const AccentStopsAtThumb: Story = {
+export const AccentStaysInsideTheRange: Story = {
 	args: { value: [0, 19], binCount: 4 },
 	play: async ({ canvasElement }) => {
 		const expectedResult = ["true", null, null, null];
@@ -152,5 +155,22 @@ export const AccentStopsAtThumb: Story = {
 		);
 
 		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * A range from 19 to 21, narrower than one bar. No bar lies wholly inside it,
+ * so no bar takes the accent. The label and the readout still show the bound.
+ */
+export const NarrowRange: Story = {
+	args: { value: [19, 21] },
+	play: async ({ canvasElement }) => {
+		const expectedResult = 0;
+
+		const result = canvasElement.querySelectorAll(
+			'[data-slot="distribution-slider-bar"][data-selected]',
+		).length;
+
+		await expect(result).toBe(expectedResult);
 	},
 };

@@ -80,6 +80,24 @@ export const Range: Story = {
 };
 
 /**
+ * A range whose thumbs carry their own names. `getThumbLabel` names each thumb
+ * by its index, so a screen reader tells the minimum from the maximum.
+ */
+export const NamedThumbs: Story = {
+	render: (args) => (
+		<div className="w-72">
+			<Slider
+				defaultValue={[25, 75]}
+				getThumbLabel={(index) =>
+					index === 0 ? "Weighting minimum" : "Weighting maximum"
+				}
+				{...args}
+			/>
+		</div>
+	),
+};
+
+/**
  * A wider `step` snaps the thumb to coarser numbers, and a `min` and `max` pair
  * bounds it. This one moves in tens between 0 and 200.
  */

@@ -37,10 +37,26 @@ describe("binValues", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should return no bins when the count is not a positive integer", () => {
-		const expectedResult = [[], [], []];
+	it("should return no bins when the count is negative", () => {
+		const expectedResult: number[] = [];
 
-		const result = [-1, 2.5, 0].map((count) => binValues([1, 2], 0, 10, count));
+		const result = binValues([1, 2], 0, 10, -1);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should return no bins when the count is fractional", () => {
+		const expectedResult: number[] = [];
+
+		const result = binValues([1, 2], 0, 10, 2.5);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should return no bins when the count is zero", () => {
+		const expectedResult: number[] = [];
+
+		const result = binValues([1, 2], 0, 10, 0);
 
 		expect(result).toEqual(expectedResult);
 	});

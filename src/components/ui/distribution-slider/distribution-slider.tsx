@@ -159,21 +159,21 @@ function binValues(
 }
 
 /**
- * Marks the bins that lie wholly inside the selected range. A bin that only
+ * Marks which of `binCount` equal bins lie wholly inside the selected range. A bin that only
  * overlaps the range stays unmarked, so the accent never runs past a thumb. A
  * range narrower than one bin therefore marks nothing, which reads as "no bar
  * is fully inside" and is the honest answer.
  */
 function selectBins(
-	count: number,
+	binCount: number,
 	[lower, upper]: SliderRange,
 	min: number,
 	max: number,
 ): boolean[] {
-	const width = (max - min) / count;
+	const width = (max - min) / binCount;
 	// Bin edges are floating-point sums, so compare with a small tolerance.
 	const tolerance = width * 1e-9;
-	return Array.from({ length: count }, (_unused, index) => {
+	return Array.from({ length: binCount }, (_unused, index) => {
 		const start = min + index * width;
 		return start >= lower - tolerance && start + width <= upper + tolerance;
 	});

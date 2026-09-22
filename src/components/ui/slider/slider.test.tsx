@@ -15,6 +15,23 @@ describe("Slider", () => {
 		expect(result).toBe(expectedResult);
 	});
 
+	it("should name each thumb when getThumbLabel is given", () => {
+		render(
+			<Slider
+				defaultValue={[25, 75]}
+				getThumbLabel={(index) => (index === 0 ? "Low" : "High")}
+			/>,
+		);
+
+		const expectedResult = ["Low", "High"];
+
+		const result = screen
+			.getAllByRole("slider")
+			.map((thumb) => thumb.getAttribute("aria-label"));
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should render one thumb per entry when the value is a range", () => {
 		render(<Slider defaultValue={[25, 75]} />);
 
