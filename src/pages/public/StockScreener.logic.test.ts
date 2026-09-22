@@ -835,6 +835,14 @@ describe("describeActiveFilters", () => {
 });
 
 describe("nextSortConfig", () => {
+	it("should sort ascending when the first column is activated on an unsorted table", () => {
+		const expectedResult = { field: "peRatio", direction: "asc" };
+
+		const result = nextSortConfig(null, "peRatio");
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should sort ascending when a new column is activated", () => {
 		const expectedResult = { field: "peRatio", direction: "asc" };
 

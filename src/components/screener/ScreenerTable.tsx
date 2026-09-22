@@ -25,11 +25,14 @@ import {
 } from "./format";
 
 /** A sortable number column: its header, its group, and how a cell reads. */
-interface NumberColumn {
+export interface NumberColumn {
 	readonly field: keyof Stock;
 	readonly label: string;
-	/** Starts a new column group, so the column draws a hairline on its left. */
-	readonly startsGroup?: boolean;
+	/**
+	 * Names the column group that starts at this column. The column draws a
+	 * hairline on its left, and the group runs until the next named column.
+	 */
+	readonly group?: string;
 	readonly format: (stock: Stock) => string;
 	readonly toneOf?: (stock: Stock) => string;
 }
@@ -38,10 +41,14 @@ const NUMBER_COLUMNS: readonly NumberColumn[] = [
 	{
 		field: "marketCap",
 		label: "Mkt cap",
-		startsGroup: true,
+		group: "Valuation",
 		format: (stock) => formatMarketCap(stock.marketCap),
 	},
-	{ field: "peRatio", label: "P/E", format: (s) => formatNumber(s.peRatio) },
+	{
+		field: "peRatio",
+		label: "P/E",
+		format: (stock) => formatNumber(stock.peRatio),
+	},
 	{
 		field: "priceToFcf",
 		label: "P/FCF",
@@ -55,7 +62,7 @@ const NUMBER_COLUMNS: readonly NumberColumn[] = [
 	{
 		field: "quickRatio",
 		label: "Quick",
-		startsGroup: true,
+		group: "Balance sheet",
 		format: (stock) => formatNumber(stock.quickRatio, 2),
 	},
 	{
@@ -66,7 +73,7 @@ const NUMBER_COLUMNS: readonly NumberColumn[] = [
 	{
 		field: "dividendYield",
 		label: "Dividend",
-		startsGroup: true,
+		group: "Shareholder yield",
 		format: (stock) => formatPercent(stock.dividendYield),
 	},
 	{
@@ -77,7 +84,7 @@ const NUMBER_COLUMNS: readonly NumberColumn[] = [
 	{
 		field: "price",
 		label: "Price",
-		startsGroup: true,
+		group: "Price",
 		format: (stock) => formatPrice(stock.price),
 	},
 	{
@@ -88,14 +95,24 @@ const NUMBER_COLUMNS: readonly NumberColumn[] = [
 	},
 ];
 
-/** The group header row: a label and how many columns it spans. */
-const COLUMN_GROUPS = [
-	{ label: "", span: 1 },
-	{ label: "Valuation", span: 4 },
-	{ label: "Balance sheet", span: 2 },
-	{ label: "Shareholder yield", span: 2 },
-	{ label: "Price", span: 3 },
-] as const;
+/**
+ * The group header row: a label and how many columns it spans. It derives from
+ * the `group` names, so it always spans every column. The first group covers
+ * the company column, and the last also covers the 52-week range.
+ */
+export function columnGroups(
+	columns: readonly NumberColumn[],
+): { label: string; span: number }[] {
+	const groups = [{ label: "", span: 1 }];
+	for (const column of columns) {
+		if (column.group) groups.push({ label: column.group, span: 1 });
+		else groups[groups.length - 1].span += 1;
+	}
+	groups[groups.length - 1].span += 1;
+	return groups;
+}
+
+const COLUMN_GROUPS = columnGroups(NUMBER_COLUMNS);
 
 const COLUMN_COUNT = 2 + NUMBER_COLUMNS.length;
 
@@ -122,8 +139,8 @@ interface ScreenerTableProps
  * Each number header sorts its column (ascending, descending, off) and carries
  * `aria-sort`. The sorted column takes a light `muted` tint. A row is selected
  * by a click anywhere on it, or with Enter on the company button. The selected
- * row carries a thin accent mark on its left edge. Below the desktop width the
- * table scrolls sideways inside its frame.
+ * row carries a thin accent mark on its left edge. In a frame narrower than
+ * its minimum width, the table scrolls sideways inside the frame.
  */
 function ScreenerTable({
 	stocks,
@@ -146,8 +163,8 @@ function ScreenerTable({
 			{...props}
 		>
 			<Table className="min-w-[60rem] text-base">
-				<TableHeader className="bg-muted/60">
-					<TableRow className="border-0 hover:bg-transparent">
+				<TableHeader className="bg-muted/60 [&_tr]:border-0 [&_tr:last-child]:border-b">
+					<TableRow className="hover:bg-transparent">
 						{COLUMN_GROUPS.map((group, index) => (
 							<th
 								key={group.label || "company"}
@@ -158,7 +175,7 @@ function ScreenerTable({
 									index > 0 && "border-l border-border",
 								)}
 							>
-								{group.label}
+								{group.label || <span className="sr-only">Company</span>}
 							</th>
 						))}
 					</TableRow>
@@ -193,63 +210,80 @@ function ScreenerTable({
 							</TableCell>
 						</TableRow>
 					) : (
-						stocks.map((stock) => (
-							<TableRow
-								key={stock.symbol}
-								data-state={
-									stock.symbol === selectedSymbol ? "selected" : undefined
-								}
-								// The company button gives keyboard access. The row click is a
-								// larger mouse target for the same action.
-								onClick={() => onSelect(stock.symbol)}
-								className="cursor-pointer data-[state=selected]:bg-muted/70 data-[state=selected]:shadow-[inset_3px_0_0_var(--color-chart-3)]"
-							>
-								<TableCell className="px-4 py-2.5">
-									<button
-										type="button"
-										aria-haspopup="dialog"
-										onClick={(event) => {
-											event.stopPropagation();
-											onSelect(stock.symbol);
-										}}
-										className="flex max-w-48 cursor-pointer flex-col items-start gap-0.5 rounded-sm text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+						stocks.map((stock) => {
+							const isSelected = stock.symbol === selectedSymbol;
+							return (
+								<TableRow
+									key={stock.symbol}
+									data-state={isSelected ? "selected" : undefined}
+									// The company button gives keyboard access. The row click is a
+									// larger mouse target for the same action. A drag that selects
+									// text to copy does not count as a click.
+									onClick={() => {
+										if (window.getSelection()?.toString()) return;
+										onSelect(stock.symbol);
+									}}
+									className="cursor-pointer data-[state=selected]:bg-muted/70"
+								>
+									{/* The accent mark sits on the first cell. Chrome and Safari
+								    paint no box-shadow on a row of a collapsed table. */}
+									<TableCell
+										data-slot="screener-table-company"
+										className={cn(
+											"px-4 py-2.5",
+											isSelected &&
+												"shadow-[inset_3px_0_0_var(--color-chart-3)]",
+										)}
 									>
-										<span className="font-monospace text-lg font-medium">
-											{stock.symbol}
-										</span>
-										<span className="max-w-full truncate text-muted-foreground">
-											{stock.name} · {stock.country}
-										</span>
-									</button>
-								</TableCell>
-								{NUMBER_COLUMNS.map((column) => {
-									const text = column.format(stock);
-									return (
-										<TableCell
-											key={column.field}
-											className={cn(
-												"text-right font-monospace",
-												column.startsGroup && "border-l border-border",
-												isSorted(column.field) && "bg-muted/60",
-												text === MISSING
-													? "text-muted-foreground/60"
-													: column.toneOf?.(stock),
-											)}
+										<button
+											type="button"
+											aria-haspopup="dialog"
+											onClick={(event) => {
+												event.stopPropagation();
+												onSelect(stock.symbol);
+											}}
+											className="flex max-w-48 cursor-pointer flex-col items-start gap-0.5 rounded-sm text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
 										>
-											{text}
-										</TableCell>
-									);
-								})}
-								<TableCell className="pr-4 pl-3">
-									<RangeBar
-										aria-label={`${stock.symbol} 52-week range`}
-										value={stock.price}
-										low={stock.weekLow52}
-										high={stock.weekHigh52}
-									/>
-								</TableCell>
-							</TableRow>
-						))
+											<span className="font-monospace text-lg font-medium">
+												{stock.symbol}
+											</span>
+											<span className="max-w-full truncate text-muted-foreground">
+												{stock.name} · {stock.country}
+											</span>
+										</button>
+									</TableCell>
+									{NUMBER_COLUMNS.map((column) => {
+										const text = column.format(stock);
+										return (
+											<TableCell
+												key={column.field}
+												className={cn(
+													"text-right font-monospace",
+													column.group && "border-l border-border",
+													isSorted(column.field) &&
+														!isSelected &&
+														"bg-muted/60",
+													text === MISSING
+														? "text-muted-foreground/60"
+														: column.toneOf?.(stock),
+												)}
+											>
+												{text}
+											</TableCell>
+										);
+									})}
+									<TableCell className="pr-4 pl-3">
+										<RangeBar
+											aria-label={`${stock.symbol} 52-week range`}
+											formatBound={formatPrice}
+											value={stock.price}
+											low={stock.weekLow52}
+											high={stock.weekHigh52}
+										/>
+									</TableCell>
+								</TableRow>
+							);
+						})
 					)}
 				</TableBody>
 			</Table>
@@ -282,7 +316,7 @@ function SortableHead({
 			}
 			className={cn(
 				"px-2 text-right",
-				column.startsGroup && "border-l border-border",
+				column.group && "border-l border-border",
 				direction && "bg-muted/60",
 			)}
 		>

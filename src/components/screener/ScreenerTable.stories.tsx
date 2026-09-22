@@ -91,11 +91,12 @@ export const Empty: Story = {
 };
 
 /**
- * A phone width. The table keeps its columns and scrolls sideways inside its
- * frame, so the page itself never scrolls sideways.
+ * A tablet width, where the page shows the table and not the cards. The frame
+ * is narrower than the table's minimum width, so the table scrolls sideways
+ * inside it and the page itself never scrolls sideways.
  */
-export const Mobile: Story = {
-	globals: { viewport: { value: "mobile1", isRotated: false } },
+export const Tablet: Story = {
+	globals: { viewport: { value: "tablet", isRotated: false } },
 };
 
 /** Two clicks on the P/E header sort the column from the highest P/E down. */
