@@ -10,7 +10,7 @@ import { FilterChip } from ".";
  * quiet tag next to the result count.
  *
  * The remove button is labelled "Remove {label} filter" for screen readers.
- * Its hit area reaches 44 px on every side of the small icon.
+ * Its hit area is 44 px tall and stays inside the chip's right edge.
  */
 const meta: Meta<typeof FilterChip> = {
 	title: "Components/FilterChip",
@@ -56,6 +56,25 @@ export const LongLabel: Story = {
 			</div>
 		),
 	],
+};
+
+/**
+ * A wrapped row of chips, as the screener shows them. The remove targets stay
+ * inside their own chips, so a click on one chip never removes its neighbor.
+ */
+export const Row: Story = {
+	render: (args) => (
+		<div className="flex w-72 flex-wrap gap-x-1.5 gap-y-2">
+			<FilterChip label="P/E" value="≤ 20" onRemove={args.onRemove} />
+			<FilterChip
+				label="Dividend yield"
+				value="≥ 2%"
+				onRemove={args.onRemove}
+			/>
+			<FilterChip label="Country" value="DE" onRemove={args.onRemove} />
+			<FilterChip label="Near 52-week low" onRemove={args.onRemove} />
+		</div>
+	),
 };
 
 /** Clicking the remove button calls `onRemove` once. */
