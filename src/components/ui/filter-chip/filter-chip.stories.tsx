@@ -10,7 +10,9 @@ import { FilterChip } from ".";
  * quiet tag next to the result count.
  *
  * The remove button is labelled "Remove {label} filter" for screen readers.
- * Its hit area is 44 by 44 px and stays inside the chip's right edge.
+ * Its hit area is 44 by 44 px and stays inside the chip's right edge. It
+ * covers the right end of the chip, so a click on a short bound such as `DE`
+ * removes the filter.
  */
 const meta: Meta<typeof FilterChip> = {
 	title: "Components/FilterChip",
@@ -79,22 +81,27 @@ export const Row: Story = {
 		const canvas = within(canvasElement);
 		const chip = canvas
 			.getByText("P/E")
-			.closest<HTMLElement>('[data-slot="filter-chip"]');
-		const box = chip?.getBoundingClientRect();
+			.closest('[data-slot="filter-chip"]') as HTMLElement;
+		const box = chip.getBoundingClientRect();
 
-		const expectedResult = false;
+		const expectedResult = { elementAtRightEdge: "outside the chip" };
 
 		// Deviation from TESTING.md §2.2: a hit area has no accessible query, so
 		// a hit test just past the chip's right edge checks its geometry.
-		const hit = box
-			? canvasElement.ownerDocument.elementFromPoint(
-					box.right + 1,
-					box.top + box.height / 2,
-				)
-			: null;
-		const result = chip ? chip.contains(hit) : true;
+		const hit = canvasElement.ownerDocument.elementFromPoint(
+			box.right + 1,
+			box.top + box.height / 2,
+		);
+		const result = {
+			elementAtRightEdge:
+				hit === null
+					? "nothing, the chip is off screen"
+					: chip.contains(hit)
+						? "inside the chip"
+						: "outside the chip",
+		};
 
-		await expect(result).toBe(expectedResult);
+		await expect(result).toEqual(expectedResult);
 	},
 };
 

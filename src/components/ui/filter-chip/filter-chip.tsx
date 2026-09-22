@@ -21,8 +21,14 @@ interface FilterChipProps
  *
  * The remove button is labelled "Remove {label} filter". Its hit area is 44 by
  * 44 px. It grows left over the chip and 8 px above and below it, but never
- * past the chip's right edge, so a neighboring chip keeps its own clicks. Leave
- * at least 8 px of clear space above and below a chip row. The chip holds no state, so `onRemove` can fire twice on a fast double
+ * past the chip's right edge, so a neighboring chip keeps its own clicks.
+ * Leave at least 8 px of clear space above and below a chip row.
+ *
+ * The hit area covers the right end of the chip. A short bound such as `DE`
+ * or `5` sits inside it, so a click on that bound removes the filter. No
+ * geometry avoids this at a 44 px target in a 28 px chip.
+ *
+ * The chip holds no state, so `onRemove` can fire twice on a fast double
  * click, and the caller must tolerate removing a filter that is already gone.
  * Use a `Badge` for a label that the reader cannot remove.
  */
