@@ -1,6 +1,7 @@
+import { useId } from "react";
 import { Link } from "react-router";
 
-import { buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { RangeBar } from "@/components/ui/range-bar";
 import {
 	Sheet,
@@ -22,6 +23,7 @@ import {
 	METRICS,
 	type MetricField,
 	changeTone,
+	formatMetric,
 	formatNumber,
 	formatPercent,
 	formatPrice,
@@ -40,8 +42,13 @@ const KEY_FIGURES: readonly MetricField[] = [
 	"buybackYield",
 ];
 
+/** Props for {@link CompanyPreview}. */
 interface CompanyPreviewProps {
-	/** The company to preview. `null` renders nothing. */
+	/**
+	 * The company to preview. `null` renders nothing. Keep the stock set until
+	 * the close transition ends, or the panel disappears without its exit
+	 * animation and focus does not return to the row.
+	 */
 	stock: Stock | null;
 	/** The active filters. The "Why it matched" list reads from them. */
 	filters: FilterState;
@@ -64,6 +71,7 @@ function CompanyPreview({
 	open,
 	onOpenChange,
 }: CompanyPreviewProps) {
+	const headingId = useId();
 	if (!stock) return null;
 	const reasons = describeActiveFilters(filters);
 
@@ -107,11 +115,11 @@ function CompanyPreview({
 					</header>
 
 					<section
-						aria-labelledby="why-it-matched"
+						aria-labelledby={headingId}
 						className="flex flex-col gap-3 border-b border-border p-6"
 					>
 						<h3
-							id="why-it-matched"
+							id={headingId}
 							className="font-sans-serif text-sm font-medium tracking-wider text-muted-foreground uppercase"
 						>
 							Why it matched
@@ -150,8 +158,13 @@ function CompanyPreview({
 									<dt className="text-base text-muted-foreground">
 										{METRICS[field].label}
 									</dt>
-									<dd className="font-monospace text-lg">
-										{METRICS[field].format(stock[field])}
+									<dd
+										className={cn(
+											"font-monospace text-lg",
+											stock[field] === null && "text-muted-foreground/60",
+										)}
+									>
+										{formatMetric(stock, field)}
 									</dd>
 								</div>
 							))}
@@ -159,15 +172,14 @@ function CompanyPreview({
 					</section>
 				</SheetBody>
 				<footer className="border-t border-border p-6">
-					<Link
-						to={`/companies/${stock.symbol}`}
-						className={cn(
-							buttonVariants({ size: "lg" }),
-							"btn-tactile h-11 w-full bg-foreground text-lg text-background hover:bg-foreground/90",
-						)}
+					<Button
+						variant="inverted"
+						className="btn-tactile h-11 w-full text-lg"
+						render={<Link to={`/companies/${stock.symbol}`} />}
+						nativeButton={false}
 					>
 						Open company page
-					</Link>
+					</Button>
 				</footer>
 			</SheetContent>
 		</Sheet>
@@ -180,8 +192,13 @@ function CompanyPreview({
  */
 export function matchValue(stock: Stock, reason: FilterDescription): string {
 	switch (reason.field) {
-		case "search":
-			return stock.symbol;
+		case "search": {
+			// The search matches the symbol or the name, so show the one it hit.
+			const query = reason.value.toLowerCase();
+			return stock.symbol.toLowerCase().includes(query)
+				? stock.symbol
+				: stock.name;
+		}
 		case "country":
 			return stock.country;
 		case "sector":
@@ -210,6 +227,9 @@ export function matchValue(stock: Stock, reason: FilterDescription): string {
 
 /** One sentence on where the price sits against its 52-week low. */
 export function describeRangePosition(stock: Stock): string {
+	if (!Number.isFinite(stock.weekLow52) || stock.weekLow52 <= 0) {
+		return "The 52-week low is not available.";
+	}
 	const aboveLow = Math.round((stock.price / stock.weekLow52 - 1) * 100);
 	if (aboveLow <= 0) return "Trading at its 52-week low.";
 	return `Trading ${aboveLow}% above its 52-week low.`;

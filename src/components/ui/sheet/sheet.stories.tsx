@@ -18,9 +18,8 @@ import {
  * Escape or a click on the backdrop closes it.
  *
  * The panel uses the `background` surface with a hairline on its inner edge,
- * and it casts the one shadow a floating surface earns. The screener uses a
- * right sheet for the company preview and a left sheet for the filters on a
- * phone.
+ * and it casts the one shadow a floating surface earns. Below the `sm`
+ * breakpoint a side panel fills the screen width.
  */
 const meta: Meta<typeof SheetContent> = {
 	title: "Components/Sheet",
@@ -70,7 +69,7 @@ type Story = StoryObj<typeof meta>;
 /** The trigger opens a right sheet. Change the side in the Controls panel. */
 export const Playground: Story = {};
 
-/** A left sheet, as the screener uses for its filters on a phone. */
+/** A left sheet, for a filter panel on a phone. */
 export const Left: Story = {
 	args: { side: "left" },
 };
@@ -78,6 +77,41 @@ export const Left: Story = {
 /** A bottom sheet, capped at 85% of the screen height. */
 export const Bottom: Story = {
 	args: { side: "bottom" },
+};
+
+/** Without the corner close button. Escape and the backdrop still close it. */
+export const WithoutCloseButton: Story = {
+	args: { showCloseButton: false },
+};
+
+/** A phone width. The right panel fills the screen width. */
+export const Mobile: Story = {
+	globals: { viewport: { value: "mobile1", isRotated: false } },
+};
+
+/** A click on the backdrop closes the sheet. */
+export const ClosesOnBackdropClick: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const page = within(canvasElement.ownerDocument.body);
+
+		const expectedResult = null;
+
+		await userEvent.click(canvas.getByRole("button", { name: "Open sheet" }));
+		await page.findByRole("dialog", { name: "Bayer AG" });
+		// Deviation from TESTING.md §2.2: the backdrop has no role or name, so a
+		// data-slot query reaches it.
+		const backdrop = canvasElement.ownerDocument.querySelector(
+			'[data-slot="sheet-overlay"]',
+		) as HTMLElement;
+		await userEvent.click(backdrop);
+		await waitFor(() => {
+			if (page.queryByRole("dialog")) throw new Error("still open");
+		});
+		const result = page.queryByRole("dialog");
+
+		await expect(result).toBe(expectedResult);
+	},
 };
 
 /**

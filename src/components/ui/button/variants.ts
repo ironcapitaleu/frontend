@@ -21,6 +21,8 @@ export const buttonVariants = cva(
 					"bg-destructive/10 hover:bg-destructive/20 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/20 text-destructive focus-visible:border-destructive/40 dark:hover:bg-destructive/30",
 				// Text color, underline on hover
 				link: "text-primary underline-offset-4 hover:underline",
+				// Ink on paper, flipped: the strongest call to action on a quiet page
+				inverted: "bg-foreground text-background hover:bg-foreground/90",
 			},
 			size: {
 				// Height, gap, padding, inline icon padding adjustments

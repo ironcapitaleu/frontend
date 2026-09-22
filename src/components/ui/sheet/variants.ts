@@ -1,6 +1,10 @@
 import { cva, type VariantProps } from "class-variance-authority";
 
-/** The panel: which edge it enters from, and how it sizes along that edge. */
+/**
+ * The panel: which edge it enters from, and how it sizes along that edge. The
+ * bare `slide-in-from-right` form of tw-animate-css moves the panel by its full
+ * width (100%), so it enters from off screen.
+ */
 const sheetContentVariants = cva(
 	"data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 fixed z-50 flex flex-col bg-background shadow-lg outline-none duration-200",
 	{

@@ -139,6 +139,17 @@ export const Link: Story = {
 	},
 };
 
+/** Ink on paper, flipped. The strongest call to action on a quiet page. */
+export const Inverted: Story = {
+	args: {
+		variant: "inverted",
+		children: "Inverted Button",
+	},
+	argTypes: {
+		variant: { control: { disable: true } },
+	},
+};
+
 // ==========================================
 // SIZE STORIES
 // ==========================================

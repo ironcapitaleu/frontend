@@ -14,7 +14,7 @@ import {
 	matchValue,
 } from "./CompanyPreview";
 
-const [alfa] = fakeStockScreenerResults;
+const [alfa, , gamma] = fakeStockScreenerResults;
 
 describe("matchValue", () => {
 	it("should pair each active filter with the stock's own value when several are set", () => {
@@ -33,6 +33,48 @@ describe("matchValue", () => {
 
 		expect(result).toEqual(expectedResult);
 	});
+
+	it("should pair every other filter with the stock's own value when those are set", () => {
+		const reasons = describeActiveFilters({
+			...EMPTY_FILTERS,
+			search: "alf",
+			sector: "Technology",
+			peMin: "10",
+			priceToFcfMax: "20",
+			priceToCashMax: "12",
+			quickRatioMin: "1",
+			currentRatioMin: "1",
+			buybackYieldMin: "1",
+		});
+
+		const expectedResult = [
+			"ALFA",
+			"Technology",
+			"20.0",
+			"15.0",
+			"10.0",
+			"1.20",
+			"1.50",
+			"2.0%",
+		];
+
+		const result = reasons.map((reason) => matchValue(alfa, reason));
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should show the name when the search matched the name and not the symbol", () => {
+		const [reason] = describeActiveFilters({
+			...EMPTY_FILTERS,
+			search: "holdings",
+		});
+
+		const expectedResult = "Gamma Holdings";
+
+		const result = matchValue(gamma, reason);
+
+		expect(result).toBe(expectedResult);
+	});
 });
 
 describe("describeRangePosition", () => {
@@ -48,6 +90,14 @@ describe("describeRangePosition", () => {
 		const expectedResult = "Trading at its 52-week low.";
 
 		const result = describeRangePosition({ ...alfa, price: 90 });
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should say the low is not available when the low is zero", () => {
+		const expectedResult = "The 52-week low is not available.";
+
+		const result = describeRangePosition({ ...alfa, weekLow52: 0 });
 
 		expect(result).toBe(expectedResult);
 	});

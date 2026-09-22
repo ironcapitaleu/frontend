@@ -12,7 +12,7 @@ import { type SheetContentVariants, sheetContentVariants } from "./variants";
  * the backdrop close it, and focus returns to the trigger afterwards.
  *
  * Use it for a secondary task that keeps the page in view, such as a company
- * preview or the screener filters on a phone. Use an `AlertDialog` for a
+ * preview or a filter panel on a phone. Use an `AlertDialog` for a
  * decision the reader must confirm.
  */
 function Sheet({ ...props }: SheetPrimitive.Root.Props) {
@@ -47,7 +47,9 @@ function SheetContent({
 		<SheetPrimitive.Portal data-slot="sheet-portal">
 			<SheetPrimitive.Backdrop
 				data-slot="sheet-overlay"
-				className="data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 fixed inset-0 z-50 bg-black/20 duration-200 supports-backdrop-filter:backdrop-blur-xs"
+				// The tint matches AlertDialog. The fade runs as long as the slide,
+				// so the page dims while the panel travels.
+				className="data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 fixed inset-0 z-50 bg-black/10 duration-200 supports-backdrop-filter:backdrop-blur-xs"
 			/>
 			<SheetPrimitive.Popup
 				data-slot="sheet-content"
@@ -57,7 +59,7 @@ function SheetContent({
 				{children}
 				{showCloseButton ? (
 					<SheetPrimitive.Close
-						data-slot="sheet-close"
+						data-slot="sheet-close-button"
 						aria-label="Close"
 						className="absolute top-4 right-4 inline-flex size-9 cursor-pointer items-center justify-center rounded-md border border-border text-muted-foreground transition-colors outline-none hover:bg-muted hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
 					>

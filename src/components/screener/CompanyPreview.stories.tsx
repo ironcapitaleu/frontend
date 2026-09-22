@@ -60,6 +60,18 @@ export const WithoutFilters: Story = {
 	args: { filters: EMPTY_FILTERS },
 };
 
+/** GAMMA, with most figures missing. Each reads as a dimmed dash. */
+export const WithMissingFigures: Story = {
+	args: { stock: fakeStockScreenerResults[2], filters: EMPTY_FILTERS },
+};
+
+/** A long company name wraps under the close button instead of running under it. */
+export const LongName: Story = {
+	args: {
+		stock: { ...beta, name: "Beta Industries Holdings and Energy Group" },
+	},
+};
+
 /** At a phone width the sheet fills the screen. */
 export const Mobile: Story = {
 	globals: { viewport: { value: "mobile1", isRotated: false } },
