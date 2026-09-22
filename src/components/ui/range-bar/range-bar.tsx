@@ -37,7 +37,7 @@ interface RangeBarProps
  * required `aria-label` names it. The spoken text states the true value, also
  * when the marker is held at an end of the track. Missing data (a value that is
  * not finite, or an empty or inverted range) draws no marker and reads as "no
- * data", never as a position. Use a `Progress` bar instead when the value is a
+ * data", never as a position. A missing bound prints as a dash. Use a `Progress` bar instead when the value is a
  * share of a task that grows toward done.
  */
 function RangeBar({
@@ -52,6 +52,7 @@ function RangeBar({
 	...props
 }: RangeBarProps) {
 	const position = rangeBarPosition(value, low, high);
+	const hasPosition = position !== null;
 
 	return (
 		<div
@@ -59,32 +60,32 @@ function RangeBar({
 			className={cn("flex min-w-0 flex-col gap-1", className)}
 			{...props}
 		>
-			{position === null ? (
-				<span className="sr-only">{`${ariaLabel}: no data`}</span>
-			) : (
+			{hasPosition ? (
 				<meter
 					className="sr-only"
 					min={low}
 					max={high}
-					value={Math.min(Math.max(value, low), high)}
+					value={low + (position / 100) * (high - low)}
 					aria-label={ariaLabel}
 					aria-labelledby={ariaLabelledBy}
 					aria-valuetext={`${formatBound(value)}, between ${formatBound(low)} and ${formatBound(high)}`}
 				/>
+			) : (
+				<span className="sr-only">{`${ariaLabel}: no data`}</span>
 			)}
 			<div className="relative h-3" aria-hidden="true">
 				<div className="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-border" />
-				{position === null ? null : (
+				{hasPosition ? (
 					<div
 						data-slot="range-bar-marker"
 						className={rangeBarMarkerVariants({ size })}
 						style={{ left: `${position}%` }}
 					/>
-				)}
+				) : null}
 			</div>
 			<div className={rangeBarBoundsVariants({ size })} aria-hidden="true">
-				<span>{formatBound(low)}</span>
-				<span>{formatBound(high)}</span>
+				<span>{formatKnownBound(low, formatBound)}</span>
+				<span>{formatKnownBound(high, formatBound)}</span>
 			</div>
 		</div>
 	);
@@ -105,6 +106,14 @@ function rangeBarPosition(
 	if (!Number.isFinite(high) || !(high > low)) return null;
 	const ratio = ((value - low) / (high - low)) * 100;
 	return Math.min(100, Math.max(0, ratio));
+}
+
+/** Formats a printed bound, or a dash when the bound is missing. */
+function formatKnownBound(
+	bound: number,
+	formatBound: (bound: number) => string,
+): string {
+	return Number.isFinite(bound) ? formatBound(bound) : "—";
 }
 
 function defaultFormatBound(bound: number): string {

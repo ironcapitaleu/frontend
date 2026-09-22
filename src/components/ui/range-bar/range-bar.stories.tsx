@@ -11,8 +11,8 @@ import { RANGE_BAR_SIZES, RangeBar } from ".";
  *
  * The `sm` size is for a table row and the `md` size is for a detail view. The
  * screener is built to use `sm` for the 52-week range in its rows and `md` in
- * its company preview. A value outside the range sits at the
- * nearest end of the track.
+ * its company preview. A value outside the range sits at the nearest end of
+ * the track.
  */
 const meta: Meta<typeof RangeBar> = {
 	title: "Components/RangeBar",
@@ -83,7 +83,9 @@ export const Clamped: Story = {
 	args: { value: 150 },
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
-		const meter = canvas.getByRole("meter", { name: "52-week range" });
+		const meter = canvas.getByRole<HTMLMeterElement>("meter", {
+			name: "52-week range",
+		});
 
 		const expectedResult = {
 			value: 163.08,
@@ -97,7 +99,7 @@ export const Clamped: Story = {
 			'[data-slot="range-bar-marker"]',
 		);
 		const result = {
-			value: (meter as HTMLMeterElement).value,
+			value: meter.value,
 			spoken: meter.getAttribute("aria-valuetext"),
 			markerLeft: marker ? marker.style.left : "marker missing",
 		};

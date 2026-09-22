@@ -65,7 +65,7 @@ describe("RangeBar", () => {
 	it("should name the meter when aria-labelledby points at a heading", () => {
 		render(
 			<>
-				<span id="range-heading">52-week range</span>
+				<span id="range-heading">Price range over 52 weeks</span>
 				<RangeBar
 					aria-label="52-week range"
 					aria-labelledby="range-heading"
@@ -76,15 +76,15 @@ describe("RangeBar", () => {
 			</>,
 		);
 
-		const expectedResult = "52-week range";
+		const expectedResult = "Price range over 52 weeks";
 
 		const result = screen.getByRole("meter");
 
 		expect(result).toHaveAccessibleName(expectedResult);
 	});
 
-	it("should read no data and draw no meter when the value is missing", () => {
-		render(
+	it("should read no data and draw no meter or marker when the value is missing", () => {
+		const { container } = render(
 			<RangeBar
 				aria-label="52-week range"
 				value={Number.NaN}
@@ -93,13 +93,37 @@ describe("RangeBar", () => {
 			/>,
 		);
 
-		const expectedResult = { meter: null, text: "52-week range: no data" };
+		const expectedResult = {
+			meter: null,
+			marker: null,
+			text: "52-week range: no data",
+		};
 
+		// Deviation from TESTING.md §2.2: the marker is purely visual, so no
+		// accessible query reaches it.
 		const result = {
 			meter: screen.queryByRole("meter"),
+			marker: container.querySelector('[data-slot="range-bar-marker"]'),
 			text: screen.getByText(/no data/).textContent,
 		};
 
 		expect(result).toEqual(expectedResult);
+	});
+
+	it("should print a dash for a bound when the bound is missing", () => {
+		render(
+			<RangeBar
+				aria-label="52-week range"
+				value={172.5}
+				low={Number.NaN}
+				high={199.62}
+			/>,
+		);
+
+		const expectedResult = true;
+
+		const result = screen.queryByText("—") !== null;
+
+		expect(result).toBe(expectedResult);
 	});
 });
