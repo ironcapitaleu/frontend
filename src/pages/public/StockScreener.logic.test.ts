@@ -5,6 +5,7 @@ import {
 	type FilterState,
 	type Stock,
 	STRATEGY_PRESETS,
+	applyPreset,
 	countActiveFilters,
 	describeActiveFilters,
 	filterStocks,
@@ -609,6 +610,16 @@ describe("median", () => {
 		expect(result).toBe(expectedResult);
 	});
 
+	it("should ignore NaN entries when a value is not a number", () => {
+		const values = [Number.NaN, 4, 2];
+
+		const expectedResult = 3;
+
+		const result = median(values);
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should return null when no number is present", () => {
 		const values = [null, null];
 
@@ -620,13 +631,73 @@ describe("median", () => {
 	});
 });
 
+function presetById(id: string) {
+	const preset = STRATEGY_PRESETS.find((candidate) => candidate.id === id);
+	if (!preset) throw new Error(`No preset with id ${id}`);
+	return preset;
+}
+
+const ALL_CRITERIA: FilterState = {
+	search: "acme",
+	country: "DE",
+	sector: "Energy",
+	peMin: "5",
+	peMax: "20",
+	priceToCashMax: "10",
+	priceToFcfMax: "12",
+	quickRatioMin: "1",
+	currentRatioMin: "1.5",
+	buybackYieldMin: "2",
+	dividendYieldMin: "3",
+	nearFiftyTwoWeekLow: true,
+	downLastMonth: "4",
+};
+
+describe("STRATEGY_PRESETS", () => {
+	it("should define four presets with unique ids", () => {
+		const expectedResult = 4;
+
+		const result = new Set(STRATEGY_PRESETS.map((preset) => preset.id)).size;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it.each([
+		["deep-value", { peMax: "12", priceToFcfMax: "12" }],
+		["fair-price-income", { peMax: "20", dividendYieldMin: "2" }],
+		["cash-rich", { quickRatioMin: "1", currentRatioMin: "1.5" }],
+		["beaten-down", { nearFiftyTwoWeekLow: true, downLastMonth: "3" }],
+	] as const)(
+		"should screen for its own bounds when the %s preset is read",
+		(id, bounds) => {
+			const expectedResult = withFilters(bounds);
+
+			const result = presetById(id).filters;
+
+			expect(result).toEqual(expectedResult);
+		},
+	);
+});
+
+describe("applyPreset", () => {
+	it("should return a copy when a preset is applied", () => {
+		const preset = presetById("deep-value");
+
+		const expectedResult = false;
+
+		const result = applyPreset(preset) === preset.filters;
+
+		expect(result).toBe(expectedResult);
+	});
+});
+
 describe("findActivePreset", () => {
 	it("should return the preset when the filters equal its filters", () => {
-		const preset = STRATEGY_PRESETS[1];
+		const preset = presetById("fair-price-income");
 
 		const expectedResult = preset.id;
 
-		const result = findActivePreset({ ...preset.filters })?.id;
+		const result = findActivePreset(applyPreset(preset))?.id;
 
 		expect(result).toBe(expectedResult);
 	});
@@ -692,6 +763,49 @@ describe("describeActiveFilters", () => {
 		];
 
 		const result = describeActiveFilters(filters);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should describe every criterion in rail order when all are set", () => {
+		const expectedResult: (keyof FilterState)[] = [
+			"search",
+			"country",
+			"sector",
+			"peMin",
+			"peMax",
+			"priceToFcfMax",
+			"priceToCashMax",
+			"quickRatioMin",
+			"currentRatioMin",
+			"dividendYieldMin",
+			"buybackYieldMin",
+			"downLastMonth",
+			"nearFiftyTwoWeekLow",
+		];
+
+		const result = describeActiveFilters(ALL_CRITERIA).map(
+			(entry) => entry.field,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should describe as many criteria as the badge counts when all are set", () => {
+		const expectedResult = countActiveFilters(ALL_CRITERIA);
+
+		const result = describeActiveFilters(ALL_CRITERIA).length;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should sign the 1M bound once when the drop threshold is negative or zero", () => {
+		const expectedResult = ["≤ +3%", "≤ 0%"];
+
+		const result = [
+			describeActiveFilters(withFilters({ downLastMonth: "-3" }))[0].value,
+			describeActiveFilters(withFilters({ downLastMonth: "0" }))[0].value,
+		];
 
 		expect(result).toEqual(expectedResult);
 	});

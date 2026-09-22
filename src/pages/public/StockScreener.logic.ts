@@ -52,6 +52,27 @@ export interface SortConfig {
 	direction: SortDirection;
 }
 
+/** A named, ready-made screen the reader applies in one click. */
+export interface StrategyPreset {
+	readonly id: string;
+	readonly label: string;
+	/** Read-only, because every page shares this object. Apply it with {@link applyPreset}. */
+	readonly filters: Readonly<FilterState>;
+}
+
+/** One active filter criterion, worded for a chip or a list. */
+export interface FilterDescription {
+	readonly field: keyof FilterState;
+	readonly label: string;
+	/** The bound as the reader reads it, for example `≤ 20` or `≥ 2%`. Empty for a switch. */
+	readonly value: string;
+}
+
+/** The `FilterState` fields that hold free text or a numeric bound as a string. */
+type StringFilterField = {
+	[K in keyof FilterState]: FilterState[K] extends string ? K : never;
+}[keyof FilterState];
+
 /** A filter state with every criterion cleared — the screener's default. */
 export const EMPTY_FILTERS: FilterState = {
 	search: "",
@@ -216,13 +237,6 @@ export function sortStocks(
 	});
 }
 
-/** A named, ready-made screen the reader applies in one click. */
-export interface StrategyPreset {
-	readonly id: string;
-	readonly label: string;
-	readonly filters: FilterState;
-}
-
 /**
  * The strategies offered above the results. Each one is a plain
  * {@link FilterState}, so applying a preset is the same as setting its filters
@@ -257,6 +271,14 @@ export const STRATEGY_PRESETS: readonly StrategyPreset[] = [
 ];
 
 /**
+ * A fresh copy of the preset's filters, safe to hand to React state. The
+ * preset's own object is shared by every page, so it is never set directly.
+ */
+export function applyPreset(preset: StrategyPreset): FilterState {
+	return { ...preset.filters };
+}
+
+/**
  * The preset whose filters equal `filters` exactly, or `null` when the reader
  * has changed the screen away from every preset. The page uses it to mark the
  * active preset button.
@@ -272,13 +294,15 @@ export function findActivePreset(filters: FilterState): StrategyPreset | null {
 }
 
 /**
- * The median of the numbers in `values`, ignoring `null` entries. Returns
- * `null` when no number is left, so a caller renders a dash instead of a
- * misleading zero.
+ * The median of the finite numbers in `values`, ignoring `null` and `NaN`
+ * entries. Returns `null` when no number is left, so a caller renders a dash
+ * instead of a misleading zero.
  */
 export function median(values: readonly (number | null)[]): number | null {
 	const sorted = values
-		.filter((value): value is number => value !== null)
+		.filter(
+			(value): value is number => value !== null && Number.isFinite(value),
+		)
 		.sort((a, b) => a - b);
 	if (sorted.length === 0) return null;
 	const middle = Math.floor(sorted.length / 2);
@@ -287,38 +311,34 @@ export function median(values: readonly (number | null)[]): number | null {
 		: (sorted[middle - 1] + sorted[middle]) / 2;
 }
 
-/** One active filter criterion, worded for a chip or a list. */
-export interface FilterDescription {
-	readonly field: keyof FilterState;
-	readonly label: string;
-	/** The bound as the reader reads it, for example `≤ 20` or `≥ 2%`. Empty for a switch. */
-	readonly value: string;
-}
-
 /**
- * Describes each active criterion in `filters`, in the order of the filter
- * rail. The filter chips and the "Why it matched" list render these entries. A
- * numeric criterion counts only when it parses (see
- * {@link isActiveNumericFilter}), the same rule {@link filterStocks} applies.
+ * Describes each active criterion in `filters`, in the order of the new filter
+ * rail (`ScreenerFilterRail`): the universe, valuation, balance sheet,
+ * shareholder yield, momentum, then the signals. The filter chips and the
+ * "Why it matched" list render these entries. A numeric criterion counts only
+ * when it parses (see {@link isActiveNumericFilter}), the same rule
+ * {@link filterStocks} and {@link countActiveFilters} apply.
  */
 export function describeActiveFilters(
 	filters: FilterState,
 ): FilterDescription[] {
 	const descriptions: FilterDescription[] = [];
-	const addText = (field: keyof FilterState, label: string) => {
-		const value = filters[field];
-		if (typeof value === "string" && value !== "") {
-			descriptions.push({ field, label, value });
+	const addText = (field: StringFilterField, label: string) => {
+		if (filters[field] !== "") {
+			descriptions.push({ field, label, value: filters[field] });
 		}
 	};
 	const addBound = (
-		field: keyof FilterState,
+		field: StringFilterField,
 		label: string,
 		format: (bound: number) => string,
 	) => {
-		const value = filters[field];
-		if (typeof value === "string" && isActiveNumericFilter(value)) {
-			descriptions.push({ field, label, value: format(parseFloat(value)) });
+		if (isActiveNumericFilter(filters[field])) {
+			descriptions.push({
+				field,
+				label,
+				value: format(parseFloat(filters[field])),
+			});
 		}
 	};
 
@@ -333,7 +353,13 @@ export function describeActiveFilters(
 	addBound("currentRatioMin", "Current ratio", (bound) => `≥ ${bound}`);
 	addBound("dividendYieldMin", "Dividend yield", (bound) => `≥ ${bound}%`);
 	addBound("buybackYieldMin", "Buyback yield", (bound) => `≥ ${bound}%`);
-	addBound("downLastMonth", "1M change", (bound) => `≤ −${bound}%`);
+	// `downLastMonth` stores "down at least N%" as N, so the bound on the 1M
+	// change is −N. Sign the result once, so a negative N reads "≤ +3%".
+	addBound(
+		"downLastMonth",
+		"1M change",
+		(bound) => `≤ ${formatSigned(-bound)}%`,
+	);
 	if (filters.nearFiftyTwoWeekLow) {
 		descriptions.push({
 			field: "nearFiftyTwoWeekLow",
@@ -343,4 +369,11 @@ export function describeActiveFilters(
 	}
 
 	return descriptions;
+}
+
+/** A number with an explicit sign and a true minus: `+3`, `−3`, or `0`. */
+function formatSigned(value: number): string {
+	if (value > 0) return `+${value}`;
+	if (value < 0) return `−${Math.abs(value)}`;
+	return "0";
 }
