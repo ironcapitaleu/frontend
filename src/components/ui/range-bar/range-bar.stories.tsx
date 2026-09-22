@@ -9,8 +9,9 @@ import { RANGE_BAR_SIZES, RangeBar } from ".";
  * bar stays quiet next to the numbers around it. The two bounds print below in
  * mono.
  *
- * The screener uses the `sm` size in each table row for the 52-week range, and
- * the `md` size in the company preview. A value outside the range sits at the
+ * The `sm` size is for a table row and the `md` size is for a detail view. The
+ * screener is built to use `sm` for the 52-week range in its rows and `md` in
+ * its company preview. A value outside the range sits at the
  * nearest end of the track.
  */
 const meta: Meta<typeof RangeBar> = {
@@ -75,7 +76,8 @@ export const AtHigh: Story = {
 
 /**
  * A price below the recorded low. The marker stops at the left end of the
- * track, and the hidden meter reports the low as its value.
+ * track and the hidden meter reports the low as its value. The spoken text
+ * keeps the true price, so a screen reader hears 150.00.
  */
 export const Clamped: Story = {
 	args: { value: 150 },
@@ -85,19 +87,31 @@ export const Clamped: Story = {
 
 		const expectedResult = {
 			value: 163.08,
+			spoken: "150.00, between 163.08 and 199.62",
 			markerLeft: "0%",
 		};
 
+		// Deviation from TESTING.md §2.2: the marker position is purely visual,
+		// so no accessible query reaches it. The meter covers the accessible part.
 		const marker = canvasElement.querySelector<HTMLElement>(
 			'[data-slot="range-bar-marker"]',
 		);
 		const result = {
 			value: (meter as HTMLMeterElement).value,
-			markerLeft: marker?.style.left,
+			spoken: meter.getAttribute("aria-valuetext"),
+			markerLeft: marker ? marker.style.left : "marker missing",
 		};
 
 		await expect(result).toEqual(expectedResult);
 	},
+};
+
+/**
+ * A missing price (`NaN`). The bar draws no marker, and a screen reader hears
+ * "52-week range: no data" instead of a position.
+ */
+export const MissingValue: Story = {
+	args: { value: Number.NaN },
 };
 
 /**

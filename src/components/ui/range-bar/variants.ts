@@ -34,7 +34,10 @@ const rangeBarBoundsVariants = cva(
 	},
 );
 
-type RangeBarVariants = VariantProps<typeof rangeBarMarkerVariants>;
+// The one `size` prop drives both the marker and the bounds, so the type
+// requires a size to exist in both variant maps.
+type RangeBarVariants = VariantProps<typeof rangeBarMarkerVariants> &
+	VariantProps<typeof rangeBarBoundsVariants>;
 
 /** A constant listing every size of the `RangeBar` component. */
 const RANGE_BAR_SIZES = ["sm", "md"] as const;
