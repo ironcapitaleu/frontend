@@ -110,6 +110,7 @@ export const UpperBound: Story = {
 /**
  * A lower bound, as in "dividend yield at least 2%". With `bounds="lower"`
  * the slider draws one thumb, because an upper bound on a yield means little.
+ * The track fills from the thumb to the right end, the side the filter keeps.
  */
 export const LowerBound: Story = {
 	args: {
@@ -121,6 +122,29 @@ export const LowerBound: Story = {
 		step: 0.1,
 		value: [2, 8],
 		formatValue: (value: number) => `${value.toFixed(1)}%`,
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const thumb = canvas.getByRole("slider", {
+			name: "Dividend yield minimum",
+		});
+
+		const expectedResult = {
+			readout: "≥ 2.1%",
+			fill: "end",
+		};
+
+		thumb.focus();
+		await userEvent.keyboard("{ArrowRight}");
+		// Deviation from TESTING.md §2.2: the filled side of the track is purely
+		// visual, so no accessible query reaches it.
+		const track = canvasElement.querySelector('[data-slot="slider-track"]');
+		const result = {
+			readout: canvas.getByRole("status").textContent,
+			fill: track ? track.getAttribute("data-fill") : "track missing",
+		};
+
+		await expect(result).toEqual(expectedResult);
 	},
 };
 
@@ -218,7 +242,7 @@ export const KeyboardMovesSingleThumb: Story = {
 	},
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
-		const thumb = canvas.getByRole("slider", { name: "P/FCF" });
+		const thumb = canvas.getByRole("slider", { name: "P/FCF maximum" });
 
 		const expectedResult = "≤ 44.5";
 

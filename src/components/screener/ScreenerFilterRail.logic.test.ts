@@ -14,6 +14,7 @@ import {
 	hasActiveFilters,
 	metricBounds,
 	metricRange,
+	metricTrack,
 } from "./ScreenerFilterRail.logic";
 
 function findMetric(label: string): RailMetric {
@@ -47,10 +48,20 @@ describe("metricRange", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should clamp a bound to the track when it lies outside", () => {
+	it("should show a bound outside the track at its own value when the track widens to it", () => {
 		const filters = withFilters({ peMax: "90" });
 
-		const expectedResult = [0, 40];
+		const expectedResult = [0, 90];
+
+		const result = metricRange(findMetric("P/E"), filters);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should rest the lower thumb on the upper one when the bounds are inverted", () => {
+		const filters = withFilters({ peMin: "30", peMax: "10" });
+
+		const expectedResult = [10, 10];
 
 		const result = metricRange(findMetric("P/E"), filters);
 
@@ -78,7 +89,51 @@ describe("metricRange", () => {
 	});
 });
 
+describe("metricTrack", () => {
+	it("should keep the usual track when every bound lies inside it", () => {
+		const filters = withFilters({ peMin: "5", peMax: "20" });
+
+		const expectedResult = [0, 40];
+
+		const result = metricTrack(findMetric("P/E"), filters);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should widen the track when a bound lies outside it", () => {
+		const filters = withFilters({ downLastMonth: "20" });
+
+		const expectedResult = [-20, 5];
+
+		const result = metricTrack(findMetric("1M change"), filters);
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
 describe("applyMetricRange", () => {
+	it("should keep an untouched bound outside the track when the other thumb moves", () => {
+		const filters = withFilters({ peMax: "90" });
+
+		const expectedResult = withFilters({ peMin: "5", peMax: "90" });
+
+		const result = applyMetricRange(findMetric("P/E"), filters, [5, 90]);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should store a rise as a negative number when the 1M thumb moves above zero", () => {
+		const expectedResult = withFilters({ downLastMonth: "-2" });
+
+		const result = applyMetricRange(
+			findMetric("1M change"),
+			EMPTY_FILTERS,
+			[-15, 2],
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should write both bounds when both thumbs moved", () => {
 		const expectedResult = withFilters({ peMin: "5", peMax: "20.5" });
 
@@ -155,6 +210,14 @@ describe("distinctValues", () => {
 
 		expect(result).toEqual(expectedResult);
 	});
+
+	it("should list each sector once in alphabetical order", () => {
+		const expectedResult = ["Energy", "Finance", "Technology"];
+
+		const result = distinctValues(fakeStockScreenerResults, "sector");
+
+		expect(result).toEqual(expectedResult);
+	});
 });
 
 describe("hasActiveFilters", () => {
@@ -170,6 +233,22 @@ describe("hasActiveFilters", () => {
 		const expectedResult = true;
 
 		const result = hasActiveFilters(withFilters({ nearFiftyTwoWeekLow: true }));
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should return false when only the search is set", () => {
+		const expectedResult = false;
+
+		const result = hasActiveFilters(withFilters({ search: "AAPL" }));
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should return false when a numeric bound does not parse", () => {
+		const expectedResult = false;
+
+		const result = hasActiveFilters(withFilters({ peMax: "abc" }));
 
 		expect(result).toBe(expectedResult);
 	});

@@ -125,9 +125,8 @@ function DistributionSlider({
 			</div>
 			<Slider
 				aria-labelledby={labelId}
-				getThumbLabel={(index) =>
-					`${label} ${index === 0 ? "minimum" : "maximum"}`
-				}
+				getThumbLabel={(index) => `${label} ${thumbName(bounds, index)}`}
+				fill={bounds === "lower" ? "end" : "start"}
 				className="py-1"
 				min={min}
 				max={max}
@@ -198,6 +197,16 @@ function selectBins(
 		const start = min + index * width;
 		return start >= lower - tolerance && start + width <= upper + tolerance;
 	});
+}
+
+/** Whether the thumb at `index` sets the minimum or the maximum. */
+function thumbName(
+	bounds: NonNullable<DistributionSliderProps["bounds"]>,
+	index: number,
+): "minimum" | "maximum" {
+	if (bounds === "upper") return "maximum";
+	if (bounds === "lower") return "minimum";
+	return index === 0 ? "minimum" : "maximum";
 }
 
 /**

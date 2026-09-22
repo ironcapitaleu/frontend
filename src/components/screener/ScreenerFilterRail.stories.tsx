@@ -14,8 +14,8 @@ import { ScreenerFilterRail } from "./ScreenerFilterRail";
 
 /**
  * The screener's filter column. Every filter is visible at once: the country
- * and sector chips, one `DistributionSlider` per metric in the same groups as
- * the table's columns, and the "Near 52-week low" switch.
+ * and sector chips, one `DistributionSlider` per metric in four groups, and the
+ * "Near 52-week low" switch.
  *
  * The rail is controlled. Each story keeps the filters in state and forwards
  * every change to the `onFiltersChange` action, so the Actions panel shows the
@@ -83,7 +83,7 @@ export const ReportsChanges: Story = {
 		const expectedResult = { country: "DE", priceToFcfMax: "44.5" };
 
 		await userEvent.click(canvas.getByRole("button", { name: "DE" }));
-		canvas.getByRole("slider", { name: "P/FCF" }).focus();
+		canvas.getByRole("slider", { name: "P/FCF maximum" }).focus();
 		await userEvent.keyboard("{ArrowLeft}");
 		const lastCall = onFiltersChange.mock.lastCall?.[0] as FilterState;
 		const result = {

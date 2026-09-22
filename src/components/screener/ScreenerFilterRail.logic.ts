@@ -2,9 +2,12 @@
 // back. Kept pure so the mapping tests with a single `toEqual` and the rail
 // component stays a thin shell.
 
-import type { Range } from "@/components/ui/distribution-slider";
+import type {
+	DistributionSliderProps,
+	SliderRange,
+} from "@/components/ui/distribution-slider";
 import {
-	EMPTY_FILTERS,
+	countActiveFilters,
 	type FilterState,
 	isActiveNumericFilter,
 	type Stock,
@@ -21,14 +24,20 @@ type NumericStockField =
 	| "buybackYield"
 	| "changePercent1M";
 
+/** The `FilterState` fields that hold a numeric bound as a string. */
+type BoundField = Exclude<
+	keyof FilterState,
+	"search" | "country" | "sector" | "nearFiftyTwoWeekLow"
+>;
+
 /** One metric in the rail: which data it charts and which filters it sets. */
 export interface RailMetric {
 	readonly label: string;
 	readonly stockField: NumericStockField;
 	/** The filter the lower thumb sets, or `null` when the metric has no lower bound. */
-	readonly lowerField: keyof FilterState | null;
+	readonly lowerField: BoundField | null;
 	/** The filter the upper thumb sets, or `null` when the metric has no upper bound. */
-	readonly upperField: keyof FilterState | null;
+	readonly upperField: BoundField | null;
 	/**
 	 * Set when the upper filter stores the bound with its sign flipped.
 	 * `downLastMonth` stores "down at least 3%" as `3`, which is an upper bound
@@ -47,7 +56,7 @@ export interface RailGroup {
 	readonly metrics: readonly RailMetric[];
 }
 
-/** The rail's sections, top to bottom, in the order of the table's column groups. */
+/** The rail's metric sections, top to bottom. */
 export const RAIL_GROUPS: readonly RailGroup[] = [
 	{
 		title: "Valuation",
@@ -153,43 +162,64 @@ export const RAIL_GROUPS: readonly RailGroup[] = [
 ];
 
 /** Which thumbs the metric's slider draws. */
-export function metricBounds(metric: RailMetric): "both" | "upper" | "lower" {
+export function metricBounds(
+	metric: RailMetric,
+): NonNullable<DistributionSliderProps["bounds"]> {
 	if (metric.lowerField && metric.upperField) return "both";
 	return metric.upperField ? "upper" : "lower";
 }
 
 /**
- * The slider range that `filters` sets for `metric`. A missing or unparsable
- * bound rests the thumb at its end of the track, and a bound outside the track
- * clamps to it.
+ * The ends of the metric's track. A bound that lies outside the usual track
+ * widens it, so the slider shows the bound instead of hiding it at an end.
  */
-export function metricRange(metric: RailMetric, filters: FilterState): Range {
-	const lower = readBound(filters, metric.lowerField, false) ?? metric.min;
-	const upper =
-		readBound(filters, metric.upperField, metric.negatesUpper ?? false) ??
-		metric.max;
-	return [clamp(lower, metric), clamp(upper, metric)];
+export function metricTrack(
+	metric: RailMetric,
+	filters: FilterState,
+): SliderRange {
+	const bounds = readBounds(metric, filters).filter(
+		(bound): bound is number => bound !== null,
+	);
+	return [Math.min(metric.min, ...bounds), Math.max(metric.max, ...bounds)];
 }
 
 /**
- * Returns `filters` with the bounds of `metric` set from `range`. A thumb at
- * its end of the track clears its filter, so dragging a thumb back to the end
- * removes the bound.
+ * The slider range that `filters` sets for `metric`. A missing or unparsable
+ * bound rests the thumb at its end of the track. A lower bound above the upper
+ * one rests on the upper one, so the range never inverts.
+ */
+export function metricRange(
+	metric: RailMetric,
+	filters: FilterState,
+): SliderRange {
+	const [trackMin, trackMax] = metricTrack(metric, filters);
+	const [lowerBound, upperBound] = readBounds(metric, filters);
+	const upper = upperBound ?? trackMax;
+	const lower = Math.min(lowerBound ?? trackMin, upper);
+	return [lower, upper];
+}
+
+/**
+ * Returns `filters` with the bounds of `metric` set from `range`. Only a thumb
+ * that moved writes its filter, so a bound the reader did not touch stays as
+ * it was. A thumb moved to its end of the track clears its filter.
  */
 export function applyMetricRange(
 	metric: RailMetric,
 	filters: FilterState,
-	[lower, upper]: Range,
+	[lower, upper]: SliderRange,
 ): FilterState {
+	const [trackMin, trackMax] = metricTrack(metric, filters);
+	const [shownLower, shownUpper] = metricRange(metric, filters);
 	const next = { ...filters };
-	if (metric.lowerField) {
-		next[metric.lowerField] = lower > metric.min ? formatBound(lower) : "";
+	if (metric.lowerField && lower !== shownLower) {
+		next[metric.lowerField] = lower > trackMin ? formatBound(lower) : "";
 	}
-	if (metric.upperField) {
+	if (metric.upperField && upper !== shownUpper) {
 		const bound = metric.negatesUpper ? -upper : upper;
-		next[metric.upperField] = upper < metric.max ? formatBound(bound) : "";
+		next[metric.upperField] = upper < trackMax ? formatBound(bound) : "";
 	}
-	return next as FilterState;
+	return next;
 }
 
 /** The distinct values of a text field across `stocks`, sorted. */
@@ -202,27 +232,33 @@ export function distinctValues(
 	);
 }
 
-/** Whether any criterion in `filters` differs from the empty state. */
+/**
+ * Whether any criterion that the rail renders is active. The search lives in
+ * the masthead, so it does not count here.
+ */
 export function hasActiveFilters(filters: FilterState): boolean {
-	return (Object.keys(EMPTY_FILTERS) as (keyof FilterState)[]).some(
-		(field) => filters[field] !== EMPTY_FILTERS[field],
-	);
+	return countActiveFilters({ ...filters, search: "" }) > 0;
+}
+
+/** The metric's lower and upper bound as numbers on the track, or `null`. */
+function readBounds(
+	metric: RailMetric,
+	filters: FilterState,
+): [number | null, number | null] {
+	const upper = readBound(filters, metric.upperField);
+	return [
+		readBound(filters, metric.lowerField),
+		upper !== null && metric.negatesUpper ? -upper : upper,
+	];
 }
 
 function readBound(
 	filters: FilterState,
-	field: keyof FilterState | null,
-	negate: boolean,
+	field: BoundField | null,
 ): number | null {
 	if (!field) return null;
 	const value = filters[field];
-	if (typeof value !== "string" || !isActiveNumericFilter(value)) return null;
-	const bound = parseFloat(value);
-	return negate ? -bound : bound;
-}
-
-function clamp(value: number, metric: RailMetric): number {
-	return Math.min(metric.max, Math.max(metric.min, value));
+	return isActiveNumericFilter(value) ? parseFloat(value) : null;
 }
 
 function formatBound(value: number): string {

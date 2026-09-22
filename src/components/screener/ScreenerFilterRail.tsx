@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import type * as React from "react";
 
 import { DistributionSlider } from "@/components/ui/distribution-slider";
@@ -18,6 +19,7 @@ import {
 	hasActiveFilters,
 	metricBounds,
 	metricRange,
+	metricTrack,
 } from "./ScreenerFilterRail.logic";
 
 /** The toggle value that stands for "no country" or "no sector" filter. */
@@ -38,9 +40,11 @@ interface ScreenerFilterRailProps
  * adjusts a screen and watches the results change without opening a panel.
  *
  * From top to bottom it holds the universe chips (country and sector), one
- * `DistributionSlider` per metric grouped like the table's columns, and the
- * signal switches. The rail is controlled: it renders `filters` and reports
- * each change through `onFiltersChange`.
+ * `DistributionSlider` per metric in four groups (valuation, balance sheet,
+ * shareholder yield, and momentum), and the signal switches. The rail is
+ * controlled: it renders `filters` and reports each change through
+ * `onFiltersChange`. "Reset all" clears every criterion the rail shows and
+ * keeps the masthead search.
  */
 function ScreenerFilterRail({
 	stocks,
@@ -51,6 +55,18 @@ function ScreenerFilterRail({
 }: ScreenerFilterRailProps) {
 	const update = (patch: Partial<FilterState>) =>
 		onFiltersChange({ ...filters, ...patch });
+	// One stable array per metric, so each histogram bins the universe once
+	// and not again on every filter change.
+	const metricValues = useMemo(
+		() =>
+			new Map(
+				RAIL_GROUPS.flatMap((group) => group.metrics).map((metric) => [
+					metric.stockField,
+					stocks.map((stock) => stock[metric.stockField]),
+				]),
+			),
+		[stocks],
+	);
 
 	return (
 		<aside
@@ -60,10 +76,15 @@ function ScreenerFilterRail({
 		>
 			<div className="flex items-baseline justify-between">
 				<h2 className="font-sans-serif text-xl font-semibold">Filters</h2>
+				{/* A raw text button, not the shared Button: it is a quiet link-like
+				    action beside the heading. .btn-tactile's lift and shadow would
+				    give it the weight of a primary control. */}
 				<button
 					type="button"
 					disabled={!hasActiveFilters(filters)}
-					onClick={() => onFiltersChange(EMPTY_FILTERS)}
+					onClick={() =>
+						onFiltersChange({ ...EMPTY_FILTERS, search: filters.search })
+					}
 					className="cursor-pointer text-base text-muted-foreground transition-colors hover:text-foreground disabled:cursor-default disabled:opacity-50 disabled:hover:text-muted-foreground"
 				>
 					Reset all
@@ -88,22 +109,25 @@ function ScreenerFilterRail({
 
 			{RAIL_GROUPS.map((group) => (
 				<RailSection key={group.title} title={group.title}>
-					{group.metrics.map((metric) => (
-						<DistributionSlider
-							key={metric.label}
-							label={metric.label}
-							values={stocks.map((stock) => stock[metric.stockField])}
-							min={metric.min}
-							max={metric.max}
-							step={metric.step}
-							bounds={metricBounds(metric)}
-							value={metricRange(metric, filters)}
-							onValueChange={(range) =>
-								onFiltersChange(applyMetricRange(metric, filters, range))
-							}
-							formatValue={(value) => `${value.toFixed(1)}${metric.unit}`}
-						/>
-					))}
+					{group.metrics.map((metric) => {
+						const [min, max] = metricTrack(metric, filters);
+						return (
+							<DistributionSlider
+								key={metric.label}
+								label={metric.label}
+								values={metricValues.get(metric.stockField) ?? []}
+								min={min}
+								max={max}
+								step={metric.step}
+								bounds={metricBounds(metric)}
+								value={metricRange(metric, filters)}
+								onValueChange={(range) =>
+									onFiltersChange(applyMetricRange(metric, filters, range))
+								}
+								formatValue={(value) => `${value.toFixed(1)}${metric.unit}`}
+							/>
+						);
+					})}
 				</RailSection>
 			))}
 
