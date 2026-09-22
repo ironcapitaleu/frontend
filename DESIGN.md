@@ -135,7 +135,7 @@ light/dark theming keeps working.
 | `secondary` / `muted`   | Quiet surfaces and secondary text.                     |
 | `accent`                | Subtle hover/active fills.                             |
 | `destructive`           | Errors and dangerous actions (red).                    |
-| `positive` / `negative` | A gain and a loss in data (green and red), tuned as a pair with equal lightness and chroma. Never for UI state, which uses `destructive`. |
+| `positive` / `negative` | Gains and losses in data. Not for UI state.            |
 | `border` / `input` / `ring` | Hairlines, field borders, focus rings.             |
 | `chart-1` … `chart-5`   | Data-visualization series (blue-violet ramp).          |
 | `sidebar-*`             | Sidebar-specific surface/accent variants.              |
