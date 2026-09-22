@@ -59,6 +59,11 @@ const meta: Meta<typeof DistributionSlider> = {
 			control: { type: "number" },
 			description: "Distance between the numbers a thumb lands on.",
 		},
+		bounds: {
+			control: "inline-radio",
+			options: ["both", "upper", "lower"],
+			description: "Which bounds the reader sets, and so how many thumbs.",
+		},
 		binCount: {
 			control: { type: "number", min: 4, max: 40, step: 1 },
 			description: "How many histogram bars to draw.",
@@ -102,9 +107,13 @@ export const UpperBound: Story = {
 	args: { value: [0, 20] },
 };
 
-/** A lower bound, as in "dividend yield at least 2%". */
+/**
+ * A lower bound, as in "dividend yield at least 2%". With `bounds="lower"`
+ * the slider draws one thumb, because an upper bound on a yield means little.
+ */
 export const LowerBound: Story = {
 	args: {
+		bounds: "lower",
 		label: "Dividend yield",
 		values: DIVIDEND_YIELDS,
 		min: 0,
@@ -193,5 +202,30 @@ export const LongTail: Story = {
 	args: {
 		values: [...Array.from({ length: 200 }, () => 12), 35],
 		value: [0, 40],
+	},
+};
+
+/**
+ * A one-sided slider with `bounds="upper"`. The single thumb moves down one
+ * step with the arrow key, and the readout states the upper bound.
+ */
+export const KeyboardMovesSingleThumb: Story = {
+	args: {
+		label: "P/FCF",
+		bounds: "upper",
+		max: 45,
+		value: [0, 45],
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const thumb = canvas.getByRole("slider", { name: "P/FCF" });
+
+		const expectedResult = "≤ 44.5";
+
+		thumb.focus();
+		await userEvent.keyboard("{ArrowLeft}");
+		const result = canvas.getByRole("status").textContent;
+
+		await expect(result).toBe(expectedResult);
 	},
 };

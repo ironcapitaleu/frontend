@@ -31,6 +31,12 @@ interface DistributionSliderProps
 	formatValue?: (value: number) => string;
 	/** How many histogram bars to draw. Defaults to 18. */
 	binCount?: number;
+	/**
+	 * Which bounds the reader sets. `both` draws two thumbs. `upper` and `lower`
+	 * draw one thumb and keep the other end of `value` fixed at `min` or `max`.
+	 * Defaults to `both`.
+	 */
+	bounds?: "both" | "upper" | "lower";
 }
 
 /**
@@ -54,6 +60,7 @@ function DistributionSlider({
 	onValueChange,
 	formatValue = defaultFormatValue,
 	binCount = 18,
+	bounds = "both",
 	className,
 	...props
 }: DistributionSliderProps) {
@@ -125,9 +132,17 @@ function DistributionSlider({
 				min={min}
 				max={max}
 				step={step}
-				value={[lower, upper]}
+				value={
+					bounds === "upper"
+						? upper
+						: bounds === "lower"
+							? lower
+							: [lower, upper]
+				}
 				onValueChange={(next) => {
-					if (Array.isArray(next) && next.length === 2) {
+					if (typeof next === "number") {
+						onValueChange(bounds === "lower" ? [next, max] : [min, next]);
+					} else if (next.length === 2) {
 						onValueChange([next[0], next[1]]);
 					}
 				}}
