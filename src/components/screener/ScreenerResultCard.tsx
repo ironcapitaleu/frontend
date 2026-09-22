@@ -7,14 +7,17 @@ import type { Stock } from "@/pages/public/StockScreener.logic";
 import {
 	CHANGE_TONE_CLASS,
 	METRICS,
+	MISSING,
 	type MetricField,
 	changeTone,
+	formatMetric,
 	formatPrice,
 	formatSignedPercent,
 } from "./format";
 
+/** Props for {@link ScreenerResultCard}. */
 interface ScreenerResultCardProps
-	extends Omit<React.ComponentProps<"button">, "onSelect" | "children"> {
+	extends Omit<React.ComponentProps<"div">, "onSelect" | "children"> {
 	stock: Stock;
 	/**
 	 * The third key figure, usually the column the list is sorted by. P/E and
@@ -22,6 +25,8 @@ interface ScreenerResultCardProps
 	 * Defaults to `dividendYield`.
 	 */
 	highlightField?: MetricField;
+	/** Whether this card's preview is the one open. */
+	selected?: boolean;
 	/** Called with the stock's symbol when the reader selects the card. */
 	onSelect: (symbol: string) => void;
 }
@@ -32,14 +37,18 @@ interface ScreenerResultCardProps
  * 52-week range. The reader reads a screen without scrolling a wide table
  * sideways.
  *
- * The whole card is one button that opens the company preview. The third key
- * figure follows the sort. Its label turns from muted to `foreground` ink to
- * show that the list is ordered by it. The screener keeps its one accent for
- * the filter histograms (DESIGN.md §7).
+ * A tap anywhere on the card opens the company preview, and the ticker is the
+ * button that gives keyboard access. The range stays outside that button, so
+ * a screen reader announces it as a meter. The third key figure follows the
+ * sort. Its label turns from muted to `foreground` ink to show that the list
+ * is ordered by it. The open card carries the same thin accent mark as the
+ * selected table row (DESIGN.md §7). Separators between cards belong to the
+ * list.
  */
 function ScreenerResultCard({
 	stock,
 	highlightField = "dividendYield",
+	selected = false,
 	onSelect,
 	className,
 	...props
@@ -52,26 +61,42 @@ function ScreenerResultCard({
 	];
 
 	return (
-		<button
-			type="button"
-			aria-haspopup="dialog"
-			onClick={() => onSelect(stock.symbol)}
+		// The ticker button gives keyboard access. The card click is a larger
+		// touch target for the same action.
+		// biome-ignore lint/a11y/useKeyWithClickEvents: the ticker button handles the keyboard
+		// biome-ignore lint/a11y/noStaticElementInteractions: see the comment above
+		<div
+			{...props}
+			data-slot="screener-result-card"
+			data-state={selected ? "selected" : undefined}
+			onClick={(event) => {
+				props.onClick?.(event);
+				if (window.getSelection()?.toString()) return;
+				onSelect(stock.symbol);
+			}}
 			className={cn(
-				"flex w-full cursor-pointer flex-col gap-3 border-b border-border py-4 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+				"flex w-full cursor-pointer flex-col gap-3 px-3 py-4 data-[state=selected]:bg-muted/70 data-[state=selected]:shadow-[inset_3px_0_0_var(--color-chart-3)]",
 				className,
 			)}
-			{...props}
 		>
-			<span className="flex w-full items-start justify-between gap-3">
-				<span className="flex min-w-0 flex-col gap-0.5">
+			<div className="flex w-full items-start justify-between gap-3">
+				<button
+					type="button"
+					aria-haspopup="dialog"
+					onClick={(event) => {
+						event.stopPropagation();
+						onSelect(stock.symbol);
+					}}
+					className="flex min-w-0 cursor-pointer flex-col items-start gap-0.5 rounded-sm text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+				>
 					<span className="font-monospace text-xl font-medium">
 						{stock.symbol}
 					</span>
-					<span className="truncate text-base text-muted-foreground">
+					<span className="max-w-full truncate text-base text-muted-foreground">
 						{stock.name} · {stock.country}
 					</span>
-				</span>
-				<span className="flex shrink-0 flex-col items-end gap-0.5 font-monospace">
+				</button>
+				<div className="flex shrink-0 flex-col items-end gap-0.5 font-monospace">
 					<span className="text-xl">{formatPrice(stock.price)}</span>
 					<span
 						className={cn(
@@ -81,48 +106,52 @@ function ScreenerResultCard({
 					>
 						{formatSignedPercent(stock.changePercent1M)}
 					</span>
-				</span>
-			</span>
-			<span className="grid w-full grid-cols-[repeat(3,minmax(0,1fr))_7rem] items-end gap-2">
+				</div>
+			</div>
+			{/* Deviation from DESIGN.md §7: the figures read left, each under its
+			    label, as a card's columns do. A table's right edge does not exist
+			    here to align them to. */}
+			<dl className="grid w-full grid-cols-[repeat(3,minmax(0,1fr))_7rem] items-end gap-2">
 				{figures.map(({ field, highlighted }) => {
-					const value = stock[field];
+					const text = formatMetric(stock, field);
 					return (
-						<span key={field} className="flex flex-col gap-0.5">
-							<span
+						<div key={field} className="flex flex-col gap-0.5">
+							<dt
 								className={cn(
-									"text-xs tracking-wider uppercase",
+									"truncate text-sm",
 									highlighted
 										? "font-medium text-foreground"
 										: "text-muted-foreground",
 								)}
 							>
-								{METRICS[field].label}
-							</span>
-							<span
+								{METRICS[field].short}
+							</dt>
+							<dd
 								className={cn(
 									"font-monospace text-lg",
-									value === null && "text-muted-foreground/60",
+									text === MISSING && "text-muted-foreground/60",
 									highlighted && "font-medium",
 								)}
 							>
-								{METRICS[field].format(value)}
-							</span>
-						</span>
+								{text}
+							</dd>
+						</div>
 					);
 				})}
-				<span className="flex flex-col gap-0.5">
-					<span className="text-xs tracking-wider text-muted-foreground uppercase">
-						52 weeks
-					</span>
-					<RangeBar
-						aria-label={`${stock.symbol} 52-week range`}
-						value={stock.price}
-						low={stock.weekLow52}
-						high={stock.weekHigh52}
-					/>
-				</span>
-			</span>
-		</button>
+				<div className="flex flex-col gap-0.5">
+					<dt className="text-sm text-muted-foreground">52 weeks</dt>
+					<dd>
+						<RangeBar
+							aria-label={`${stock.symbol} 52-week range`}
+							formatBound={formatPrice}
+							value={stock.price}
+							low={stock.weekLow52}
+							high={stock.weekHigh52}
+						/>
+					</dd>
+				</div>
+			</dl>
+		</div>
 	);
 }
 

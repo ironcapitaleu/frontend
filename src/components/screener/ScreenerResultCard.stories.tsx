@@ -12,9 +12,9 @@ const [alfa, beta, gamma] = fakeStockScreenerResults;
  * ticker and name, price and 1M change, three key figures, and the 52-week
  * range. The third figure follows the sort, and its label turns to full ink.
  *
- * The whole card is one button. It is at least 44 px tall, and a hairline
- * separates it from the next card in the list. All stories render at a phone
- * width.
+ * A tap anywhere on the card opens the preview, and the ticker is the button
+ * for the keyboard. The list draws the hairlines between cards. All stories
+ * render at a phone width.
  */
 const meta: Meta<typeof ScreenerResultCard> = {
 	title: "Screener/ScreenerResultCard",
@@ -69,6 +69,48 @@ export const Gain: Story = {
 /** A company with missing metrics. Each missing figure reads as a dimmed dash. */
 export const MissingMetrics: Story = {
 	args: { stock: gamma },
+};
+
+/**
+ * Sorted by a figure with a long name. The card uses the short label, and a
+ * label too long for its column truncates.
+ */
+export const LongHighlightLabel: Story = {
+	args: { highlightField: "currentRatio" },
+};
+
+/** The card whose preview is open. It carries the thin accent mark. */
+export const Selected: Story = {
+	args: { selected: true },
+};
+
+/** Three cards in a list. The list draws the hairlines between them. */
+export const InAList: Story = {
+	render: (args) => (
+		<div className="divide-y divide-border">
+			{[alfa, beta, gamma].map((stock) => (
+				<ScreenerResultCard key={stock.symbol} {...args} stock={stock} />
+			))}
+		</div>
+	),
+};
+
+/**
+ * The 52-week range sits outside the ticker button, so a screen reader finds
+ * it as a meter with its own name.
+ */
+export const RangeIsAMeter: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+
+		const expectedResult = "$100.00, between $90.00 and $160.00";
+
+		const result = canvas
+			.getByRole("meter", { name: "ALFA 52-week range" })
+			.getAttribute("aria-valuetext");
+
+		await expect(result).toBe(expectedResult);
+	},
 };
 
 /** Tapping the card reports its symbol, so the page opens the preview. */

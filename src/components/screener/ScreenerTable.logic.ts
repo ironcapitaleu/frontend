@@ -5,10 +5,10 @@ import type { Stock } from "@/pages/public/StockScreener.logic";
 
 import {
 	CHANGE_TONE_CLASS,
+	METRICS,
+	type MetricField,
 	changeTone,
-	formatMarketCap,
-	formatNumber,
-	formatPercent,
+	formatMetric,
 	formatPrice,
 	formatSignedPercent,
 } from "./format";
@@ -26,50 +26,25 @@ export interface NumberColumn {
 	readonly toneOf?: (stock: Stock) => string;
 }
 
+/** A column for a key figure, labelled and formatted from {@link METRICS}. */
+function metricColumn(field: MetricField, group?: string): NumberColumn {
+	return {
+		field,
+		label: METRICS[field].short,
+		group,
+		format: (stock) => formatMetric(stock, field),
+	};
+}
+
 export const NUMBER_COLUMNS: readonly NumberColumn[] = [
-	{
-		field: "marketCap",
-		label: "Mkt cap",
-		group: "Valuation",
-		format: (stock) => formatMarketCap(stock.marketCap),
-	},
-	{
-		field: "peRatio",
-		label: "P/E",
-		format: (stock) => formatNumber(stock.peRatio),
-	},
-	{
-		field: "priceToFcf",
-		label: "P/FCF",
-		format: (stock) => formatNumber(stock.priceToFcf),
-	},
-	{
-		field: "priceToCash",
-		label: "P/Cash",
-		format: (stock) => formatNumber(stock.priceToCash),
-	},
-	{
-		field: "quickRatio",
-		label: "Quick",
-		group: "Balance sheet",
-		format: (stock) => formatNumber(stock.quickRatio, 2),
-	},
-	{
-		field: "currentRatio",
-		label: "Current",
-		format: (stock) => formatNumber(stock.currentRatio, 2),
-	},
-	{
-		field: "dividendYield",
-		label: "Dividend",
-		group: "Shareholder yield",
-		format: (stock) => formatPercent(stock.dividendYield),
-	},
-	{
-		field: "buybackYield",
-		label: "Buyback",
-		format: (stock) => formatPercent(stock.buybackYield),
-	},
+	metricColumn("marketCap", "Valuation"),
+	metricColumn("peRatio"),
+	metricColumn("priceToFcf"),
+	metricColumn("priceToCash"),
+	metricColumn("quickRatio", "Balance sheet"),
+	metricColumn("currentRatio"),
+	metricColumn("dividendYield", "Shareholder yield"),
+	metricColumn("buybackYield"),
 	{
 		field: "price",
 		label: "Price",
