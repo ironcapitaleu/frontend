@@ -276,6 +276,14 @@ function formatMarketCap(value: number): string {
 	return `$${value.toLocaleString()}`;
 }
 
+/**
+ * The 1M change rounded to the one decimal the table shows. The color and the
+ * sign follow this value, so a change that reads 0.0% stays neutral.
+ */
+function roundedChange(stock: Stock): number {
+	return Number(stock.changePercent1M.toFixed(1)) || 0;
+}
+
 function fmt(value: number | null, decimals = 1): string {
 	if (value === null) return "—";
 	return value.toFixed(decimals);
@@ -715,7 +723,7 @@ export default function StockScreener({
 											{isNearFiftyTwoWeekLow(stock) && (
 												<Badge
 													variant="outline"
-													className="text-amber-500 border-amber-500/30 bg-amber-500/5 text-10 font-normal py-0 px-1.5"
+													className="text-10 font-normal py-0 px-1.5"
 												>
 													Near Low
 												</Badge>
@@ -743,14 +751,13 @@ export default function StockScreener({
 									<TableCell
 										className={cn(
 											"text-center",
-											stock.changePercent1M >= 0
-												? "text-emerald-500"
-												: "text-red-500",
+											roundedChange(stock) > 0 && "text-positive",
+											roundedChange(stock) < 0 && "text-negative",
 											colClass("changePercent1M"),
 										)}
 									>
-										{stock.changePercent1M >= 0 ? "+" : ""}
-										{stock.changePercent1M.toFixed(1)}%
+										{roundedChange(stock) > 0 ? "+" : ""}
+										{roundedChange(stock).toFixed(1)}%
 									</TableCell>
 									<TableCell className={cn("text-center", colClass("peRatio"))}>
 										{fmt(stock.peRatio)}
