@@ -13,6 +13,9 @@ import { cn } from "@/lib/utils";
  * `onValueChange` controls it, `defaultValue` lets it hold its own state.
  * `min`, `max`, and `step` bound the numbers it can reach.
  *
+ * Pass `getThumbLabel` to name each thumb for screen readers, for example
+ * "P/E minimum" and "P/E maximum" on a range.
+ *
  * Use it where the exact figure matters less than its place in a range, such as
  * a market-cap filter. When the reader needs a precise entry, pair it with a
  * number input or use one instead.
@@ -21,8 +24,12 @@ function Slider({
 	className,
 	value,
 	defaultValue,
+	getThumbLabel,
 	...props
-}: SliderPrimitive.Root.Props) {
+}: SliderPrimitive.Root.Props & {
+	/** Names the thumb at `index` for screen readers. */
+	getThumbLabel?: (index: number) => string;
+}) {
 	const thumbCount = countThumbs(value ?? defaultValue);
 
 	return (
@@ -53,6 +60,7 @@ function Slider({
 						// biome-ignore lint/suspicious/noArrayIndexKey: base-ui identifies a thumb by its index in the value array
 						key={index}
 						index={index}
+						getAriaLabel={getThumbLabel}
 						data-slot="slider-thumb"
 						className="bg-background border-primary focus-visible:ring-ring/50 block size-4 shrink-0 rounded-full border-2 shadow-sm transition-[color,box-shadow] outline-none focus-visible:ring-[3px] data-disabled:pointer-events-none"
 					/>

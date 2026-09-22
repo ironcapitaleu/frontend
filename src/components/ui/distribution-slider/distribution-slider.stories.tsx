@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent, within } from "storybook/test";
 
-import { DistributionSlider, type Range } from ".";
+import { DistributionSlider, type SliderRange } from ".";
 
 /** P/E ratios of the screener's sample universe. Two banks report none. */
 const PE_RATIOS = [
@@ -33,7 +33,7 @@ const DIVIDEND_YIELDS = [
  * The readout beside the label states the bound in words, or `Any` when both
  * thumbs rest at the ends.
  *
- * While the slider narrows the range, the bars inside it take the `chart-3`
+ * While the slider narrows the range, the bars wholly inside it take the `chart-3`
  * accent. The rest stay in the quiet `border` token. This histogram is the
  * one accent on the screener page, so it marks exactly what the reader chose.
  *
@@ -77,7 +77,7 @@ const meta: Meta<typeof DistributionSlider> = {
 		value: [0, 40],
 	},
 	render: function Render(args) {
-		const [range, setRange] = useState<Range>(args.value);
+		const [range, setRange] = useState<SliderRange>(args.value);
 		return (
 			<div className="w-72">
 				<DistributionSlider {...args} value={range} onValueChange={setRange} />
@@ -95,7 +95,7 @@ type Story = StoryObj<typeof meta>;
  */
 export const Playground: Story = {};
 
-/** An upper bound, as in "P/E at most 20". The bars up to 20 light up. */
+/** An upper bound, as in "P/E at most 20". The bars up to 20 take the accent. */
 export const UpperBound: Story = {
 	args: { value: [0, 20] },
 };
@@ -125,7 +125,7 @@ export const TwoSided: Story = {
 export const KeyboardMovesUpperThumb: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
-		const upperThumb = canvas.getAllByRole("slider", { name: "P/E" })[1];
+		const upperThumb = canvas.getByRole("slider", { name: "P/E maximum" });
 
 		const expectedResult = "≤ 39.5";
 
@@ -134,5 +134,23 @@ export const KeyboardMovesUpperThumb: Story = {
 		const result = canvas.getByRole("status").textContent;
 
 		await expect(result).toBe(expectedResult);
+	},
+};
+
+/**
+ * The upper thumb at 19 on a track of four bars. The bar that holds 19 is only
+ * partly inside the range, so it stays quiet and the accent stops at the thumb.
+ */
+export const AccentStopsAtThumb: Story = {
+	args: { value: [0, 19], binCount: 4 },
+	play: async ({ canvasElement }) => {
+		const expectedResult = ["true", null, null, null];
+
+		const result = Array.from(
+			canvasElement.querySelectorAll('[data-slot="distribution-slider-bar"]'),
+			(bar) => bar.getAttribute("data-selected"),
+		);
+
+		await expect(result).toEqual(expectedResult);
 	},
 };

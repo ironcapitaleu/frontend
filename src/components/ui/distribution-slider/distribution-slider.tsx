@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, useMemo } from "react";
 import type * as React from "react";
 
 import { cn } from "@/lib/utils";
@@ -6,13 +6,16 @@ import { cn } from "@/lib/utils";
 import { Slider } from "../slider";
 
 /** A selected range, as the two thumb positions `[lower, upper]`. */
-type Range = readonly [number, number];
+type SliderRange = readonly [number, number];
 
 interface DistributionSliderProps
 	extends Omit<React.ComponentProps<"div">, "onChange" | "children"> {
-	/** Names the metric, for example "P/E". It also labels both thumbs. */
+	/** Names the metric, for example "P/E". The thumbs read "P/E minimum" and "P/E maximum". */
 	label: string;
-	/** The metric across the universe. `null` entries are skipped. */
+	/**
+	 * The metric across the universe. `null` and non-finite entries are skipped.
+	 * Keep the array referentially stable, because the bins are memoized on it.
+	 */
 	values: readonly (number | null)[];
 	/** The number at the left end of the track. */
 	min: number;
@@ -21,9 +24,9 @@ interface DistributionSliderProps
 	/** The distance between the numbers a thumb lands on. Defaults to 1. */
 	step?: number;
 	/** The selected range. A thumb at its end of the track means "no bound". */
-	value: Range;
+	value: SliderRange;
 	/** Called with the new range while a thumb moves. */
-	onValueChange: (value: Range) => void;
+	onValueChange: (value: SliderRange) => void;
 	/** Formats one number in the readout. Defaults to one decimal. */
 	formatValue?: (value: number) => string;
 	/** How many histogram bars to draw. Defaults to 18. */
@@ -37,8 +40,8 @@ interface DistributionSliderProps
  * states the bound in words, such as `≤ 20.0`, or `Any` when both thumbs rest
  * at the ends.
  *
- * The bars inside the selected range take the `chart-3` accent only while the
- * slider narrows the range. This is the one accent on the screener page
+ * While the slider narrows the range, the bars that lie wholly inside it take
+ * the `chart-3` accent. This is the one accent on the screener page
  * (DESIGN.md §7). Use a plain `Slider` when no distribution is available.
  */
 function DistributionSlider({
@@ -55,10 +58,16 @@ function DistributionSlider({
 	...props
 }: DistributionSliderProps) {
 	const labelId = useId();
-	const bins = binValues(values, min, max, binCount);
+	const bins = useMemo(
+		() => binValues(values, min, max, binCount),
+		[values, min, max, binCount],
+	);
 	const tallest = Math.max(1, ...bins);
 	const [lower, upper] = value;
 	const isActive = lower > min || upper < max;
+	const selected = isActive
+		? selectBins(bins.length, value, min, max)
+		: bins.map(() => false);
 	const readout = describeRange(value, min, max, formatValue);
 
 	return (
@@ -67,7 +76,7 @@ function DistributionSlider({
 			className={cn("flex flex-col gap-1.5", className)}
 			{...props}
 		>
-			<div className="flex items-baseline justify-between gap-2">
+			<div className="flex min-w-0 items-baseline justify-between gap-2">
 				<span
 					id={labelId}
 					className={cn(
@@ -77,10 +86,12 @@ function DistributionSlider({
 				>
 					{label}
 				</span>
+				{/* The thumbs already announce their value, so the readout stays quiet. */}
 				<output
 					aria-labelledby={labelId}
+					aria-live="off"
 					className={cn(
-						"font-monospace text-base",
+						"truncate font-monospace text-base",
 						isActive ? "text-foreground" : "text-muted-foreground",
 					)}
 				>
@@ -88,29 +99,27 @@ function DistributionSlider({
 				</output>
 			</div>
 			<div className="flex h-6 items-end gap-px" aria-hidden="true">
-				{bins.map((count, index) => {
-					const binCenter = min + ((index + 0.5) * (max - min)) / binCount;
-					const isSelected =
-						isActive && binCenter >= lower && binCenter <= upper;
-					return (
-						<div
-							// biome-ignore lint/suspicious/noArrayIndexKey: a bin is identified by its position on the axis
-							key={index}
-							data-slot="distribution-slider-bar"
-							data-selected={isSelected || undefined}
-							className={cn(
-								"flex-1 rounded-t-[1px] transition-colors",
-								isSelected ? "bg-chart-3" : "bg-border",
-							)}
-							style={{
-								height: count === 0 ? "1px" : `${(count / tallest) * 100}%`,
-							}}
-						/>
-					);
-				})}
+				{bins.map((count, index) => (
+					<div
+						// biome-ignore lint/suspicious/noArrayIndexKey: a bin is identified by its position on the axis
+						key={index}
+						data-slot="distribution-slider-bar"
+						data-selected={selected[index] || undefined}
+						className={cn(
+							"flex-1 rounded-t-[1px] transition-colors",
+							selected[index] ? "bg-chart-3" : "bg-border",
+						)}
+						style={{
+							height: count === 0 ? "1px" : `${(count / tallest) * 100}%`,
+						}}
+					/>
+				))}
 			</div>
 			<Slider
 				aria-labelledby={labelId}
+				getThumbLabel={(index) =>
+					`${label} ${index === 0 ? "minimum" : "maximum"}`
+				}
 				className="py-1"
 				min={min}
 				max={max}
@@ -128,8 +137,9 @@ function DistributionSlider({
 
 /**
  * Counts `values` into `count` equal-width bins between `min` and `max`.
- * `null` entries are skipped. A value outside the range lands in the nearest
- * edge bin, so an outlier still shows up in the histogram.
+ * `null` and non-finite entries are skipped. A value outside the range lands
+ * in the nearest edge bin, so an outlier still appears in the histogram. A
+ * `count` that is not a positive integer gives no bins.
  */
 function binValues(
 	values: readonly (number | null)[],
@@ -137,14 +147,36 @@ function binValues(
 	max: number,
 	count: number,
 ): number[] {
-	const bins = new Array<number>(count).fill(0);
-	if (count <= 0 || !(max > min)) return bins;
+	const safeCount = Number.isInteger(count) && count > 0 ? count : 0;
+	const bins = new Array<number>(safeCount).fill(0);
+	if (safeCount === 0 || !(max > min)) return bins;
 	for (const value of values) {
-		if (value === null) continue;
-		const index = Math.floor(((value - min) / (max - min)) * count);
-		bins[Math.min(count - 1, Math.max(0, index))] += 1;
+		if (value === null || !Number.isFinite(value)) continue;
+		const index = Math.floor(((value - min) / (max - min)) * safeCount);
+		bins[Math.min(safeCount - 1, Math.max(0, index))] += 1;
 	}
 	return bins;
+}
+
+/**
+ * Marks the bins that lie wholly inside the selected range. A bin that only
+ * overlaps the range stays unmarked, so the accent never runs past a thumb. A
+ * range narrower than one bin therefore marks nothing, which reads as "no bar
+ * is fully inside" and is the honest answer.
+ */
+function selectBins(
+	count: number,
+	[lower, upper]: SliderRange,
+	min: number,
+	max: number,
+): boolean[] {
+	const width = (max - min) / count;
+	// Bin edges are floating-point sums, so compare with a small tolerance.
+	const tolerance = width * 1e-9;
+	return Array.from({ length: count }, (_unused, index) => {
+		const start = min + index * width;
+		return start >= lower - tolerance && start + width <= upper + tolerance;
+	});
 }
 
 /**
@@ -153,7 +185,7 @@ function binValues(
  * or `Any`.
  */
 function describeRange(
-	[lower, upper]: Range,
+	[lower, upper]: SliderRange,
 	min: number,
 	max: number,
 	formatValue: (value: number) => string,
@@ -175,7 +207,8 @@ function defaultFormatValue(value: number): string {
 export {
 	DistributionSlider,
 	type DistributionSliderProps,
-	type Range,
+	type SliderRange,
 	binValues,
 	describeRange,
+	selectBins,
 };

@@ -1,7 +1,8 @@
 export {
 	DistributionSlider,
 	type DistributionSliderProps,
-	type Range,
+	type SliderRange,
 	binValues,
 	describeRange,
+	selectBins,
 } from "./distribution-slider";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { binValues, describeRange } from ".";
+import { binValues, describeRange, selectBins } from ".";
 
 const oneDecimal = (value: number) => value.toFixed(1);
 
@@ -37,10 +37,49 @@ describe("binValues", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should return no bins when the count is not a positive integer", () => {
+		const expectedResult = [[], [], []];
+
+		const result = [-1, 2.5, 0].map((count) => binValues([1, 2], 0, 10, count));
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should skip NaN and infinite entries when a metric is not a number", () => {
+		const expectedResult = [1, 0];
+
+		const result = binValues(
+			[Number.NaN, 3, Number.POSITIVE_INFINITY],
+			0,
+			10,
+			2,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should return empty bins when the range is empty", () => {
 		const expectedResult = [0, 0];
 
 		const result = binValues([5, 5], 5, 5, 2);
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("selectBins", () => {
+	it("should mark only the bins inside the range when the upper thumb has moved", () => {
+		const expectedResult = [true, true, false, false];
+
+		const result = selectBins(4, [0, 20], 0, 40);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should leave a bin unmarked when the thumb stops inside it", () => {
+		const expectedResult = [true, false, false, false];
+
+		const result = selectBins(4, [0, 19], 0, 40);
 
 		expect(result).toEqual(expectedResult);
 	});
