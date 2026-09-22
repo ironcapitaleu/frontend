@@ -69,3 +69,38 @@ export const CHANGE_TONE_CLASS: Record<ChangeTone, string> = {
 	negative: "text-negative",
 	neutral: "text-muted-foreground",
 };
+
+/** The `Stock` fields a card or a preview can show as a key figure. */
+export type MetricField =
+	| "marketCap"
+	| "peRatio"
+	| "priceToFcf"
+	| "priceToCash"
+	| "quickRatio"
+	| "currentRatio"
+	| "dividendYield"
+	| "buybackYield";
+
+/** The short label and the formatter of each key figure. */
+export const METRICS: Record<
+	MetricField,
+	{ readonly label: string; readonly format: (value: number | null) => string }
+> = {
+	marketCap: {
+		label: "Mkt cap",
+		format: (value) => (value === null ? MISSING : formatMarketCap(value)),
+	},
+	peRatio: { label: "P/E", format: (value) => formatNumber(value) },
+	priceToFcf: { label: "P/FCF", format: (value) => formatNumber(value) },
+	priceToCash: { label: "P/Cash", format: (value) => formatNumber(value) },
+	quickRatio: {
+		label: "Quick ratio",
+		format: (value) => formatNumber(value, 2),
+	},
+	currentRatio: {
+		label: "Current ratio",
+		format: (value) => formatNumber(value, 2),
+	},
+	dividendYield: { label: "Dividend", format: formatPercent },
+	buybackYield: { label: "Buyback", format: formatPercent },
+};
