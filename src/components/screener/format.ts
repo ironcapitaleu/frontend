@@ -1,5 +1,5 @@
-// Number formatting shared by the screener's table, cards, summary, and
-// preview, so one metric reads the same everywhere on the page.
+// The screener's number formats and change tones, so one metric reads the
+// same wherever it appears.
 
 /** The mark for a value the data does not have. */
 export const MISSING = "—";
@@ -47,7 +47,10 @@ export function changeTone(value: number | null): ChangeTone {
 	return value > 0 ? "positive" : "negative";
 }
 
-/** The text-color class for each tone, from the semantic tokens. */
+/**
+ * The text-color class for each tone, from the semantic tokens. A flat change
+ * is muted, so it recedes in a dense row.
+ */
 export const CHANGE_TONE_CLASS: Record<ChangeTone, string> = {
 	positive: "text-positive",
 	negative: "text-negative",

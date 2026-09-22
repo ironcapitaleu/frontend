@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { fakeStockScreenerResults } from "@/test/fixtures/stocks/fake-stock-screener-results";
 
-import { buildSummaryCells } from "./ScreenerSummary";
+import { buildSummaryCells } from "./ScreenerSummary.logic";
 
 describe("buildSummaryCells", () => {
 	it("should print dashes and a neutral tone when the result set is empty", () => {
@@ -20,14 +20,18 @@ describe("buildSummaryCells", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should skip missing values when the P/E median is taken", () => {
-		const expectedResult = { value: "16.0", universe: "16.0" };
+	it("should read each cell from its own metric and skip missing values when the whole universe matches", () => {
+		const expectedResult = [
+			{ label: "Median P/E", value: "16.0", universe: "16.0" },
+			{ label: "Median P/FCF", value: "13.0", universe: "13.0" },
+			{ label: "Median dividend", value: "2.0%", universe: "2.0%" },
+			{ label: "Median 1M", value: "−1.0%", universe: "−1.0%" },
+		];
 
-		const cell = buildSummaryCells(
+		const result = buildSummaryCells(
 			fakeStockScreenerResults,
 			fakeStockScreenerResults,
-		)[0];
-		const result = { value: cell.value, universe: cell.universe };
+		).map(({ label, value, universe }) => ({ label, value, universe }));
 
 		expect(result).toEqual(expectedResult);
 	});
