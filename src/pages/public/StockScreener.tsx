@@ -715,7 +715,7 @@ export default function StockScreener({
 											{isNearFiftyTwoWeekLow(stock) && (
 												<Badge
 													variant="outline"
-													className="text-amber-500 border-amber-500/30 bg-amber-500/5 text-10 font-normal py-0 px-1.5"
+													className="text-muted-foreground text-10 font-normal py-0 px-1.5"
 												>
 													Near Low
 												</Badge>
@@ -744,8 +744,8 @@ export default function StockScreener({
 										className={cn(
 											"text-center",
 											stock.changePercent1M >= 0
-												? "text-emerald-500"
-												: "text-red-500",
+												? "text-positive"
+												: "text-negative",
 											colClass("changePercent1M"),
 										)}
 									>
