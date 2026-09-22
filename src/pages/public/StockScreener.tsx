@@ -715,7 +715,7 @@ export default function StockScreener({
 											{isNearFiftyTwoWeekLow(stock) && (
 												<Badge
 													variant="outline"
-													className="text-muted-foreground text-10 font-normal py-0 px-1.5"
+													className="text-10 font-normal py-0 px-1.5"
 												>
 													Near Low
 												</Badge>
@@ -743,13 +743,12 @@ export default function StockScreener({
 									<TableCell
 										className={cn(
 											"text-center",
-											stock.changePercent1M >= 0
-												? "text-positive"
-												: "text-negative",
+											stock.changePercent1M > 0 && "text-positive",
+											stock.changePercent1M < 0 && "text-negative",
 											colClass("changePercent1M"),
 										)}
 									>
-										{stock.changePercent1M >= 0 ? "+" : ""}
+										{stock.changePercent1M > 0 ? "+" : ""}
 										{stock.changePercent1M.toFixed(1)}%
 									</TableCell>
 									<TableCell className={cn("text-center", colClass("peRatio"))}>

@@ -135,7 +135,7 @@ light/dark theming keeps working.
 | `secondary` / `muted`   | Quiet surfaces and secondary text.                     |
 | `accent`                | Subtle hover/active fills.                             |
 | `destructive`           | Errors and dangerous actions (red).                    |
-| `positive` / `negative` | A gain and a loss in data (green and red). Never for UI state. |
+| `positive` / `negative` | A gain and a loss in data (green and red), tuned as a pair with equal lightness and chroma. Never for UI state, which uses `destructive`. |
 | `border` / `input` / `ring` | Hairlines, field borders, focus rings.             |
 | `chart-1` … `chart-5`   | Data-visualization series (blue-violet ramp).          |
 | `sidebar-*`             | Sidebar-specific surface/accent variants.              |
@@ -239,6 +239,11 @@ generates each new piece with its full file set.
 
 ## 7. The Screener
 
+> **Target state.** This section records the approved screener redesign
+> (Linear epic P-STA-8). The shipped page reaches it through the PR stack that
+> starts at STA-199. Audit the live page against this section once that stack
+> lands.
+
 The screener is the product's main working surface, so the modern pole leads.
 The masthead title is the one classical moment on the page. The reference
 mockup is the
@@ -263,8 +268,13 @@ Rules for the screener:
   histogram uses `chart-3`. The selected row carries a thin accent mark. Nothing
   else on the page is accented.
 - **Numbers are mono and right-aligned.** A missing value is a dimmed `—`.
-- **Gains and losses use `positive` and `negative`.** Never use raw Tailwind
-  colors such as `emerald-500`.
+- **Gains and losses use `positive` and `negative`.** A flat value (0.0%) is
+  neutral. Never use raw Tailwind colors such as `emerald-500`. This rule is
+  documentation only for now, because the `SearchBar` gradient still uses raw
+  colors. STA-210 migrates it and adds a CI gate.
+- **Flags are outlined, not colored.** A marker such as "Near Low" uses the
+  outline badge in `foreground` ink. It stands out by its border, and the
+  accent stays reserved for the histograms.
 - **Hairlines separate, shadows float.** The table and the summary strip sit in
   bordered frames. Only the preview sheet casts a shadow.
 - **Column groups carry meaning.** The table groups its columns under
