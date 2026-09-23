@@ -6,7 +6,8 @@ import { cn } from "@/lib/utils";
 
 /**
  * The search field with the flowing gradient glow, the canonical modern spark
- * of the design language (DESIGN.md §5). It forwards every input prop, so a
+ * of the design language (DESIGN.md §5). It forwards the input props, except
+ * `type` (always `search`) and `className` (which styles the wrapper), so a
  * page controls it with `value` and `onChange`. Without props it keeps the
  * home page's placeholder and label.
  */

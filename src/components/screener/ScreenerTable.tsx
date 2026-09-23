@@ -21,6 +21,9 @@ import {
 } from "./ScreenerTable.logic";
 import { MISSING, formatPrice } from "./format";
 
+/** The empty-state line, shared with the page's card list. */
+const NO_MATCHES = "No companies match these filters.";
+
 interface ScreenerTableProps
 	extends Omit<React.ComponentProps<"div">, "onSelect" | "children"> {
 	/** The rows, already filtered and sorted. */
@@ -119,7 +122,7 @@ function ScreenerTable({
 								colSpan={COLUMN_COUNT}
 								className="py-16 text-center text-lg text-muted-foreground"
 							>
-								No companies match these filters.
+								{NO_MATCHES}
 							</TableCell>
 						</TableRow>
 					) : (
@@ -253,4 +256,4 @@ function SortableHead({
 	);
 }
 
-export { ScreenerTable, type ScreenerTableProps };
+export { NO_MATCHES, ScreenerTable, type ScreenerTableProps };

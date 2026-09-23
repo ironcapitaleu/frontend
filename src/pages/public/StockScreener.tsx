@@ -7,7 +7,7 @@ import { METRICS, type MetricField } from "@/components/screener/format";
 import { ScreenerFilterRail } from "@/components/screener/ScreenerFilterRail";
 import { ScreenerResultCard } from "@/components/screener/ScreenerResultCard";
 import { ScreenerSummary } from "@/components/screener/ScreenerSummary";
-import { ScreenerTable } from "@/components/screener/ScreenerTable";
+import { NO_MATCHES, ScreenerTable } from "@/components/screener/ScreenerTable";
 import SearchBar from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { FilterChip } from "@/components/ui/filter-chip";
@@ -102,9 +102,11 @@ export default function StockScreener({
 			: filtered;
 	}, [stocks, filters, sortConfig]);
 
-	const activePreset = findActivePreset(filters);
+	// The masthead search is not part of a strategy, so it neither breaks a
+	// preset's match nor counts on the Filters button.
+	const activePreset = findActivePreset({ ...filters, search: "" });
 	const chips = describeActiveFilters(filters);
-	const activeCount = countActiveFilters(filters);
+	const activeCount = countActiveFilters({ ...filters, search: "" });
 	const selectedStock =
 		stocks.find((stock) => stock.symbol === selectedSymbol) ?? null;
 
@@ -161,7 +163,10 @@ export default function StockScreener({
 									type="button"
 									aria-pressed={isActive}
 									onClick={() =>
-										setFilters(isActive ? EMPTY_FILTERS : preset.filters)
+										setFilters((previous) => ({
+											...(isActive ? EMPTY_FILTERS : preset.filters),
+											search: previous.search,
+										}))
 									}
 									className={cn(
 										"btn-tactile h-9 shrink-0 rounded-full border px-4 text-lg font-medium whitespace-nowrap",
@@ -210,6 +215,8 @@ export default function StockScreener({
 								/>
 								<Button
 									variant="outline"
+									aria-haspopup="dialog"
+									aria-expanded={filtersOpen}
 									className="btn-tactile h-11 gap-2 px-3 text-lg lg:hidden"
 									onClick={() => setFiltersOpen(true)}
 								>
@@ -238,7 +245,7 @@ export default function StockScreener({
 						<div className="md:hidden">
 							{results.length === 0 ? (
 								<p className="py-12 text-center text-lg text-muted-foreground">
-									No companies match these filters.
+									{NO_MATCHES}
 								</p>
 							) : (
 								<ul aria-label="Companies" className="border-t border-border">
@@ -268,7 +275,8 @@ export default function StockScreener({
 					<SheetBody className="pr-16">{rail}</SheetBody>
 					<footer className="border-t border-border p-4">
 						<Button
-							className="btn-tactile h-11 w-full bg-foreground text-lg text-background hover:bg-foreground/90"
+							variant="inverted"
+							className="btn-tactile h-11 w-full text-lg"
 							onClick={() => setFiltersOpen(false)}
 						>
 							Show {results.length} companies
@@ -287,7 +295,31 @@ export default function StockScreener({
 	);
 }
 
-/** The sort menu for the card list. The table headers sort on wider screens. */
+/** A stable id for a sort, used as the menu value. */
+function sortId(sort: SortConfig | null): string {
+	return sort ? `${sort.field}:${sort.direction}` : "default";
+}
+
+/** Names a sort that the menu does not list, such as one set from a header. */
+function describeSort({ field, direction }: SortConfig): string {
+	const name =
+		field in METRICS
+			? METRICS[field as MetricField].label
+			: (SORT_NAMES[field] ?? field);
+	return `${name}, ${direction === "asc" ? "lowest first" : "highest first"}`;
+}
+
+/** Names for the sortable columns that are not key figures. */
+const SORT_NAMES: Partial<Record<keyof Stock, string>> = {
+	price: "Price",
+	changePercent1M: "1M change",
+};
+
+/**
+ * The sort menu for the card list. The table headers sort on wider screens.
+ * A sort set from a header that the menu does not list shows as its own
+ * option, so the menu never claims the default order for a sorted list.
+ */
 function MobileSortSelect({
 	sortConfig,
 	onSortChange,
@@ -295,25 +327,37 @@ function MobileSortSelect({
 	sortConfig: SortConfig | null;
 	onSortChange: (sort: SortConfig | null) => void;
 }) {
-	const current = MOBILE_SORTS.findIndex(
-		(option) =>
-			option.sort?.field === sortConfig?.field &&
-			option.sort?.direction === sortConfig?.direction,
+	const listed = MOBILE_SORTS.some(
+		(option) => sortId(option.sort) === sortId(sortConfig),
 	);
+	const options =
+		listed || !sortConfig
+			? MOBILE_SORTS
+			: [
+					...MOBILE_SORTS,
+					{ label: describeSort(sortConfig), sort: sortConfig },
+				];
 
 	return (
 		<Select
-			value={String(Math.max(0, current))}
-			onValueChange={(value) => onSortChange(MOBILE_SORTS[Number(value)].sort)}
+			value={sortId(sortConfig)}
+			onValueChange={(value) =>
+				onSortChange(
+					options.find((option) => sortId(option.sort) === value)?.sort ?? null,
+				)
+			}
 		>
 			<SelectTrigger aria-label="Sort" className="h-11 text-lg md:hidden">
 				<SelectValue>
-					{(value: string) => MOBILE_SORTS[Number(value)]?.label ?? "Sort"}
+					{(value: string) =>
+						options.find((option) => sortId(option.sort) === value)?.label ??
+						"Sort"
+					}
 				</SelectValue>
 			</SelectTrigger>
 			<SelectContent>
-				{MOBILE_SORTS.map((option, index) => (
-					<SelectItem key={option.label} value={String(index)}>
+				{options.map((option) => (
+					<SelectItem key={sortId(option.sort)} value={sortId(option.sort)}>
 						{option.label}
 					</SelectItem>
 				))}
