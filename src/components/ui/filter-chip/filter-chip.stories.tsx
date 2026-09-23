@@ -12,7 +12,7 @@ import { FilterChip } from ".";
  * The remove button is labelled "Remove {label} filter" for screen readers.
  * Its hit area is 44 by 44 px and stays inside the chip's right edge. It
  * covers the right end of the chip, so a click on a short bound such as `DE`
- * removes the filter.
+ * removes the filter. With no bound, a click on the tail of the label does.
  */
 const meta: Meta<typeof FilterChip> = {
 	title: "Components/FilterChip",
@@ -84,21 +84,24 @@ export const Row: Story = {
 			.closest('[data-slot="filter-chip"]') as HTMLElement;
 		const box = chip.getBoundingClientRect();
 
-		const expectedResult = { elementAtRightEdge: "outside the chip" };
+		const expectedResult = { chipAtRightEdge: "none" };
 
 		// Deviation from TESTING.md §2.2: a hit area has no accessible query, so
-		// a hit test just past the chip's right edge checks its geometry.
+		// a hit test just past the chip's right edge checks its geometry. The
+		// point belongs to no chip, so neither this chip nor its neighbor
+		// reaches into the gap.
 		const hit = canvasElement.ownerDocument.elementFromPoint(
 			box.right + 1,
 			box.top + box.height / 2,
 		);
+		const owner = hit?.closest('[data-slot="filter-chip"]') ?? null;
 		const result = {
-			elementAtRightEdge:
+			chipAtRightEdge:
 				hit === null
 					? "nothing, the chip is off screen"
-					: chip.contains(hit)
-						? "inside the chip"
-						: "outside the chip",
+					: owner === null
+						? "none"
+						: (owner.textContent ?? ""),
 		};
 
 		await expect(result).toEqual(expectedResult);

@@ -25,8 +25,10 @@ interface FilterChipProps
  * Leave at least 8 px of clear space above and below a chip row.
  *
  * The hit area covers the right end of the chip. A short bound such as `DE`
- * or `5` sits inside it, so a click on that bound removes the filter. No
- * geometry avoids this at a 44 px target in a 28 px chip.
+ * or `5` sits inside it, so a click on that bound removes the filter. With no
+ * bound, a click on the tail of the label removes it. Keeping the hit area off
+ * the text would need about 20 px of right padding, which leaves the X
+ * floating in a gutter, so the text stays clickable.
  *
  * The chip holds no state, so `onRemove` can fire twice on a fast double
  * click, and the caller must tolerate removing a filter that is already gone.
