@@ -41,21 +41,24 @@ export const Default: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 
-		const expectedResult = { value: "−5.0%", tinted: true };
+		// A probe carrying the loss class gives the color the token resolves to,
+		// so a swapped gain and loss tone fails.
+		const probe = document.createElement("span");
+		probe.className = "text-negative";
+		canvasElement.append(probe);
+		const lossColor = getComputedStyle(probe).color;
+		probe.remove();
+
+		const expectedResult = { value: "−5.0%", color: lossColor };
 
 		// Deviation from TESTING.md §2.2: a median has no role of its own, so
 		// it is read from the first `dd` beside its label.
-		const median = (label: string) =>
-			(canvas.getByText(label).parentElement as HTMLElement).querySelector(
-				"dd",
-			) as HTMLElement;
-		const loss = median("Median 1M");
+		const loss = (
+			canvas.getByText("Median 1M").parentElement as HTMLElement
+		).querySelector("dd") as HTMLElement;
 		const result = {
 			value: loss.textContent,
-			// The loss paints in a different color from a neutral median.
-			tinted:
-				getComputedStyle(loss).color !==
-				getComputedStyle(median("Median P/E")).color,
+			color: getComputedStyle(loss).color,
 		};
 
 		await expect(result).toEqual(expectedResult);
@@ -78,8 +81,23 @@ export const Mobile: Story = {
 	play: async ({ canvasElement }) => {
 		const expectedResult = 2;
 
-		// Deviation from TESTING.md §2.2: the column count is layout, so it is
-		// read from the grid's computed style in the browser.
+		// Deviation from TESTING.md §2.2: a `dl` has no role to query by, so
+		// the grid is found by its tag.
+		const grid = canvasElement.querySelector("dl") as HTMLElement;
+		const result = getComputedStyle(grid).gridTemplateColumns.split(" ").length;
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/** At a desktop width the strip holds all four cells on one row. */
+export const Desktop: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const expectedResult = 4;
+
+		// Deviation from TESTING.md §2.2: a `dl` has no role to query by, so
+		// the grid is found by its tag.
 		const grid = canvasElement.querySelector("dl") as HTMLElement;
 		const result = getComputedStyle(grid).gridTemplateColumns.split(" ").length;
 
