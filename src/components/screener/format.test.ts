@@ -143,7 +143,7 @@ describe("formatMetric", () => {
 	it("should format the figure when the stock has it", () => {
 		const expectedResult = "1.0%";
 
-		const result = formatMetric(alfa, "dividendYield");
+		const result = formatMetric(alfa.dividendYield, "dividendYield");
 
 		expect(result).toBe(expectedResult);
 	});
@@ -151,7 +151,7 @@ describe("formatMetric", () => {
 	it("should format a zero figure when the figure is zero", () => {
 		const expectedResult = "0.0%";
 
-		const result = formatMetric({ ...alfa, dividendYield: 0 }, "dividendYield");
+		const result = formatMetric(0, "dividendYield");
 
 		expect(result).toBe(expectedResult);
 	});
@@ -159,7 +159,7 @@ describe("formatMetric", () => {
 	it("should read as the missing mark when the figure is absent", () => {
 		const expectedResult = MISSING;
 
-		const result = formatMetric(gamma, "peRatio");
+		const result = formatMetric(gamma.peRatio, "peRatio");
 
 		expect(result).toBe(expectedResult);
 	});

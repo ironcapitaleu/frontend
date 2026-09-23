@@ -33,6 +33,9 @@ const meta: Meta<typeof ScreenerResultCard> = {
 		highlightField: {
 			control: "select",
 			options: [
+				null,
+				"peRatio",
+				"price",
 				"marketCap",
 				"priceToCash",
 				"quickRatio",
@@ -77,6 +80,21 @@ export const MissingMetrics: Story = {
  */
 export const LongHighlightLabel: Story = {
 	args: { highlightField: "currentRatio" },
+};
+
+/** Sorted by P/E, which is always on the card. Its label carries the cue. */
+export const SortedByPe: Story = {
+	args: { highlightField: "peRatio" },
+};
+
+/** Sorted by market cap, the widest value. It fits its column on a phone. */
+export const SortedByMarketCap: Story = {
+	args: { highlightField: "marketCap" },
+};
+
+/** No sort. The dividend fills the third slot, and no label is highlighted. */
+export const Unsorted: Story = {
+	args: { highlightField: null },
 };
 
 /** The card whose preview is open. It carries the thin accent mark. */

@@ -32,7 +32,7 @@ function metricColumn(field: MetricField, group?: string): NumberColumn {
 		field,
 		label: METRICS[field].short,
 		group,
-		format: (stock) => formatMetric(stock, field),
+		format: (stock) => formatMetric(stock[field], field),
 	};
 }
 

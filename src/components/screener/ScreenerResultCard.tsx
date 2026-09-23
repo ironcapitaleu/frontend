@@ -14,6 +14,7 @@ import {
 	formatPrice,
 	formatSignedPercent,
 } from "./format";
+import { cardFigures } from "./ScreenerResultCard.logic";
 
 /** Props for {@link ScreenerResultCard}. */
 interface ScreenerResultCardProps
@@ -48,18 +49,13 @@ interface ScreenerResultCardProps
  */
 function ScreenerResultCard({
 	stock,
-	highlightField = "dividendYield",
+	highlightField = null,
 	selected = false,
 	onSelect,
 	className,
 	...props
 }: ScreenerResultCardProps) {
-	const third = cardHighlight(highlightField);
-	const figures: { field: MetricField; highlighted: boolean }[] = [
-		{ field: "peRatio", highlighted: false },
-		{ field: "priceToFcf", highlighted: false },
-		{ field: third, highlighted: third === highlightField },
-	];
+	const figures = cardFigures(highlightField);
 
 	return (
 		// The ticker button gives keyboard access. The card click is a larger
@@ -113,9 +109,9 @@ function ScreenerResultCard({
 			{/* Deviation from DESIGN.md §7: the figures read left, each under its
 			    label, as a card's columns do. A table's right edge does not exist
 			    here to align them to. */}
-			<dl className="grid w-full grid-cols-[repeat(3,minmax(0,1fr))_7rem] items-end gap-2">
+			<dl className="grid w-full grid-cols-3 gap-x-2 gap-y-3">
 				{figures.map(({ field, highlighted }) => {
-					const text = formatMetric(stock, field);
+					const text = formatMetric(stock[field], field);
 					return (
 						<div key={field} className="flex flex-col gap-0.5">
 							<dt
@@ -127,6 +123,7 @@ function ScreenerResultCard({
 								)}
 							>
 								{METRICS[field].short}
+								{highlighted ? <span className="sr-only">, sorted</span> : null}
 							</dt>
 							<dd
 								className={cn(
@@ -140,7 +137,9 @@ function ScreenerResultCard({
 						</div>
 					);
 				})}
-				<div className="flex flex-col gap-0.5">
+				{/* The range takes its own row, so the three figures share the
+				    full width on a phone. */}
+				<div className="col-span-3 flex flex-col gap-0.5">
 					<dt className="text-sm text-muted-foreground">52 weeks</dt>
 					<dd>
 						<RangeBar
@@ -157,15 +156,4 @@ function ScreenerResultCard({
 	);
 }
 
-/**
- * The third key figure for a sort on `field`. A field that is not a key
- * figure, or P/E and P/FCF, which always show, fall back to the dividend.
- */
-function cardHighlight(field: keyof Stock | null): MetricField {
-	if (!field || !(field in METRICS)) return "dividendYield";
-	return field === "peRatio" || field === "priceToFcf"
-		? "dividendYield"
-		: (field as MetricField);
-}
-
-export { ScreenerResultCard, type ScreenerResultCardProps, cardHighlight };
+export { ScreenerResultCard, type ScreenerResultCardProps };

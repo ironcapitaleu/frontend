@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { cardHighlight } from "./ScreenerResultCard";
+import { cardFigures, cardHighlight } from "./ScreenerResultCard.logic";
 
 describe("cardHighlight", () => {
 	it("should keep the requested figure when it is not already on the card", () => {
@@ -23,6 +23,28 @@ describe("cardHighlight", () => {
 		const expectedResult = ["dividendYield", "dividendYield"];
 
 		const result = [cardHighlight("changePercent1M"), cardHighlight(null)];
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("cardFigures", () => {
+	it("should highlight P/E when the list is sorted by P/E", () => {
+		const expectedResult = [
+			{ field: "peRatio", highlighted: true },
+			{ field: "priceToFcf", highlighted: false },
+			{ field: "dividendYield", highlighted: false },
+		];
+
+		const result = cardFigures("peRatio");
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should highlight no figure when the list has no sort", () => {
+		const expectedResult = [false, false, false];
+
+		const result = cardFigures(null).map((figure) => figure.highlighted);
 
 		expect(result).toEqual(expectedResult);
 	});

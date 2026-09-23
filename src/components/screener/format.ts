@@ -1,8 +1,6 @@
 // The screener's number formats and change tones, so one metric reads the
 // same wherever it appears.
 
-import type { Stock } from "@/pages/public/StockScreener.logic";
-
 /** The mark for a value the data does not have. */
 export const MISSING = "—";
 
@@ -130,8 +128,7 @@ export const METRICS: Record<
 	buybackYield: { label: "Buyback", short: "Buyback", format: formatPercent },
 };
 
-/** Formats the figure `field` of `stock`, or {@link MISSING} when it is absent. */
-export function formatMetric(stock: Stock, field: MetricField): string {
-	const value = stock[field];
+/** Formats a key figure's value, or {@link MISSING} when it is absent. */
+export function formatMetric(value: number | null, field: MetricField): string {
 	return value === null ? MISSING : METRICS[field].format(value);
 }
