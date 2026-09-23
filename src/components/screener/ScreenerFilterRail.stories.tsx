@@ -98,17 +98,30 @@ export const ReportsChanges: Story = {
 /** "Reset all" clears every criterion and hands back the empty state. */
 export const ResetsAll: Story = {
 	args: {
-		filters: STRATEGY_PRESETS[0].filters,
+		filters: { ...STRATEGY_PRESETS[0].filters, search: "AAPL" },
 	},
 	play: async ({ args, canvasElement }) => {
 		const canvas = within(canvasElement);
 		const onFiltersChange = args.onFiltersChange as ReturnType<typeof fn>;
 
-		const expectedResult = EMPTY_FILTERS;
+		// The masthead owns the search, so the reset keeps it.
+		const expectedResult = { ...EMPTY_FILTERS, search: "AAPL" };
 
 		await userEvent.click(canvas.getByRole("button", { name: "Reset all" }));
 		const result = onFiltersChange.mock.lastCall?.[0];
 
 		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * A 1M bound of "down at least 20%", past the usual end of the track at
+ * −15%. The track widens to −20% so the slider shows the bound. It stays wide
+ * while the rail is open, so a drag back toward zero does not move the track
+ * under the pointer.
+ */
+export const WideBound: Story = {
+	args: {
+		filters: { ...EMPTY_FILTERS, downLastMonth: "20" },
 	},
 };

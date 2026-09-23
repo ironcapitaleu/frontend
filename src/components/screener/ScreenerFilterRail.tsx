@@ -1,7 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import type * as React from "react";
 
-import { DistributionSlider } from "@/components/ui/distribution-slider";
+import {
+	DistributionSlider,
+	type SliderRange,
+} from "@/components/ui/distribution-slider";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -14,12 +17,14 @@ import {
 
 import {
 	RAIL_GROUPS,
+	type RailMetric,
 	applyMetricRange,
 	distinctValues,
 	hasActiveFilters,
 	metricBounds,
 	metricRange,
 	metricTrack,
+	widenTrack,
 } from "./ScreenerFilterRail.logic";
 
 /** The toggle value that stands for "no country" or "no sector" filter. */
@@ -67,6 +72,18 @@ function ScreenerFilterRail({
 			),
 		[stocks],
 	);
+	// Each metric's track, held while the rail is mounted. It widens for a
+	// bound outside the usual track and never narrows, so dragging a thumb back
+	// from a wide bound does not move the track under the pointer.
+	const heldTracks = useRef(new Map<string, SliderRange>());
+	const trackFor = (metric: RailMetric): SliderRange => {
+		const track = widenTrack(
+			heldTracks.current.get(metric.label),
+			metricTrack(metric, filters),
+		);
+		heldTracks.current.set(metric.label, track);
+		return track;
+	};
 
 	return (
 		<aside
@@ -110,19 +127,21 @@ function ScreenerFilterRail({
 			{RAIL_GROUPS.map((group) => (
 				<RailSection key={group.title} title={group.title}>
 					{group.metrics.map((metric) => {
-						const [min, max] = metricTrack(metric, filters);
+						const track = trackFor(metric);
 						return (
 							<DistributionSlider
 								key={metric.label}
 								label={metric.label}
 								values={metricValues.get(metric.stockField) ?? []}
-								min={min}
-								max={max}
+								min={track[0]}
+								max={track[1]}
 								step={metric.step}
 								bounds={metricBounds(metric)}
-								value={metricRange(metric, filters)}
+								value={metricRange(metric, filters, track)}
 								onValueChange={(range) =>
-									onFiltersChange(applyMetricRange(metric, filters, range))
+									onFiltersChange(
+										applyMetricRange(metric, filters, range, track),
+									)
 								}
 								formatValue={(value) => `${value.toFixed(1)}${metric.unit}`}
 							/>

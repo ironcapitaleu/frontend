@@ -137,7 +137,9 @@ export const LowerBound: Story = {
 		thumb.focus();
 		await userEvent.keyboard("{ArrowRight}");
 		// Deviation from TESTING.md §2.2: the filled side of the track is purely
-		// visual, so no accessible query reaches it.
+		// visual, so no accessible query reaches it. This reads the styling hook
+		// the fill depends on. It does not see the painted color, which the
+		// visual review covers.
 		const track = canvasElement.querySelector('[data-slot="slider-track"]');
 		const result = {
 			readout: canvas.getByRole("status").textContent,

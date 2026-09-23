@@ -172,6 +172,8 @@ export function metricBounds(
 /**
  * The ends of the metric's track. A bound that lies outside the usual track
  * widens it, so the slider shows the bound instead of hiding it at an end.
+ * A thumb resting on a track end reads as no bound, so a bound set exactly on
+ * the usual end of the track reads `Any` once the track narrows back to it.
  */
 export function metricTrack(
 	metric: RailMetric,
@@ -184,15 +186,29 @@ export function metricTrack(
 }
 
 /**
- * The slider range that `filters` sets for `metric`. A missing or unparsable
- * bound rests the thumb at its end of the track. A lower bound above the upper
- * one rests on the upper one, so the range never inverts.
+ * Joins a track held from earlier renders with the track the filters ask
+ * for now. The result can widen but never narrow, so the track stays still
+ * under a pointer while a thumb is dragged back from a wide bound.
+ */
+export function widenTrack(
+	held: SliderRange | undefined,
+	next: SliderRange,
+): SliderRange {
+	if (!held) return next;
+	return [Math.min(held[0], next[0]), Math.max(held[1], next[1])];
+}
+
+/**
+ * The slider range that `filters` sets for `metric` on `track`. A missing or
+ * unparsable bound rests the thumb at its end of the track. A lower bound
+ * above the upper one rests on the upper one, so the range never inverts.
  */
 export function metricRange(
 	metric: RailMetric,
 	filters: FilterState,
+	track: SliderRange = metricTrack(metric, filters),
 ): SliderRange {
-	const [trackMin, trackMax] = metricTrack(metric, filters);
+	const [trackMin, trackMax] = track;
 	const [lowerBound, upperBound] = readBounds(metric, filters);
 	const upper = upperBound ?? trackMax;
 	const lower = Math.min(lowerBound ?? trackMin, upper);
@@ -200,17 +216,19 @@ export function metricRange(
 }
 
 /**
- * Returns `filters` with the bounds of `metric` set from `range`. Only a thumb
- * that moved writes its filter, so a bound the reader did not touch stays as
- * it was. A thumb moved to its end of the track clears its filter.
+ * Returns `filters` with the bounds of `metric` set from `range` on `track`.
+ * Only a thumb that moved writes its filter, so a bound the reader did not
+ * touch stays as it was. A thumb moved to its end of the track clears its
+ * filter.
  */
 export function applyMetricRange(
 	metric: RailMetric,
 	filters: FilterState,
 	[lower, upper]: SliderRange,
+	track: SliderRange = metricTrack(metric, filters),
 ): FilterState {
-	const [trackMin, trackMax] = metricTrack(metric, filters);
-	const [shownLower, shownUpper] = metricRange(metric, filters);
+	const [trackMin, trackMax] = track;
+	const [shownLower, shownUpper] = metricRange(metric, filters, track);
 	const next = { ...filters };
 	if (metric.lowerField && lower !== shownLower) {
 		next[metric.lowerField] = lower > trackMin ? formatBound(lower) : "";

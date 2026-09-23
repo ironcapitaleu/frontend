@@ -15,6 +15,7 @@ import {
 	metricBounds,
 	metricRange,
 	metricTrack,
+	widenTrack,
 } from "./ScreenerFilterRail.logic";
 
 function findMetric(label: string): RailMetric {
@@ -111,7 +112,40 @@ describe("metricTrack", () => {
 	});
 });
 
+describe("widenTrack", () => {
+	it("should keep the held ends when the next track is narrower", () => {
+		const expectedResult = [-20, 5];
+
+		const result = widenTrack([-20, 5], [-18, 5]);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should take the next track when nothing is held yet", () => {
+		const expectedResult = [0, 40];
+
+		const result = widenTrack(undefined, [0, 40]);
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
 describe("applyMetricRange", () => {
+	it("should write a bound inside a held wide track when the thumb stops short of its end", () => {
+		const filters = withFilters({ peMax: "60" });
+
+		const expectedResult = withFilters({ peMax: "70" });
+
+		const result = applyMetricRange(
+			findMetric("P/E"),
+			filters,
+			[0, 70],
+			[0, 90],
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should keep an untouched bound outside the track when the other thumb moves", () => {
 		const filters = withFilters({ peMax: "90" });
 
