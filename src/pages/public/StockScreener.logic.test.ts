@@ -663,6 +663,19 @@ describe("STRATEGY_PRESETS", () => {
 		expect(result).toBe(expectedResult);
 	});
 
+	it("should label the presets in reading order when the page lists them", () => {
+		const expectedResult = [
+			"Deep value",
+			"Income at a fair price",
+			"Cash-rich",
+			"Beaten down",
+		];
+
+		const result = STRATEGY_PRESETS.map((preset) => preset.label);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it.each([
 		["deep-value", { peMax: "12", priceToFcfMax: "12" }],
 		["fair-price-income", { peMax: "20", dividendYieldMin: "2" }],
