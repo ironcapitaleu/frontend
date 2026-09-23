@@ -207,9 +207,8 @@
    so a layer of it over a filled slider track shows the fill through. Laid over
    the page background, it matches an empty track in both themes. */
 @utility bg-input-opaque {
-	background:
-		linear-gradient(var(--color-input), var(--color-input)),
-		var(--color-background);
+	background-color: var(--color-background);
+	background-image: linear-gradient(var(--color-input), var(--color-input));
 }
 
 /* Make buttons appear responsive by adding tactile feedback (like lifting on hover, and feedback moving when pressed) */

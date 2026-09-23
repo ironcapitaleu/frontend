@@ -143,7 +143,9 @@ light/dark theming keeps working.
 `bg-input-opaque` paints the `input` fill as an opaque layer over the page
 background. Use it where an `input` surface sits on top of another fill, such
 as the rejected side of a slider that fills to its end. The dark `--input` is
-translucent, so plain `bg-input` there shows the fill underneath.
+translucent, so plain `bg-input` there shows the fill underneath. It assumes
+the page background behind it, so on a card or popover surface it does not
+match.
 
 ### Theming
 

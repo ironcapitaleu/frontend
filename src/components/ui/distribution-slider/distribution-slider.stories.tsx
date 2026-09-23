@@ -3,6 +3,8 @@ import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent, within } from "storybook/test";
 
+import { readSliderCover } from "../../../../.storybook/utils/sliderCover";
+
 import { DistributionSlider, type SliderRange } from ".";
 
 /** P/E ratios of the screener's sample universe. Two banks report none. */
@@ -160,22 +162,13 @@ export const LowerBoundDark: Story = {
 	...LowerBound,
 	globals: { theme: "dark" },
 	play: async ({ canvasElement }) => {
-		const expectedResult = 255;
+		const expectedResult = { alpha: 255, tint: true };
 
 		// Deviation from TESTING.md §2.2: the rejected side is purely visual, so
-		// no accessible query reaches it. A canvas pixel reads the alpha of its
-		// painted background color.
-		const indicator = canvasElement.querySelector(
-			'[data-slot="slider-indicator"]',
-		) as HTMLElement;
-		const context = document
-			.createElement("canvas")
-			.getContext("2d") as CanvasRenderingContext2D;
-		context.fillStyle = getComputedStyle(indicator).backgroundColor;
-		context.fillRect(0, 0, 1, 1);
-		const result = context.getImageData(0, 0, 1, 1).data[3];
+		// no accessible query reaches it. The helper reads its painted layers.
+		const result = readSliderCover(canvasElement);
 
-		await expect(result).toBe(expectedResult);
+		await expect(result).toEqual(expectedResult);
 	},
 };
 
