@@ -20,6 +20,12 @@ const meta: Meta<typeof Slider> = {
 		layout: "centered",
 	},
 	argTypes: {
+		fill: {
+			control: "inline-radio",
+			options: ["start", "end"],
+			description:
+				"Which side of a single thumb the track fills. A range fills between its thumbs.",
+		},
 		min: {
 			control: { type: "number" },
 			description: "Lowest number the slider can reach.",
@@ -75,6 +81,20 @@ export const Range: Story = {
 	render: (args) => (
 		<div className="w-72">
 			<Slider defaultValue={[25, 75]} {...args} />
+		</div>
+	),
+};
+
+/**
+ * A single thumb with `fill="end"`, for a lower bound such as "yield at least
+ * 3%". The track fills from the thumb to the right end, the side the bound
+ * keeps.
+ */
+export const FillsToEnd: Story = {
+	args: { fill: "end" },
+	render: (args) => (
+		<div className="w-72">
+			<Slider aria-label="Minimum yield" defaultValue={30} {...args} />
 		</div>
 	),
 };

@@ -31,6 +31,12 @@ interface DistributionSliderProps
 	formatValue?: (value: number) => string;
 	/** How many histogram bars to draw. Defaults to 18. */
 	binCount?: number;
+	/**
+	 * Which bounds the reader sets. `both` draws two thumbs. `upper` and `lower`
+	 * draw one thumb and keep the other end of `value` fixed at `min` or `max`.
+	 * Defaults to `both`.
+	 */
+	bounds?: "both" | "upper" | "lower";
 }
 
 /**
@@ -54,6 +60,7 @@ function DistributionSlider({
 	onValueChange,
 	formatValue = defaultFormatValue,
 	binCount = 18,
+	bounds = "both",
 	className,
 	...props
 }: DistributionSliderProps) {
@@ -118,16 +125,23 @@ function DistributionSlider({
 			</div>
 			<Slider
 				aria-labelledby={labelId}
-				getThumbLabel={(index) =>
-					`${label} ${index === 0 ? "minimum" : "maximum"}`
-				}
+				getThumbLabel={(index) => `${label} ${thumbName(bounds, index)}`}
+				fill={bounds === "lower" ? "end" : "start"}
 				className="py-1"
 				min={min}
 				max={max}
 				step={step}
-				value={[lower, upper]}
+				value={
+					bounds === "upper"
+						? upper
+						: bounds === "lower"
+							? lower
+							: [lower, upper]
+				}
 				onValueChange={(next) => {
-					if (Array.isArray(next) && next.length === 2) {
+					if (typeof next === "number") {
+						onValueChange(bounds === "lower" ? [next, max] : [min, next]);
+					} else if (next.length === 2) {
 						onValueChange([next[0], next[1]]);
 					}
 				}}
@@ -183,6 +197,16 @@ function selectBins(
 		const start = min + index * width;
 		return start >= lower - tolerance && start + width <= upper + tolerance;
 	});
+}
+
+/** Whether the thumb at `index` sets the minimum or the maximum. */
+function thumbName(
+	bounds: NonNullable<DistributionSliderProps["bounds"]>,
+	index: number,
+): "minimum" | "maximum" {
+	if (bounds === "upper") return "maximum";
+	if (bounds === "lower") return "minimum";
+	return index === 0 ? "minimum" : "maximum";
 }
 
 /**

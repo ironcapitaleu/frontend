@@ -25,10 +25,18 @@ function Slider({
 	value,
 	defaultValue,
 	getThumbLabel,
+	fill = "start",
 	...props
 }: SliderPrimitive.Root.Props & {
 	/** Names the thumb at `index` for screen readers. */
 	getThumbLabel?: (index: number) => string;
+	/**
+	 * Which side of a single thumb the track fills. `start` fills from the
+	 * left end to the thumb, for an upper bound. `end` fills from the thumb to
+	 * the right end, for a lower bound. A range always fills between its
+	 * thumbs. Defaults to `start`.
+	 */
+	fill?: "start" | "end";
 }) {
 	const thumbCount = countThumbs(value ?? defaultValue);
 
@@ -48,11 +56,12 @@ function Slider({
 			>
 				<SliderPrimitive.Track
 					data-slot="slider-track"
-					className="bg-input relative h-1.5 w-full grow overflow-hidden rounded-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-1.5"
+					data-fill={thumbCount === 1 ? fill : "start"}
+					className="group/track bg-input data-[fill=end]:bg-primary relative h-1.5 w-full grow overflow-hidden rounded-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-1.5"
 				>
 					<SliderPrimitive.Indicator
 						data-slot="slider-indicator"
-						className="bg-primary absolute rounded-full"
+						className="bg-primary group-data-[fill=end]/track:bg-input absolute rounded-full group-data-[fill=end]/track:rounded-none"
 					/>
 				</SliderPrimitive.Track>
 				{Array.from({ length: thumbCount }, (_unused, index) => (
