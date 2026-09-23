@@ -99,6 +99,14 @@ describe("selectBins", () => {
 
 		expect(result).toEqual(expectedResult);
 	});
+
+	it("should mark nine of eighteen bins when the upper thumb sits halfway on an inexact bin width", () => {
+		const expectedResult = 9;
+
+		const result = selectBins(18, [0, 20], 0, 40).filter(Boolean).length;
+
+		expect(result).toBe(expectedResult);
+	});
 });
 
 describe("describeRange", () => {

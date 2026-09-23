@@ -62,7 +62,7 @@ function DistributionSlider({
 		() => binValues(values, min, max, binCount),
 		[values, min, max, binCount],
 	);
-	const tallest = Math.max(1, ...bins);
+	const tallest = bins.reduce((highest, count) => Math.max(highest, count), 1);
 	const [lower, upper] = value;
 	const isActive = lower > min || upper < max;
 	const selected = isActive
@@ -159,10 +159,10 @@ function binValues(
 }
 
 /**
- * Marks which of `binCount` equal bins lie wholly inside the selected range. A bin that only
- * overlaps the range stays unmarked, so the accent never runs past a thumb. A
- * range narrower than one bin therefore marks nothing, which reads as "no bar
- * is fully inside" and is the honest answer.
+ * Marks which of `binCount` equal bins lie wholly inside the selected range.
+ * A bin that only overlaps the range stays unmarked, so the accent never runs
+ * past a thumb. A range narrower than one bin therefore marks nothing, which
+ * reads as "no bar is fully inside" and is the honest answer.
  */
 function selectBins(
 	binCount: number,

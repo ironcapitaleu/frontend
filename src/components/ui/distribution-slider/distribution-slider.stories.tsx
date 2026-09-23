@@ -149,6 +149,9 @@ export const AccentStaysInsideTheRange: Story = {
 	play: async ({ canvasElement }) => {
 		const expectedResult = ["true", null, null, null];
 
+		// Deviation from TESTING.md §9: the accent is a color, and no role-based
+		// query reaches a color, so the bars are read by their data attributes.
+
 		const result = Array.from(
 			canvasElement.querySelectorAll('[data-slot="distribution-slider-bar"]'),
 			(bar) => bar.getAttribute("data-selected"),
@@ -165,12 +168,20 @@ export const AccentStaysInsideTheRange: Story = {
 export const NarrowRange: Story = {
 	args: { value: [19, 21] },
 	play: async ({ canvasElement }) => {
-		const expectedResult = 0;
+		const expectedResult = { bars: 18, accented: 0 };
 
-		const result = canvasElement.querySelectorAll(
-			'[data-slot="distribution-slider-bar"][data-selected]',
-		).length;
+		// Deviation from TESTING.md §9: the accent is a color, so the bars are
+		// read by their data attributes. The bar count proves they rendered.
+		const bars = canvasElement.querySelectorAll(
+			'[data-slot="distribution-slider-bar"]',
+		);
+		const result = {
+			bars: bars.length,
+			accented: Array.from(bars).filter((bar) =>
+				bar.hasAttribute("data-selected"),
+			).length,
+		};
 
-		await expect(result).toBe(expectedResult);
+		await expect(result).toEqual(expectedResult);
 	},
 };
