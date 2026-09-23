@@ -200,9 +200,10 @@ with its validation) rather than every trivial leaf in isolation.
 The frontend has failure modes a backend does not: a page can be logically
 correct and still **look wrong** — a layout that collapses on mobile, an
 animation that jumps, a serif heading that silently fell back to sans. One
-environment cannot catch all of that, so tests live in two layers today (with
-a third planned — see below). Each layer answers one question, and every UI
-change should be able to say which layers cover it.
+environment cannot catch all of that, so tests live in two layers today (a
+third, pixel-level layer was tried and not adopted — see below). Each layer
+answers one question, and every UI change should be able to say which layers
+cover it.
 
 | Layer | Runs in | Question it answers | Where |
 | --- | --- | --- | --- |
@@ -215,8 +216,8 @@ Hooks, contexts, `lib/` utilities, pure functions, presentational components,
 and page-level logic. Fast, deterministic, no real rendering engine. **Know its
 limits:** jsdom does not compute CSS, so it cannot see Tailwind breakpoints,
 animations, or layout. Anything whose correctness depends on *rendered
-appearance* belongs in layer 2 or 3 — do not fake it in jsdom by asserting
-class strings.
+appearance* belongs in layer 2 — do not fake it in jsdom by asserting class
+strings.
 
 ### Layer 2 — interaction & visual behaviour (Storybook play tests)
 
@@ -235,56 +236,82 @@ regressed silently:
   is `test: "todo"` (violations surface in the test UI); the goal is `"error"`
   once existing violations are cleared. New components should pass from day one.
 
-### Planned third layer — pixel-level visual regression (not yet adopted)
+### Third layer — pixel-level visual regression (tried, not adopted)
 
-Play tests catch *behavioural* breakage; only pixel comparison catches "the
+Play tests catch *behavioural* breakage. Only pixel comparison catches "the
 spacing jumped", "the gradient stopped flowing", "the serif fell back". A
-snapshot-diffing layer over the rendered stories would close that gap — but
-**it is decided, not built, so it is not doctrine yet.** Tool choice
-(Chromatic — whose Storybook addon happens to ship in our config — Percy,
-Lost Pixel, self-hosted Playwright screenshots), cost, and the
-baseline-review workflow all needed a spike first. That spike is done, and its
-findings document is attached to STA-143. It recommends the self-hosted option:
-pixel comparison inside the existing Storybook Vitest project. The
-recommendation is accepted and the work is tracked in STA-180. This section
-changes when that work lands, not before.
+snapshot-diffing layer over the rendered stories closes that gap, and **we
+built one and decided against keeping it.** The spike (STA-143) and the
+implementation (STA-180, pull request 234, closed unmerged) are both done, and
+the findings document attached to STA-143 carries the full reasoning.
 
-What **is** doctrine today: stories are the visual record, and any future
-snapshot layer will consume them story-by-story. That is why **story coverage
-is test coverage** — a component without stories for its meaningful states is
-undocumented now and invisible to that layer later. Keep story coverage
-complete so the layer can be switched on without a backfill.
+The short version: the value of the layer was the review experience, a before,
+an after, and a red-pixel overlay sitting beside the code diff. GitHub renders
+an image inside a pull request only from a committed file, and committed
+baseline images were ruled out because they grow the repository without bound.
+PNG files do not delta-compress, so every re-render is a new permanent blob.
+Rendering both sides of the comparison on each run fixes the size at zero and
+leaves nothing for GitHub to display, so the check asks a reviewer to download a
+zip. A check nobody opens is noise.
+
+Two things cover this gap today, and both are already in place:
+
+- **The human visual gate.** Before sign-off on a change that alters
+  appearance, a person reads the full matrix: every touched page or component,
+  in both themes, at a mobile width and a desktop width. The `design` skill
+  holds the procedure. It runs while the change is in development and again at
+  the release gate, which the `release` skill calls.
+- **The Cloudflare Pages preview deploy.** Cloudflare builds every pull request
+  and posts a preview URL, including a pull request that changes no application
+  source. A green deploy proves the change builds and renders, and the preview
+  URL is what a reviewer opens to judge it. The build is configured in the
+  Cloudflare dashboard rather than in this repository, so nothing here fails if
+  someone switches it off.
+
+On the enforcement ladder (AGENTS.md) this sits at level 2: the `design` skill
+carries the procedure and the `release` skill calls it, with the preview deploy
+as the mechanical half. It stops short of level 1 on purpose, because no script
+decides whether a rendered page looks right. What it gives up is written down: a
+pixel shift in a component nobody opens reaches `dev` unseen. That is accepted while the
+repository is small enough that a person reads every pull request. The findings
+document names the conditions that reopen the question.
+
+What **is** doctrine today: stories are the visual record, and the visual gate
+reads them story by story. That is why **story coverage is test coverage** — a
+component without stories for its meaningful states is undocumented now and
+missing from the matrix a person signs off on. Keep story coverage complete, so
+the gate reads the whole component.
 
 ---
 
 ## 4. Responsive, motion, and visual regressions
 
 The regressions that hurt most are the ones no unit test sees: a change on one
-page shifts a shared component, and suddenly the mobile nav jumps or the filter
-panel animation stutters. The doctrine for defending against them:
+page shifts a shared component, and suddenly the mobile nav jumps or the sheet
+animation stutters. The doctrine for defending against them:
 
 ### 4.1 Responsive
 
 - Layout is built desktop-and-mobile from the start (AGENTS.md's responsive
   methodology); tests must exercise **both**. Stories for layout-bearing
   components define viewport variants — the same story at a mobile width and a
-  desktop width — so play tests and visual snapshots cover each breakpoint the
+  desktop width — so play tests and the visual gate cover each breakpoint the
   component actually responds to.
 - Test at the component's **own** breakpoints (where its layout genuinely
   changes), not a fixed device list.
 - In jsdom, `window.matchMedia` is stubbed (see `src/test/setup.ts`). Logic
   that branches on a media query can be unit-tested by configuring that stub —
-  but layout produced by CSS breakpoints cannot, and belongs in layer 2/3.
+  but layout produced by CSS breakpoints cannot, and belongs in layer 2.
 
 ### 4.2 Motion
 
 Motion is part of the design language (DESIGN.md §5), so it gets defended like
 one:
 
-- Test motion **by its observable endpoints**, not its pixels: the filter panel
-  is closed, the trigger is clicked, the panel's content is visible/hidden. The
-  transition itself is a job for pixel-level visual regression once adopted;
-  until then, the Storybook catalog and review carry it.
+- Test motion **by its observable endpoints**, not its pixels: the mobile menu
+  is closed, the trigger is clicked, the menu's links are visible/hidden. No
+  automated check covers the transition itself (§3). The Storybook catalog and
+  review carry it.
 - The house conventions — height animated via `grid-template-rows`
   (`0fr` → `1fr`), never `display` toggles or the `max-height` trick;
   `.btn-tactile` on buttons — are **review items** (see AGENTS.md § PR Review):
@@ -301,6 +328,9 @@ A UI change is complete when:
 4. It reads correctly against [DESIGN.md](./DESIGN.md) — semantic tokens, the
    right font role, the motion conventions. Design conformance is part of
    review, not an afterthought.
+5. If it alters appearance, the visual gate ran on it (§3): a person read the
+   full matrix, both themes at a mobile and a desktop width, and the Cloudflare
+   Pages preview on the pull request is green.
 
 ---
 
@@ -458,8 +488,8 @@ Working with the gate:
   low relative to how well-tested the components actually are — do not read the
   global percentage as the whole story.
 - **Story coverage is the layer-2 metric.** Every component's meaningful states
-  having stories is the coverage measure for layer 2 (and for any future
-  visual-regression layer), and is checked in review — not by this gate.
+  having stories is the coverage measure for layer 2, and the matrix the visual
+  gate reads (§3). Both are checked in review — not by this gate.
 
 ---
 
@@ -590,4 +620,5 @@ not a bag of booleans that hides what actually failed.
 - [ ] New/changed components have stories for their meaningful states; interactive ones have a play test.
 - [ ] Layout-bearing changes hold at the component's breakpoints and in all themes.
 - [ ] The change reads correctly against [DESIGN.md](./DESIGN.md) — tokens, font roles, motion conventions.
+- [ ] An appearance change passed the visual gate (§3): the full matrix was read in both themes at a mobile and a desktop width, and the Cloudflare Pages preview is green.
 - [ ] `npm run test:ci` and `npm run test:storybook` pass; coverage stays at or above the floor.

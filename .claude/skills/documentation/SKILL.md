@@ -24,8 +24,8 @@ stay in step**:
    (`README.md`, `DESIGN.md`, `TESTING.md`, `AGENTS.md`).
 2. **Living documentation** — **Storybook is the living catalog of the design system.** A
    component's stories show every meaningful state, render under all themes, generate
-   autodocs, and double as interaction test cases (and as visual-regression cases once that
-   layer is adopted — see TESTING.md §3).
+   autodocs, and double as interaction test cases and as the matrix the visual gate reads
+   (see TESTING.md §3).
 
 Documenting a component means giving it **both**: JSDoc (the written contract) *and* stories
 (the rendered catalog). For a **composite** component, documenting it is documenting its tree

@@ -86,16 +86,29 @@ Authoritative source: `TESTING.md`. Summary:
    play tests in real browsers: interactions, all themes (the class-based theming decorator),
    viewport variants, axe checks via `addon-a11y`.
 
-A third, pixel-level visual-regression layer (snapshot-diffing the rendered stories) is
-**decided but not built**. The tool spike is done and its findings document is attached to
-STA-143: it recommends pixel comparison inside the existing Storybook Vitest project. That
-recommendation is accepted, and the implementation is tracked in STA-180 (see TESTING.md §3).
-Do not present it as existing infrastructure until that work lands. Story coverage stays
-mandatory regardless: stories are the visual record any future snapshot layer will consume.
+There is no third, pixel-level layer. Nothing compares rendered pixels, so no automated check
+catches a spacing jump, a broken gradient, or a serif falling back to a sans. Two things carry
+that instead, and both need a person:
+
+- **The visual gate in the `design` skill.** Capture the full matrix, both themes at a mobile
+  and a desktop width, for every page or component the change touches, and put it to the user
+  for sign-off. Run it while the change is in development, not only at the release gate.
+- **The Cloudflare Pages preview deploy.** Cloudflare builds every pull request and posts a
+  preview URL. A red preview blocks the pull request the same as a red `ci`, because the
+  preview is what a reviewer opens to judge appearance.
+
+**The boundary.** This holds while a person reads every pull request. A pixel shift in a
+component nobody opens reaches `dev` unseen, and that is accepted today. The question reopens
+when the repository outgrows that, or when a service renders the comparison inside the pull
+request itself. TESTING.md §3 holds what has already been measured, so start there rather than
+from scratch.
+
+Story coverage stays mandatory regardless: stories are the matrix the gate reads.
 
 When reviewing a UI change, ask: which layers cover it? A change is complete when its logic is
-unit-tested, its states have stories, its interactions have a play test, and it holds at its
-breakpoints in all themes.
+unit-tested, its states have stories, its interactions have a play test, it holds at its
+breakpoints in all themes, and, when it alters appearance, the visual gate ran on it and the
+Cloudflare Pages preview is green (TESTING.md §4.3).
 
 ## Baseline Tests (apply to ALL components)
 
@@ -297,9 +310,9 @@ export const OpensOnClick: Story = {
 For layout-bearing components, add viewport-variant stories at the component's **own**
 breakpoints (where its layout genuinely changes — e.g. where the nav collapses into the
 mobile menu), not a fixed device list. Give each variant a story so it is exercised by play
-tests (and captured by visual regression once that layer is adopted). Test motion by its
-**endpoints** (menu closed → click → menu open); the animation itself is carried by the
-catalog and review until a pixel-diffing layer exists.
+tests and read at the visual gate. Test motion by its
+**endpoints** (menu closed → click → menu open). No automated check covers the transition
+itself, so the Storybook catalog and review carry it.
 
 ## Proactive Behavior
 

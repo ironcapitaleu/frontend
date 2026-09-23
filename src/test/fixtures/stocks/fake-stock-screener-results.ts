@@ -1,4 +1,4 @@
-import type { Stock } from "../../../pages/public/StockScreener.logic";
+import type { Stock } from "../../../components/screener/screener.logic";
 
 /**
  * A fixed, deliberately-shaped universe of securities for screener tests. Its
@@ -6,7 +6,7 @@ import type { Stock } from "../../../pages/public/StockScreener.logic";
  * than against whatever data the page happens to ship:
  *
  * - symbols are alphabetical (ALFA … OMEGA), so a descending sort is easy to predict;
- * - Alfa, Gamma and Omega trade within 20% of their 52-week low; Beta and Delta do not;
+ * - Alfa, Gamma and Omega trade within 20% of their 52-week low, and Beta and Delta do not;
  * - Gamma leaves several metrics unavailable (`null`), exercising the "—" cells;
  * - market caps span the trillions, billions, millions and plain-number formats.
  *

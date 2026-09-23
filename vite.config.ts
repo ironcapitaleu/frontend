@@ -66,6 +66,13 @@ export default defineConfig({
 						configDir: path.join(dirname, ".storybook"),
 					}),
 				],
+				// Storybook's test addon sets each story's viewport through
+				// `@vitest/browser/context`, a path Vitest 5 serves as
+				// `vitest/browser`. Without this alias the import fails, the addon
+				// skips the resize, and every story runs at Vitest's 414 px default.
+				resolve: {
+					alias: { "@vitest/browser/context": "vitest/browser" },
+				},
 				test: {
 					name: "storybook",
 					browser: {

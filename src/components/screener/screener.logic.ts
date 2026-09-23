@@ -52,6 +52,27 @@ export interface SortConfig {
 	direction: SortDirection;
 }
 
+/** A named, ready-made screen the reader applies in one click. */
+export interface StrategyPreset {
+	readonly id: string;
+	readonly label: string;
+	/** Read-only, because every page shares this object. Apply it with {@link applyPreset}. */
+	readonly filters: Readonly<FilterState>;
+}
+
+/** One active filter criterion, worded for a chip or a list. */
+export interface FilterDescription {
+	readonly field: keyof FilterState;
+	readonly label: string;
+	/** The bound as the reader reads it, for example `≤ 20` or `≥ 2%`. Empty for a switch. */
+	readonly value: string;
+}
+
+/** The `FilterState` fields that hold free text or a numeric bound as a string. */
+type StringFilterField = {
+	[K in keyof FilterState]: FilterState[K] extends string ? K : never;
+}[keyof FilterState];
+
 /** A filter state with every criterion cleared — the screener's default. */
 export const EMPTY_FILTERS: FilterState = {
 	search: "",
@@ -88,12 +109,12 @@ export function isActiveNumericFilter(value: string): boolean {
 }
 
 /**
- * How many filter criteria are currently active — drives the count badge on the
- * Filters button. A text criterion (`search`, `country`, `sector`) counts when
- * its string is non-empty, and `nearFiftyTwoWeekLow` counts when true. A numeric
- * criterion counts only when its string parses to a number — a non-numeric value
- * is treated as inactive (see {@link isActiveNumericFilter}), so the badge never
- * counts a filter that {@link filterStocks} would ignore.
+ * How many filter criteria are currently active. A text criterion (`search`,
+ * `country`, `sector`) counts when its string is non-empty, and
+ * `nearFiftyTwoWeekLow` counts when true. A numeric criterion counts only when
+ * its string parses to a number (see {@link isActiveNumericFilter}), so the
+ * count never includes a filter that {@link filterStocks} would ignore. The
+ * Filters button counts {@link railFilters}, which leave out the search.
  */
 export function countActiveFilters(filters: FilterState): number {
 	return [
@@ -117,7 +138,7 @@ export function countActiveFilters(filters: FilterState): number {
  * Returns the stocks matching every active criterion in `filters`, preserving
  * input order. Empty criteria are ignored, and a numeric criterion whose string
  * does not parse to a number is ignored too (see {@link isActiveNumericFilter}),
- * so a stray value can't empty the table; numeric bounds exclude rows whose
+ * so a stray value can't empty the table. Numeric bounds exclude rows whose
  * value is `null` (the metric is unavailable).
  *
  * @param stocks the universe to filter — not mutated
@@ -189,7 +210,7 @@ export function filterStocks(
 
 /**
  * Returns the stocks ordered by `field` in `direction`. Strings compare with
- * locale ordering, numbers numerically; rows whose value is `null` always sort
+ * locale ordering, numbers numerically. Rows whose value is `null` always sort
  * last, regardless of direction. Stable with respect to the input, which is not
  * mutated.
  *
@@ -205,6 +226,7 @@ export function sortStocks(
 	return [...stocks].sort((a, b) => {
 		const av = a[field];
 		const bv = b[field];
+		if (av === null && bv === null) return 0;
 		if (av === null) return 1;
 		if (bv === null) return -1;
 		if (typeof av === "string" && typeof bv === "string") {
@@ -214,4 +236,167 @@ export function sortStocks(
 			? (av as number) - (bv as number)
 			: (bv as number) - (av as number);
 	});
+}
+
+/**
+ * The strategies offered above the results. Each one is a plain
+ * {@link FilterState}, so applying a preset is the same as setting its filters
+ * by hand, and the reader can refine it afterwards. The list is fixed in code
+ * until strategies become user data.
+ */
+export const STRATEGY_PRESETS: readonly StrategyPreset[] = [
+	{
+		id: "deep-value",
+		label: "Deep value",
+		filters: { ...EMPTY_FILTERS, peMax: "12", priceToFcfMax: "12" },
+	},
+	{
+		id: "fair-price-income",
+		label: "Income at a fair price",
+		filters: { ...EMPTY_FILTERS, peMax: "20", dividendYieldMin: "2" },
+	},
+	{
+		id: "cash-rich",
+		label: "Cash-rich",
+		filters: { ...EMPTY_FILTERS, quickRatioMin: "1", currentRatioMin: "1.5" },
+	},
+	{
+		id: "beaten-down",
+		label: "Beaten down",
+		filters: {
+			...EMPTY_FILTERS,
+			nearFiftyTwoWeekLow: true,
+			downLastMonth: "3",
+		},
+	},
+];
+
+/**
+ * The filters a strategy and the rail own. The masthead search is not one of
+ * them, so it neither breaks a preset's match nor counts on the Filters button.
+ */
+export function railFilters(filters: FilterState): FilterState {
+	return { ...filters, search: "" };
+}
+
+/**
+ * A fresh copy of the preset's filters, safe to hand to React state. The
+ * preset's own object is shared by every page, so it is never set directly.
+ */
+export function applyPreset(preset: StrategyPreset): FilterState {
+	return { ...preset.filters };
+}
+
+/**
+ * The preset whose filters equal `filters` exactly, or `null` when the reader
+ * has changed the screen away from every preset. The page uses it to mark the
+ * active preset button.
+ */
+export function findActivePreset(filters: FilterState): StrategyPreset | null {
+	return (
+		STRATEGY_PRESETS.find((preset) =>
+			(Object.keys(EMPTY_FILTERS) as (keyof FilterState)[]).every(
+				(field) => preset.filters[field] === filters[field],
+			),
+		) ?? null
+	);
+}
+
+/**
+ * The median of the finite numbers in `values`, ignoring `null` and `NaN`
+ * entries. Returns `null` when no number is left, so a caller renders a dash
+ * instead of a misleading zero.
+ */
+export function median(values: readonly (number | null)[]): number | null {
+	const sorted = values
+		.filter(
+			(value): value is number => value !== null && Number.isFinite(value),
+		)
+		.sort((a, b) => a - b);
+	if (sorted.length === 0) return null;
+	const middle = Math.floor(sorted.length / 2);
+	return sorted.length % 2 === 1
+		? sorted[middle]
+		: (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+/**
+ * Describes each active criterion in `filters`, in the order of the filter
+ * rail (`ScreenerFilterRail`): the universe, valuation, balance sheet,
+ * shareholder yield, momentum, then the signals. The filter chips and the
+ * "Why it matched" list render these entries. A numeric criterion counts only
+ * when it parses (see {@link isActiveNumericFilter}), the same rule
+ * {@link filterStocks} and {@link countActiveFilters} apply.
+ */
+export function describeActiveFilters(
+	filters: FilterState,
+): FilterDescription[] {
+	const descriptions: FilterDescription[] = [];
+	const addText = (field: StringFilterField, label: string) => {
+		if (filters[field] !== "") {
+			descriptions.push({ field, label, value: filters[field] });
+		}
+	};
+	const addBound = (
+		field: StringFilterField,
+		label: string,
+		format: (bound: number) => string,
+	) => {
+		if (isActiveNumericFilter(filters[field])) {
+			descriptions.push({
+				field,
+				label,
+				value: format(parseFloat(filters[field])),
+			});
+		}
+	};
+
+	addText("search", "Search");
+	addText("country", "Country");
+	addText("sector", "Sector");
+	addBound("peMin", "P/E", (bound) => `≥ ${bound}`);
+	addBound("peMax", "P/E", (bound) => `≤ ${bound}`);
+	addBound("priceToFcfMax", "P/FCF", (bound) => `≤ ${bound}`);
+	addBound("priceToCashMax", "P/Cash", (bound) => `≤ ${bound}`);
+	addBound("quickRatioMin", "Quick ratio", (bound) => `≥ ${bound}`);
+	addBound("currentRatioMin", "Current ratio", (bound) => `≥ ${bound}`);
+	addBound("dividendYieldMin", "Dividend yield", (bound) => `≥ ${bound}%`);
+	addBound("buybackYieldMin", "Buyback yield", (bound) => `≥ ${bound}%`);
+	// `downLastMonth` stores "down at least N%" as N, so the bound on the 1M
+	// change is −N. Sign the result once, so a negative N reads "≤ +3%".
+	addBound(
+		"downLastMonth",
+		"1M change",
+		(bound) => `≤ ${formatSigned(-bound)}%`,
+	);
+	if (filters.nearFiftyTwoWeekLow) {
+		descriptions.push({
+			field: "nearFiftyTwoWeekLow",
+			label: "Near 52-week low",
+			value: "",
+		});
+	}
+
+	return descriptions;
+}
+
+/**
+ * The sort after the reader activates the header of `field`. A new column
+ * sorts ascending, a second activation sorts descending, and a third removes
+ * the sort.
+ */
+export function nextSortConfig(
+	previous: SortConfig | null,
+	field: keyof Stock,
+): SortConfig | null {
+	if (!previous || previous.field !== field) return { field, direction: "asc" };
+	if (previous.direction === "asc") return { field, direction: "desc" };
+	return null;
+}
+
+/** A number with an explicit sign and a true minus: `+3`, `−3`, or `0`. */
+function formatSigned(value: number): string {
+	if (value > 0) return `+${value}`;
+	if (value < 0) return `−${Math.abs(value)}`;
+	return "0";
 }
