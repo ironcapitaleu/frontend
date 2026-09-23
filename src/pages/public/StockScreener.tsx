@@ -8,6 +8,21 @@ import { ScreenerFilterRail } from "@/components/screener/ScreenerFilterRail";
 import { ScreenerResultCard } from "@/components/screener/ScreenerResultCard";
 import { ScreenerSummary } from "@/components/screener/ScreenerSummary";
 import { NO_MATCHES, ScreenerTable } from "@/components/screener/ScreenerTable";
+import {
+	EMPTY_FILTERS,
+	type FilterState,
+	STRATEGY_PRESETS,
+	type SortConfig,
+	type Stock,
+	applyPreset,
+	countActiveFilters,
+	describeActiveFilters,
+	filterStocks,
+	findActivePreset,
+	nextSortConfig,
+	railFilters,
+	sortStocks,
+} from "@/components/screener/screener.logic";
 import SearchBar from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { FilterChip } from "@/components/ui/filter-chip";
@@ -26,30 +41,15 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
-import {
-	EMPTY_FILTERS,
-	type FilterState,
-	STRATEGY_PRESETS,
-	type SortConfig,
-	type Stock,
-	applyPreset,
-	countActiveFilters,
-	describeActiveFilters,
-	filterStocks,
-	findActivePreset,
-	nextSortConfig,
-	railFilters,
-	sortStocks,
-} from "@/components/screener/screener.logic";
 import { SAMPLE_STOCKS } from "./StockScreener.sample";
 
-/** The sort choices on a phone, where the table headers are not visible. */
 /** Names for the sortable columns that are not key figures. */
 const SORT_NAMES: Partial<Record<keyof Stock, string>> = {
 	price: "Price",
 	changePercent1M: "1M change",
 };
 
+/** The sort choices on a phone, where the table headers are not visible. */
 const MOBILE_SORTS: readonly { label: string; sort: SortConfig | null }[] = [
 	{ label: "Default order", sort: null },
 	{
@@ -70,7 +70,7 @@ const MOBILE_SORTS: readonly { label: string; sort: SortConfig | null }[] = [
 		sort: { field: "changePercent1M", direction: "asc" },
 	},
 	{
-		label: "Market cap, largest first",
+		label: "Market cap, highest first",
 		sort: { field: "marketCap", direction: "desc" },
 	},
 ];

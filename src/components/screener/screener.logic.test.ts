@@ -15,6 +15,7 @@ import {
 	isNearFiftyTwoWeekLow,
 	median,
 	nextSortConfig,
+	railFilters,
 	sortStocks,
 } from "./screener.logic";
 
@@ -692,6 +693,22 @@ describe("STRATEGY_PRESETS", () => {
 			expect(result).toEqual(expectedResult);
 		},
 	);
+});
+
+describe("railFilters", () => {
+	it("should clear the search and keep every other criterion when rail filters are read", () => {
+		const filters: FilterState = {
+			...EMPTY_FILTERS,
+			search: "beta",
+			peMax: "20",
+		};
+
+		const expectedResult = { ...EMPTY_FILTERS, peMax: "20" };
+
+		const result = railFilters(filters);
+
+		expect(result).toEqual(expectedResult);
+	});
 });
 
 describe("applyPreset", () => {
