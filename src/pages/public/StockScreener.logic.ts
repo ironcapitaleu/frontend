@@ -371,13 +371,6 @@ export function describeActiveFilters(
 	return descriptions;
 }
 
-/** A number with an explicit sign and a true minus: `+3`, `−3`, or `0`. */
-function formatSigned(value: number): string {
-	if (value > 0) return `+${value}`;
-	if (value < 0) return `−${Math.abs(value)}`;
-	return "0";
-}
-
 /**
  * The sort after the reader activates the header of `field`. A new column
  * sorts ascending, a second activation sorts descending, and a third removes
@@ -390,4 +383,11 @@ export function nextSortConfig(
 	if (!previous || previous.field !== field) return { field, direction: "asc" };
 	if (previous.direction === "asc") return { field, direction: "desc" };
 	return null;
+}
+
+/** A number with an explicit sign and a true minus: `+3`, `−3`, or `0`. */
+function formatSigned(value: number): string {
+	if (value > 0) return `+${value}`;
+	if (value < 0) return `−${Math.abs(value)}`;
+	return "0";
 }

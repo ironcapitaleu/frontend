@@ -3,14 +3,15 @@ import { describe, expect, it } from "vitest";
 import { fakeStockScreenerResults } from "@/test/fixtures/stocks/fake-stock-screener-results";
 
 import {
-	COLUMN_COUNT,
 	COLUMN_GROUPS,
+	LEADING_COLUMNS,
 	NUMBER_COLUMNS,
 	type NumberColumn,
+	TRAILING_COLUMNS,
 	columnGroups,
 } from "./ScreenerTable.logic";
 
-const column = (group?: string): NumberColumn => ({
+const numberColumn = (group?: string): NumberColumn => ({
 	field: "price",
 	label: "Price",
 	group,
@@ -19,7 +20,12 @@ const column = (group?: string): NumberColumn => ({
 
 describe("columnGroups", () => {
 	it("should span every column when groups start at the named columns", () => {
-		const columns = [column("A"), column(), column("B"), column()];
+		const columns = [
+			numberColumn("A"),
+			numberColumn(),
+			numberColumn("B"),
+			numberColumn(),
+		];
 
 		const expectedResult = [
 			{ label: "", span: 1 },
@@ -32,15 +38,18 @@ describe("columnGroups", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should span every column when the groups derive from the real columns", () => {
-		const expectedResult = COLUMN_COUNT;
+	it("should name the four groups over the real columns when the table renders", () => {
+		const expectedResult = [
+			{ label: "", span: LEADING_COLUMNS },
+			{ label: "Valuation", span: 4 },
+			{ label: "Balance sheet", span: 2 },
+			{ label: "Shareholder yield", span: 2 },
+			{ label: "Price", span: 2 + TRAILING_COLUMNS },
+		];
 
-		const result = COLUMN_GROUPS.reduce(
-			(total, group) => total + group.span,
-			0,
-		);
+		const result = COLUMN_GROUPS;
 
-		expect(result).toBe(expectedResult);
+		expect(result).toEqual(expectedResult);
 	});
 });
 

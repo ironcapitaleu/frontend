@@ -76,7 +76,6 @@ function ScreenerTable({
 								key={index}
 								colSpan={group.span}
 								scope="colgroup"
-								aria-hidden={group.label ? undefined : true}
 								className={cn(
 									"px-2 pt-2.5 text-left text-xs font-medium tracking-widest text-muted-foreground uppercase first:px-4",
 									index > 0 && "border-l border-border",

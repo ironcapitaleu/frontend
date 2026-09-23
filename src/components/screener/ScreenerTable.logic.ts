@@ -94,6 +94,12 @@ export const TRAILING_COLUMNS = 1;
 export const COLUMN_COUNT =
 	LEADING_COLUMNS + NUMBER_COLUMNS.length + TRAILING_COLUMNS;
 
+/** One cell of the group header row: a label and how many columns it spans. */
+export interface ColumnGroup {
+	readonly label: string;
+	readonly span: number;
+}
+
 /**
  * The group header row: a label and how many columns it spans. It derives from
  * the `group` names, so it always spans every column. The first group covers
@@ -103,8 +109,10 @@ export const COLUMN_COUNT =
  */
 export function columnGroups(
 	columns: readonly NumberColumn[],
-): { label: string; span: number }[] {
-	const groups = [{ label: "", span: LEADING_COLUMNS }];
+): readonly ColumnGroup[] {
+	const groups: { label: string; span: number }[] = [
+		{ label: "", span: LEADING_COLUMNS },
+	];
 	for (const column of columns) {
 		if (column.group) groups.push({ label: column.group, span: 1 });
 		else groups[groups.length - 1].span += 1;
