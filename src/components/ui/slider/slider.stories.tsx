@@ -91,14 +91,10 @@ export const Range: Story = {
  * keeps.
  */
 export const FillsToEnd: Story = {
+	args: { fill: "end" },
 	render: (args) => (
 		<div className="w-72">
-			<Slider
-				aria-label="Minimum yield"
-				defaultValue={30}
-				fill="end"
-				{...args}
-			/>
+			<Slider aria-label="Minimum yield" defaultValue={30} {...args} />
 		</div>
 	),
 };

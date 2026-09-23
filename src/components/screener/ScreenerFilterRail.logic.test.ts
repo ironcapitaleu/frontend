@@ -113,6 +113,14 @@ describe("metricTrack", () => {
 });
 
 describe("widenTrack", () => {
+	it("should widen to the next track when a bound lies past the held end", () => {
+		const expectedResult = [0, 90];
+
+		const result = widenTrack([0, 40], [0, 90]);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should keep the held ends when the next track is narrower", () => {
 		const expectedResult = [-20, 5];
 

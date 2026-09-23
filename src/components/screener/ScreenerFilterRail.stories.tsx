@@ -117,11 +117,30 @@ export const ResetsAll: Story = {
 /**
  * A 1M bound of "down at least 20%", past the usual end of the track at
  * −15%. The track widens to −20% so the slider shows the bound. It stays wide
- * while the rail is open, so a drag back toward zero does not move the track
- * under the pointer.
+ * while the rail is open, also after the bound is cleared, so a drag back
+ * toward zero does not move the track under the pointer. The play test moves
+ * the thumb one step and checks that the track keeps its −20% end.
  */
 export const WideBound: Story = {
 	args: {
 		filters: { ...EMPTY_FILTERS, downLastMonth: "20" },
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const thumb = canvas.getByRole("slider", { name: "1M change maximum" });
+		const slider = within(
+			thumb.closest('[data-slot="distribution-slider"]') as HTMLElement,
+		);
+
+		const expectedResult = { trackStart: "-20", readout: "≤ -19.5%" };
+
+		thumb.focus();
+		await userEvent.keyboard("{ArrowRight}");
+		const result = {
+			trackStart: thumb.getAttribute("min"),
+			readout: slider.getByRole("status").textContent,
+		};
+
+		await expect(result).toEqual(expectedResult);
 	},
 };

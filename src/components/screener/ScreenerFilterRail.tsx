@@ -66,7 +66,7 @@ function ScreenerFilterRail({
 		() =>
 			new Map(
 				RAIL_GROUPS.flatMap((group) => group.metrics).map((metric) => [
-					metric.stockField,
+					metric.label,
 					stocks.map((stock) => stock[metric.stockField]),
 				]),
 			),
@@ -74,7 +74,11 @@ function ScreenerFilterRail({
 	);
 	// Each metric's track, held while the rail is mounted. It widens for a
 	// bound outside the usual track and never narrows, so dragging a thumb back
-	// from a wide bound does not move the track under the pointer.
+	// from a wide bound does not move the track under the pointer. It also
+	// stays wide after that bound is cleared, until the rail unmounts. The ref
+	// is written during render, which is safe only because `widenTrack` is a
+	// join: a render React repeats or discards cannot change the result. A
+	// metric's label is its identity here and in the React key.
 	const heldTracks = useRef(new Map<string, SliderRange>());
 	const trackFor = (metric: RailMetric): SliderRange => {
 		const track = widenTrack(
@@ -132,7 +136,7 @@ function ScreenerFilterRail({
 							<DistributionSlider
 								key={metric.label}
 								label={metric.label}
-								values={metricValues.get(metric.stockField) ?? []}
+								values={metricValues.get(metric.label) ?? []}
 								min={track[0]}
 								max={track[1]}
 								step={metric.step}
