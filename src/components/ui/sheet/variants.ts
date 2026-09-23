@@ -1,5 +1,6 @@
-import type { Assert, SameMembers } from "@/lib/types";
 import { cva, type VariantProps } from "class-variance-authority";
+
+import type { Assert, SameMembers } from "@/lib/types";
 
 /**
  * The panel: which edge it enters from, and how it sizes along that edge. The

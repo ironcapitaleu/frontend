@@ -46,11 +46,39 @@ export const Default: Story = {};
 /** A phone width: the presets scroll sideways and the results are cards. */
 export const Mobile: Story = {
 	globals: { viewport: { value: "mobile1", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+
+		// The table hides below 768 px, so an accessible query finds only the
+		// card list. The `Tablet` story asserts the other half.
+		const expectedResult = { table: null, sortMenu: true };
+
+		const result = {
+			table: canvas.queryByRole("table"),
+			sortMenu: canvas.queryByRole("combobox", { name: "Sort" }) !== null,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
 };
 
 /** A tablet width: the rail waits behind the "Filters" button. */
 export const Tablet: Story = {
 	globals: { viewport: { value: "tablet", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+
+		// From 768 px the table replaces the card list. This is the positive
+		// half of the guard in `Mobile`, so a page without a table fails here.
+		const expectedResult = { table: true, cardList: null };
+
+		const result = {
+			table: canvas.queryByRole("table") !== null,
+			cardList: canvas.queryByRole("list", { name: "Companies" }),
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
 };
 
 /** The "Income at a fair price" preset applied, with its two filter chips. */
