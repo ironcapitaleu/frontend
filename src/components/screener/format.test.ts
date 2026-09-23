@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import { fakeStockScreenerResults } from "@/test/fixtures/stocks/fake-stock-screener-results";
+
 import {
+	MISSING,
 	changeTone,
 	formatMarketCap,
+	formatMetric,
 	formatNumber,
 	formatPercent,
 	formatPrice,
@@ -130,5 +134,33 @@ describe("changeTone", () => {
 		const result = [2, -2, 0.01, null].map(changeTone);
 
 		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("formatMetric", () => {
+	const [alfa, , gamma] = fakeStockScreenerResults;
+
+	it("should format the figure when the stock has it", () => {
+		const expectedResult = "1.0%";
+
+		const result = formatMetric(alfa, "dividendYield");
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should format a zero figure when the figure is zero", () => {
+		const expectedResult = "0.0%";
+
+		const result = formatMetric({ ...alfa, dividendYield: 0 }, "dividendYield");
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should read as the missing mark when the figure is absent", () => {
+		const expectedResult = MISSING;
+
+		const result = formatMetric(gamma, "peRatio");
+
+		expect(result).toBe(expectedResult);
 	});
 });

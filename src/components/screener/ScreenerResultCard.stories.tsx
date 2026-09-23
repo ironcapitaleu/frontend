@@ -72,8 +72,8 @@ export const MissingMetrics: Story = {
 };
 
 /**
- * Sorted by a figure with a long name. The card uses the short label, and a
- * label too long for its column truncates.
+ * Sorted by a figure with a long name. The card uses the short label, so
+ * even the longest one fits its column.
  */
 export const LongHighlightLabel: Story = {
 	args: { highlightField: "currentRatio" },

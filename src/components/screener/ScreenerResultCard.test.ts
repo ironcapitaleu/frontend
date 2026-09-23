@@ -18,4 +18,12 @@ describe("cardHighlight", () => {
 
 		expect(result).toEqual(expectedResult);
 	});
+
+	it("should fall back to the dividend when the sort field is not a key figure", () => {
+		const expectedResult = ["dividendYield", "dividendYield"];
+
+		const result = [cardHighlight("changePercent1M"), cardHighlight(null)];
+
+		expect(result).toEqual(expectedResult);
+	});
 });

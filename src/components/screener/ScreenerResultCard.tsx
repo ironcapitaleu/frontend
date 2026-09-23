@@ -20,11 +20,12 @@ interface ScreenerResultCardProps
 	extends Omit<React.ComponentProps<"div">, "onSelect" | "children"> {
 	stock: Stock;
 	/**
-	 * The third key figure, usually the column the list is sorted by. P/E and
-	 * P/FCF always show, so either of them falls back to the dividend yield.
-	 * Defaults to `dividendYield`.
+	 * The third key figure, usually the column the list is sorted by, so a page
+	 * passes its sort field as is. A field that is not a key figure, or P/E and
+	 * P/FCF, which always show, fall back to the dividend yield. Defaults to
+	 * `dividendYield`.
 	 */
-	highlightField?: MetricField;
+	highlightField?: keyof Stock | null;
 	/** Whether this card's preview is the one open. */
 	selected?: boolean;
 	/** Called with the stock's symbol when the reader selects the card. */
@@ -62,7 +63,8 @@ function ScreenerResultCard({
 
 	return (
 		// The ticker button gives keyboard access. The card click is a larger
-		// touch target for the same action.
+		// touch target for the same action. A drag that selects text to copy
+		// does not count as a tap.
 		// biome-ignore lint/a11y/useKeyWithClickEvents: the ticker button handles the keyboard
 		// biome-ignore lint/a11y/noStaticElementInteractions: see the comment above
 		<div
@@ -155,11 +157,15 @@ function ScreenerResultCard({
 	);
 }
 
-/** The third key figure. P/E and P/FCF always show, so they fall back to the dividend. */
-function cardHighlight(field: MetricField): MetricField {
+/**
+ * The third key figure for a sort on `field`. A field that is not a key
+ * figure, or P/E and P/FCF, which always show, fall back to the dividend.
+ */
+function cardHighlight(field: keyof Stock | null): MetricField {
+	if (!field || !(field in METRICS)) return "dividendYield";
 	return field === "peRatio" || field === "priceToFcf"
 		? "dividendYield"
-		: field;
+		: (field as MetricField);
 }
 
 export { ScreenerResultCard, type ScreenerResultCardProps, cardHighlight };
