@@ -1,7 +1,7 @@
 import { useId } from "react";
 import { Link } from "react-router";
 
-import { buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { RangeBar } from "@/components/ui/range-bar";
 import {
 	Sheet,
@@ -172,17 +172,16 @@ function CompanyPreview({
 					</section>
 				</SheetBody>
 				<footer className="border-t border-border p-6">
-					{/* A real link styled as a button. Rendering it through `Button`
-					    would give it the button role, and it navigates. */}
-					<Link
-						to={`/companies/${stock.symbol}`}
-						className={cn(
-							buttonVariants({ variant: "inverted" }),
-							"btn-tactile h-11 w-full text-lg",
-						)}
+					{/* `Button` renders the router link, so the element keeps its
+					    link role. Passing `nativeButton={false}` here gives it the
+					    button role instead. */}
+					<Button
+						variant="inverted"
+						className="btn-tactile h-11 w-full text-lg"
+						render={<Link to={`/companies/${stock.symbol}`} />}
 					>
 						Open company page
-					</Link>
+					</Button>
 				</footer>
 			</SheetContent>
 		</Sheet>

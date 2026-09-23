@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { ComponentProps } from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 
 import { Button } from "../button";
@@ -21,7 +22,12 @@ import {
  * and it casts the one shadow a floating surface earns. Below the `sm`
  * breakpoint a side panel fills the screen width.
  */
-const meta: Meta<typeof SheetContent> = {
+/** The panel's props, plus whether the story opens the sheet on mount. */
+type SheetStoryArgs = ComponentProps<typeof SheetContent> & {
+	defaultOpen?: boolean;
+};
+
+const meta: Meta<SheetStoryArgs> = {
 	title: "Components/Sheet",
 	component: SheetContent,
 	tags: ["autodocs"],
@@ -38,14 +44,19 @@ const meta: Meta<typeof SheetContent> = {
 			control: "boolean",
 			description: "Whether the close button shows in the top-right corner.",
 		},
+		defaultOpen: {
+			control: "boolean",
+			description: "Whether the story opens the sheet on mount.",
+		},
 		className: { control: { disable: true } },
 	},
 	args: {
 		side: "right",
 		showCloseButton: true,
+		defaultOpen: true,
 	},
-	render: (args) => (
-		<Sheet>
+	render: ({ defaultOpen, ...args }) => (
+		<Sheet defaultOpen={defaultOpen}>
 			<SheetTrigger
 				render={<Button variant="outline" className="btn-tactile" />}
 			>
@@ -66,7 +77,7 @@ const meta: Meta<typeof SheetContent> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** The trigger opens a right sheet. Change the side in the Controls panel. */
+/** A right sheet, open on mount. Change the side in the Controls panel. */
 export const Playground: Story = {};
 
 /** A left sheet, for a filter panel on a phone. */
@@ -91,6 +102,7 @@ export const Mobile: Story = {
 
 /** A click on the backdrop closes the sheet. */
 export const ClosesOnBackdropClick: Story = {
+	args: { defaultOpen: false },
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		const page = within(canvasElement.ownerDocument.body);
@@ -119,6 +131,7 @@ export const ClosesOnBackdropClick: Story = {
  * again and hands focus back to the trigger.
  */
 export const OpensAndClosesWithEscape: Story = {
+	args: { defaultOpen: false },
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		const page = within(canvasElement.ownerDocument.body);

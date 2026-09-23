@@ -65,7 +65,7 @@ export const WithMissingFigures: Story = {
 	args: { stock: fakeStockScreenerResults[2], filters: EMPTY_FILTERS },
 };
 
-/** A long company name wraps under the close button instead of running under it. */
+/** A long company name wraps before the close button instead of running beneath it. */
 export const LongName: Story = {
 	args: {
 		stock: { ...beta, name: "Beta Industries Holdings and Energy Group" },
