@@ -13,6 +13,8 @@ import { FilterChip } from ".";
  * Its hit area is 44 by 44 px and stays inside the chip's right edge. It
  * covers the right end of the chip, so a click on a short bound such as `DE`
  * removes the filter. With no bound, a click on the tail of the label does.
+ * The hit area also reaches 8 px above and below the chip, so a chip row needs
+ * at least that much clear space above and below it.
  */
 const meta: Meta<typeof FilterChip> = {
 	title: "Components/FilterChip",
@@ -63,6 +65,8 @@ export const LongLabel: Story = {
 /**
  * A wrapped row of chips, as the screener shows them. The remove targets stay
  * inside their own chips, so a click on one chip never removes its neighbor.
+ * The 12 px `gap-y-3` between rows clears the 8 px vertical reach, so keep
+ * the row gap at least that wide.
  */
 export const Row: Story = {
 	render: (args) => (
@@ -83,8 +87,14 @@ export const Row: Story = {
 			.getByText("P/E")
 			.closest('[data-slot="filter-chip"]') as HTMLElement;
 		const box = chip.getBoundingClientRect();
+		const neighbor = canvas
+			.getByText("Dividend yield")
+			.closest('[data-slot="filter-chip"]') as HTMLElement;
 
-		const expectedResult = { chipAtRightEdge: "none" };
+		const expectedResult = {
+			neighbor: "on the same row",
+			chipAtRightEdge: "none",
+		};
 
 		// Deviation from TESTING.md §2.2: a hit area has no accessible query, so
 		// a hit test just past the chip's right edge checks its geometry. The
@@ -96,6 +106,10 @@ export const Row: Story = {
 		);
 		const owner = hit?.closest('[data-slot="filter-chip"]') ?? null;
 		const result = {
+			neighbor:
+				neighbor.getBoundingClientRect().top === box.top
+					? "on the same row"
+					: "wrapped to the next row",
 			chipAtRightEdge:
 				hit === null
 					? "nothing, the chip is off screen"
