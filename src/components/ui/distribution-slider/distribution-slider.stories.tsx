@@ -3,6 +3,8 @@ import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent, within } from "storybook/test";
 
+import { readSliderCover } from "../../../../.storybook/utils/sliderCover";
+
 import { DistributionSlider, type SliderRange } from ".";
 
 /** P/E ratios of the screener's sample universe. Two banks report none. */
@@ -146,6 +148,25 @@ export const LowerBound: Story = {
 			readout: canvas.getByRole("status").textContent,
 			fill: track ? track.getAttribute("data-fill") : "track missing",
 		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * A lower bound in the dark theme. The side below the thumb is covered with
+ * the `input` fill as an opaque layer, since the dark `--input` is translucent
+ * and a plain `bg-input` cover lets the filled track show through.
+ */
+export const LowerBoundDark: Story = {
+	...LowerBound,
+	globals: { theme: "dark" },
+	play: async ({ canvasElement }) => {
+		const expectedResult = { alpha: 255, tint: true };
+
+		// Deviation from TESTING.md §2.2: the rejected side is purely visual, so
+		// no accessible query reaches it. The helper reads its painted layers.
+		const result = readSliderCover(canvasElement);
 
 		await expect(result).toEqual(expectedResult);
 	},

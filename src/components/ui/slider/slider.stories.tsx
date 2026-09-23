@@ -1,4 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect } from "storybook/test";
+
+import { readSliderCover } from "../../../../.storybook/utils/sliderCover";
 
 import { Label } from "../label";
 import { Slider } from ".";
@@ -97,6 +100,25 @@ export const FillsToEnd: Story = {
 			<Slider aria-label="Minimum yield" defaultValue={30} {...args} />
 		</div>
 	),
+};
+
+/**
+ * `FillsToEnd` in the dark theme. The dark `--input` is translucent, so the
+ * cover below the thumb is the opaque `bg-input-opaque` layer, and the filled
+ * track does not show through.
+ */
+export const FillsToEndDark: Story = {
+	...FillsToEnd,
+	globals: { theme: "dark" },
+	play: async ({ canvasElement }) => {
+		const expectedResult = { alpha: 255, tint: true };
+
+		// Deviation from TESTING.md §2.2: the rejected side is purely visual, so
+		// no accessible query reaches it. The helper reads its painted layers.
+		const result = readSliderCover(canvasElement);
+
+		await expect(result).toEqual(expectedResult);
+	},
 };
 
 /**

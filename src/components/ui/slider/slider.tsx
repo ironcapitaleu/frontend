@@ -61,7 +61,7 @@ function Slider({
 				>
 					<SliderPrimitive.Indicator
 						data-slot="slider-indicator"
-						className="bg-primary group-data-[fill=end]/track:bg-input absolute rounded-full group-data-[fill=end]/track:rounded-none"
+						className="bg-primary group-data-[fill=end]/track:bg-input-opaque absolute rounded-full group-data-[fill=end]/track:rounded-none"
 					/>
 				</SliderPrimitive.Track>
 				{Array.from({ length: thumbCount }, (_unused, index) => (
