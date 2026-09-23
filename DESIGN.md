@@ -245,7 +245,9 @@ generates each new piece with its full file set.
 > lands.
 
 The screener is the product's main working surface, so the modern pole leads.
-The masthead title is the one classical moment on the page. The reference
+The masthead title is the one classical moment on the page. The company
+preview repeats it once: the company's name is its serif title, because the
+sheet speaks about one company as a whole. The reference
 mockup is the
 [screener design canvas](https://claude.ai/artifact/8YXQqfS71dsioyMn4jvXfr).
 

@@ -643,9 +643,9 @@ export const MarksClickedPageActive: Story = {
 
 		const expectedResult = "page";
 
-		await userEvent.click(canvas.getByRole("button", { name: "3" }));
+		await userEvent.click(canvas.getByRole("link", { name: "3" }));
 		const result = canvas
-			.getByRole("button", { name: "3" })
+			.getByRole("link", { name: "3" })
 			.getAttribute("aria-current");
 
 		await expect(result).toBe(expectedResult);
