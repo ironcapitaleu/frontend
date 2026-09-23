@@ -370,23 +370,6 @@ describe("filterStocks", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should keep null rows in input order when several values are null", () => {
-		const stocks = [
-			makeStock("N1", { peRatio: null }),
-			makeStock("LOW", { peRatio: 5 }),
-			makeStock("N2", { peRatio: null }),
-			makeStock("N3", { peRatio: null }),
-			makeStock("HIGH", { peRatio: 30 }),
-			makeStock("N4", { peRatio: null }),
-		];
-
-		const expectedResult = ["LOW", "HIGH", "N1", "N2", "N3", "N4"];
-
-		const result = sortStocks(stocks, "peRatio", "asc").map((s) => s.symbol);
-
-		expect(result).toEqual(expectedResult);
-	});
-
 	it("should not mutate the input array", () => {
 		const stocks = [
 			makeStock("US1", { country: "US" }),
@@ -469,6 +452,26 @@ describe("sortStocks", () => {
 		const expectedResult = ["HIGH", "LOW", "NUL"];
 
 		const result = sortStocks(stocks, "peRatio", "desc").map((s) => s.symbol);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep null rows in input order when several values are null", () => {
+		const stocks = [
+			makeStock("N1", { peRatio: null }),
+			makeStock("LOW", { peRatio: 5 }),
+			makeStock("N2", { peRatio: null }),
+			makeStock("N3", { peRatio: null }),
+			makeStock("HIGH", { peRatio: 30 }),
+			makeStock("N4", { peRatio: null }),
+		];
+
+		// V8 happens to keep this order even with a comparator that calls two
+		// nulls unequal, so this pins the stability the JSDoc promises rather
+		// than reproducing a V8 failure.
+		const expectedResult = ["LOW", "HIGH", "N1", "N2", "N3", "N4"];
+
+		const result = sortStocks(stocks, "peRatio", "asc").map((s) => s.symbol);
 
 		expect(result).toEqual(expectedResult);
 	});
