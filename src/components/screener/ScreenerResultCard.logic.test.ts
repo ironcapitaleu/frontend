@@ -41,6 +41,14 @@ describe("cardFigures", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should highlight the third figure when the list is sorted by it", () => {
+		const expectedResult = { field: "marketCap", highlighted: true };
+
+		const result = cardFigures("marketCap")[2];
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should highlight no figure when the list has no sort", () => {
 		const expectedResult = [false, false, false];
 

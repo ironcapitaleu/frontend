@@ -8,7 +8,6 @@ import {
 	CHANGE_TONE_CLASS,
 	METRICS,
 	MISSING,
-	type MetricField,
 	changeTone,
 	formatMetric,
 	formatPrice,
@@ -19,12 +18,15 @@ import { cardFigures } from "./ScreenerResultCard.logic";
 /** Props for {@link ScreenerResultCard}. */
 interface ScreenerResultCardProps
 	extends Omit<React.ComponentProps<"div">, "onSelect" | "children"> {
+	/** The result the card shows. */
 	stock: Stock;
 	/**
-	 * The third key figure, usually the column the list is sorted by, so a page
-	 * passes its sort field as is. A field that is not a key figure, or P/E and
-	 * P/FCF, which always show, fall back to the dividend yield. Defaults to
-	 * `dividendYield`.
+	 * The field the list is sorted by, so a page passes its sort field as is.
+	 * A key figure carries the sort cue. A sort on another key figure fills the
+	 * third slot, and any other field fills it with the dividend yield. Price
+	 * and 1M change carry no cue by design: they lead the card already.
+	 * Defaults to `null`, which fills the third slot with the dividend yield
+	 * and highlights nothing.
 	 */
 	highlightField?: keyof Stock | null;
 	/** Whether this card's preview is the one open. */

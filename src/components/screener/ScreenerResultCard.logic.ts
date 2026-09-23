@@ -16,7 +16,7 @@ export interface CardFigure {
  * figure, or P/E and P/FCF, which always show, fall back to the dividend.
  */
 export function cardHighlight(field: keyof Stock | null): MetricField {
-	if (!field || !(field in METRICS)) return "dividendYield";
+	if (!field || !Object.hasOwn(METRICS, field)) return "dividendYield";
 	return field === "peRatio" || field === "priceToFcf"
 		? "dividendYield"
 		: (field as MetricField);
