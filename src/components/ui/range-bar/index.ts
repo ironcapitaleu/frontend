@@ -10,4 +10,5 @@ export {
 	type RangeBarVariants,
 	rangeBarBoundsVariants,
 	rangeBarMarkerVariants,
+	rangeBarMissingVariants,
 } from "./variants";

@@ -34,10 +34,30 @@ const rangeBarBoundsVariants = cva(
 	},
 );
 
-// The one `size` prop drives both the marker and the bounds, so the type
-// requires a size to exist in both variant maps.
+/**
+ * The dash drawn in place of the track for a missing value. It takes the
+ * bounds' size, so it never reads larger than the numbers under it.
+ */
+const rangeBarMissingVariants = cva(
+	"absolute inset-0 flex items-center justify-center font-monospace leading-none text-muted-foreground",
+	{
+		variants: {
+			size: {
+				sm: "text-10",
+				md: "text-11",
+			},
+		},
+		defaultVariants: {
+			size: "sm",
+		},
+	},
+);
+
+// The one `size` prop drives the marker, the bounds, and the missing dash, so
+// the type requires a size to exist in every variant map.
 type RangeBarVariants = VariantProps<typeof rangeBarMarkerVariants> &
-	VariantProps<typeof rangeBarBoundsVariants>;
+	VariantProps<typeof rangeBarBoundsVariants> &
+	VariantProps<typeof rangeBarMissingVariants>;
 
 /** A constant listing every size of the `RangeBar` component. */
 const RANGE_BAR_SIZES = ["sm", "md"] as const;
@@ -47,4 +67,5 @@ export {
 	type RangeBarVariants,
 	rangeBarBoundsVariants,
 	rangeBarMarkerVariants,
+	rangeBarMissingVariants,
 };

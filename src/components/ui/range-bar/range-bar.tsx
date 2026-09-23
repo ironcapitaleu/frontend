@@ -6,6 +6,7 @@ import {
 	type RangeBarVariants,
 	rangeBarBoundsVariants,
 	rangeBarMarkerVariants,
+	rangeBarMissingVariants,
 } from "./variants";
 
 interface RangeBarProps
@@ -60,7 +61,7 @@ function RangeBar({
 			className={cn("flex min-w-0 flex-col gap-1", className)}
 			{...props}
 		>
-			{position ? (
+			{position !== null ? (
 				<meter
 					className="sr-only"
 					min={position.low}
@@ -74,7 +75,7 @@ function RangeBar({
 				<span className="sr-only">{`${ariaLabel}: no data`}</span>
 			)}
 			<div className="relative h-3" aria-hidden="true">
-				{position ? (
+				{position !== null ? (
 					<>
 						<div className="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-border" />
 						<div
@@ -86,7 +87,7 @@ function RangeBar({
 				) : (
 					<span
 						data-slot="range-bar-missing"
-						className="absolute inset-0 flex items-center justify-center font-monospace text-sm leading-none text-muted-foreground/60"
+						className={rangeBarMissingVariants({ size })}
 					>
 						—
 					</span>
