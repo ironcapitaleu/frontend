@@ -26,6 +26,9 @@ const meta: Meta<typeof CompanyPreview> = {
 	tags: ["autodocs"],
 	parameters: {
 		layout: "fullscreen",
+		// Every story mounts the sheet open, so the docs page gives each one its
+		// own frame. Inline, the panels stack and lock the page scroll.
+		docs: { story: { inline: false, iframeHeight: 600 } },
 	},
 	decorators: [
 		(Story) => (

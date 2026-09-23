@@ -7,6 +7,7 @@ import {
 	SHEET_SIDES,
 	Sheet,
 	SheetBody,
+	SheetClose,
 	SheetContent,
 	SheetDescription,
 	SheetTitle,
@@ -27,7 +28,6 @@ type SheetStoryArgs = ComponentProps<typeof SheetContent> & {
  * and it casts the one shadow a floating surface earns. Below the `sm`
  * breakpoint a side panel fills the screen width.
  */
-
 const meta: Meta<SheetStoryArgs> = {
 	title: "Components/Sheet",
 	component: SheetContent,
@@ -102,6 +102,56 @@ export const WithoutCloseButton: Story = {
 /** A phone width. The right panel fills the screen width. */
 export const Mobile: Story = {
 	globals: { viewport: { value: "mobile1", isRotated: false } },
+};
+
+/**
+ * A footer action built on `SheetClose`. A button that dismisses the sheet
+ * closes it the same way as Escape, the backdrop, or the corner button.
+ */
+export const WithFooterActions: Story = {
+	args: { defaultOpen: false },
+	render: ({ defaultOpen, ...args }) => (
+		<Sheet defaultOpen={defaultOpen}>
+			<SheetTrigger
+				render={<Button variant="outline" className="btn-tactile" />}
+			>
+				Open sheet
+			</SheetTrigger>
+			<SheetContent {...args}>
+				<SheetBody className="flex flex-col gap-2 pr-16">
+					<SheetTitle className="font-classic text-4xl">Bayer AG</SheetTitle>
+					<SheetDescription>
+						A preview of the company, with the page still in view.
+					</SheetDescription>
+				</SheetBody>
+				<div className="border-t border-border p-4">
+					<SheetClose
+						render={<Button variant="outline" className="btn-tactile w-full" />}
+					>
+						Cancel
+					</SheetClose>
+				</div>
+			</SheetContent>
+		</Sheet>
+	),
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const page = within(canvasElement.ownerDocument.body);
+
+		const expectedResult = null;
+
+		await userEvent.click(canvas.getByRole("button", { name: "Open sheet" }));
+		const dialog = await page.findByRole("dialog", { name: "Bayer AG" });
+		await userEvent.click(
+			within(dialog).getByRole("button", { name: "Cancel" }),
+		);
+		await waitFor(() => {
+			if (page.queryByRole("dialog")) throw new Error("still open");
+		});
+		const result = page.queryByRole("dialog");
+
+		await expect(result).toBe(expectedResult);
+	},
 };
 
 /** A click on the backdrop closes the sheet. */

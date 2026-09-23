@@ -10,6 +10,7 @@ import {
 	SheetDescription,
 	SheetTitle,
 } from "@/components/ui/sheet";
+import type { Assert, SameMembers } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
 	type FilterDescription,
@@ -30,8 +31,8 @@ import {
 	formatSignedPercent,
 } from "./format";
 
-/** The key figures in the preview grid, in reading order. */
-const KEY_FIGURES: readonly MetricField[] = [
+/** Every key figure, in the preview grid's reading order. */
+const KEY_FIGURES = [
 	"marketCap",
 	"peRatio",
 	"priceToFcf",
@@ -40,7 +41,13 @@ const KEY_FIGURES: readonly MetricField[] = [
 	"currentRatio",
 	"dividendYield",
 	"buybackYield",
-];
+] as const satisfies readonly MetricField[];
+
+// Fails the type check when a key figure is missing from `KEY_FIGURES`, so a
+// new metric cannot miss the preview.
+export type KeyFiguresListed = Assert<
+	SameMembers<MetricField, (typeof KEY_FIGURES)[number]>
+>;
 
 /** Props for {@link CompanyPreview}. */
 interface CompanyPreviewProps {

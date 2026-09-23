@@ -141,8 +141,8 @@ describe("CompanyPreview", () => {
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should render nothing when no stock is given", () => {
-		const { container } = render(
+	it("should render no dialog when no stock is given", () => {
+		render(
 			<CompanyPreview
 				stock={null}
 				filters={EMPTY_FILTERS}
@@ -151,9 +151,10 @@ describe("CompanyPreview", () => {
 			/>,
 		);
 
-		const expectedResult = "";
+		const expectedResult = null;
 
-		const result = container.innerHTML;
+		// The sheet portals into document.body, so the query looks there.
+		const result = screen.queryByRole("dialog");
 
 		expect(result).toBe(expectedResult);
 	});
