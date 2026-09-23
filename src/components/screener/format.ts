@@ -4,14 +4,28 @@
 /** The mark for a value the data does not have. */
 export const MISSING = "—";
 
-/** A number with a fixed count of decimals, or {@link MISSING} for `null`. */
-export function formatNumber(value: number | null, decimals = 1): string {
-	return value === null ? MISSING : value.toFixed(decimals);
+/**
+ * Rounds `value` to `decimals` places and writes a loss with a true minus
+ * (U+2212), the same sign {@link formatSignedPercent} uses. A value that rounds
+ * to zero has no sign.
+ */
+function toFixedWithMinus(value: number, decimals: number): string {
+	const rounded = Number(value.toFixed(decimals));
+	const digits = Math.abs(rounded).toFixed(decimals);
+	return rounded < 0 ? `−${digits}` : digits;
 }
 
-/** A percentage with one decimal, such as `3.1%`, or {@link MISSING}. */
+/**
+ * A number with a fixed count of decimals and a true minus for a loss, or
+ * {@link MISSING} for `null`.
+ */
+export function formatNumber(value: number | null, decimals = 1): string {
+	return value === null ? MISSING : toFixedWithMinus(value, decimals);
+}
+
+/** A percentage with one decimal, such as `3.1%` or `−1.5%`, or {@link MISSING}. */
 export function formatPercent(value: number | null): string {
-	return value === null ? MISSING : `${value.toFixed(1)}%`;
+	return value === null ? MISSING : `${toFixedWithMinus(value, 1)}%`;
 }
 
 /**

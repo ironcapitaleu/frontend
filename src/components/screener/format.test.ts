@@ -10,6 +10,22 @@ import {
 } from "./format";
 
 describe("formatNumber", () => {
+	it("should write a true minus when the number is negative", () => {
+		const expectedResult = "−3.3";
+
+		const result = formatNumber(-3.25);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should print no sign when a negative number rounds to zero", () => {
+		const expectedResult = "0.0";
+
+		const result = formatNumber(-0.04);
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should print the requested decimals when a value is present", () => {
 		const expectedResult = "0.91";
 
@@ -28,6 +44,14 @@ describe("formatNumber", () => {
 });
 
 describe("formatPercent", () => {
+	it("should write a true minus when the percentage is negative", () => {
+		const expectedResult = "−1.5%";
+
+		const result = formatPercent(-1.5);
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should append a percent sign when a value is present", () => {
 		const expectedResult = "3.1%";
 

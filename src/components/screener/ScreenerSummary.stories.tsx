@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, within } from "storybook/test";
 
 import { fakeStockScreenerResults } from "@/test/fixtures/stocks/fake-stock-screener-results";
 
@@ -36,7 +37,24 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /** A screen of the three stocks that fell last month. The 1M median is a loss. */
-export const Default: Story = {};
+export const Default: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+
+		const expectedResult = { value: "−5.0%", negative: true };
+
+		// Deviation from TESTING.md §2.2: the tone is a color class, so the
+		// median is read from its cell and its class checked directly.
+		const cell = canvas.getByText("Median 1M").parentElement as HTMLElement;
+		const value = cell.querySelector("dd") as HTMLElement;
+		const result = {
+			value: value.textContent,
+			negative: value.classList.contains("text-negative"),
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
 
 /** Every stock matches, so each cell equals its universe median. */
 export const WholeUniverse: Story = {
