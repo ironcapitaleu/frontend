@@ -41,15 +41,21 @@ export const Default: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 
-		const expectedResult = { value: "−5.0%", negative: true };
+		const expectedResult = { value: "−5.0%", tinted: true };
 
-		// Deviation from TESTING.md §2.2: the tone is a color class, so the
-		// median is read from its cell and its class checked directly.
-		const cell = canvas.getByText("Median 1M").parentElement as HTMLElement;
-		const value = cell.querySelector("dd") as HTMLElement;
+		// Deviation from TESTING.md §2.2: a median has no role of its own, so
+		// it is read from the first `dd` beside its label.
+		const median = (label: string) =>
+			(canvas.getByText(label).parentElement as HTMLElement).querySelector(
+				"dd",
+			) as HTMLElement;
+		const loss = median("Median 1M");
 		const result = {
-			value: value.textContent,
-			negative: value.classList.contains("text-negative"),
+			value: loss.textContent,
+			// The loss paints in a different color from a neutral median.
+			tinted:
+				getComputedStyle(loss).color !==
+				getComputedStyle(median("Median P/E")).color,
 		};
 
 		await expect(result).toEqual(expectedResult);
@@ -69,4 +75,14 @@ export const Empty: Story = {
 /** At a phone width the strip wraps into two columns of two cells. */
 export const Mobile: Story = {
 	globals: { viewport: { value: "mobile1", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const expectedResult = 2;
+
+		// Deviation from TESTING.md §2.2: the column count is layout, so it is
+		// read from the grid's computed style in the browser.
+		const grid = canvasElement.querySelector("dl") as HTMLElement;
+		const result = getComputedStyle(grid).gridTemplateColumns.split(" ").length;
+
+		await expect(result).toBe(expectedResult);
+	},
 };

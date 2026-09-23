@@ -34,9 +34,8 @@ export function formatPercent(value: number | null): string {
  */
 export function formatSignedPercent(value: number | null): string {
 	if (value === null) return MISSING;
-	const rounded = Number(value.toFixed(1));
-	const sign = rounded > 0 ? "+" : rounded < 0 ? "−" : "";
-	return `${sign}${Math.abs(rounded).toFixed(1)}%`;
+	const sign = Number(value.toFixed(1)) > 0 ? "+" : "";
+	return `${sign}${toFixedWithMinus(value, 1)}%`;
 }
 
 /** A price in dollars with two decimals, such as `$172.50`. */
