@@ -767,26 +767,24 @@ describe("describeActiveFilters", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should describe every criterion in rail order when all are set", () => {
-		const expectedResult: (keyof FilterState)[] = [
-			"search",
-			"country",
-			"sector",
-			"peMin",
-			"peMax",
-			"priceToFcfMax",
-			"priceToCashMax",
-			"quickRatioMin",
-			"currentRatioMin",
-			"dividendYieldMin",
-			"buybackYieldMin",
-			"downLastMonth",
-			"nearFiftyTwoWeekLow",
+	it("should pair every criterion with its label and value in rail order when all are set", () => {
+		const expectedResult = [
+			{ field: "search", label: "Search", value: "acme" },
+			{ field: "country", label: "Country", value: "DE" },
+			{ field: "sector", label: "Sector", value: "Energy" },
+			{ field: "peMin", label: "P/E", value: "≥ 5" },
+			{ field: "peMax", label: "P/E", value: "≤ 20" },
+			{ field: "priceToFcfMax", label: "P/FCF", value: "≤ 12" },
+			{ field: "priceToCashMax", label: "P/Cash", value: "≤ 10" },
+			{ field: "quickRatioMin", label: "Quick ratio", value: "≥ 1" },
+			{ field: "currentRatioMin", label: "Current ratio", value: "≥ 1.5" },
+			{ field: "dividendYieldMin", label: "Dividend yield", value: "≥ 3%" },
+			{ field: "buybackYieldMin", label: "Buyback yield", value: "≥ 2%" },
+			{ field: "downLastMonth", label: "1M change", value: "≤ −4%" },
+			{ field: "nearFiftyTwoWeekLow", label: "Near 52-week low", value: "" },
 		];
 
-		const result = describeActiveFilters(ALL_CRITERIA).map(
-			(entry) => entry.field,
-		);
+		const result = describeActiveFilters(ALL_CRITERIA);
 
 		expect(result).toEqual(expectedResult);
 	});
