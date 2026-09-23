@@ -38,6 +38,8 @@ const meta: Meta<typeof ScreenerTable> = {
 	argTypes: {
 		stocks: { control: { disable: true } },
 		sortConfig: { control: { disable: true } },
+		// The render wrapper reads it once on mount, so a control does nothing.
+		selectedSymbol: { control: { disable: true } },
 		onSort: { control: { disable: true } },
 		onSelect: { control: { disable: true } },
 		className: { control: { disable: true } },
