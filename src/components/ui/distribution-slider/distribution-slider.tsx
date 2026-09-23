@@ -135,7 +135,7 @@ function DistributionSlider({
 					"py-1 [&_[data-slot=slider-thumb]]:size-3.5 [&_[data-slot=slider-thumb]]:shadow-none",
 					isActive
 						? "[&_[data-slot=slider-thumb]]:border-foreground [&_[data-slot=slider-track][data-fill=start]_[data-slot=slider-indicator]]:bg-foreground [&_[data-slot=slider-track][data-fill=end]]:bg-foreground"
-						: "[&_[data-slot=slider-thumb]]:border-muted-foreground [&_[data-slot=slider-track][data-fill=start]]:bg-input [&_[data-slot=slider-track][data-fill=end]]:bg-input [&_[data-slot=slider-indicator]]:bg-transparent",
+						: "[&_[data-slot=slider-thumb]]:border-muted-foreground [&_[data-slot=slider-track][data-fill=start]]:bg-input [&_[data-slot=slider-track][data-fill=end]]:bg-input [&_[data-slot=slider-indicator]]:bg-none [&_[data-slot=slider-indicator]]:bg-transparent",
 				)}
 				min={min}
 				max={max}

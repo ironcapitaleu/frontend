@@ -156,7 +156,7 @@ export const LowerBound: Story = {
 /**
  * A lower bound in the dark theme. The side below the thumb is covered with
  * the `input` fill as an opaque layer, since the dark `--input` is translucent
- * and would let the filled track show through.
+ * and a plain `bg-input` cover lets the filled track show through.
  */
 export const LowerBoundDark: Story = {
 	...LowerBound,
