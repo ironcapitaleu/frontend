@@ -1,3 +1,4 @@
+import type { Assert, SameMembers } from "@/lib/types";
 import { cva, type VariantProps } from "class-variance-authority";
 
 export const buttonVariants = cva(
@@ -69,16 +70,9 @@ export const BUTTON_VARIANTS = [
 type ButtonVariant = NonNullable<
 	VariantProps<typeof buttonVariants>["variant"]
 >;
-type SameMembers<A, B> = [A] extends [B]
-	? [B] extends [A]
-		? true
-		: false
-	: false;
-const variantsListed: SameMembers<
-	ButtonVariant,
-	(typeof BUTTON_VARIANTS)[number]
-> = true;
-void variantsListed;
+export type VariantsListed = Assert<
+	SameMembers<ButtonVariant, (typeof BUTTON_VARIANTS)[number]>
+>;
 
 /** A constant containing all sizes available for buttons with text content (non-icon buttons). */
 export const BUTTON_TEXT_SIZES = ["xs", "sm", "default", "lg"] as const;

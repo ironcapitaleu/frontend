@@ -36,8 +36,10 @@ function PaginationItem({ ...props }: React.ComponentProps<"li">) {
 	return <li data-slot="pagination-item" {...props} />;
 }
 
+// `href` is required: an anchor without one has no link role.
 type PaginationLinkProps = {
 	isActive?: boolean;
+	href: string;
 } & Pick<React.ComponentProps<typeof Button>, "size"> &
 	React.ComponentProps<"a">;
 

@@ -13,6 +13,11 @@ import {
 	SheetTrigger,
 } from ".";
 
+// The panel's props, plus whether the story opens the sheet on mount.
+type SheetStoryArgs = ComponentProps<typeof SheetContent> & {
+	defaultOpen?: boolean;
+};
+
 /**
  * A `Sheet` slides a panel in from an edge over a dimmed page. It is a modal
  * dialog built on base-ui: focus moves into the panel and stays there, and
@@ -22,10 +27,6 @@ import {
  * and it casts the one shadow a floating surface earns. Below the `sm`
  * breakpoint a side panel fills the screen width.
  */
-/** The panel's props, plus whether the story opens the sheet on mount. */
-type SheetStoryArgs = ComponentProps<typeof SheetContent> & {
-	defaultOpen?: boolean;
-};
 
 const meta: Meta<SheetStoryArgs> = {
 	title: "Components/Sheet",
@@ -33,6 +34,9 @@ const meta: Meta<SheetStoryArgs> = {
 	tags: ["autodocs"],
 	parameters: {
 		layout: "centered",
+		// Every story mounts open, so the docs page gives each one its own
+		// frame. Inline, the modal sheets stack and lock the page scroll.
+		docs: { story: { inline: false, iframeHeight: 480 } },
 	},
 	argTypes: {
 		side: {

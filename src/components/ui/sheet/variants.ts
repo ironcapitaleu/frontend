@@ -1,3 +1,4 @@
+import type { Assert, SameMembers } from "@/lib/types";
 import { cva, type VariantProps } from "class-variance-authority";
 
 /**
@@ -28,4 +29,18 @@ type SheetContentVariants = VariantProps<typeof sheetContentVariants>;
 /** A constant listing every edge a `Sheet` can enter from. */
 const SHEET_SIDES = ["right", "left", "bottom"] as const;
 
-export { SHEET_SIDES, type SheetContentVariants, sheetContentVariants };
+// Fails the type check when an edge exists in `sheetContentVariants` and not
+// in `SHEET_SIDES`, or the other way round, so the two lists cannot drift.
+type SheetSidesListed = Assert<
+	SameMembers<
+		NonNullable<SheetContentVariants["side"]>,
+		(typeof SHEET_SIDES)[number]
+	>
+>;
+
+export {
+	SHEET_SIDES,
+	type SheetContentVariants,
+	type SheetSidesListed,
+	sheetContentVariants,
+};
