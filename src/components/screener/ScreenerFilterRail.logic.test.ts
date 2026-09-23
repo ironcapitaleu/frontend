@@ -244,6 +244,20 @@ describe("metricBounds", () => {
 	});
 });
 
+describe("RAIL_GROUPS", () => {
+	it("should name every metric once when the label is a metric's identity", () => {
+		const labels = RAIL_GROUPS.flatMap((group) => group.metrics).map(
+			(metric) => metric.label,
+		);
+
+		const expectedResult = labels.length;
+
+		const result = new Set(labels).size;
+
+		expect(result).toBe(expectedResult);
+	});
+});
+
 describe("distinctValues", () => {
 	it("should list each country once in alphabetical order", () => {
 		const expectedResult = ["DE", "US"];

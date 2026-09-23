@@ -32,6 +32,7 @@ type BoundField = Exclude<
 
 /** One metric in the rail: which data it charts and which filters it sets. */
 export interface RailMetric {
+	/** The metric's name, and its identity: no two metrics share a label. */
 	readonly label: string;
 	readonly stockField: NumericStockField;
 	/** The filter the lower thumb sets, or `null` when the metric has no lower bound. */

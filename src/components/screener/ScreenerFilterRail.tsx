@@ -77,8 +77,9 @@ function ScreenerFilterRail({
 	// from a wide bound does not move the track under the pointer. It also
 	// stays wide after that bound is cleared, until the rail unmounts. The ref
 	// is written during render, which is safe only because `widenTrack` is a
-	// join: a render React repeats or discards cannot change the result. A
-	// metric's label is its identity here and in the React key.
+	// join: a repeated render cannot change the result, and a discarded one
+	// leaves at most a wider track. A metric's label is its identity here and
+	// in the React key.
 	const heldTracks = useRef(new Map<string, SliderRange>());
 	const trackFor = (metric: RailMetric): SliderRange => {
 		const track = widenTrack(

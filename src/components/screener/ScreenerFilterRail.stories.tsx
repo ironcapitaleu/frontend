@@ -95,7 +95,10 @@ export const ReportsChanges: Story = {
 	},
 };
 
-/** "Reset all" clears every criterion and hands back the empty state. */
+/**
+ * "Reset all" clears every criterion the rail shows. The masthead owns the
+ * search, so it survives.
+ */
 export const ResetsAll: Story = {
 	args: {
 		filters: { ...STRATEGY_PRESETS[0].filters, search: "AAPL" },
@@ -128,17 +131,16 @@ export const WideBound: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		const thumb = canvas.getByRole("slider", { name: "1M change maximum" });
-		const slider = within(
-			thumb.closest('[data-slot="distribution-slider"]') as HTMLElement,
-		);
+		const readout = canvas.getByRole("status", { name: "1M change" });
 
 		const expectedResult = { trackStart: "-20", readout: "≤ -19.5%" };
 
 		thumb.focus();
 		await userEvent.keyboard("{ArrowRight}");
 		const result = {
+			// The track keeps the end it widened to, so it cannot move under a drag.
 			trackStart: thumb.getAttribute("min"),
-			readout: slider.getByRole("status").textContent,
+			readout: readout.textContent,
 		};
 
 		await expect(result).toEqual(expectedResult);
