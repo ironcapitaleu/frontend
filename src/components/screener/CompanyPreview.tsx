@@ -164,7 +164,7 @@ function CompanyPreview({
 											stock[field] === null && "text-muted-foreground/60",
 										)}
 									>
-										{formatMetric(stock, field)}
+										{formatMetric(stock[field], field)}
 									</dd>
 								</div>
 							))}
