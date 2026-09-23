@@ -1,4 +1,9 @@
-export { RangeBar, type RangeBarProps, rangeBarPosition } from "./range-bar";
+export {
+	RangeBar,
+	type RangeBarPosition,
+	type RangeBarProps,
+	rangeBarPosition,
+} from "./range-bar";
 
 export {
 	RANGE_BAR_SIZES,

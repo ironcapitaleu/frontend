@@ -109,11 +109,22 @@ export const Clamped: Story = {
 };
 
 /**
- * A missing price (`NaN`). The bar draws no marker, and a screen reader hears
- * "52-week range: no data" instead of a position.
+ * A missing price (`null`). The bar draws a dimmed dash in place of the
+ * track, and a screen reader hears "52-week range: no data" instead of a
+ * position.
  */
 export const MissingValue: Story = {
-	args: { value: Number.NaN },
+	args: { value: null },
+};
+
+/** A range that crosses zero, as a 1M change does. */
+export const AcrossZero: Story = {
+	args: {
+		value: -2.5,
+		low: -5,
+		high: 5,
+		formatBound: (bound: number) => `${bound.toFixed(1)}%`,
+	},
 };
 
 /**
