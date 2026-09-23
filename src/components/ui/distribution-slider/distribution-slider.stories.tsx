@@ -151,6 +151,34 @@ export const LowerBound: Story = {
 	},
 };
 
+/**
+ * A lower bound in the dark theme. The side below the thumb is covered with
+ * the `input` fill as an opaque layer, since the dark `--input` is translucent
+ * and would let the filled track show through.
+ */
+export const LowerBoundDark: Story = {
+	...LowerBound,
+	globals: { theme: "dark" },
+	play: async ({ canvasElement }) => {
+		const expectedResult = 255;
+
+		// Deviation from TESTING.md §2.2: the rejected side is purely visual, so
+		// no accessible query reaches it. A canvas pixel reads the alpha of its
+		// painted background color.
+		const indicator = canvasElement.querySelector(
+			'[data-slot="slider-indicator"]',
+		) as HTMLElement;
+		const context = document
+			.createElement("canvas")
+			.getContext("2d") as CanvasRenderingContext2D;
+		context.fillStyle = getComputedStyle(indicator).backgroundColor;
+		context.fillRect(0, 0, 1, 1);
+		const result = context.getImageData(0, 0, 1, 1).data[3];
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
 /** Both thumbs moved, so the readout shows the band between them. */
 export const TwoSided: Story = {
 	args: { value: [5, 15] },
