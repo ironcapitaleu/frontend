@@ -2,12 +2,18 @@ import { describe, expect, it } from "vitest";
 
 import {
 	EMPTY_FILTERS,
+	type FilterDescription,
 	type FilterState,
 	type Stock,
+	STRATEGY_PRESETS,
+	applyPreset,
 	countActiveFilters,
+	describeActiveFilters,
 	filterStocks,
+	findActivePreset,
 	isActiveNumericFilter,
 	isNearFiftyTwoWeekLow,
+	median,
 	sortStocks,
 } from "./StockScreener.logic";
 
@@ -572,4 +578,257 @@ describe("countActiveFilters", () => {
 			expect(result).toBe(expectedResult);
 		},
 	);
+});
+
+describe("median", () => {
+	it("should return the middle value when the count is odd", () => {
+		const values = [9, 1, 5];
+
+		const expectedResult = 5;
+
+		const result = median(values);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should return the mean of the two middle values when the count is even", () => {
+		const values = [4, 1, 3, 2];
+
+		const expectedResult = 2.5;
+
+		const result = median(values);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should ignore null entries when some values are missing", () => {
+		const values = [null, 7, null, 3, 5];
+
+		const expectedResult = 5;
+
+		const result = median(values);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should ignore NaN entries when a value is not a number", () => {
+		const values = [Number.NaN, 4, 2];
+
+		const expectedResult = 3;
+
+		const result = median(values);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should return null when no number is present", () => {
+		const values = [null, null];
+
+		const expectedResult = null;
+
+		const result = median(values);
+
+		expect(result).toBe(expectedResult);
+	});
+});
+
+function presetById(id: string) {
+	const preset = STRATEGY_PRESETS.find((candidate) => candidate.id === id);
+	if (!preset) throw new Error(`No preset with id ${id}`);
+	return preset;
+}
+
+const ALL_CRITERIA: FilterState = {
+	search: "acme",
+	country: "DE",
+	sector: "Energy",
+	peMin: "5",
+	peMax: "20",
+	priceToCashMax: "10",
+	priceToFcfMax: "12",
+	quickRatioMin: "1",
+	currentRatioMin: "1.5",
+	buybackYieldMin: "2",
+	dividendYieldMin: "3",
+	nearFiftyTwoWeekLow: true,
+	downLastMonth: "4",
+};
+
+describe("STRATEGY_PRESETS", () => {
+	it("should define four presets with unique ids", () => {
+		const expectedResult = 4;
+
+		const result = new Set(STRATEGY_PRESETS.map((preset) => preset.id)).size;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should label the presets in reading order when the page lists them", () => {
+		const expectedResult = [
+			"Deep value",
+			"Income at a fair price",
+			"Cash-rich",
+			"Beaten down",
+		];
+
+		const result = STRATEGY_PRESETS.map((preset) => preset.label);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it.each([
+		["deep-value", { peMax: "12", priceToFcfMax: "12" }],
+		["fair-price-income", { peMax: "20", dividendYieldMin: "2" }],
+		["cash-rich", { quickRatioMin: "1", currentRatioMin: "1.5" }],
+		["beaten-down", { nearFiftyTwoWeekLow: true, downLastMonth: "3" }],
+	] as const)(
+		"should screen for its own bounds when the %s preset is read",
+		(id, bounds) => {
+			const expectedResult = withFilters(bounds);
+
+			const result = presetById(id).filters;
+
+			expect(result).toEqual(expectedResult);
+		},
+	);
+});
+
+describe("applyPreset", () => {
+	it("should return a copy when a preset is applied", () => {
+		const preset = presetById("deep-value");
+
+		const expectedResult = false;
+
+		const result = applyPreset(preset) === preset.filters;
+
+		expect(result).toBe(expectedResult);
+	});
+});
+
+describe("findActivePreset", () => {
+	it("should return the preset when the filters equal its filters", () => {
+		const preset = presetById("fair-price-income");
+
+		const expectedResult = preset.id;
+
+		const result = findActivePreset(applyPreset(preset))?.id;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should return null when the filters differ from every preset", () => {
+		const filters = withFilters({
+			...presetById("fair-price-income").filters,
+			sector: "Energy",
+		});
+
+		const expectedResult = null;
+
+		const result = findActivePreset(filters);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should return null when no filter is active", () => {
+		const expectedResult = null;
+
+		const result = findActivePreset(EMPTY_FILTERS);
+
+		expect(result).toBe(expectedResult);
+	});
+});
+
+describe("describeActiveFilters", () => {
+	it("should return no entries when no filter is active", () => {
+		const expectedResult: never[] = [];
+
+		const result = describeActiveFilters(EMPTY_FILTERS);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should word each active criterion in rail order when several are set", () => {
+		const filters = withFilters({
+			country: "DE",
+			peMax: "20",
+			dividendYieldMin: "2.5",
+			downLastMonth: "3",
+			nearFiftyTwoWeekLow: true,
+		});
+
+		const expectedResult = [
+			{ field: "country", label: "Country", value: "DE" },
+			{ field: "peMax", label: "P/E", value: "≤ 20" },
+			{ field: "dividendYieldMin", label: "Dividend yield", value: "≥ 2.5%" },
+			{ field: "downLastMonth", label: "1M change", value: "≤ −3%" },
+			{ field: "nearFiftyTwoWeekLow", label: "Near 52-week low", value: "" },
+		];
+
+		const result = describeActiveFilters(filters);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should skip a numeric criterion when its value does not parse", () => {
+		const filters = withFilters({ peMax: "abc", quickRatioMin: "1" });
+
+		const expectedResult = [
+			{ field: "quickRatioMin", label: "Quick ratio", value: "≥ 1" },
+		];
+
+		const result = describeActiveFilters(filters);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should pair every criterion with its label and value in rail order when all are set", () => {
+		const expectedResult: FilterDescription[] = [
+			{ field: "search", label: "Search", value: "acme" },
+			{ field: "country", label: "Country", value: "DE" },
+			{ field: "sector", label: "Sector", value: "Energy" },
+			{ field: "peMin", label: "P/E", value: "≥ 5" },
+			{ field: "peMax", label: "P/E", value: "≤ 20" },
+			{ field: "priceToFcfMax", label: "P/FCF", value: "≤ 12" },
+			{ field: "priceToCashMax", label: "P/Cash", value: "≤ 10" },
+			{ field: "quickRatioMin", label: "Quick ratio", value: "≥ 1" },
+			{ field: "currentRatioMin", label: "Current ratio", value: "≥ 1.5" },
+			{ field: "dividendYieldMin", label: "Dividend yield", value: "≥ 3%" },
+			{ field: "buybackYieldMin", label: "Buyback yield", value: "≥ 2%" },
+			{ field: "downLastMonth", label: "1M change", value: "≤ −4%" },
+			{ field: "nearFiftyTwoWeekLow", label: "Near 52-week low", value: "" },
+		];
+
+		const result = describeActiveFilters(ALL_CRITERIA);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should describe as many criteria as the badge counts when all are set", () => {
+		const expectedResult = countActiveFilters(ALL_CRITERIA);
+
+		const result = describeActiveFilters(ALL_CRITERIA).length;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should sign the 1M bound once when the drop threshold is negative or zero", () => {
+		const expectedResult = ["≤ +3%", "≤ 0%"];
+
+		const result = [
+			describeActiveFilters(withFilters({ downLastMonth: "-3" }))[0].value,
+			describeActiveFilters(withFilters({ downLastMonth: "0" }))[0].value,
+		];
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should describe both P/E bounds when a two-sided range is set", () => {
+		const filters = withFilters({ peMin: "5", peMax: "15" });
+
+		const expectedResult = ["≥ 5", "≤ 15"];
+
+		const result = describeActiveFilters(filters).map((entry) => entry.value);
+
+		expect(result).toEqual(expectedResult);
+	});
 });
