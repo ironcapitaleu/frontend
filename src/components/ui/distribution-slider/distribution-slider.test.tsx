@@ -107,6 +107,22 @@ describe("selectBins", () => {
 
 		expect(result).toBe(expectedResult);
 	});
+
+	it("should mark the bin that ends on the thumb when its edge sums a hair past it", () => {
+		const expectedResult = 12;
+
+		const result = selectBins(24, [0, 20], 0, 40).filter(Boolean).length;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should mark no bin when the range covers the whole track", () => {
+		const expectedResult = 0;
+
+		const result = selectBins(18, [0, 40], 0, 40).filter(Boolean).length;
+
+		expect(result).toBe(expectedResult);
+	});
 });
 
 describe("describeRange", () => {

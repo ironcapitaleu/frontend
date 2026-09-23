@@ -151,7 +151,6 @@ export const AccentStaysInsideTheRange: Story = {
 
 		// Deviation from TESTING.md §9: the accent is a color, and no role-based
 		// query reaches a color, so the bars are read by their data attributes.
-
 		const result = Array.from(
 			canvasElement.querySelectorAll('[data-slot="distribution-slider-bar"]'),
 			(bar) => bar.getAttribute("data-selected"),
@@ -183,5 +182,16 @@ export const NarrowRange: Story = {
 		};
 
 		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * A long-tailed universe: 200 companies near a P/E of 12 and one at 35. The
+ * lone company's bar stays visible, taller than an empty bin's mark.
+ */
+export const LongTail: Story = {
+	args: {
+		values: [...Array.from({ length: 200 }, () => 12), 35],
+		value: [0, 40],
 	},
 };

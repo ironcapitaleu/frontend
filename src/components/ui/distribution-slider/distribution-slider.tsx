@@ -65,9 +65,7 @@ function DistributionSlider({
 	const tallest = bins.reduce((highest, count) => Math.max(highest, count), 1);
 	const [lower, upper] = value;
 	const isActive = lower > min || upper < max;
-	const selected = isActive
-		? selectBins(bins.length, value, min, max)
-		: bins.map(() => false);
+	const selected = selectBins(bins.length, value, min, max);
 	const readout = describeRange(value, min, max, formatValue);
 
 	return (
@@ -110,7 +108,10 @@ function DistributionSlider({
 							selected[index] ? "bg-chart-3" : "bg-border",
 						)}
 						style={{
-							height: count === 0 ? "1px" : `${(count / tallest) * 100}%`,
+							// A bar with any company stays at least 2 px, taller than
+							// the 1 px mark of an empty bin.
+							height:
+								count === 0 ? "1px" : `max(2px, ${(count / tallest) * 100}%)`,
 						}}
 					/>
 				))}
@@ -162,7 +163,8 @@ function binValues(
  * Marks which of `binCount` equal bins lie wholly inside the selected range.
  * A bin that only overlaps the range stays unmarked, so the accent never runs
  * past a thumb. A range narrower than one bin therefore marks nothing, which
- * reads as "no bar is fully inside" and is the honest answer.
+ * reads as "no bar is fully inside" and is the honest answer. A range that
+ * covers the whole track marks nothing, because it sets no bound.
  */
 function selectBins(
 	binCount: number,
@@ -170,8 +172,12 @@ function selectBins(
 	min: number,
 	max: number,
 ): boolean[] {
+	// A range that covers the whole track sets no bound, so no bar is marked.
+	if (lower <= min && upper >= max)
+		return new Array<boolean>(binCount).fill(false);
 	const width = (max - min) / binCount;
 	// Bin edges are floating-point sums, so compare with a small tolerance.
+	// With 24 bins over 0 to 40, the edge at 20 sums to a hair above 20.
 	const tolerance = width * 1e-9;
 	return Array.from({ length: binCount }, (_unused, index) => {
 		const start = min + index * width;
