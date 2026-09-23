@@ -32,16 +32,24 @@ import {
 	STRATEGY_PRESETS,
 	type SortConfig,
 	type Stock,
+	applyPreset,
 	countActiveFilters,
 	describeActiveFilters,
 	filterStocks,
 	findActivePreset,
 	nextSortConfig,
+	railFilters,
 	sortStocks,
-} from "./StockScreener.logic";
+} from "@/components/screener/screener.logic";
 import { SAMPLE_STOCKS } from "./StockScreener.sample";
 
 /** The sort choices on a phone, where the table headers are not visible. */
+/** Names for the sortable columns that are not key figures. */
+const SORT_NAMES: Partial<Record<keyof Stock, string>> = {
+	price: "Price",
+	changePercent1M: "1M change",
+};
+
 const MOBILE_SORTS: readonly { label: string; sort: SortConfig | null }[] = [
 	{ label: "Default order", sort: null },
 	{
@@ -102,11 +110,9 @@ export default function StockScreener({
 			: filtered;
 	}, [stocks, filters, sortConfig]);
 
-	// The masthead search is not part of a strategy, so it neither breaks a
-	// preset's match nor counts on the Filters button.
-	const activePreset = findActivePreset({ ...filters, search: "" });
+	const activePreset = findActivePreset(railFilters(filters));
 	const chips = describeActiveFilters(filters);
-	const activeCount = countActiveFilters({ ...filters, search: "" });
+	const activeCount = countActiveFilters(railFilters(filters));
 	const selectedStock =
 		stocks.find((stock) => stock.symbol === selectedSymbol) ?? null;
 
@@ -164,7 +170,7 @@ export default function StockScreener({
 									aria-pressed={isActive}
 									onClick={() =>
 										setFilters((previous) => ({
-											...(isActive ? EMPTY_FILTERS : preset.filters),
+											...(isActive ? EMPTY_FILTERS : applyPreset(preset)),
 											search: previous.search,
 										}))
 									}
@@ -279,7 +285,8 @@ export default function StockScreener({
 							className="btn-tactile h-11 w-full text-lg"
 							onClick={() => setFiltersOpen(false)}
 						>
-							Show {results.length} companies
+							Show {results.length}{" "}
+							{results.length === 1 ? "company" : "companies"}
 						</Button>
 					</footer>
 				</SheetContent>
@@ -308,12 +315,6 @@ function describeSort({ field, direction }: SortConfig): string {
 			: (SORT_NAMES[field] ?? field);
 	return `${name}, ${direction === "asc" ? "lowest first" : "highest first"}`;
 }
-
-/** Names for the sortable columns that are not key figures. */
-const SORT_NAMES: Partial<Record<keyof Stock, string>> = {
-	price: "Price",
-	changePercent1M: "1M change",
-};
 
 /**
  * The sort menu for the card list. The table headers sort on wider screens.

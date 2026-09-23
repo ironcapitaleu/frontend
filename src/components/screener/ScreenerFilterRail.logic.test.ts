@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-	EMPTY_FILTERS,
-	type FilterState,
-} from "@/pages/public/StockScreener.logic";
+import { EMPTY_FILTERS, type FilterState } from "./screener.logic";
 import { fakeStockScreenerResults } from "@/test/fixtures/stocks/fake-stock-screener-results";
 
 import {

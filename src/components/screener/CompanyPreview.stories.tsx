@@ -2,10 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { MemoryRouter } from "react-router";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 
-import {
-	EMPTY_FILTERS,
-	STRATEGY_PRESETS,
-} from "@/pages/public/StockScreener.logic";
+import { EMPTY_FILTERS, STRATEGY_PRESETS } from "./screener.logic";
 import { fakeStockScreenerResults } from "@/test/fixtures/stocks/fake-stock-screener-results";
 
 import { CompanyPreview } from "./CompanyPreview";

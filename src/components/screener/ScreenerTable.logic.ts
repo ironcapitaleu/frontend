@@ -1,7 +1,7 @@
 // The results table's columns and their groups. Kept apart from the
 // component so the column data tests on its own.
 
-import type { Stock } from "@/pages/public/StockScreener.logic";
+import type { Stock } from "./screener.logic";
 
 import {
 	CHANGE_TONE_CLASS,

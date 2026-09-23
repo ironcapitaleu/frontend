@@ -1,7 +1,7 @@
 // Chooses the key figures a result card shows and which one carries the sort
 // cue. Kept apart from the component so the choice tests on its own.
 
-import type { Stock } from "@/pages/public/StockScreener.logic";
+import type { Stock } from "./screener.logic";
 
 import { METRICS, type MetricField } from "./format";
 

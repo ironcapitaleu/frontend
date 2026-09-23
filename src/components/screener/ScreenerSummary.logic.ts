@@ -1,7 +1,7 @@
 // Builds the summary strip's cells from the result set and the universe. Kept
 // pure so the medians test apart from the render.
 
-import { type Stock, median } from "@/pages/public/StockScreener.logic";
+import { type Stock, median } from "./screener.logic";
 
 import {
 	type ChangeTone,

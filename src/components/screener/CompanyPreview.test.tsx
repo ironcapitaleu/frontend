@@ -1,10 +1,7 @@
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import {
-	EMPTY_FILTERS,
-	describeActiveFilters,
-} from "@/pages/public/StockScreener.logic";
+import { EMPTY_FILTERS, describeActiveFilters } from "./screener.logic";
 import { fakeStockScreenerResults } from "@/test/fixtures/stocks/fake-stock-screener-results";
 import { render, screen } from "@/test/render";
 

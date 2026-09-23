@@ -16,7 +16,7 @@ import {
 	median,
 	nextSortConfig,
 	sortStocks,
-} from "./StockScreener.logic";
+} from "./screener.logic";
 
 function makeStock(symbol: string, overrides: Partial<Stock> = {}): Stock {
 	return {

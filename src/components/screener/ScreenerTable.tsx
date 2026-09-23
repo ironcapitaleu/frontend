@@ -11,7 +11,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import type { SortConfig, Stock } from "@/pages/public/StockScreener.logic";
+import type { SortConfig, Stock } from "./screener.logic";
 
 import {
 	COLUMN_COUNT,

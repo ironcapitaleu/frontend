@@ -45,18 +45,20 @@ describe("StockScreener", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should show the empty-state message when no row matches the search", async () => {
+	it("should show the empty-state message in the table and the card list when no row matches the search", async () => {
 		const user = userEvent.setup();
 		render(<StockScreener stocks={fakeStockScreenerResults} />);
 
-		const expectedResult = true;
+		// Both layouts render in jsdom, so each one carries the message.
+		const expectedResult = 2;
 
 		await user.type(
 			screen.getByRole("searchbox", { name: "Search by ticker or company" }),
 			"ZZZZ",
 		);
-		const result =
-			screen.queryAllByText("No companies match these filters.").length > 0;
+		const result = screen.queryAllByText(
+			"No companies match these filters.",
+		).length;
 
 		expect(result).toBe(expectedResult);
 	});

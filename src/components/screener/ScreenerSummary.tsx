@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import type * as React from "react";
 
 import { cn } from "@/lib/utils";
-import type { Stock } from "@/pages/public/StockScreener.logic";
+import type { Stock } from "./screener.logic";
 
 import { buildSummaryCells } from "./ScreenerSummary.logic";
 import { CHANGE_TONE_CLASS } from "./format";

@@ -2,7 +2,7 @@
 // exists. The page takes its data through the `stocks` prop, so tests inject
 // their own fixture and this list can change freely.
 
-import type { Stock } from "./StockScreener.logic";
+import type { Stock } from "@/components/screener/screener.logic";
 
 /** Twelve large companies across five countries, with sample figures. */
 export const SAMPLE_STOCKS: readonly Stock[] = [

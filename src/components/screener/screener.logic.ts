@@ -109,12 +109,12 @@ export function isActiveNumericFilter(value: string): boolean {
 }
 
 /**
- * How many filter criteria are currently active — drives the count badge on the
- * Filters button. A text criterion (`search`, `country`, `sector`) counts when
- * its string is non-empty, and `nearFiftyTwoWeekLow` counts when true. A numeric
- * criterion counts only when its string parses to a number — a non-numeric value
- * is treated as inactive (see {@link isActiveNumericFilter}), so the badge never
- * counts a filter that {@link filterStocks} would ignore.
+ * How many filter criteria are currently active. A text criterion (`search`,
+ * `country`, `sector`) counts when its string is non-empty, and
+ * `nearFiftyTwoWeekLow` counts when true. A numeric criterion counts only when
+ * its string parses to a number (see {@link isActiveNumericFilter}), so the
+ * count never includes a filter that {@link filterStocks} would ignore. The
+ * Filters button counts {@link railFilters}, which leave out the search.
  */
 export function countActiveFilters(filters: FilterState): number {
 	return [
@@ -269,6 +269,14 @@ export const STRATEGY_PRESETS: readonly StrategyPreset[] = [
 		},
 	},
 ];
+
+/**
+ * The filters a strategy and the rail own. The masthead search is not one of
+ * them, so it neither breaks a preset's match nor counts on the Filters button.
+ */
+export function railFilters(filters: FilterState): FilterState {
+	return { ...filters, search: "" };
+}
 
 /**
  * A fresh copy of the preset's filters, safe to hand to React state. The
