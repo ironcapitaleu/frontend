@@ -1,7 +1,6 @@
-import * as matchers from "@testing-library/jest-dom/matchers";
-import { expect, vi } from "vitest";
-
-expect.extend(matchers);
+// Registers the jest-dom matchers on Vitest's expect and declares their types.
+import "@testing-library/jest-dom/vitest";
+import { vi } from "vitest";
 
 // Supabase reads these at module load and throws when they are absent. Stub them
 // on `import.meta.env` so the real client (and its gateway adapter) can be

@@ -24,7 +24,8 @@ type TooltipStoryArgs = {
  */
 const meta: Meta<TooltipStoryArgs> = {
 	title: "Components/Tooltip",
-	component: Tooltip,
+	// No `component`: the args are the story's placement controls, not the
+	// props of the `Tooltip` root, and the docs table reads them from argTypes.
 	tags: ["autodocs"],
 	parameters: {
 		layout: "centered",

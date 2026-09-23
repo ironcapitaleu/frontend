@@ -31,7 +31,7 @@ export const DarkModeDecorator: Decorator = (Story) => (
 /**
  * Showcase grid for displaying all variants at once
  */
-export function VariantShowcase<T extends Record<string, unknown>>({
+export function VariantShowcase<T extends object>({
 	Component,
 	variants,
 	variantKey,
@@ -62,7 +62,7 @@ export function VariantShowcase<T extends Record<string, unknown>>({
 /**
  * Size comparison showcase
  */
-export function SizeShowcase<T extends Record<string, unknown>>({
+export function SizeShowcase<T extends object>({
 	Component,
 	sizes,
 	sizeKey,

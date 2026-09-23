@@ -15,7 +15,7 @@
 		"lint:fix": "biome lint --write",
 		"test:dev": "vitest --project unit",
 		"test:ci": "vitest run --project unit --reporter=dot --coverage",
-		"typing:check": "tsc --noEmit",
+		"typing:check": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit",
 		"security:check": "npm audit --audit-level=high",
 		"security:fix": "npm audit fix --force",
 		"storybook": "storybook dev -p 6006",
