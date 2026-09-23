@@ -312,7 +312,7 @@ export function median(values: readonly (number | null)[]): number | null {
 }
 
 /**
- * Describes each active criterion in `filters`, in the order of the new filter
+ * Describes each active criterion in `filters`, in the order of the filter
  * rail (`ScreenerFilterRail`): the universe, valuation, balance sheet,
  * shareholder yield, momentum, then the signals. The filter chips and the
  * "Why it matched" list render these entries. A numeric criterion counts only

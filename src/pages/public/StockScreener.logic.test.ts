@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
 	EMPTY_FILTERS,
+	type FilterDescription,
 	type FilterState,
 	type Stock,
 	STRATEGY_PRESETS,
@@ -704,7 +705,7 @@ describe("findActivePreset", () => {
 
 	it("should return null when the filters differ from every preset", () => {
 		const filters = withFilters({
-			...STRATEGY_PRESETS[1].filters,
+			...presetById("fair-price-income").filters,
 			sector: "Energy",
 		});
 
@@ -768,7 +769,7 @@ describe("describeActiveFilters", () => {
 	});
 
 	it("should pair every criterion with its label and value in rail order when all are set", () => {
-		const expectedResult = [
+		const expectedResult: FilterDescription[] = [
 			{ field: "search", label: "Search", value: "acme" },
 			{ field: "country", label: "Country", value: "DE" },
 			{ field: "sector", label: "Sector", value: "Energy" },
