@@ -259,7 +259,7 @@ export default function StockScreener({
 										<li key={stock.symbol}>
 											<ScreenerResultCard
 												stock={stock}
-												highlightField={highlightFor(sortConfig)}
+												highlightField={sortConfig?.field ?? null}
 												onSelect={selectStock}
 											/>
 										</li>
@@ -365,10 +365,4 @@ function MobileSortSelect({
 			</SelectContent>
 		</Select>
 	);
-}
-
-/** The card's third key figure: the sorted metric, or the dividend yield. */
-function highlightFor(sortConfig: SortConfig | null): MetricField {
-	const field = sortConfig?.field;
-	return field && field in METRICS ? (field as MetricField) : "dividendYield";
 }

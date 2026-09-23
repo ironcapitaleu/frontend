@@ -291,4 +291,28 @@ describe("StockScreener", () => {
 
 		expect(result).toBe(expectedResult);
 	});
+
+	it("should mark no card figure as sorted when the list has no sort", () => {
+		render(<StockScreener stocks={fakeStockScreenerResults} />);
+
+		const expectedResult = 0;
+
+		const result = screen.queryAllByText(", sorted").length;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should mark the sorted figure on every card when the list is sorted by it", async () => {
+		const user = userEvent.setup();
+		render(<StockScreener stocks={fakeStockScreenerResults} />);
+
+		const expectedResult = fakeStockScreenerResults.length;
+
+		await user.click(
+			within(screen.getByRole("table")).getByRole("button", { name: "P/E" }),
+		);
+		const result = screen.queryAllByText(", sorted").length;
+
+		expect(result).toBe(expectedResult);
+	});
 });
