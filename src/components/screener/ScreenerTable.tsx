@@ -14,107 +14,12 @@ import { cn } from "@/lib/utils";
 import type { SortConfig, Stock } from "@/pages/public/StockScreener.logic";
 
 import {
-	CHANGE_TONE_CLASS,
-	MISSING,
-	changeTone,
-	formatMarketCap,
-	formatNumber,
-	formatPercent,
-	formatPrice,
-	formatSignedPercent,
-} from "./format";
-
-/** A sortable number column: its header, its group, and how a cell reads. */
-export interface NumberColumn {
-	readonly field: keyof Stock;
-	readonly label: string;
-	/**
-	 * Names the column group that starts at this column. The column draws a
-	 * hairline on its left, and the group runs until the next named column.
-	 */
-	readonly group?: string;
-	readonly format: (stock: Stock) => string;
-	readonly toneOf?: (stock: Stock) => string;
-}
-
-const NUMBER_COLUMNS: readonly NumberColumn[] = [
-	{
-		field: "marketCap",
-		label: "Mkt cap",
-		group: "Valuation",
-		format: (stock) => formatMarketCap(stock.marketCap),
-	},
-	{
-		field: "peRatio",
-		label: "P/E",
-		format: (stock) => formatNumber(stock.peRatio),
-	},
-	{
-		field: "priceToFcf",
-		label: "P/FCF",
-		format: (stock) => formatNumber(stock.priceToFcf),
-	},
-	{
-		field: "priceToCash",
-		label: "P/Cash",
-		format: (stock) => formatNumber(stock.priceToCash),
-	},
-	{
-		field: "quickRatio",
-		label: "Quick",
-		group: "Balance sheet",
-		format: (stock) => formatNumber(stock.quickRatio, 2),
-	},
-	{
-		field: "currentRatio",
-		label: "Current",
-		format: (stock) => formatNumber(stock.currentRatio, 2),
-	},
-	{
-		field: "dividendYield",
-		label: "Dividend",
-		group: "Shareholder yield",
-		format: (stock) => formatPercent(stock.dividendYield),
-	},
-	{
-		field: "buybackYield",
-		label: "Buyback",
-		format: (stock) => formatPercent(stock.buybackYield),
-	},
-	{
-		field: "price",
-		label: "Price",
-		group: "Price",
-		format: (stock) => formatPrice(stock.price),
-	},
-	{
-		field: "changePercent1M",
-		label: "1M",
-		format: (stock) => formatSignedPercent(stock.changePercent1M),
-		toneOf: (stock) => CHANGE_TONE_CLASS[changeTone(stock.changePercent1M)],
-	},
-];
-
-/**
- * The group header row: a label and how many columns it spans. It derives from
- * the `group` names, so it always spans every column. The first group covers
- * the company column, and the last also covers the 52-week range.
- */
-export function columnGroups(
-	columns: readonly NumberColumn[],
-): { label: string; span: number }[] {
-	const groups = [{ label: "", span: 1 }];
-	for (const column of columns) {
-		if (column.group) groups.push({ label: column.group, span: 1 });
-		else groups[groups.length - 1].span += 1;
-	}
-	groups[groups.length - 1].span += 1;
-	return groups;
-}
-
-const COLUMN_GROUPS = columnGroups(NUMBER_COLUMNS);
-
-const COLUMN_COUNT = 2 + NUMBER_COLUMNS.length;
+	COLUMN_COUNT,
+	COLUMN_GROUPS,
+	NUMBER_COLUMNS,
+	type NumberColumn,
+} from "./ScreenerTable.logic";
+import { MISSING, formatPrice } from "./format";
 
 interface ScreenerTableProps
 	extends Omit<React.ComponentProps<"div">, "onSelect" | "children"> {
@@ -167,15 +72,17 @@ function ScreenerTable({
 					<TableRow className="hover:bg-transparent">
 						{COLUMN_GROUPS.map((group, index) => (
 							<th
-								key={group.label || "company"}
+								// biome-ignore lint/suspicious/noArrayIndexKey: the group row is positional
+								key={index}
 								colSpan={group.span}
 								scope="colgroup"
+								aria-hidden={group.label ? undefined : true}
 								className={cn(
 									"px-2 pt-2.5 text-left text-xs font-medium tracking-widest text-muted-foreground uppercase first:px-4",
 									index > 0 && "border-l border-border",
 								)}
 							>
-								{group.label || <span className="sr-only">Company</span>}
+								{group.label}
 							</th>
 						))}
 					</TableRow>
@@ -226,9 +133,8 @@ function ScreenerTable({
 									className="cursor-pointer data-[state=selected]:bg-muted/70"
 								>
 									{/* The accent mark sits on the first cell. Chrome and Safari
-								    paint no box-shadow on a row of a collapsed table. */}
+									    paint no box-shadow on a row of a collapsed table. */}
 									<TableCell
-										data-slot="screener-table-company"
 										className={cn(
 											"px-4 py-2.5",
 											isSelected &&

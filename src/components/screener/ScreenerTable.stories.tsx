@@ -80,9 +80,16 @@ export const Sorted: Story = {
 	args: { sortConfig: { field: "dividendYield", direction: "desc" } },
 };
 
-/** BETA is selected, so its row carries the accent mark on its left edge. */
+/**
+ * BETA is selected, so its row carries the accent mark on its left edge. The
+ * list is sorted by dividend yield too, and on the selected row the selection
+ * tint wins over the sorted column's tint.
+ */
 export const Selected: Story = {
-	args: { selectedSymbol: "BETA" },
+	args: {
+		selectedSymbol: "BETA",
+		sortConfig: { field: "dividendYield", direction: "desc" },
+	},
 };
 
 /** No row passes the filters. The table keeps its headers and says so. */
@@ -140,5 +147,19 @@ export const SelectsWithKeyboard: Story = {
 		};
 
 		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** A click on a number cell selects its row, not only the company button. */
+export const SelectsByRowClick: Story = {
+	play: async ({ args, canvasElement }) => {
+		const canvas = within(canvasElement);
+
+		const expectedResult = "BETA";
+
+		await userEvent.click(canvas.getByText("$200.00"));
+		const result = (args.onSelect as ReturnType<typeof fn>).mock.lastCall?.[0];
+
+		await expect(result).toBe(expectedResult);
 	},
 };
