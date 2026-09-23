@@ -14,6 +14,7 @@ import {
 	isActiveNumericFilter,
 	isNearFiftyTwoWeekLow,
 	median,
+	nextSortConfig,
 	sortStocks,
 } from "./StockScreener.logic";
 
@@ -830,5 +831,48 @@ describe("describeActiveFilters", () => {
 		const result = describeActiveFilters(filters).map((entry) => entry.value);
 
 		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("nextSortConfig", () => {
+	it("should sort ascending when the first column is activated on an unsorted table", () => {
+		const expectedResult = { field: "peRatio", direction: "asc" };
+
+		const result = nextSortConfig(null, "peRatio");
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should sort ascending when a new column is activated", () => {
+		const expectedResult = { field: "peRatio", direction: "asc" };
+
+		const result = nextSortConfig(
+			{ field: "price", direction: "desc" },
+			"peRatio",
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should sort descending when the ascending column is activated again", () => {
+		const expectedResult = { field: "peRatio", direction: "desc" };
+
+		const result = nextSortConfig(
+			{ field: "peRatio", direction: "asc" },
+			"peRatio",
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should remove the sort when the descending column is activated again", () => {
+		const expectedResult = null;
+
+		const result = nextSortConfig(
+			{ field: "peRatio", direction: "desc" },
+			"peRatio",
+		);
+
+		expect(result).toBe(expectedResult);
 	});
 });

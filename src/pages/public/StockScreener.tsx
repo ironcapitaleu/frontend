@@ -29,6 +29,7 @@ import {
 	EMPTY_FILTERS,
 	filterStocks,
 	isNearFiftyTwoWeekLow,
+	nextSortConfig,
 	sortStocks,
 	type FilterState,
 	type SortConfig,
@@ -372,11 +373,7 @@ export default function StockScreener({
 	};
 
 	const handleSort = (field: keyof Stock) => {
-		setSortConfig((prev) => {
-			if (!prev || prev.field !== field) return { field, direction: "asc" };
-			if (prev.direction === "asc") return { field, direction: "desc" };
-			return null;
-		});
+		setSortConfig((previous) => nextSortConfig(previous, field));
 	};
 
 	const results = useMemo(() => {
