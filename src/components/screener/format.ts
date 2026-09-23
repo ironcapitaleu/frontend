@@ -69,3 +69,66 @@ export const CHANGE_TONE_CLASS: Record<ChangeTone, string> = {
 	negative: "text-negative",
 	neutral: "text-muted-foreground",
 };
+
+/** The `Stock` fields a card or a preview can show as a key figure. */
+export type MetricField =
+	| "marketCap"
+	| "peRatio"
+	| "priceToFcf"
+	| "priceToCash"
+	| "quickRatio"
+	| "currentRatio"
+	| "dividendYield"
+	| "buybackYield";
+
+/**
+ * The labels and the formatter of each key figure. `label` names the figure
+ * in running layouts, such as the preview. `short` fits a dense layout, such
+ * as a table header or a phone card, and is the same word cut short.
+ */
+export const METRICS: Record<
+	MetricField,
+	{
+		readonly label: string;
+		readonly short: string;
+		readonly format: (value: number) => string;
+	}
+> = {
+	marketCap: { label: "Mkt cap", short: "Mkt cap", format: formatMarketCap },
+	peRatio: {
+		label: "P/E",
+		short: "P/E",
+		format: (value) => formatNumber(value),
+	},
+	priceToFcf: {
+		label: "P/FCF",
+		short: "P/FCF",
+		format: (value) => formatNumber(value),
+	},
+	priceToCash: {
+		label: "P/Cash",
+		short: "P/Cash",
+		format: (value) => formatNumber(value),
+	},
+	quickRatio: {
+		label: "Quick ratio",
+		short: "Quick",
+		format: (value) => formatNumber(value, 2),
+	},
+	currentRatio: {
+		label: "Current ratio",
+		short: "Current",
+		format: (value) => formatNumber(value, 2),
+	},
+	dividendYield: {
+		label: "Dividend",
+		short: "Dividend",
+		format: formatPercent,
+	},
+	buybackYield: { label: "Buyback", short: "Buyback", format: formatPercent },
+};
+
+/** Formats a key figure's value, or {@link MISSING} when it is absent. */
+export function formatMetric(value: number | null, field: MetricField): string {
+	return value === null ? MISSING : METRICS[field].format(value);
+}
