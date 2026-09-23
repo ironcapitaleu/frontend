@@ -3,29 +3,27 @@ import { Route, Routes } from "react-router";
 import { describe, expect, it } from "vitest";
 
 import { fakeStockScreenerResults } from "../../test/fixtures/stocks/fake-stock-screener-results";
-import { render, screen, within } from "../../test/render";
+import { render, screen, waitFor, within } from "../../test/render";
 import StockScreener from "./StockScreener";
 
-/** The toolbar count, read from the "N result(s)" summary the user sees. */
+/** The result count the reader sees, for example "5 of 5 companies". */
 function resultCount(): string {
-	return screen.getByText(/^\d+ results?$/).textContent ?? "";
+	return screen.getByText(/of \d+ companies/).parentElement?.textContent ?? "";
 }
 
-/** Which fixture symbols are currently rendered as rows, keyed by symbol. */
-function symbolPresence(): Record<string, boolean> {
-	return Object.fromEntries(
-		fakeStockScreenerResults.map((stock) => [
-			stock.symbol,
-			screen.queryByText(stock.symbol) !== null,
-		]),
-	);
+/** The symbols of the table rows, top to bottom. */
+function tableSymbols(): string[] {
+	const table = screen.getByRole("table");
+	return within(table)
+		.queryAllByRole("button", { name: /·/ })
+		.map((button) => button.querySelector("span")?.textContent ?? "");
 }
 
 describe("StockScreener", () => {
-	it("should list every injected stock as a result when no filter is applied", () => {
+	it("should count every injected stock when no filter is applied", () => {
 		render(<StockScreener stocks={fakeStockScreenerResults} />);
 
-		const expectedResult = `${fakeStockScreenerResults.length} results`;
+		const expectedResult = "5 of 5 companies";
 
 		const result = resultCount();
 
@@ -36,141 +34,136 @@ describe("StockScreener", () => {
 		const user = userEvent.setup();
 		render(<StockScreener stocks={fakeStockScreenerResults} />);
 
-		// "Beta" matches the symbol/name of exactly one fixture row.
-		const expectedResult = {
-			ALFA: false,
-			BETA: true,
-			GAMMA: false,
-			DELTA: false,
-			OMEGA: false,
-		};
+		const expectedResult = ["BETA"];
 
-		await user.click(screen.getByRole("button", { name: /filters/i }));
-		await user.type(screen.getByPlaceholderText(/symbol or name/i), "Beta");
-		const result = symbolPresence();
+		await user.type(
+			screen.getByRole("searchbox", { name: "Search by ticker or company" }),
+			"Beta",
+		);
+		const result = tableSymbols();
 
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should show the empty-state message when no row matches the search", async () => {
+	it("should show the empty-state message in the table and the card list when no row matches the search", async () => {
 		const user = userEvent.setup();
 		render(<StockScreener stocks={fakeStockScreenerResults} />);
 
-		const expectedResult = true;
+		// Both layouts render in jsdom, so each one carries the message.
+		const expectedResult = 2;
 
-		await user.click(screen.getByRole("button", { name: /filters/i }));
-		await user.type(screen.getByPlaceholderText(/symbol or name/i), "ZZZZ");
-		const result =
-			screen.queryByText(/no results match the current filters/i) !== null;
+		await user.type(
+			screen.getByRole("searchbox", { name: "Search by ticker or company" }),
+			"ZZZZ",
+		);
+		const result = screen.queryAllByText(
+			"No companies match these filters.",
+		).length;
 
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should show the active-filter count on the Filters button when one filter is applied", async () => {
+	it("should apply a strategy and mark it pressed when its button is clicked", async () => {
 		const user = userEvent.setup();
 		render(<StockScreener stocks={fakeStockScreenerResults} />);
+		const preset = screen.getByRole("button", {
+			name: "Income at a fair price",
+		});
 
-		const expectedResult = "1";
+		const expectedResult = {
+			pressed: "true",
+			count: "2 of 5 companies",
+			rows: ["BETA", "OMEGA"],
+		};
 
-		await user.click(screen.getByRole("button", { name: /filters/i }));
-		await user.type(screen.getByPlaceholderText(/symbol or name/i), "Beta");
-		const result = within(
-			screen.getByRole("button", { name: /filters/i }),
-		).getByText("1").textContent;
+		await user.click(preset);
+		const result = {
+			pressed: preset.getAttribute("aria-pressed"),
+			count: resultCount(),
+			rows: tableSymbols(),
+		};
 
-		expect(result).toBe(expectedResult);
+		expect(result).toEqual(expectedResult);
 	});
 
-	it("should reveal the Reset control when a filter is applied", async () => {
+	it("should drop one criterion when its filter chip is removed", async () => {
 		const user = userEvent.setup();
 		render(<StockScreener stocks={fakeStockScreenerResults} />);
 
-		const expectedResult = true;
+		const expectedResult = "3 of 5 companies";
 
-		await user.click(screen.getByRole("button", { name: /filters/i }));
-		await user.type(screen.getByPlaceholderText(/symbol or name/i), "Beta");
-		const result = screen.queryByRole("button", { name: /reset/i }) !== null;
-
-		expect(result).toBe(expectedResult);
-	});
-
-	it("should restore every result row when the filters are reset", async () => {
-		const user = userEvent.setup();
-		render(<StockScreener stocks={fakeStockScreenerResults} />);
-
-		const expectedResult = `${fakeStockScreenerResults.length} results`;
-
-		await user.click(screen.getByRole("button", { name: /filters/i }));
-		await user.type(screen.getByPlaceholderText(/symbol or name/i), "Beta");
-		await user.click(screen.getByRole("button", { name: /reset/i }));
+		await user.click(
+			screen.getByRole("button", { name: "Income at a fair price" }),
+		);
+		await user.click(
+			screen.getByRole("button", { name: "Remove Dividend yield filter" }),
+		);
 		const result = resultCount();
 
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should expand the filter panel when the Filters button is clicked", async () => {
+	it("should show the active-filter count on the Filters button when a strategy is applied", async () => {
 		const user = userEvent.setup();
 		render(<StockScreener stocks={fakeStockScreenerResults} />);
 
-		const expectedResult = "true";
+		const expectedResult = "Filters2";
 
-		await user.click(screen.getByRole("button", { name: /filters/i }));
-		const result = screen
-			.getByRole("button", { name: /filters/i })
-			.getAttribute("aria-expanded");
+		await user.click(
+			screen.getByRole("button", { name: "Income at a fair price" }),
+		);
+		const result = screen.getByRole("button", { name: /^Filters/ }).textContent;
 
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should keep only the rows trading near their 52-week low when the technical filter is checked", async () => {
+	it("should keep only the rows near their 52-week low when the signal is switched on", async () => {
 		const user = userEvent.setup();
 		render(<StockScreener stocks={fakeStockScreenerResults} />);
 
-		// Alfa, Gamma and Omega trade within the near-low band; Beta and Delta do not.
-		const expectedResult = {
-			ALFA: true,
-			BETA: false,
-			GAMMA: true,
-			DELTA: false,
-			OMEGA: true,
-		};
+		const expectedResult = ["ALFA", "GAMMA", "OMEGA"];
 
-		await user.click(screen.getByRole("button", { name: /filters/i }));
-		await user.click(screen.getByRole("checkbox", { name: /near 52-wk low/i }));
-		const result = symbolPresence();
+		await user.click(screen.getByRole("switch", { name: "Near 52-week low" }));
+		const result = tableSymbols();
 
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should tag a row trading near its 52-week low with a Near Low badge", async () => {
+	it("should order the rows by descending P/E when the P/E header is clicked twice", async () => {
 		const user = userEvent.setup();
 		render(<StockScreener stocks={fakeStockScreenerResults} />);
+		const header = within(screen.getByRole("table")).getByRole("button", {
+			name: "P/E",
+		});
 
-		const expectedResult = true;
+		const expectedResult = "DELTA";
 
-		await user.click(screen.getByRole("button", { name: /filters/i }));
-		await user.type(screen.getByPlaceholderText(/symbol or name/i), "Omega");
-		const result = screen.queryByText("Near Low") !== null;
+		await user.click(header);
+		await user.click(header);
+		const result = tableSymbols()[0];
 
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should order the rows by descending symbol when the Symbol header is clicked twice", async () => {
+	it("should open the company preview when a result row is selected", async () => {
 		const user = userEvent.setup();
 		render(<StockScreener stocks={fakeStockScreenerResults} />);
 
-		// Omega is the alphabetically-last fixture symbol, so it leads a descending sort.
-		const expectedResult = "OMEGA";
+		const expectedResult = "Beta Industries";
 
-		await user.click(screen.getByText("Symbol"));
-		await user.click(screen.getByText("Symbol"));
-		const firstDataRow = screen.getAllByRole("row")[1];
-		const result = within(firstDataRow).getAllByRole("cell")[0].textContent;
+		await user.click(
+			within(screen.getByRole("table")).getByRole("button", {
+				name: /^BETA/,
+			}),
+		);
+		const result = (await screen.findByRole("dialog")).querySelector(
+			"h2",
+		)?.textContent;
 
-		expect(result).toContain(expectedResult);
+		expect(result).toBe(expectedResult);
 	});
 
-	it("should navigate to the company page when a result row is clicked", async () => {
+	it("should navigate to the company page when the preview link is followed", async () => {
 		const user = userEvent.setup();
 		render(
 			<Routes>
@@ -187,8 +180,138 @@ describe("StockScreener", () => {
 
 		const expectedResult = true;
 
-		await user.click(screen.getByText("Beta Industries"));
-		const result = screen.queryByText(/company detail page/i) !== null;
+		await user.click(
+			within(screen.getByRole("table")).getByRole("button", {
+				name: /^BETA/,
+			}),
+		);
+		await user.click(
+			await screen.findByRole("link", { name: "Open company page" }),
+		);
+		const result = screen.queryByText("Company detail page") !== null;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should keep the strategy pressed when a search is typed after it", async () => {
+		const user = userEvent.setup();
+		render(<StockScreener stocks={fakeStockScreenerResults} />);
+		const preset = screen.getByRole("button", {
+			name: "Income at a fair price",
+		});
+
+		const expectedResult = "true";
+
+		await user.click(preset);
+		await user.type(
+			screen.getByRole("searchbox", { name: "Search by ticker or company" }),
+			"a",
+		);
+		const result = preset.getAttribute("aria-pressed");
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should keep the search when the active strategy is turned off", async () => {
+		const user = userEvent.setup();
+		render(<StockScreener stocks={fakeStockScreenerResults} />);
+		const preset = screen.getByRole("button", {
+			name: "Income at a fair price",
+		});
+
+		const expectedResult = "Beta";
+
+		await user.click(preset);
+		await user.type(
+			screen.getByRole("searchbox", { name: "Search by ticker or company" }),
+			"Beta",
+		);
+		await user.click(preset);
+		const result = (
+			screen.getByRole("searchbox", {
+				name: "Search by ticker or company",
+			}) as HTMLInputElement
+		).value;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should not count the search on the Filters button when only a search is typed", async () => {
+		const user = userEvent.setup();
+		render(<StockScreener stocks={fakeStockScreenerResults} />);
+
+		const expectedResult = "Filters";
+
+		await user.type(
+			screen.getByRole("searchbox", { name: "Search by ticker or company" }),
+			"Beta",
+		);
+		const result = screen.getByRole("button", { name: /^Filters/ }).textContent;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should apply a filter from the Filters sheet and close it when the reader asks for the results", async () => {
+		const user = userEvent.setup();
+		render(<StockScreener stocks={fakeStockScreenerResults} />);
+
+		const expectedResult = { dialog: null, count: "3 of 5 companies" };
+
+		await user.click(screen.getByRole("button", { name: /^Filters/ }));
+		const sheet = within(
+			await screen.findByRole("dialog", { name: "Filters" }),
+		);
+		await user.click(sheet.getByRole("switch", { name: "Near 52-week low" }));
+		await user.click(sheet.getByRole("button", { name: "Show 3 companies" }));
+		await waitFor(() => {
+			if (screen.queryByRole("dialog")) throw new Error("still open");
+		});
+		const result = {
+			dialog: screen.queryByRole("dialog"),
+			count: resultCount(),
+		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should name a header sort in the sort menu when the menu does not list it", async () => {
+		const user = userEvent.setup();
+		render(<StockScreener stocks={fakeStockScreenerResults} />);
+
+		const expectedResult = "Quick ratio, lowest first";
+
+		await user.click(
+			within(screen.getByRole("table")).getByRole("button", { name: "Quick" }),
+		);
+		// Deviation from TESTING.md §2.2: the trigger also holds the arrow icon,
+		// so the value slot is read on its own.
+		const result = screen
+			.getByRole("combobox", { name: "Sort" })
+			.querySelector('[data-slot="select-value"]')?.textContent;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should mark no card figure as sorted when the list has no sort", () => {
+		render(<StockScreener stocks={fakeStockScreenerResults} />);
+
+		const expectedResult = 0;
+
+		const result = screen.queryAllByText(", sorted").length;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should mark the sorted figure on every card when the list is sorted by it", async () => {
+		const user = userEvent.setup();
+		render(<StockScreener stocks={fakeStockScreenerResults} />);
+
+		const expectedResult = fakeStockScreenerResults.length;
+
+		await user.click(
+			within(screen.getByRole("table")).getByRole("button", { name: "P/E" }),
+		);
+		const result = screen.queryAllByText(", sorted").length;
 
 		expect(result).toBe(expectedResult);
 	});

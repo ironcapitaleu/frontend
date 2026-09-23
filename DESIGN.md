@@ -135,9 +135,17 @@ light/dark theming keeps working.
 | `secondary` / `muted`   | Quiet surfaces and secondary text.                     |
 | `accent`                | Subtle hover/active fills.                             |
 | `destructive`           | Errors and dangerous actions (red).                    |
+| `positive` / `negative` | Gains and losses in data. Not for UI state.            |
 | `border` / `input` / `ring` | Hairlines, field borders, focus rings.             |
 | `chart-1` … `chart-5`   | Data-visualization series (blue-violet ramp).          |
 | `sidebar-*`             | Sidebar-specific surface/accent variants.              |
+
+`bg-input-opaque` paints the `input` fill as an opaque layer over the page
+background. Use it where an `input` surface sits on top of another fill, such
+as the rejected side of a slider that fills to its end. The dark `--input` is
+translucent, so plain `bg-input` there shows the fill underneath. It assumes
+the page background behind it, so on a card or popover surface it does not
+match.
 
 ### Theming
 
@@ -176,7 +184,6 @@ purposeful, never decorative for its own sake. The named utilities live in
 | `.btn-tactile`          | Buttons lift on hover and depress on active — the house feedback.   |
 | `.animate-shake-invalid`| Horizontal shake on invalid form input.                             |
 | `.animate-gradient-flow`| Flowing gradient (the `SearchBar` glow border) — the signature spark.|
-| `.filter-panel`         | `grid-template-rows` collapse/expand (the screener filter panel).   |
 | `.mobile-menu`          | `grid-template-rows` collapse for the mobile nav.                   |
 
 Follow the collapse/expand and mobile-nav conventions in AGENTS.md — animate
@@ -236,7 +243,54 @@ generates each new piece with its full file set.
 
 ---
 
-## 7. Quick reference for contributors
+## 7. The Screener
+
+> **Target state.** This section records the approved screener redesign
+> (Linear epic P-STA-8). The shipped page reaches it through the PR stack that
+> starts at STA-199. Audit the live page against this section once that stack
+> lands.
+
+The screener is the product's main working surface, so the modern pole leads.
+The masthead title is the one classical moment on the page. The company
+preview repeats it once: the company's name is its serif title, because the
+sheet speaks about one company as a whole. The reference
+mockup is the
+[screener design canvas](https://claude.ai/artifact/8YXQqfS71dsioyMn4jvXfr).
+
+The page has these regions, from top to bottom:
+
+1. **Masthead.** "The Screener" in `font-classic`, one line of muted copy, and
+   the `SearchBar`.
+2. **Strategy presets.** One row of pill buttons. The active preset is inverted
+   (`bg-foreground text-background`), not accented.
+3. **Filter rail and results.** On a desktop (1024 px and wider), a 256 px
+   filter rail sits left of the results. Below 1024 px, the rail moves into a
+   sheet behind a "Filters" button.
+4. **Results.** A count and removable filter chips, a strip of medians for the
+   result set, then the table. Below 768 px, the table becomes a list of cards.
+5. **Company preview.** A side sheet that opens on a selected row.
+
+Rules for the screener:
+
+- **The accent appears in one place.** The selected part of each filter
+  histogram uses `chart-3`. The selected row carries a thin accent mark. Nothing
+  else on the page is accented.
+- **Numbers are mono and right-aligned.** A missing value is a dimmed `—`.
+- **Gains and losses use `positive` and `negative`.** A flat value (0.0%) is
+  neutral. Never use raw Tailwind colors such as `emerald-500`. This rule is
+  documentation only for now, because the `SearchBar` gradient still uses raw
+  colors. STA-210 migrates it and adds a CI gate.
+- **Flags are outlined, not colored.** A marker such as "Near Low" uses the
+  outline badge in `foreground` ink. It stands out by its border, and the
+  accent stays reserved for the histograms.
+- **Hairlines separate, shadows float.** The table and the summary strip sit in
+  bordered frames. Only the preview sheet casts a shadow.
+- **Column groups carry meaning.** The table groups its columns under
+  Valuation, Balance sheet, Shareholder yield, and Price.
+
+---
+
+## 8. Quick reference for contributors
 
 - **Hold the dual mandate:** classical foundation, modern spark. Ask of any
   screen — does it feel _timeless AND modern, trustworthy AND elegant_? If it's

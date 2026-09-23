@@ -36,8 +36,10 @@ function PaginationItem({ ...props }: React.ComponentProps<"li">) {
 	return <li data-slot="pagination-item" {...props} />;
 }
 
+// `href` is required: an anchor without one has no link role.
 type PaginationLinkProps = {
 	isActive?: boolean;
+	href: string;
 } & Pick<React.ComponentProps<typeof Button>, "size"> &
 	React.ComponentProps<"a">;
 
@@ -52,7 +54,8 @@ function PaginationLink({
 			variant={isActive ? "outline" : "ghost"}
 			size={size}
 			className={cn(className)}
-			nativeButton={false}
+			// Leave `nativeButton` at its default. `nativeButton={false}` gives the
+			// anchor the button role, and a page link is a link.
 			render={
 				<a
 					aria-current={isActive ? "page" : undefined}

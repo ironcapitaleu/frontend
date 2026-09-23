@@ -1,4 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect } from "storybook/test";
+
+import { readSliderCover } from "../../../../.storybook/utils/sliderCover";
 
 import { Label } from "../label";
 import { Slider } from ".";
@@ -20,6 +23,12 @@ const meta: Meta<typeof Slider> = {
 		layout: "centered",
 	},
 	argTypes: {
+		fill: {
+			control: "inline-radio",
+			options: ["start", "end"],
+			description:
+				"Which side of a single thumb the track fills. A range fills between its thumbs.",
+		},
 		min: {
 			control: { type: "number" },
 			description: "Lowest number the slider can reach.",
@@ -75,6 +84,57 @@ export const Range: Story = {
 	render: (args) => (
 		<div className="w-72">
 			<Slider defaultValue={[25, 75]} {...args} />
+		</div>
+	),
+};
+
+/**
+ * A single thumb with `fill="end"`, for a lower bound such as "yield at least
+ * 3%". The track fills from the thumb to the right end, the side the bound
+ * keeps.
+ */
+export const FillsToEnd: Story = {
+	args: { fill: "end" },
+	render: (args) => (
+		<div className="w-72">
+			<Slider aria-label="Minimum yield" defaultValue={30} {...args} />
+		</div>
+	),
+};
+
+/**
+ * `FillsToEnd` in the dark theme. The dark `--input` is translucent, so the
+ * cover below the thumb is the opaque `bg-input-opaque` layer, and the filled
+ * track does not show through.
+ */
+export const FillsToEndDark: Story = {
+	...FillsToEnd,
+	globals: { theme: "dark" },
+	play: async ({ canvasElement }) => {
+		const expectedResult = { alpha: 255, tint: true };
+
+		// Deviation from TESTING.md §2.2: the rejected side is purely visual, so
+		// no accessible query reaches it. The helper reads its painted layers.
+		const result = readSliderCover(canvasElement);
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * A range whose thumbs carry their own names. `getThumbLabel` names each thumb
+ * by its index, so a screen reader tells the minimum from the maximum.
+ */
+export const NamedThumbs: Story = {
+	render: (args) => (
+		<div className="w-72">
+			<Slider
+				defaultValue={[25, 75]}
+				getThumbLabel={(index) =>
+					index === 0 ? "Weighting minimum" : "Weighting maximum"
+				}
+				{...args}
+			/>
 		</div>
 	),
 };

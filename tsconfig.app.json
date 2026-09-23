@@ -5,7 +5,7 @@
 		"useDefineForClassFields": true,
 		"lib": ["ES2022", "DOM", "DOM.Iterable"],
 		"module": "ESNext",
-		"types": ["vite/client", "@testing-library/jest-dom"],
+		"types": ["vite/client"],
 		"skipLibCheck": true,
 
 		/* Bundler mode */
@@ -30,5 +30,7 @@
 			"@/*": ["./src/*"]
 		}
 	},
-	"include": ["src"]
+	/* A bare ".storybook" entry matches only files a story imports, so the
+	   Storybook config needs explicit patterns. */
+	"include": ["src", ".storybook/**/*.ts", ".storybook/**/*.tsx"]
 }
