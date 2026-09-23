@@ -46,6 +46,20 @@ export const Default: Story = {};
 /** A phone width: the presets scroll sideways and the results are cards. */
 export const Mobile: Story = {
 	globals: { viewport: { value: "mobile1", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+
+		// The table hides below 768 px, so an accessible query finds only the
+		// card list. This also fails if the story viewport stops applying.
+		const expectedResult = { table: null, sortMenu: true };
+
+		const result = {
+			table: canvas.queryByRole("table"),
+			sortMenu: canvas.queryByRole("combobox", { name: "Sort" }) !== null,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
 };
 
 /** A tablet width: the rail waits behind the "Filters" button. */

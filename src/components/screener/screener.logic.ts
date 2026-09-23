@@ -138,7 +138,7 @@ export function countActiveFilters(filters: FilterState): number {
  * Returns the stocks matching every active criterion in `filters`, preserving
  * input order. Empty criteria are ignored, and a numeric criterion whose string
  * does not parse to a number is ignored too (see {@link isActiveNumericFilter}),
- * so a stray value can't empty the table; numeric bounds exclude rows whose
+ * so a stray value can't empty the table. Numeric bounds exclude rows whose
  * value is `null` (the metric is unavailable).
  *
  * @param stocks the universe to filter — not mutated
@@ -210,7 +210,7 @@ export function filterStocks(
 
 /**
  * Returns the stocks ordered by `field` in `direction`. Strings compare with
- * locale ordering, numbers numerically; rows whose value is `null` always sort
+ * locale ordering, numbers numerically. Rows whose value is `null` always sort
  * last, regardless of direction. Stable with respect to the input, which is not
  * mutated.
  *
@@ -226,6 +226,7 @@ export function sortStocks(
 	return [...stocks].sort((a, b) => {
 		const av = a[field];
 		const bv = b[field];
+		if (av === null && bv === null) return 0;
 		if (av === null) return 1;
 		if (bv === null) return -1;
 		if (typeof av === "string" && typeof bv === "string") {
