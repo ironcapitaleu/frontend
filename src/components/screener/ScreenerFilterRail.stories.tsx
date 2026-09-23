@@ -7,7 +7,7 @@ import {
 	EMPTY_FILTERS,
 	type FilterState,
 	STRATEGY_PRESETS,
-} from "@/pages/public/StockScreener.logic";
+} from "./screener.logic";
 import { fakeStockScreenerResults } from "@/test/fixtures/stocks/fake-stock-screener-results";
 
 import { ScreenerFilterRail } from "./ScreenerFilterRail";

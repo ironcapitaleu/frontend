@@ -17,7 +17,7 @@ import {
 	type FilterState,
 	type Stock,
 	describeActiveFilters,
-} from "@/pages/public/StockScreener.logic";
+} from "./screener.logic";
 
 import {
 	CHANGE_TONE_CLASS,

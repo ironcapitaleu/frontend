@@ -1,4 +1,4 @@
-import type { Stock } from "../../../pages/public/StockScreener.logic";
+import type { Stock } from "../../../components/screener/screener.logic";
 
 /**
  * A fixed, deliberately-shaped universe of securities for screener tests. Its

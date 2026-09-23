@@ -94,7 +94,7 @@ export const METRICS: Record<
 		readonly format: (value: number) => string;
 	}
 > = {
-	marketCap: { label: "Mkt cap", short: "Mkt cap", format: formatMarketCap },
+	marketCap: { label: "Market cap", short: "Mkt cap", format: formatMarketCap },
 	peRatio: {
 		label: "P/E",
 		short: "P/E",

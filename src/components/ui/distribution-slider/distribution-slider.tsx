@@ -47,7 +47,8 @@ interface DistributionSliderProps
  * at the ends.
  *
  * While the slider narrows the range, the bars that lie wholly inside it take
- * the `chart-3` accent. This is the one accent on the screener page
+ * the `chart-3` accent. The track and thumbs stay in neutral ink, so the
+ * histogram carries the only color. This is the one accent on the screener page
  * (DESIGN.md §7). Use a plain `Slider` when no distribution is available.
  */
 function DistributionSlider({
@@ -112,7 +113,7 @@ function DistributionSlider({
 						data-selected={selected[index] || undefined}
 						className={cn(
 							"flex-1 rounded-t-[1px] transition-colors",
-							selected[index] ? "bg-chart-3" : "bg-border",
+							selected[index] ? "bg-chart-3" : "bg-muted-foreground/25",
 						)}
 						style={{
 							// A bar with any company stays at least 2 px, taller than
@@ -127,7 +128,15 @@ function DistributionSlider({
 				aria-labelledby={labelId}
 				getThumbLabel={(index) => `${label} ${thumbName(bounds, index)}`}
 				fill={bounds === "lower" ? "end" : "start"}
-				className="py-1"
+				// Neutral ink: the filled side of the track takes `foreground` while
+				// the slider narrows the range, and nothing is filled at rest. The
+				// selectors follow `fill`, so a lower bound fills toward the end.
+				className={cn(
+					"py-1 [&_[data-slot=slider-thumb]]:size-3.5 [&_[data-slot=slider-thumb]]:shadow-none",
+					isActive
+						? "[&_[data-slot=slider-thumb]]:border-foreground [&_[data-slot=slider-track][data-fill=start]_[data-slot=slider-indicator]]:bg-foreground [&_[data-slot=slider-track][data-fill=end]]:bg-foreground [&_[data-slot=slider-track][data-fill=end]_[data-slot=slider-indicator]]:bg-input"
+						: "[&_[data-slot=slider-thumb]]:border-muted-foreground [&_[data-slot=slider-track][data-fill=start]]:bg-input [&_[data-slot=slider-track][data-fill=end]]:bg-input [&_[data-slot=slider-indicator]]:bg-transparent",
+				)}
 				min={min}
 				max={max}
 				step={step}

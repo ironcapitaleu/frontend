@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useId, useMemo, useRef } from "react";
 import type * as React from "react";
 
 import {
@@ -9,11 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
-import {
-	EMPTY_FILTERS,
-	type FilterState,
-	type Stock,
-} from "@/pages/public/StockScreener.logic";
+import { EMPTY_FILTERS, type FilterState, type Stock } from "./screener.logic";
 
 import {
 	RAIL_GROUPS,
@@ -58,6 +54,7 @@ function ScreenerFilterRail({
 	className,
 	...props
 }: ScreenerFilterRailProps) {
+	const switchId = useId();
 	const update = (patch: Partial<FilterState>) =>
 		onFiltersChange({ ...filters, ...patch });
 	// One stable array per metric, so each histogram bins the universe once
@@ -157,11 +154,11 @@ function ScreenerFilterRail({
 
 			<RailSection title="Signals">
 				<div className="flex items-center justify-between gap-3">
-					<Label htmlFor="near-52-week-low" className="text-lg font-normal">
+					<Label htmlFor={switchId} className="text-lg font-normal">
 						Near 52-week low
 					</Label>
 					<Switch
-						id="near-52-week-low"
+						id={switchId}
 						checked={filters.nearFiftyTwoWeekLow}
 						onCheckedChange={(checked) =>
 							update({ nearFiftyTwoWeekLow: checked })

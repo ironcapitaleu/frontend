@@ -10,8 +10,9 @@ import {
 	countActiveFilters,
 	type FilterState,
 	isActiveNumericFilter,
+	railFilters,
 	type Stock,
-} from "@/pages/public/StockScreener.logic";
+} from "./screener.logic";
 
 /** The `Stock` fields that hold a number the rail can chart. */
 type NumericStockField =
@@ -256,7 +257,7 @@ export function distinctValues(
  * the masthead, so it does not count here.
  */
 export function hasActiveFilters(filters: FilterState): boolean {
-	return countActiveFilters({ ...filters, search: "" }) > 0;
+	return countActiveFilters(railFilters(filters)) > 0;
 }
 
 /** The metric's lower and upper bound as numbers on the track, or `null`. */

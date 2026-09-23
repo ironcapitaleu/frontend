@@ -34,10 +34,11 @@ const DIVIDEND_YIELDS = [
  * thumbs rest at the ends.
  *
  * While the slider narrows the range, only the bars wholly inside it take the
- * `chart-3` accent. The rest stay in the quiet `border` token. A bar that the
- * range only partly covers stays quiet, so the accent never runs past a thumb.
- * It can stop up to one bar short of a thumb. This histogram is the one accent
- * on the screener page.
+ * `chart-3` accent. The rest stay in a quiet tint of `muted-foreground`, and
+ * the slider track and thumbs stay neutral. A bar that the range only partly
+ * covers stays quiet, so the accent never runs past a thumb. It can stop up to
+ * one bar short of a thumb. This histogram is the one accent on the screener
+ * page.
  *
  * The component is controlled. Each story below keeps its range in state.
  */

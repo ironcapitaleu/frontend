@@ -177,7 +177,6 @@ purposeful, never decorative for its own sake. The named utilities live in
 | `.btn-tactile`          | Buttons lift on hover and depress on active — the house feedback.   |
 | `.animate-shake-invalid`| Horizontal shake on invalid form input.                             |
 | `.animate-gradient-flow`| Flowing gradient (the `SearchBar` glow border) — the signature spark.|
-| `.filter-panel`         | `grid-template-rows` collapse/expand (the screener filter panel).   |
 | `.mobile-menu`          | `grid-template-rows` collapse for the mobile nav.                   |
 
 Follow the collapse/expand and mobile-nav conventions in AGENTS.md — animate
@@ -257,7 +256,7 @@ The page has these regions, from top to bottom:
    the `SearchBar`.
 2. **Strategy presets.** One row of pill buttons. The active preset is inverted
    (`bg-foreground text-background`), not accented.
-3. **Filter rail and results.** On a desktop (1024 px and wider), a 288 px
+3. **Filter rail and results.** On a desktop (1024 px and wider), a 256 px
    filter rail sits left of the results. Below 1024 px, the rail moves into a
    sheet behind a "Filters" button.
 4. **Results.** A count and removable filter chips, a strip of medians for the

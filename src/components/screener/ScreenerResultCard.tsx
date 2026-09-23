@@ -2,7 +2,7 @@ import type * as React from "react";
 
 import { RangeBar } from "@/components/ui/range-bar";
 import { cn } from "@/lib/utils";
-import type { Stock } from "@/pages/public/StockScreener.logic";
+import type { Stock } from "./screener.logic";
 
 import {
 	CHANGE_TONE_CLASS,
