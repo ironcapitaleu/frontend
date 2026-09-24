@@ -1,5 +1,10 @@
 import { listedFundPositions } from "./holdings";
-import { keyFigureKeys, keyFigureOf, ownershipShares } from "./metrics";
+import {
+	keyFigureKeys,
+	keyFigureOf,
+	metricInputsOf,
+	ownershipShares,
+} from "./metrics";
 import type {
 	BlockKey,
 	Claim,
@@ -376,13 +381,18 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 					)
 				: null,
 	},
-	// Card 3.3 reads each ratio now. Its inputs are the inputs of that claim.
+	// Card 3.3 draws each ratio now and each of its inputs, which it reads from
+	// the metric definition. So the block reads the inputs too, and their
+	// filings stay in the index when a ratio fails its guard.
 	ratioFormulas: {
 		tab: "valuation",
 		label: "How the Ratios Are Built",
 		company: (sections) =>
 			valuationLoaded(sections)
-				? ratioRanges(sections).map((range) => range.now)
+				? ratioRanges(sections).flatMap(({ ratio, now }) => [
+						now,
+						...metricInputsOf(ratio, sections),
+					])
 				: null,
 	},
 	// The block reads the reported inputs of `fundShare` and `fundChange` for

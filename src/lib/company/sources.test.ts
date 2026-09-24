@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { fakeCompanyReport } from "../../test/fixtures/companies/fake-company-report";
 import { LISTED_FUNDS } from "./holdings";
-import { completeSections } from "./metrics";
+import { completeSections, metricInputsOf } from "./metrics";
 import {
 	claimsOf,
 	feedsOf,
@@ -358,16 +358,53 @@ describe("figureGroupsOf", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should read each ratio now when the group of card 3.3 is built", () => {
-		const expectedResult = ratioRanges(sections).map(
-			({ now }) => claim(now).id,
-		);
+	it("should read each ratio now and its inputs when the group of card 3.3 is built", () => {
+		const expectedResult = ratioRanges(sections).flatMap(({ ratio, now }) => [
+			claim(now).id,
+			...metricInputsOf(ratio, sections).map((input) => claim(input).id),
+		]);
 
 		const result = claimsOf("ratioFormulas", "company", sections).map(
 			({ id }) => id,
 		);
 
 		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep the operating income in the group of card 3.3 when EV/EBIT fails its guard", () => {
+		const { financials } = fakeCompanyReport;
+		const { annual } = financials.income;
+		const latest = annual.periods.length - 1;
+		const lines = annual.lines.map((line) =>
+			line.key !== "operatingIncome"
+				? line
+				: {
+						...line,
+						points: line.points.map((point, index) =>
+							index === latest && point !== null
+								? { ...point, value: -50_000_000 }
+								: point,
+						),
+					},
+		);
+		const operatingLoss = completeSections({
+			...fakeCompanyReport,
+			financials: {
+				...financials,
+				income: { ...financials.income, annual: { ...annual, lines } },
+			},
+		});
+		const loss = lines.find(({ key }) => key === "operatingIncome")?.points[
+			latest
+		];
+
+		const expectedResult = true;
+
+		const result = claimsOf("ratioFormulas", "company", operatingLoss).some(
+			({ id }) => id === loss?.id,
+		);
+
+		expect(result).toBe(expectedResult);
 	});
 
 	it("should give the groups of cards 3.1 and 3.3 in order when the Valuation tab is read", () => {
