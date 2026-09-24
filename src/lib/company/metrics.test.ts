@@ -535,6 +535,29 @@ describe("evaluateMetric", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should give no enterprise value and no EV/EBIT when the latest quarter has no short-term debt line", () => {
+		const sections = sectionsWith(
+			"balance",
+			"quarterly",
+			"shortTermDebt",
+			[7],
+			null,
+		);
+
+		const expectedResult = {
+			enterpriseValue: "missingInput",
+			enterpriseValueToEbit: "missingInput",
+		};
+
+		const result = {
+			enterpriseValue: evaluateMetric("enterpriseValue", sections).kind,
+			enterpriseValueToEbit: evaluateMetric("enterpriseValueToEbit", sections)
+				.kind,
+		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should fail the guard of P/B when the latest shareholders' equity is below 0", () => {
 		const sections = sectionsWith(
 			"balance",

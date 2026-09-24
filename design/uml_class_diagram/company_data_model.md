@@ -691,11 +691,13 @@ own 13F information table. The 13F does not report the shares outstanding of
 the target company. So `Stake.sharesOutstanding` is a reported claim from the
 target company's latest 10-Q or 10-K, with the cover-page tag
 `dei:EntityCommonStockSharesOutstanding`. Its `document` is a `Filing` whose
-`filer` is the target company. `sourcesOf` groups it under that filing, and
-the Filings tab of this company never lists it. `feedsOf` gives that filing
-an entry that no row of "Filings We Read" reads. The Relationships sources
-index lists that filing under the name of its `filer`, so the reader sees that
-another company filed it.
+`filer` is the target company. `sourcesOf` groups it under that filing.
+`FilingsSection` lists every filing that a company figure cites, so it lists
+this 10-K too, as it lists the Form 4s of the insiders and the 13F-HRs of the
+funds. The row names its `filer`, and the Relationships sources index does
+too, so the reader sees that another company filed it. The peer 10-Ks behind
+a sector benchmark are the one exception: the Filings walk skips the sector
+figures, so `FilingsSection` does not list them.
 
 `FilingsSection` lists plain `Filing` values. The Filings tab gets "what this
 filing feeds" from `feedsOf` (§3), not from the port.
@@ -1249,7 +1251,13 @@ classDiagram
   - `priceToBook` is `marketCap` ÷ `shareholdersEquity @ latestQuarter`, with
     the guard `shareholdersEquity @ latestQuarter` above 0.
   - `enterpriseValue` is `marketCap` + `totalDebt` −
-    `cashAndShortTermInvestments @ latestQuarter`, with no guard.
+    `cashAndShortTermInvestments @ latestQuarter`, with no guard. When the
+    latest quarter has no `shortTermDebt` or no `longTermDebt` line,
+    `totalDebt` is `missingInput`, so `enterpriseValue` and
+    `enterpriseValueToEbit` are `missingInput` too. This is deliberate. A
+    missing line is not zero debt, and the page does not invent a figure. A
+    filer with no debt shows an enterprise value only when the adapter
+    reports a debt line of 0.
   - `enterpriseValueToEbit` is `enterpriseValue` ÷ `operatingIncome @
     fiscalYear(0)`, with the guard `operatingIncome @ fiscalYear(0)` above 0.
 
