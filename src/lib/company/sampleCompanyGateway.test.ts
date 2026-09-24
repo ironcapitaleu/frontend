@@ -5,6 +5,7 @@ import { FailedCompanyRequest, MissingCompany } from "./errors";
 import { meridianFinancials } from "./sample/financials";
 import { meridianMasthead } from "./sample/masthead";
 import { meridianOverview } from "./sample/overview";
+import { meridianRelationships } from "./sample/relationships";
 import { meridianShareholderReturns } from "./sample/shareholderReturns";
 import { MERIDIAN, MissingSampleData, tenK } from "./sample/sources";
 import { meridianValuation } from "./sample/valuation";
@@ -25,6 +26,7 @@ const SECTIONS = [
 	meridianFinancials,
 	meridianValuation,
 	meridianShareholderReturns,
+	meridianRelationships,
 ];
 const STATEMENTS = {
 	income: meridianFinancials.income,
@@ -168,6 +170,26 @@ describe("sampleCompanyGateway", () => {
 		await expect(result).rejects.toEqual(expectedResult);
 	});
 
+	it("should resolve the MRDN relationships when the ticker is MRDN", async () => {
+		const gateway = sampleCompanyGateway();
+
+		const expectedResult = meridianRelationships;
+
+		const result = await gateway.getRelationships(MRDN);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should reject the relationships with MissingCompany when the ticker is not MRDN", async () => {
+		const gateway = sampleCompanyGateway();
+
+		const expectedResult = new MissingCompany(AAPL);
+
+		const result = gateway.getRelationships(AAPL);
+
+		await expect(result).rejects.toEqual(expectedResult);
+	});
+
 	it("should resolve the masthead when the ticker is a new MRDN value parsed from lower case", async () => {
 		const gateway = sampleCompanyGateway();
 
@@ -210,7 +232,7 @@ describe("sampleCompanyGateway", () => {
 });
 
 describe("sampleCompanyGateway, sections with no sample data yet", () => {
-	const unserved = ["getRelationships", "getManagement", "getFilings"] as const;
+	const unserved = ["getManagement", "getFilings"] as const;
 
 	it("should reject each later tab section with FailedCompanyRequest when the ticker is MRDN", async () => {
 		const gateway = sampleCompanyGateway();
@@ -487,7 +509,7 @@ describe("the MRDN sample data", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should print the filing date as the period of each Form 4 when reading the insider holdings", () => {
+	it("should print the filing date as the period of each Form 4 when reading the Overview insider holdings", () => {
 		const expectedResult = [
 			"18 Jun 2026",
 			"21 Apr 2026",
@@ -497,13 +519,15 @@ describe("the MRDN sample data", () => {
 			"2 Jun 2026",
 		];
 
-		const result = everyClaim().flatMap(({ source }) =>
-			source.kind === "reported" &&
-			source.document.kind === "filing" &&
-			source.document.form === "Form 4"
-				? [source.document.periodLabel]
-				: [],
-		);
+		const result = everyClaim()
+			.filter((claim) => claim.id.startsWith("overview."))
+			.flatMap(({ source }) =>
+				source.kind === "reported" &&
+				source.document.kind === "filing" &&
+				source.document.form === "Form 4"
+					? [source.document.periodLabel]
+					: [],
+			);
 
 		expect(result).toEqual(expectedResult);
 	});
@@ -966,5 +990,141 @@ describe("the MRDN shareholder returns sample data", () => {
 		const result = Number(latestDividendDeclared?.value);
 
 		expect(result).toBeCloseTo(expectedResult, 6);
+	});
+});
+
+/** Renames the section prefix of every claim id under `value`, to compare two copies of one value. */
+function asSection(value: unknown, from: string, to: string): unknown {
+	return JSON.parse(
+		JSON.stringify(value).replaceAll(`"id":"${from}.`, `"id":"${to}.`),
+	);
+}
+
+describe("the MRDN relationships sample data", () => {
+	const { ownership, funds, stakes, subsidiaries } = meridianRelationships;
+
+	it("should equal the Overview ownership field by field when the section prefix of the ids is ignored", () => {
+		const expectedResult = asSection(
+			meridianOverview.ownership,
+			"overview",
+			"relationships",
+		);
+
+		const result = ownership;
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should add up to the institution shares when summing the shares of every fund", () => {
+		const expectedResult = ownership.institutionShares?.value;
+
+		const result = funds.reduce(
+			(total, fund) => total + Number(fund.shares?.value),
+			0,
+		);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should give the mock-up change against the quarter before when reading the six largest funds", () => {
+		const expectedResult = [1.2, 0.8, -0.4, 2.6, 1.1, -3.9];
+
+		const result = funds
+			.slice(0, 6)
+			.map(
+				(fund) =>
+					Math.round(
+						(Number(fund.shares?.value) /
+							Number(fund.sharesQuarterEarlier?.value) -
+							1) *
+							1000,
+					) / 10,
+			);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should leave no figure a quarter earlier only when the fund first filed for Q2 2026", () => {
+		const expectedResult = ["Fund 38"];
+
+		const result = funds
+			.filter((fund) => fund.sharesQuarterEarlier === null)
+			.map((fund) => fund.fund);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should read the 13F of 31 Mar 2026 when reading each fund a quarter earlier", () => {
+		const expectedResult = ["2026-03-31 Q1 2026"];
+
+		const result = [
+			...new Set(
+				funds.flatMap(({ sharesQuarterEarlier }) =>
+					sharesQuarterEarlier?.source.kind === "reported" &&
+					sharesQuarterEarlier.source.document.kind === "filing"
+						? [
+								`${sharesQuarterEarlier.period?.endsOn} ${sharesQuarterEarlier.source.document.periodLabel}`,
+							]
+						: [],
+				),
+			),
+		];
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should list the insiders of the Overview ownership in the same order when reading the insider rows", () => {
+		const { insiderShares } = meridianOverview.ownership;
+
+		const expectedResult =
+			insiderShares?.source.kind === "derived"
+				? insiderShares.source.inputs.map((input) => input.label)
+				: [];
+
+		const result = meridianRelationships.insiders.map(
+			(insider) => insider.shares?.label,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give the mock-up stake percentages when dividing the shares held by the shares outstanding", () => {
+		const expectedResult = [12.4, 7.2, 4.8, 3.1, 1.9, 0.8];
+
+		const result = stakes.map(
+			(stake) =>
+				Math.round(
+					(Number(stake.sharesHeld?.value) /
+						Number(stake.sharesOutstanding?.value)) *
+						1000,
+				) / 10,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should source each share count of a stake from a 10-Q that the target company filed", () => {
+		const expectedResult = stakes.map((stake) => `10-Q ${stake.company}`);
+
+		const result = stakes.map(({ sharesOutstanding }) =>
+			sharesOutstanding?.source.kind === "reported" &&
+			sharesOutstanding.source.document.kind === "filing"
+				? `${sharesOutstanding.source.document.form} ${sharesOutstanding.source.document.filer}`
+				: null,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should open Exhibit 21 of the FY2026 10-K when reading the source of each subsidiary", () => {
+		const exhibit = `${tenK(2026).indexUrl}mrdn-ex21.htm`;
+
+		const expectedResult = subsidiaries.map(() => exhibit);
+
+		const result = subsidiaries.map(({ jurisdiction }) =>
+			jurisdiction?.source.kind === "reported" ? jurisdiction.source.url : null,
+		);
+
+		expect(result).toEqual(expectedResult);
 	});
 });

@@ -1,40 +1,73 @@
-import type { Claim, OwnershipSummary } from "../types";
+import type {
+	Claim,
+	FundHolding,
+	InsiderHolding,
+	OwnershipSummary,
+} from "../types";
 import { dateInstant, printedDate } from "./calendar";
 import { atLeastOne, derived, filing, reported, tenQ } from "./sources";
+
+/** The section whose copy of a holding list a claim id names. */
+type HoldingSection = "overview" | "relationships" | "management";
 
 function sum(claims: readonly Claim[]): number {
 	return claims.reduce((total, claim) => total + Number(claim.value), 0);
 }
 
 // The six largest funds from the mock-up, in billions of shares at 30 Jun
-// 2026. 32 smaller funds hold the rest of the 16.10B shares of all 38 filers.
-const LARGEST_FUNDS: [string, number][] = [
-	["Harbor Point Index Funds", 2.13],
-	["Northfield Asset Management", 1.84],
-	["Granite Bay Advisors", 0.98],
-	["Larkspur Capital", 0.95],
-	["Oakmont Trust Company", 0.55],
-	["Eastline Investors", 0.44],
+// 2026, with the change in percent against 31 Mar 2026. 32 smaller funds hold
+// the rest of the 16.10B shares of all 38 filers.
+const LARGEST_FUNDS: [string, number, number][] = [
+	["Harbor Point Index Funds", 2.13, 1.2],
+	["Northfield Asset Management", 1.84, 0.8],
+	["Granite Bay Advisors", 0.98, -0.4],
+	["Larkspur Capital", 0.95, 2.6],
+	["Oakmont Trust Company", 0.55, 1.1],
+	["Eastline Investors", 0.44, -3.9],
 ];
 const INSTITUTION_SHARES = 16.1;
 
-/** One fund row: its name and its shares in billions at 30 Jun 2026. */
-type Fund = [string, number];
+/**
+ * One fund row: its name, its shares in billions at 30 Jun 2026, and its
+ * change in percent against 31 Mar 2026. The change is `null` for Fund 38,
+ * which first filed a 13F-HR for Q2 2026.
+ */
+type Fund = [string, number, number | null];
 
 function funds(): Fund[] {
 	const smaller = Array.from(
 		{ length: 31 },
-		(_, row): Fund => [`Fund ${row + 7}`, 0.43 - 0.009 * row],
+		(_, row): Fund => [
+			`Fund ${row + 7}`,
+			0.43 - 0.009 * row,
+			(((row * 7) % 11) - 5) * 0.4,
+		],
 	);
 	const listed: Fund[] = [...LARGEST_FUNDS, ...smaller];
 	const rest =
 		INSTITUTION_SHARES -
 		listed.reduce((total, [, shares]) => total + shares, 0);
-	return [...listed, ["Fund 38", rest]];
+	return [...listed, ["Fund 38", rest, null]];
 }
 
 /** The quarter end that the 13F totals cover. */
 export const OWNERSHIP_DATE = dateInstant("2026-06-30");
+const QUARTER_EARLIER = dateInstant("2026-03-31");
+
+function fundFiling(fund: string, row: number, quarter: 1 | 2) {
+	return filing(
+		"13F-HR",
+		`000800${String(row + 1).padStart(4, "0")}-26-00000${2 * quarter}`,
+		quarter === 2 ? "2026-08-14" : "2026-05-15",
+		`Q${quarter} 2026`,
+		fund,
+	);
+}
+
+const INFORMATION_TABLE = {
+	path: "Information table › Shares (sshPrnamt)",
+	xbrlTag: null,
+};
 
 /** The shares of each 13F filer at 30 Jun 2026, from its 13F-HR for Q2 2026. */
 function fundShares(id: (row: number) => string): Claim[] {
@@ -47,31 +80,54 @@ function fundShares(id: (row: number) => string): Claim[] {
 				unit: "shares",
 				period: OWNERSHIP_DATE,
 			},
-			filing(
-				"13F-HR",
-				`000800${String(row + 1).padStart(4, "0")}-26-000004`,
-				"2026-08-14",
-				"Q2 2026",
-				fund,
-			),
-			{ path: "Information table › Shares (sshPrnamt)", xbrlTag: null },
+			fundFiling(fund, row, 2),
+			INFORMATION_TABLE,
 		),
 	);
 }
 
-// The officers and directors with their shares in millions, and the date of
-// the latest Form 4 of each.
-const INSIDERS: [string, number, string][] = [
-	["Elena Marsh", 861.4, "2026-06-18"],
-	["Robert Chen-Hale", 51.8, "2026-04-21"],
-	["Tomas Lindqvist", 28.6, "2026-06-02"],
-	["Miriam Holt", 12.3, "2026-03-14"],
-	["Grace Adeyemi", 4.1, "2026-03-14"],
-	["Priya Raman", 3.2, "2026-06-02"],
+/**
+ * The fund rows of the Relationships section: the shares of each 13F filer at
+ * 30 Jun 2026 and at 31 Mar 2026. The shares a quarter earlier are the shares
+ * now less the change, to the nearest million.
+ */
+export function fundHoldings(): FundHolding[] {
+	const now = fundShares((row) => `relationships.funds.${row}.shares`);
+	return funds().map(([fund, , change], row) => ({
+		fund,
+		shares: now[row],
+		sharesQuarterEarlier:
+			change === null
+				? null
+				: reported(
+						{
+							id: `relationships.funds.${row}.sharesQuarterEarlier`,
+							label: `Shares held by ${fund} a quarter earlier`,
+							value:
+								Math.round(Number(now[row].value) / (1 + change / 100) / 1e6) *
+								1_000_000,
+							unit: "shares",
+							period: QUARTER_EARLIER,
+						},
+						fundFiling(fund, row, 1),
+						INFORMATION_TABLE,
+					),
+	}));
+}
+
+// The officers and directors with their role, their shares in millions, and
+// the date of the latest Form 4 of each.
+const INSIDERS: [string, string, number, string][] = [
+	["Elena Marsh", "President and CEO", 861.4, "2026-06-18"],
+	["Robert Chen-Hale", "Lead independent director", 51.8, "2026-04-21"],
+	["Tomas Lindqvist", "EVP, Operations", 28.6, "2026-06-02"],
+	["Miriam Holt", "Director", 12.3, "2026-03-14"],
+	["Grace Adeyemi", "Director", 4.1, "2026-03-14"],
+	["Priya Raman", "EVP and CFO", 3.2, "2026-06-02"],
 ];
 
 function insiderShares(id: (row: number) => string): Claim[] {
-	return INSIDERS.map(([name, shares, filedOn], row) =>
+	return INSIDERS.map(([name, , shares, filedOn], row) =>
 		reported(
 			{
 				id: id(row),
@@ -96,12 +152,28 @@ function insiderShares(id: (row: number) => string): Claim[] {
 }
 
 /**
+ * The shares that each officer and director holds, from their latest Form 4.
+ * The Relationships and Management sections each get their own copy, with the
+ * same rows in the same order.
+ */
+export function insiderHoldings(
+	section: "relationships" | "management",
+): InsiderHolding[] {
+	const shares = insiderShares((row) => `${section}.insiders.${row}.shares`);
+	return INSIDERS.map(([name, role], row) => ({
+		name,
+		role,
+		shares: shares[row],
+	}));
+}
+
+/**
  * The ownership summary at 30 Jun 2026. The Overview and Relationships
  * sections each get their own copy, from the same filings. The copies differ
  * in the section prefix of their claim ids only.
  */
 export function ownershipSummary(
-	section: "overview" | "relationships",
+	section: Exclude<HoldingSection, "management">,
 ): OwnershipSummary {
 	const prefix = `${section}.ownership`;
 	const funds = fundShares((row) => `${prefix}.institutionShares.funds.${row}`);
