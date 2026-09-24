@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { fakeCompanyReport } from "../../test/fixtures/companies/fake-company-report";
-import { completeQuarters, completeSections } from "./metrics";
+import { completeQuarters, completeSections, flowLineKeys } from "./metrics";
 import type {
 	Claim,
 	CompanySections,
@@ -15,6 +15,19 @@ const { income, balance, cashFlow } = fakeCompanyReport.financials;
 
 /** The positions of the quarters of FY2025 in the quarterly tables of the fixture. */
 const FY2025 = [4, 5, 6, 7];
+
+/** The flow lines of the table in note §4, in the order of the note. */
+const FLOW_LINES: LineKey[] = [
+	"revenue",
+	"operatingIncome",
+	"netIncome",
+	"operatingCashFlow",
+	"capitalExpenditure",
+	"dividendsPaid",
+	"shareRepurchases",
+	"shareIssuanceProceeds",
+	"shareBasedCompensation",
+];
 
 /** Returns the points of line `key` in `table` at `positions`. */
 function pointsOf(
@@ -59,7 +72,76 @@ function withPoint(
 	};
 }
 
+/**
+ * Returns `table` from the period at `start` onwards, so the window starts
+ * inside a fiscal year.
+ */
+function fromPosition(table: StatementTable, start: number): StatementTable {
+	return {
+		periods: table.periods.slice(start),
+		lines: table.lines.map((line) => ({
+			...line,
+			periods: line.periods.slice(start),
+			points: line.points.slice(start),
+		})),
+	};
+}
+
+describe("flowLineKeys", () => {
+	it("should hold the flow lines of note §4 when read as a list", () => {
+		const expectedResult = FLOW_LINES;
+
+		const result = [...flowLineKeys];
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
 describe("completeQuarters", () => {
+	it("should derive the fourth quarter of exactly the flow lines of note §4 when the statements are the fixture", () => {
+		const statements: Statement[] = [income, balance, cashFlow];
+
+		const expectedResult = FLOW_LINES;
+
+		const result = statements.flatMap((statement) =>
+			completeQuarters(statement)
+				.lines.filter((line) => line.points[7]?.source.kind === "derived")
+				.map((line) => line.key),
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep the oldest fourth quarter null when the window starts at it and there is no nine-month figure", () => {
+		const statement: Statement = {
+			...income,
+			quarterly: fromPosition(income.quarterly, 3),
+		};
+
+		const expectedResult = [null];
+
+		const result = pointsOf(completeQuarters(statement), "revenue", [0]);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should derive the oldest fourth quarter from the nine-month figure when the window starts at it", () => {
+		const statement: Statement = {
+			...cashFlow,
+			quarterly: fromPosition(cashFlow.quarterly, 3),
+		};
+
+		const expectedResult = [120];
+
+		const result = millionsOf(
+			completeQuarters(statement),
+			"operatingCashFlow",
+			[0],
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should derive the fourth quarter as the fiscal year minus the first three quarters when the line is an income flow line", () => {
 		const statement: Statement = income;
 
@@ -181,7 +263,7 @@ describe("completeQuarters", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should keep the first and second quarters null when the first quarter is missing", () => {
+	it("should keep the second quarter null when the first quarter is missing", () => {
 		const statement: Statement = {
 			...cashFlow,
 			quarterly: withPoint(cashFlow.quarterly, "operatingCashFlow", 4, null),
@@ -198,26 +280,40 @@ describe("completeQuarters", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should keep the fourth quarter null when an input is not a number or has no period", () => {
-		const [fiscalYear, firstQuarter] = [
-			...pointsOf(income.annual, "revenue", [9]),
-			...pointsOf(income.quarterly, "revenue", [4]),
-		] as Claim[];
+	it("should keep the fourth quarter null when the fiscal year is not a number", () => {
+		const [fiscalYear] = pointsOf(income.annual, "revenue", [9]) as Claim[];
 		const statement: Statement = {
 			...income,
 			annual: withPoint(income.annual, "revenue", 9, {
 				...fiscalYear,
 				value: "3.2B",
 			}),
+		};
+
+		const expectedResult = [null];
+
+		const result = pointsOf(completeQuarters(statement), "revenue", [7]);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep the fourth quarter null when a reported quarter has no period", () => {
+		const [firstQuarter] = pointsOf(
+			income.quarterly,
+			"revenue",
+			[0],
+		) as Claim[];
+		const statement: Statement = {
+			...income,
 			quarterly: withPoint(income.quarterly, "revenue", 0, {
 				...firstQuarter,
 				period: null,
 			}),
 		};
 
-		const expectedResult = [null, null];
+		const expectedResult = [null];
 
-		const result = pointsOf(completeQuarters(statement), "revenue", [3, 7]);
+		const result = pointsOf(completeQuarters(statement), "revenue", [3]);
 
 		expect(result).toEqual(expectedResult);
 	});

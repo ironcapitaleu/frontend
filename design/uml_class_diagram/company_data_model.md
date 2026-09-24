@@ -722,7 +722,9 @@ and `metrics.ts` completes it:
   point of this kind.
 - The cash flow statement also has a `yearToDate` table with the reported
   six-month and nine-month figures. The other two statements have
-  `yearToDate: null`.
+  `yearToDate: null`. The `yearToDate` table holds the six-month and
+  nine-month figures of each fiscal year that has a quarter in the quarterly
+  window.
 - `metrics.ts` returns a new, complete `StatementTable` from
   `completeQuarters(statement)`. It never writes to a section. Every section
   that the port returns stays unchanged.
@@ -780,7 +782,10 @@ quarters of the fiscal year otherwise. So the income statement gets
 Q4 = FY − Q1 − Q2 − Q3, and the cash flow statement gets Q2 = six months − Q1,
 Q3 = nine months − six months and Q4 = FY − nine months. A first quarter is
 never derived. A missing input, a text value or an input with no period keeps
-the point `null`. The claim has the id `metric.{key}.Q{q}-FY{year}` (§3), the
+the point `null`. When the quarterly window starts after the first quarter of
+a fiscal year, the earlier quarters of that year are outside the table. So the
+oldest fourth quarter can stay `null`, unless the `yearToDate` table holds the
+nine-month figure of its fiscal year. The claim has the id `metric.{key}.Q{q}-FY{year}` (§3), the
 label and unit of its line, and a `DerivedSource` whose formula names the
 period of each input, such as `FY2025 − 9 months to Q3 FY2025`. Its `period`
 is the quarter of its column, although its inputs do not share one period.

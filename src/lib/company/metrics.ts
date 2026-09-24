@@ -106,13 +106,8 @@ function derivedQuarter(
 	const upToQuarter =
 		fiscalQuarter === 4
 			? pointAt(statement.annual, line.key, "fiscalYear", fiscalYear, null)
-			: yearToDateAt(statement, line.key, fiscalYear, fiscalQuarter);
-	const before = yearToDateAt(
-		statement,
-		line.key,
-		fiscalYear,
-		fiscalQuarter - 1,
-	);
+			: yearToDateAt(statement, line, fiscalYear, fiscalQuarter);
+	const before = yearToDateAt(statement, line, fiscalYear, fiscalQuarter - 1);
 	const earlier =
 		before === null
 			? quartersBefore(line, fiscalYear, fiscalQuarter)
@@ -123,7 +118,10 @@ function derivedQuarter(
 	) {
 		return null;
 	}
-	const inputs = [upToQuarter, ...earlier];
+	const inputs: [PeriodNumberClaim, ...PeriodNumberClaim[]] = [
+		upToQuarter,
+		...earlier,
+	];
 	return {
 		id: `metric.${line.key}.Q${fiscalQuarter}-FY${fiscalYear}`,
 		label: line.label,
@@ -136,7 +134,7 @@ function derivedQuarter(
 		source: {
 			kind: "derived",
 			formula: inputs.map((claim) => periodName(claim.period)).join(" − "),
-			inputs: [upToQuarter, ...earlier],
+			inputs,
 		},
 	};
 }
@@ -147,18 +145,18 @@ function derivedQuarter(
  */
 function yearToDateAt(
 	statement: Statement,
-	key: LineKey,
+	line: StatementLine,
 	fiscalYear: number,
 	fiscalQuarter: number,
 ): Figure {
 	if (fiscalQuarter === 1) {
-		return pointAt(statement.quarterly, key, "fiscalQuarter", fiscalYear, 1);
+		return pointOf(line, "fiscalQuarter", fiscalYear, 1);
 	}
 	return statement.yearToDate === null
 		? null
 		: pointAt(
 				statement.yearToDate,
-				key,
+				line.key,
 				"yearToDate",
 				fiscalYear,
 				fiscalQuarter,
@@ -221,15 +219,28 @@ function isPeriodNumberClaim(figure: Figure): figure is PeriodNumberClaim {
 	);
 }
 
-/** Names a period in a formula, such as `FY2025`, `Q1 FY2025` or `9 months to Q3 FY2025`. */
+/**
+ * Names a period in a formula, such as `FY2025`, `Q1 FY2025` or `9 months to
+ * Q3 FY2025`. A new period kind fails the type check here until it gets a name.
+ */
 function periodName(period: Period): string {
 	const year = `FY${period.fiscalYear}`;
 	switch (period.kind) {
 		case "fiscalQuarter":
 			return `Q${period.fiscalQuarter} ${year}`;
 		case "yearToDate":
-			return `${Number(period.fiscalQuarter) * 3} months to Q${period.fiscalQuarter} ${year}`;
-		default:
+			return period.fiscalQuarter === null
+				? year
+				: `${period.fiscalQuarter * 3} months to Q${period.fiscalQuarter} ${year}`;
+		case "fiscalYear":
 			return year;
+		case "lastFourQuarters":
+			return `last four quarters to ${period.endsOn}`;
+		case "instant":
+			return period.endsOn;
+		default: {
+			const unknown: never = period.kind;
+			return unknown;
+		}
 	}
 }
