@@ -383,10 +383,11 @@ The page reads its data through the `CompanyGateway` port (AGENTS.md
 the checks are in
 [`design/uml_class_diagram/company_data_model.md`](design/uml_class_diagram/company_data_model.md).
 Until the backend adapter exists in a later epic, the sample adapter
-`sampleCompanyGateway` serves made-up data for Meridian Semiconductor (MRDN). It is a real adapter in the sense of AGENTS.md:
-production wires it, and its data source is the sample files in the repository,
-as for the screener. The named fakes (`always{Behaviour}CompanyGateway`) stay
-test-only. `CompanyGatewayProvider` injects the adapter into `useCompany`.
+`sampleCompanyGateway` serves made-up data for Meridian Semiconductor (MRDN).
+It is a real adapter in the sense of AGENTS.md: production wires it, and its
+data source is the sample files in the repository, as for the screener. The
+named fakes (`always{Behaviour}CompanyGateway`) stay test-only.
+`CompanyGatewayProvider` injects the adapter into `useCompany`.
 
 A `:symbol` that `Ticker.parse` rejects renders the missing state, the same
 state an unknown ticker reaches. For a valid `Ticker`, `useCompany` returns a
