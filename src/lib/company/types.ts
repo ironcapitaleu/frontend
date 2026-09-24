@@ -399,6 +399,7 @@ export interface ManagementSection {
 
 /** The data of the Filings tab: the filings that the page reads. */
 export interface FilingsSection {
+	/** Newest first, as `DESIGN.md` §8 lists them. Ties go by accession number, highest first. */
 	readonly filings: readonly Filing[];
 }
 

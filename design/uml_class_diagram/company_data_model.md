@@ -701,7 +701,8 @@ too, so the reader sees that another company filed it. The peer 10-Ks behind
 a sector benchmark are the one exception: the Filings walk skips the sector
 figures, so `FilingsSection` does not list them.
 
-`FilingsSection` lists plain `Filing` values. The Filings tab gets "what this
+`FilingsSection` lists plain `Filing` values, newest first. Filings from one
+day go by accession number, highest first. The Filings tab gets "what this
 filing feeds" from `feedsOf` (§3), not from the port.
 
 **Sector benchmarks in two sections.** `OverviewSection` and
