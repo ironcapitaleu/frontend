@@ -295,15 +295,18 @@ export function evaluateCheck(
  * Counts the points of the subject window that meet the condition of
  * `threshold`. The check is met when enough points meet it, and not met when
  * the unknown points cannot make up the difference. A point that is `null`
- * or not a finite number is unknown.
+ * or not a finite number is unknown. A subject that is not a window has no
+ * points to count, so it is a missing input.
  */
 function countedPeriods(
 	check: Check,
 	threshold: Extract<Threshold, { kind: "periodCount" }>,
 	sections: CompletedSections,
 ): CheckResult {
-	const resolved = resolve(check.subject, sections, null);
-	const points = isWindow(resolved) ? resolved : [];
+	const points = resolve(check.subject, sections, null);
+	if (!isWindow(points)) {
+		return resultOf(check, "notEnoughData", "missingInput", []);
+	}
 	const { condition, conditionValue, required } = threshold;
 	const amounts = points.map((point) =>
 		point === null ? Number.NaN : Number(point.value),

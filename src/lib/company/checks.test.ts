@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { fakeCompanyReport } from "../../test/fixtures/companies/fake-company-report";
 import {
+	type Check,
 	type CheckResult,
 	checks,
 	evaluateCheck,
@@ -272,6 +273,27 @@ describe("evaluateCheck", () => {
 		const expectedResult = { state: "notEnoughData", reason: "shortHistory" };
 
 		const result = outcomeOf("C1", sections);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should read not enough data with reason missingInput when a period count check has a subject that is not a window", () => {
+		const sections = completed;
+		const c1 = checks.find((candidate) => candidate.id === "C1");
+		const check: Check | undefined = c1 && {
+			...c1,
+			subject: {
+				from: "metric",
+				key: "freeCashFlow",
+				at: { kind: "fiscalYear", yearsBack: 0 },
+			},
+		};
+
+		// Free cash flow in FY2025 is one figure, so there are no years to count.
+		const expectedResult = { state: "notEnoughData", reason: "missingInput" };
+
+		const outcome = check && evaluateCheck(check, sections);
+		const result = outcome && { state: outcome.state, reason: outcome.reason };
 
 		expect(result).toEqual(expectedResult);
 	});
