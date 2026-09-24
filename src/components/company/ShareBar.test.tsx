@@ -166,6 +166,18 @@ describe("ShareBar", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should make only the known share open its sources when one share is null", () => {
+		render(<ShareBar aria-label="Ownership" parts={partsOf(0.625, null)} />);
+
+		const expectedResult = ["62.5%"];
+
+		const result = screen
+			.getAllByRole("button")
+			.map((button) => button.textContent);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should draw a segment only for the known share when one share is null", () => {
 		const { container } = render(
 			<ShareBar aria-label="Ownership" parts={partsOf(0.625, null)} />,

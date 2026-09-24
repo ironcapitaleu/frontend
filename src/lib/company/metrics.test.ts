@@ -1143,6 +1143,24 @@ describe("per-row derived figures", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should name the Relationships share counts as inputs when it gives the public share of the Relationships section", () => {
+		const section = fakeCompanyReport.relationships;
+
+		const expectedResult = [
+			"relationships.ownership.institutionShares",
+			"relationships.ownership.insiderShares",
+			"relationships.ownership.sharesOutstanding",
+		];
+
+		const { source } = ownershipShares(section).public ?? {};
+		const result =
+			source?.kind === "derived"
+				? source.inputs.map((claim) => claim.id)
+				: null;
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should return three null shares when the shares outstanding are 0", () => {
 		const { ownership } = overview;
 		const outstanding = ownership.sharesOutstanding;

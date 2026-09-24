@@ -669,7 +669,7 @@ tab ticket adds its own keys, such as `peRange` and `ceoPay`.
 | ---------- | ----------------- |
 | Overview   | `business`, `tenYears`, `keyFigures`, `financialPosition`, `checksByArea`, `ownership`, `profile`, and the print-only `printedShareholderReturns` |
 | Financials | `incomeChart`, `incomeTable`, `balanceChart`, `balanceTable`, `cashFlowChart`, `cashFlowTable` |
-| Relationships | `largestFunds`, so far |
+| Relationships | `largestFunds`, `insiders`, `ownershipSplit`, so far |
 
 A chart reads the annual table of its statement. A table reads the annual
 table and the completed quarterly table, because the annual and quarterly

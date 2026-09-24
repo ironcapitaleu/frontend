@@ -10,6 +10,7 @@ import type {
 	MetricKey,
 	Nullable,
 	OverviewSection,
+	OwnershipSummary,
 	Period,
 	RelationshipsSection,
 	Series,
@@ -1144,10 +1145,13 @@ export interface OwnershipShares {
  * public hold, each as a fraction of the shares outstanding. The public
  * holds the shares that neither institutions nor insiders hold. Its share
  * is `null` when the other two hold more than the shares outstanding.
+ * Overview and Relationships each pass their own section.
  */
-export function ownershipShares(overview: OverviewSection): OwnershipShares {
+export function ownershipShares(section: {
+	readonly ownership: OwnershipSummary;
+}): OwnershipShares {
 	const { sharesOutstanding, institutionShares, insiderShares } =
-		overview.ownership;
+		section.ownership;
 	const held = [institutionShares, insiderShares, sharesOutstanding];
 	return {
 		institutions: share(

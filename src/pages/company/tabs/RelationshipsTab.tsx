@@ -2,6 +2,7 @@ import * as React from "react";
 
 import { CompanyCard, CompanyCardGrid } from "@/components/company/CompanyCard";
 import { SourceTrigger } from "@/components/company/SourceCard";
+import { ShareBar } from "@/components/company/ShareBar";
 import { SourcesIndex } from "@/components/company/SourcesIndex";
 import {
 	formatPercent,
@@ -22,7 +23,11 @@ import { Text } from "@/components/ui/text";
 import { useCompany } from "../../../hooks/useCompany";
 import { formatDate } from "../../../lib/company/dates";
 import { listedFundPositions } from "../../../lib/company/holdings";
-import { fundChange, fundShare } from "../../../lib/company/metrics";
+import {
+	fundChange,
+	fundShare,
+	ownershipShares,
+} from "../../../lib/company/metrics";
 import { figureGroupsOf } from "../../../lib/company/sources";
 import type {
 	CompletedSections,
@@ -35,8 +40,8 @@ import { formatShares } from "./relationships";
 /**
  * The Relationships tab of the company page (DESIGN.md §8 "Relationships").
  * It loads the Relationships section and shows its cards, then the sources
- * index. Card 5.1 "Owned By: Largest Funds" is built. The later cards of the
- * tab come with the next ticket of this track.
+ * index. Cards 5.1 to 5.3 are built. Row 3, the subsidiaries and the stakes,
+ * comes with a later ticket of this track.
  */
 export function RelationshipsTab({ ticker }: { ticker: Ticker }) {
 	const state = useCompany(ticker, "relationships");
@@ -83,6 +88,8 @@ function LoadedRelationships({
 		<div className="flex flex-col gap-10">
 			<CompanyCardGrid>
 				<LargestFundsCard relationships={relationships} />
+				<InsidersCard relationships={relationships} />
+				<OwnershipSplitCard relationships={relationships} />
 			</CompanyCardGrid>
 			<SourcesIndex groups={groups} />
 		</div>
@@ -141,6 +148,74 @@ function LargestFundsCard({
 					</TableBody>
 				</Table>
 			)}
+		</CompanyCard>
+	);
+}
+
+/** Card 5.2: the shares that each officer and director holds, from their latest Form 4. */
+function InsidersCard({
+	relationships,
+}: {
+	relationships: RelationshipsSection;
+}) {
+	return (
+		<CompanyCard
+			tab="relationships"
+			position={2}
+			title="Owned By: Insiders"
+			caption="Shares held by each officer and director, from their latest Form 4"
+		>
+			{relationships.insiders.length === 0 ? (
+				<p className="text-muted-foreground">No insider reports a holding.</p>
+			) : (
+				<Table>
+					<TableHeader>
+						<TableRow>
+							<TableHead className="sticky left-0 bg-card">Insider</TableHead>
+							<TableHead>Role</TableHead>
+							<TableHead className="text-right">Shares</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{relationships.insiders.map((row) => (
+							// Two insiders can share a name, so the key is the claim id of the shares.
+							<TableRow key={row.shares?.id ?? `${row.name} ${row.role}`}>
+								<TableHead scope="row" className="sticky left-0 bg-card">
+									{row.name}
+								</TableHead>
+								<TableCell>{row.role}</TableCell>
+								<FigureCell figure={row.shares} format={formatShares} />
+							</TableRow>
+						))}
+					</TableBody>
+				</Table>
+			)}
+		</CompanyCard>
+	);
+}
+
+/** Card 5.3: the shares of the company that institutions, insiders and the public hold. */
+function OwnershipSplitCard({
+	relationships,
+}: {
+	relationships: RelationshipsSection;
+}) {
+	const shares = ownershipShares(relationships);
+	return (
+		<CompanyCard
+			tab="relationships"
+			position={3}
+			title="Ownership Split"
+			caption={`Share of the shares outstanding at ${formatDate(relationships.ownership.asOf)}, from 13F-HR filings, Form 4 and the latest 10-Q or 10-K`}
+		>
+			<ShareBar
+				aria-label="Ownership split"
+				parts={[
+					{ label: "Institutions", share: shares.institutions },
+					{ label: "Insiders", share: shares.insiders },
+					{ label: "Public", share: shares.public },
+				]}
+			/>
 		</CompanyCard>
 	);
 }

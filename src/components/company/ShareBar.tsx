@@ -3,6 +3,7 @@ import type * as React from "react";
 import type { Figure } from "@/lib/company/types";
 import { cn } from "@/lib/utils";
 import { formatPercent, MISSING, MISSING_INK } from "../screener/format";
+import { SourceTrigger } from "./SourceCard";
 
 /** One part of a {@link ShareBar}: a label and its share as a `percent` claim. */
 interface SharePart {
@@ -84,7 +85,7 @@ function shareSegments(parts: readonly SharePart[]): ShareSegment[] {
 
 /**
  * One horizontal bar that splits a whole into parts, with a label and a
- * percentage for each part below it. The company page draws the segment and
+ * percentage for each part below it. Each known percentage opens its sources. The company page draws the segment and
  * region splits of revenue and the ownership split with it (DESIGN.md §8
  * "Overview"). It takes the parts as props and computes nothing from the
  * company sections.
@@ -119,7 +120,7 @@ function ShareBar({ parts, className, ...props }: ShareBarProps) {
 				)}
 			</div>
 			<ul className="flex flex-col gap-1 text-sm md:flex-row md:flex-wrap md:gap-x-5">
-				{segments.map((segment) => (
+				{segments.map((segment, index) => (
 					<li key={segment.key} className="flex items-center gap-2">
 						<span
 							className={cn("size-2.5 rounded-xs", segment.fill)}
@@ -132,9 +133,13 @@ function ShareBar({ parts, className, ...props }: ShareBarProps) {
 								segment.share === null && MISSING_INK,
 							)}
 						>
-							{segment.share === null
-								? MISSING
-								: formatPercent(segment.share * 100)}
+							{segment.share === null || !parts[index].share ? (
+								MISSING
+							) : (
+								<SourceTrigger claim={parts[index].share}>
+									{formatPercent(segment.share * 100)}
+								</SourceTrigger>
+							)}
 						</span>
 					</li>
 				))}
