@@ -41,7 +41,8 @@ function subsidiaries(): Subsidiary[] {
 // The stakes from the mock-up: the company, the stake in percent and the
 // shares outstanding in millions from the cover page of its latest 10-Q, with
 // the date of that count and the filing date of the 10-Q. The sample serves
-// MRDN only, so no target company has a page and every ticker is null.
+// MRDN only, so no target company has a page. The sample names no ticker,
+// so every ticker is null.
 const STAKES: [string, number, number, string, string][] = [
 	["Halden Data Systems", 12.4, 310, "2026-08-03", "2026-08-06"],
 	["Arcline Photonics", 7.2, 145, "2026-07-24", "2026-07-30"],

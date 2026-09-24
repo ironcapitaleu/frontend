@@ -597,8 +597,9 @@ Relationships has these cards, from top to bottom:
    second lists the company's stakes in other listed companies from its own
    13F filing.
 
-Each company name in the stakes table links to the page of that company.
-Subsidiaries are not listed, so they have no link.
+A company name in the stakes table links to the page of that company when
+that page exists. Otherwise the name is plain text. Subsidiaries are not
+listed, so they have no link.
 
 On a phone, the cards stack in the order above.
 
