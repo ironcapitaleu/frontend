@@ -102,6 +102,7 @@ function MiniBarChart({
 	const captionId = useId();
 	const { bars, zero } = miniBars(series);
 	const latest = bars.at(-1);
+	const latestValue = latest?.value ?? null;
 	const format = (value: number | null) =>
 		value === null ? MISSING : formatValue(value);
 
@@ -117,10 +118,10 @@ function MiniBarChart({
 				<span
 					className={cn(
 						"font-monospace text-lg",
-						latest?.value == null && MISSING_INK,
+						latestValue === null && MISSING_INK,
 					)}
 				>
-					{format(latest?.value ?? null)}
+					{format(latestValue)}
 				</span>
 			</figcaption>
 			<div className="relative h-16 flex gap-0.5" aria-hidden="true">

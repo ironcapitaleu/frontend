@@ -33,7 +33,7 @@ function formatBillions(value: number): string {
  * The small yearly bar chart of the company page, with the revenue of the
  * sample company Meridian Semiconductor. The stories cover ten full years, a
  * negative year, a missing year, a value that is not finite, a single year,
- * no years at all, and the phone width.
+ * every year missing, no years at all, and the phone width.
  */
 const meta: Meta<typeof MiniBarChart> = {
 	title: "Company/MiniBarChart",
@@ -53,7 +53,20 @@ export default meta;
 type Story = StoryObj<typeof MiniBarChart>;
 
 /** Ten fiscal years of revenue, all positive. The latest year draws in a stronger fill. */
-export const Full: Story = {};
+export const Full: Story = {
+	play: async ({ canvasElement }) => {
+		// The bars are aria-hidden, so no role query reaches them.
+		const bars = canvasElement.querySelectorAll(
+			'[data-slot="mini-bar-chart-bar"]',
+		);
+
+		const expectedResult = true;
+
+		const result = bars[bars.length - 1]?.classList.contains("bg-chart-3");
+
+		await expect(result).toBe(expectedResult);
+	},
+};
 
 /** One year below zero. Its bar draws down from the zero line. */
 export const Negative: Story = {
@@ -98,6 +111,11 @@ export const AllMissing: Story = {
 	args: {
 		series: { ...revenue, points: revenue.points.map(() => null) },
 	},
+};
+
+/** A company with no filed years draws no bars and prints a dimmed dash. */
+export const NoYears: Story = {
+	args: { series: { ...revenue, periods: [], points: [] } },
 };
 
 /** On a phone the chart fills its card. Overview sets two charts to a row. */

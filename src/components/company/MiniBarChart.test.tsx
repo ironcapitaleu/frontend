@@ -44,7 +44,7 @@ describe("miniBars", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should give the missing year no value and no height when a point is null", () => {
+	it("should give the missing year no height when a point is null", () => {
 		const expectedResult = [100, 0, 50];
 
 		const result = heights(seriesOf(2, null, 1));
@@ -58,6 +58,15 @@ describe("miniBars", () => {
 		const result = miniBars(
 			seriesOf(Number.NaN, Number.POSITIVE_INFINITY, 1),
 		).bars.map((bar) => bar.value);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep the zero line at the bottom and draw no bar when every value is zero", () => {
+		const expectedResult = { zero: 100, heights: [0, 0] };
+
+		const { bars, zero } = miniBars(seriesOf(0, 0));
+		const result = { zero, heights: bars.map((bar) => bar.height) };
 
 		expect(result).toEqual(expectedResult);
 	});
