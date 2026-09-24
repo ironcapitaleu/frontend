@@ -1107,7 +1107,8 @@ export interface OwnershipShares {
 /**
  * Returns the shares of the company that institutions, insiders and the
  * public hold, each as a fraction of the shares outstanding. The public
- * holds the shares that neither institutions nor insiders hold.
+ * holds the shares that neither institutions nor insiders hold. Its share
+ * is `null` when the other two hold more than the shares outstanding.
  */
 export function ownershipShares(overview: OverviewSection): OwnershipShares {
 	const { sharesOutstanding, institutionShares, insiderShares } =
@@ -1128,15 +1129,25 @@ export function ownershipShares(overview: OverviewSection): OwnershipShares {
 			[insiderShares, sharesOutstanding],
 			([shares, outstanding]) => [shares, outstanding],
 		),
-		public: share(
-			"metric.ownershipShares.public",
-			"Held by the public",
-			"(Shares outstanding − Shares held by institutions − Shares held by insiders) ÷ Shares outstanding",
-			held,
-			([institutions, insiders, outstanding]) => [
-				outstanding - institutions - insiders,
-				outstanding,
-			],
+		public: withinTotal(
+			share(
+				"metric.ownershipShares.public",
+				"Held by the public",
+				"(Shares outstanding − Shares held by institutions − Shares held by insiders) ÷ Shares outstanding",
+				held,
+				([institutions, insiders, outstanding]) => [
+					outstanding - institutions - insiders,
+					outstanding,
+				],
+			),
 		),
 	};
+}
+
+/**
+ * Returns `null` for a share below 0. Institutions and insiders then hold
+ * more than the shares outstanding, because the reported holdings overlap.
+ */
+function withinTotal(figure: Figure): Figure {
+	return isNumberClaim(figure) && figure.value < 0 ? null : figure;
 }

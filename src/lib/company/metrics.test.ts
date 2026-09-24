@@ -1026,4 +1026,25 @@ describe("per-row derived figures", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should return a null public share when institutions and insiders hold more than the shares outstanding", () => {
+		const { ownership } = overview;
+		const institutions = ownership.institutionShares;
+		const section = {
+			...overview,
+			ownership: {
+				...ownership,
+				institutionShares: institutions && {
+					...institutions,
+					value: 148_000_000,
+				},
+			},
+		};
+
+		// 148M + 4.5M held against 150M outstanding.
+		const expectedResult = null;
+
+		const result = ownershipShares(section).public;
+
+		expect(result).toEqual(expectedResult);
+	});
 });

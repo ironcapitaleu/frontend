@@ -1010,8 +1010,11 @@ STA-230 writes `priceChangeOneMonth`, `revenueShare(overview, list,
 position)` and `ownershipShares`, the functions whose inputs are in the
 sections of `types.ts`. `ownershipShares` gives the parts `institutions`,
 `insiders` and `public`. The public holds the shares outstanding that
-neither institutions nor insiders hold. The other functions wait for the
-section types of their tabs.
+neither institutions nor insiders hold. When institutions and insiders
+together hold more than the shares outstanding, the public share is `null`,
+not a negative share. This happens when the reported holdings overlap, for
+example when several 13F filers report the same shares. The other
+functions wait for the section types of their tabs.
 
 These functions have no `MetricKey`, no `FigureRef` and no guard, and no
 check reads them. A check that needs one of these figures first needs a
