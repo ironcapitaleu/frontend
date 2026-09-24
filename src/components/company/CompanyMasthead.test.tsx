@@ -69,6 +69,20 @@ describe("CompanyMasthead", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should show a dash instead of a list when the company has no listings", () => {
+		const masthead: MastheadSection = { ...meridianMasthead, listings: [] };
+		render(<CompanyMasthead masthead={masthead} />);
+
+		const expectedResult = { list: null, dashes: 1 };
+
+		const result = {
+			list: screen.queryByRole("list", { name: "Listings" }),
+			dashes: screen.queryAllByText("—").length,
+		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should name the sector, country, reporting currency and fiscal year end when rendered", () => {
 		render(<CompanyMasthead masthead={meridianMasthead} />);
 

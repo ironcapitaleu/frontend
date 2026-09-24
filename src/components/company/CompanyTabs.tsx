@@ -4,10 +4,11 @@ import { Link } from "react-router";
 
 import { COMPANY_TABS, tabPath } from "@/lib/company/tabs";
 import type { TabKey } from "@/lib/company/types";
+import type { Assert } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /** Props for {@link CompanyTabs}. */
-interface CompanyTabsProps extends React.ComponentProps<"nav"> {
+interface CompanyTabsProps extends Omit<React.ComponentProps<"nav">, "ref"> {
 	/** The ticker the tab links point at, such as `MRDN`. */
 	symbol: string;
 	/** The tab of the current URL. Its link carries `aria-current="page"`. */
@@ -75,5 +76,11 @@ function CompanyTabs({
 		</nav>
 	);
 }
+
+// Fails the type check when a caller can pass a `ref`. The spread props come
+// after `navRef`, so such a ref would replace it and stop the centring effect.
+export type CompanyTabsTakesNoRef = Assert<
+	"ref" extends keyof CompanyTabsProps ? false : true
+>;
 
 export { CompanyTabs, type CompanyTabsProps };

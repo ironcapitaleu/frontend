@@ -61,26 +61,28 @@ function CompanyMasthead({
 					{masthead.name}
 				</h1>
 				<div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-lg text-muted-foreground">
-					<ul aria-label="Listings" className="flex flex-wrap gap-2">
-						{first && (
+					{first ? (
+						<ul aria-label="Listings" className="flex flex-wrap gap-2">
 							<li className={cn(CHIP, "text-foreground")}>
 								{listingLabel(first)}
 							</li>
-						)}
-						{others.map((listing) => (
-							<li
-								key={listingLabel(listing)}
-								className={cn(CHIP, "hidden md:inline-flex")}
-							>
-								{listingLabel(listing)}
-							</li>
-						))}
-						{others.length > 0 && (
-							<li className={cn(CHIP, "md:hidden")}>
-								{otherListingsLabel(others.length)}
-							</li>
-						)}
-					</ul>
+							{others.map((listing) => (
+								<li
+									key={listingLabel(listing)}
+									className={cn(CHIP, "hidden md:inline-flex")}
+								>
+									{listingLabel(listing)}
+								</li>
+							))}
+							{others.length > 0 && (
+								<li className={cn(CHIP, "md:hidden")}>
+									{otherListingsLabel(others.length)}
+								</li>
+							)}
+						</ul>
+					) : (
+						<span className={DIMMED}>{MISSING}</span>
+					)}
 					<span>
 						{masthead.sector} · {masthead.country} · Reports in{" "}
 						{masthead.reportingCurrency}
