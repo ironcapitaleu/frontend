@@ -5,17 +5,28 @@ import { SourceTrigger } from "@/components/company/SourceCard";
 import { SourcesIndex } from "@/components/company/SourcesIndex";
 import {
 	formatNumber,
+	formatPrice,
 	MISSING,
 	MISSING_INK,
 } from "@/components/screener/format";
 import { rangeBarPosition } from "@/components/ui/range-bar";
 import { Spinner } from "@/components/ui/spinner";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 import { Text } from "@/components/ui/text";
 import { cn } from "@/lib/utils";
 import { useCompany } from "../../../hooks/useCompany";
 import { metrics } from "../../../lib/company/metrics";
 import { figureGroupsOf } from "../../../lib/company/sources";
 import type {
+	BlockKey,
+	Claim,
 	CompletedSections,
 	Figure,
 	MastheadSection,
@@ -28,11 +39,21 @@ import {
 	ratioScale,
 } from "../../../lib/company/valuationRatios";
 import type { Ticker } from "../../../lib/domain/ticker";
+import { formatInUnit } from "./OverviewTab.logic";
+
+/** The blocks this tab draws. The Sources index names only these. */
+const DRAWN_BLOCKS: ReadonlySet<BlockKey> = new Set([
+	"valuationRatios",
+	"ratioFormulas",
+]);
+
+/** The fixed first column of a table below 1024 px, as on Financials. */
+const FIXED_COLUMN = "max-lg:sticky max-lg:left-0 max-lg:z-10 max-lg:bg-card";
 
 /**
  * The Valuation tab of the company page (DESIGN.md §8 "Valuation"). It loads
- * the masthead, the financials and the valuation section, and shows card 3.1,
- * then the sources index.
+ * the masthead, the financials and the valuation section, and shows cards
+ * 3.1 and 3.3, then the sources index.
  */
 export function ValuationTab({ ticker }: { ticker: Ticker }) {
 	const masthead = useCompany(ticker, "masthead");
@@ -70,7 +91,7 @@ export function ValuationTab({ ticker }: { ticker: Ticker }) {
 	);
 }
 
-/** Card 3.1 of the loaded tab, then the sources index. */
+/** Cards 3.1 and 3.3 of the loaded tab, then the sources index. */
 function LoadedValuation(props: {
 	masthead: MastheadSection;
 	financials: CompletedSections;
@@ -84,7 +105,10 @@ function LoadedValuation(props: {
 	);
 	const ranges = React.useMemo(() => ratioRanges(sections), [sections]);
 	const groups = React.useMemo(
-		() => figureGroupsOf("valuation", sections),
+		() =>
+			figureGroupsOf("valuation", sections).filter(({ ref }) =>
+				DRAWN_BLOCKS.has(ref.block),
+			),
 		[sections],
 	);
 	return (
@@ -102,6 +126,41 @@ function LoadedValuation(props: {
 							<RatioRow key={range.ratio} range={range} />
 						))}
 					</ul>
+				</CompanyCard>
+				<CompanyCard
+					tab="valuation"
+					position={3}
+					span={2}
+					className="min-w-0"
+					title="How the Ratios Are Built"
+					caption="Each ratio now, with its formula and the figures it divides."
+				>
+					<Table aria-label="How the ratios are built" className="text-base">
+						<TableHeader>
+							<TableRow>
+								<TableHead className={FIXED_COLUMN}>Ratio</TableHead>
+								<TableHead>Formula</TableHead>
+								<TableHead>Inputs</TableHead>
+								<TableHead className="text-right">Now</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{ranges.map(({ ratio, now }) => (
+								<TableRow key={ratio}>
+									<TableHead scope="row" className={FIXED_COLUMN}>
+										{metrics[ratio].name}
+									</TableHead>
+									<TableCell>{metrics[ratio].formula}</TableCell>
+									<TableCell>
+										<Inputs figure={now} />
+									</TableCell>
+									<TableCell className="text-right">
+										<Value figure={now} />
+									</TableCell>
+								</TableRow>
+							))}
+						</TableBody>
+					</Table>
 				</CompanyCard>
 			</CompanyCardGrid>
 			<SourcesIndex groups={groups} />
@@ -215,4 +274,30 @@ function Value({ figure }: { figure: Figure }) {
 			{formatNumber(Number(figure.value))}
 		</SourceTrigger>
 	);
+}
+
+/** The inputs of a derived ratio, each with its sources, or the dimmed dash. */
+function Inputs({ figure }: { figure: Figure }) {
+	if (figure === null || figure.source.kind !== "derived") {
+		return <Value figure={null} />;
+	}
+	return (
+		<ul className="flex flex-col gap-1">
+			{figure.source.inputs.map((input) => (
+				<li key={input.id}>
+					<span className="text-muted-foreground">{input.label} </span>
+					<SourceTrigger claim={input} className="font-monospace">
+						{formatInput(input)}
+					</SourceTrigger>
+				</li>
+			))}
+		</ul>
+	);
+}
+
+/** Writes an input of a ratio in its unit, such as `$82.75` or `$212.0B`. */
+function formatInput({ value, unit }: Claim): string {
+	return unit === "usdPerShare"
+		? formatPrice(Number(value))
+		: formatInUnit(Number(value), unit);
 }

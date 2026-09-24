@@ -155,6 +155,7 @@ const blockKeys = [
 	"cashFlowChart",
 	"cashFlowTable",
 	"valuationRatios",
+	"ratioFormulas",
 	"largestFunds",
 	"insiders",
 	"ownershipSplit",
@@ -337,6 +338,15 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 					)
 				: null,
 	},
+	// Card 3.3 reads each ratio now. Its inputs are the inputs of that claim.
+	ratioFormulas: {
+		tab: "valuation",
+		label: "How the Ratios Are Built",
+		company: (sections) =>
+			valuationLoaded(sections)
+				? ratioRanges(sections).map((range) => range.now)
+				: null,
+	},
 	// The block reads the reported inputs of `fundShare` and `fundChange` for
 	// the rows that card 5.1 lists, so the index names no other fund's 13F.
 	largestFunds: {
@@ -378,7 +388,7 @@ function read(
 	return reader?.(sections)?.filter((figure) => figure !== null) ?? null;
 }
 
-/** Tells whether the sections that card 3.1 reads have loaded. */
+/** Tells whether the sections that the Valuation cards read have loaded. */
 function valuationLoaded({
 	masthead,
 	financials,

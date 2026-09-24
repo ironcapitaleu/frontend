@@ -312,11 +312,27 @@ describe("figureGroupsOf", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should give a company group and a sector group when the Valuation tab is read", () => {
-		const expectedResult = ["company", "sector"];
+	it("should read each ratio now when the group of card 3.3 is built", () => {
+		const expectedResult = ratioRanges(sections).map(
+			({ now }) => claim(now).id,
+		);
+
+		const result = claimsOf("ratioFormulas", "company", sections).map(
+			({ id }) => id,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give the groups of cards 3.1 and 3.3 in order when the Valuation tab is read", () => {
+		const expectedResult = [
+			"valuationRatios.company",
+			"valuationRatios.sector",
+			"ratioFormulas.company",
+		];
 
 		const result = figureGroupsOf("valuation", sections).map(
-			({ ref }) => ref.figures,
+			({ ref }) => `${ref.block}.${ref.figures}`,
 		);
 
 		expect(result).toEqual(expectedResult);

@@ -19,6 +19,7 @@ const pendingGateway: CompanyGateway = {
  * The Valuation tab for MRDN, from the fake gateway of the test fixtures
  * unless a story sets its own (DESIGN.md §8 "Valuation"). Card 3.1 draws each
  * ratio now on a bar of its own ten years and a bar of the sector quartiles.
+ * Card 3.3 lists each ratio with its formula, its inputs and its figure now.
  * The sources index at the foot lists the filings behind the tab.
  */
 const meta: Meta<typeof ValuationTab> = {
@@ -46,6 +47,7 @@ export const Loaded: Story = {
 
 		const expectedResult = [
 			"3.1 Ratios Against Their Own Ten Years and the Sector",
+			"3.3 How the Ratios Are Built",
 		];
 
 		const headings = await canvas.findAllByRole("heading", { level: 2 });
@@ -57,7 +59,7 @@ export const Loaded: Story = {
 	},
 };
 
-/** Play test: every filing in the sources index feeds card 3.1. */
+/** Play test: the filings in the sources index feed the two cards the tab draws. */
 export const Sources: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
@@ -68,22 +70,50 @@ export const Sources: Story = {
 		);
 		const feeds = await canvas.findAllByText(/^Feeds /);
 
-		const expectedResult = feeds.map(
-			() => "Feeds Ratios Against Their Own Ten Years and the Sector",
-		);
+		const expectedResult = [
+			"How the Ratios Are Built",
+			"Ratios Against Their Own Ten Years and the Sector",
+		];
 
-		const result = feeds.map((line) => line.textContent);
+		const result = [
+			...new Set(
+				feeds.flatMap((line) =>
+					(line.textContent ?? "").replace(/^Feeds /, "").split(", "),
+				),
+			),
+		].sort();
 
 		await expect(result).toEqual(expectedResult);
 	},
 };
 
-/** The loaded tab at a phone width. The range bars stack under each ratio name. */
+/** Play test: card 3.3 has one row for each ratio of card 3.1. */
+export const RatiosBuilt: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const table = await canvas.findByRole("table", {
+			name: "How the ratios are built",
+		});
+
+		const expectedResult = ["P/E", "P/FCF", "P/B", "EV/EBIT"];
+
+		const result = within(table)
+			.getAllByRole("rowheader")
+			.map((header) => header.textContent);
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * The loaded tab at a phone width. The range bars stack under each ratio
+ * name, and the table of card 3.3 scrolls inside its card.
+ */
 export const LoadedOnPhone: Story = {
 	globals: { viewport: { value: "mobile1", isRotated: false } },
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
-		await canvas.findByRole("region");
+		await canvas.findAllByRole("region");
 
 		const expectedResult = true;
 
