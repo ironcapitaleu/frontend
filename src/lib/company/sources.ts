@@ -1,5 +1,10 @@
 import { listedFundPositions } from "./holdings";
-import { keyFigureKeys, keyFigureOf, ownershipShares } from "./metrics";
+import {
+	keyFigureKeys,
+	keyFigureOf,
+	metricInputsOf,
+	ownershipShares,
+} from "./metrics";
 import type {
 	BlockKey,
 	Claim,
@@ -197,6 +202,7 @@ const blockKeys = [
 	"cashFlowChart",
 	"cashFlowTable",
 	"valuationRatios",
+	"ratioFormulas",
 	"largestFunds",
 	"insiders",
 	"ownershipSplit",
@@ -376,6 +382,20 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 					)
 				: null,
 	},
+	// Card 3.3 draws each ratio now and each of its inputs, which it reads from
+	// the metric definition. So the block reads the inputs too, and their
+	// filings stay in the index when a ratio fails its guard.
+	ratioFormulas: {
+		tab: "valuation",
+		label: "How the Ratios Are Built",
+		company: (sections) =>
+			valuationLoaded(sections)
+				? ratioRanges(sections).flatMap(({ ratio, now }) => [
+						now,
+						...metricInputsOf(ratio, sections),
+					])
+				: null,
+	},
 	// The block reads the reported inputs of `fundShare` and `fundChange` for
 	// the rows that card 5.1 lists, so the index names no other fund's 13F.
 	largestFunds: {
@@ -451,7 +471,7 @@ function read(
 	return reader?.(sections)?.filter((figure) => figure !== null) ?? null;
 }
 
-/** Tells whether the sections that card 3.1 reads have loaded. */
+/** Tells whether the sections that the Valuation cards read have loaded. */
 function valuationLoaded({
 	masthead,
 	financials,
