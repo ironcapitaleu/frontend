@@ -296,9 +296,10 @@ The value types:
   A figure in a list row puts the list name and the row position before the
   field, such as `relationships.stakes.2.sharesHeld`. A list whose rows are
   fiscal years, such as `ceoPay`, puts the period last instead, such as
-  `management.ceoPay.salary.FY2026`. A derived claim from a named function of
-  §5 uses the function name as its key, then the row part or the period,
-  then a part name if the function gives several parts. Examples are
+  `management.ceoPay.salary.FY2026`. A claim from a named function of §5,
+  derived or reported, uses the function name as its key, then the row part
+  or the period, then a part name if the function gives several parts.
+  Examples are
   `metric.stakePercent.stakes.2`, `metric.netInsiderShares.FY2026`,
   `metric.ownershipShares.public` and `metric.priceChangeOneMonth`.
 - `IsoDate` is a calendar date as a string, such as `2026-07-26`. STA-224
@@ -377,10 +378,13 @@ functions in `src/lib/company/sources.ts`:
   entry.
 
 The "Sources" chip of a chart or table shows `sourcesOf` over the claims of
-each group of the block. So a block that draws sector figures next to the
-company's figures shows two chips: one for the company's filings and one for
-the peers. The chip of the company's group, which `isSectorBenchmark`
-rejects, names no peer filing.
+the block's groups in `figureGroupsOf(tab, sections)` that
+`isSectorBenchmark` rejects. A block has one chip, where `DESIGN.md` §8
+places it. So a block that draws sector figures next to the company's
+figures shows the company's filings alone and names no peer filing. A reader
+reaches the peers through a sector figure's own source card, which lists the
+first ten inputs and counts the rest (§8).
+
 The per-tab sources index reads the company's own groups, as the Filings walk
 below does. It is `sourcesOf` over the claims of the groups of
 `figureGroupsOf(tab, sections)` that `isSectorBenchmark` rejects, and `feedsOf`
@@ -711,9 +715,10 @@ figure is inside the window, as is a fourth quarter that it derives from the
 year-end price or yield for a fiscal year with no 10-K is outside it, so V1
 pairs each price with the earnings of the same year. The adapter reads which
 filings exist from `FilingsSection.filings`. `fiscalYear(0)`,
-`latestQuarter` and `lastFourQuarters` all read from that window. So in the
-weeks between a fiscal year end and its 10-K, `fiscalYear(0)` is still the
-year before, and the checks read the same figures as the week before. A
+`latestQuarter`, `lastFourQuarters` and `lastFiscalYears` all read from that
+window. So in the weeks between a fiscal year end and its 10-K,
+`fiscalYear(0)` is still the year before, and the checks read the same
+figures as the week before. A
 `null` point above is a position inside the window that no filing reports.
 It is never a whole period that no filing covers yet, and a port that
 returns one is an adapter defect. §7 works the case at 20 Feb 2026.
@@ -756,7 +761,7 @@ sections.
 | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Statement lines, prices, Treasury yields, dividends per share, share counts bought back and issued to staff, holdings, pay, people, subsidiaries, filings | Margins, free cash flow, growth a year, growth per year over ten years (CAGR), long-term assets and liabilities, market cap, enterprise value, P/E, P/FCF, P/B, EV/EBIT, earnings, FCF, dividend and buyback yields, payout, net buybacks, total shareholder yield, ranges and medians over ten years |
 | Sector quartiles and medians (inputs: each peer's figure)                                                                               | Fourth-quarter and three-month figures of the flow lines, sums of the flow lines over the last four quarters                                                                                                 |
-| Institution totals over all 13F filers, insider shares bought and sold per year (inputs: each 13F or Form 4 figure)                      | Per-row and section-field figures (§5): price change over one month, segment and region shares of revenue, ownership shares, a fund's share of the company and its change over a quarter, stake percentages, pay mix, tenure, net shares bought back, net insider shares, subsidiary count |
+| Institution totals over all 13F filers, insider shares bought and sold per year (inputs: each 13F or Form 4 figure)                      | Per-row and section-field figures (§5): price change over one month, segment and region shares of revenue, ownership shares, a fund's share of the company and its change over a quarter, stake percentages, pay mix, tenure, net shares bought back, net insider shares, subsidiary count (a count of reported rows, §5) |
 
 No section type holds news, forecasts, analyst ratings, price targets, a fair
 value or community content. Every field is a past fact from a filing or a
@@ -829,7 +834,7 @@ The variants of `PeriodChoice`:
 | `lastFourQuarters`         | The sum of a flow line over the last four quarters that `metrics.ts` derives   | one value   |
 | `latestClose`              | The latest daily value of a market figure: a closing price or a daily yield   | one value   |
 | `samePeriod`               | The period that a per-period metric is evaluated for                           | one value   |
-| `lastFiscalYears`, `count` | The last `count` fiscal years, oldest first                                    | `count` values |
+| `lastFiscalYears`, `count` | The last `count` fiscal years up to the latest covered one (§4), oldest first  | `count` values |
 
 A value is a `Figure` for a statement line or a market figure. For a metric,
 a value is the metric's `MetricResult`, so the caller keeps a failed guard
