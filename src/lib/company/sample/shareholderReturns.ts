@@ -6,20 +6,13 @@ import type {
 	Unit,
 } from "../types";
 import { dateInstant, fiscalYearPeriod, periodId } from "./calendar";
-import { meridianFinancials } from "./financials";
+import { DIVIDENDS_PER_SHARE, meridianFinancials } from "./financials";
 import { meridianMasthead } from "./masthead";
 import { MissingSampleData, filing, reported, tenK } from "./sources";
 
 const YEARS = meridianFinancials.cashFlow.annual.periods.map(
 	(period) => period.fiscalYear,
 );
-
-// The dividend per share declared for each fiscal year, FY2017 to FY2026, in
-// USD. The cash flow line `dividendsPaid` is this figure times the diluted
-// shares of the year.
-const DIVIDEND_PER_SHARE = [
-	0.005, 0.006, 0.008, 0.01, 0.016, 0.016, 0.016, 0.016, 0.018, 0.02,
-];
 
 // The shares issued under staff plans in each fiscal year, in millions: stock
 // units that vested and options that staff exercised. From FY2018 to FY2026,
@@ -98,7 +91,7 @@ export const meridianShareholderReturns: ShareholderReturnsSection = {
 		"dividendPerShare",
 		"Dividend per share",
 		"usdPerShare",
-		DIVIDEND_PER_SHARE,
+		DIVIDENDS_PER_SHARE,
 		"Notes › Capital return program › Cash dividends declared per common share",
 		"us-gaap:CommonStockDividendsPerShareDeclared",
 	),

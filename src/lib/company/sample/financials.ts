@@ -110,11 +110,16 @@ const CAPITAL_EXPENDITURE = byYear([
 const DILUTED_SHARES = byYear([
 	25.1, 25.5, 25.4, 24.8, 25.0, 25.4, 25.1, 24.9, 24.8, 24.5,
 ]);
-// The dividend per share in USD. The mock-up series is ten times this. At the
-// mock-up scale, the dividends of FY2023 exceed its free cash flow.
-const DIVIDEND_PER_SHARE = byYear([
+/**
+ * The dividend per share declared for each fiscal year, FY2017 to FY2026, in
+ * USD. The mock-up series is ten times this. At the mock-up scale, the
+ * dividends of FY2023 exceed its free cash flow. The Shareholder returns
+ * sample reads the same values.
+ */
+export const DIVIDENDS_PER_SHARE: readonly number[] = [
 	0.005, 0.006, 0.008, 0.01, 0.016, 0.016, 0.016, 0.016, 0.018, 0.02,
-]);
+];
+const DIVIDEND_PER_SHARE = byYear(DIVIDENDS_PER_SHARE);
 const REPURCHASES = byYear([
 	0.9, 0.0, 1.6, 2.4, 0.0, 0.0, 10.0, 9.5, 33.7, 55.0,
 ]);
