@@ -70,6 +70,22 @@ describe("fakeCompanyReport", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should list no filing behind a sector benchmark when the Filings section is built", () => {
+		const { filings, overview, valuation } = fakeCompanyReport;
+		const benchmarkFilings = accessionNumbersOf([
+			overview.sectorBenchmarks,
+			valuation.sectorBenchmarks,
+		]);
+
+		const expectedResult: string[] = [];
+
+		const result = filings.filings
+			.map((filing) => filing.accessionNumber)
+			.filter((accessionNumber) => benchmarkFilings.includes(accessionNumber));
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should name no metric in both lists when the Overview and Valuation benchmarks are compared", () => {
 		const { overview, valuation } = fakeCompanyReport;
 		const overviewMetrics = overview.sectorBenchmarks.map((row) => row.metric);

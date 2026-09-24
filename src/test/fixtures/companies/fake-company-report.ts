@@ -1006,12 +1006,16 @@ const FUND_13FS = FUNDS.map(([name], row) => ({
 
 /** The companies that Quillvane holds a stake in, with the shares held and outstanding. */
 const STAKES: [string, Ticker | null, number, number][] = [
-	["Alder Controls", Ticker.parse("ALDR"), 2_400_000, 48_000_000],
-	["Brisk Metrology", null, 1_100_000, 30_000_000],
+	["Corvid Sensing", Ticker.parse("CRVD"), 2_400_000, 48_000_000],
+	["Dunmore Optics", null, 1_100_000, 30_000_000],
 ];
 
-/** The 10-K of each stake's target company, in the order of {@link STAKES}. */
-const STAKE_TEN_KS = STAKES.map(([company], row) => peerTenK(company, row));
+/**
+ * The 10-K of each stake's target company, in the order of {@link STAKES}.
+ * The targets are not sector peers, so their filers and accession numbers
+ * differ from the peer 10-Ks behind the sector benchmarks.
+ */
+const STAKE_TEN_KS = STAKES.map(([company], row) => peerTenK(company, row + 2));
 
 /** The insider holdings under the ids of `section`. The Relationships and Management copies hold the same rows. */
 function insiderHoldings(
