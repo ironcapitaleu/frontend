@@ -27,7 +27,7 @@ type Edit = [
 	table: "annual" | "quarterly",
 	key: LineKey,
 	positions: number[],
-	value: number | null,
+	value: number | string | null,
 ];
 
 /** Returns `table` with one {@link Edit}. `null` removes the points. */
@@ -241,6 +241,37 @@ describe("evaluateCheck", () => {
 		const expectedResult = { state: "notEnoughData", reason: "shortHistory" };
 
 		const result = outcomeOf("V1", sections);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should read not enough data with reason missingInput for S3 when the dividends paid are not a number", () => {
+		const sections = sectionsWith([
+			"cashFlow",
+			"annual",
+			"dividendsPaid",
+			[9],
+			"66,000,000",
+		]);
+
+		// Number("66,000,000") is NaN, so the dividends cannot be compared with free cash flow.
+		const expectedResult = { state: "notEnoughData", reason: "missingInput" };
+
+		const result = outcomeOf("S3", sections);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should count a point that is not a number as unknown for C1 when two other years are negative", () => {
+		const sections = sectionsWith(
+			["cashFlow", "annual", "operatingCashFlow", [0, 1], 0],
+			["cashFlow", "annual", "operatingCashFlow", [2], Number.NaN],
+		);
+
+		// Seven years are above 0 and one is unknown, so k + m = 8 is at least 8.
+		const expectedResult = { state: "notEnoughData", reason: "shortHistory" };
+
+		const result = outcomeOf("C1", sections);
 
 		expect(result).toEqual(expectedResult);
 	});

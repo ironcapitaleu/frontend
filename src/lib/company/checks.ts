@@ -294,7 +294,8 @@ export function evaluateCheck(
 /**
  * Counts the points of the subject window that meet the condition of
  * `threshold`. The check is met when enough points meet it, and not met when
- * the unknown points cannot make up the difference.
+ * the unknown points cannot make up the difference. A point that is `null`
+ * or not a finite number is unknown.
  */
 function countedPeriods(
 	check: Check,
@@ -304,11 +305,15 @@ function countedPeriods(
 	const resolved = resolve(check.subject, sections, null);
 	const points = isWindow(resolved) ? resolved : [];
 	const { condition, conditionValue, required } = threshold;
-	const metYears = points.filter(
-		(point) =>
-			point !== null && meets(Number(point.value), condition, conditionValue),
+	const amounts = points.map((point) =>
+		point === null ? Number.NaN : Number(point.value),
+	);
+	const metYears = amounts.filter((amount) =>
+		meets(amount, condition, conditionValue),
 	).length;
-	const unknownYears = points.filter((point) => point === null).length;
+	const unknownYears = amounts.filter(
+		(amount) => !Number.isFinite(amount),
+	).length;
 	if (metYears >= required) {
 		return resultOf(check, "met", null, points);
 	}
@@ -319,7 +324,8 @@ function countedPeriods(
 
 /**
  * Compares the subject with the fixed number or the figure of `threshold`,
- * after the missing input step and the failed guard step.
+ * after the missing input step and the failed guard step. A claim value that
+ * is not a finite number is a missing input, never a failed comparison.
  */
 function comparedFigures(
 	check: Check,
@@ -346,12 +352,12 @@ function comparedFigures(
 	if (failed !== undefined) {
 		return resultOf(check, "notEnoughData", "failedGuard", [failed.input]);
 	}
-	const [amount, bound] = claims.map((claim) => Number(claim?.value));
-	const met = meets(
-		amount,
-		threshold.comparison,
-		threshold.kind === "figure" ? bound : threshold.value,
-	);
+	const [amount, figureBound] = claims.map((claim) => Number(claim?.value));
+	const bound = threshold.kind === "figure" ? figureBound : threshold.value;
+	if (!Number.isFinite(amount) || !Number.isFinite(bound)) {
+		return resultOf(check, "notEnoughData", "missingInput", claims);
+	}
+	const met = meets(amount, threshold.comparison, bound);
 	return resultOf(check, met ? "met" : "notMet", null, claims);
 }
 

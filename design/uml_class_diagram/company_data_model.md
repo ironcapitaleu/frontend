@@ -1300,6 +1300,11 @@ details:
   the threshold figure, the input claim of a failed guard, or the points of a
   window.
 
+A claim value that is not a finite number, such as the string `"66,000,000"`,
+counts as missing. In a window it is one missing point, counted in `m`. For a
+single-period subject it gives not enough data, reason `missingInput`. An
+unreadable figure never makes a check "not met".
+
 ## 6. The first check set
 
 The mock-up has seven checks. Each area needs two to four checks, so this set
