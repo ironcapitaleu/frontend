@@ -29,6 +29,7 @@ import type {
 	TabKey,
 } from "./types";
 import { ratioRanges } from "./valuationRatios";
+import { yieldClaimsOf } from "./valuationYields";
 
 /** A bar of a Financials chart: a statement line or a per-period metric. */
 export type BarKey = LineKey | MetricKey;
@@ -206,6 +207,7 @@ const blockKeys = [
 	"cashFlowChart",
 	"cashFlowTable",
 	"valuationRatios",
+	"yieldsAgainstTreasury",
 	"ratioFormulas",
 	"largestFunds",
 	"insiders",
@@ -382,6 +384,13 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 							: [],
 					)
 				: null,
+	},
+	// Card 3.2: each yield, or the inputs of a missing one (`yieldClaimsOf`).
+	yieldsAgainstTreasury: {
+		tab: "valuation",
+		label: "Earnings Yield and FCF Yield Next to the 10-Year Treasury",
+		company: (sections) =>
+			valuationLoaded(sections) ? yieldClaimsOf(sections) : null,
 	},
 	// Card 3.3 draws each ratio now and each of its inputs, which it reads from
 	// the metric definition. So the block reads the inputs too, and their

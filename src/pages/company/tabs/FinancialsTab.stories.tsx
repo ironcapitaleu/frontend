@@ -9,6 +9,7 @@ import { alwaysFailingCompanyGateway } from "../../../test/fixtures/companies/al
 import { alwaysFoundCompanyGateway } from "../../../test/fixtures/companies/always-found";
 import { fakeCompanyReport } from "../../../test/fixtures/companies/fake-company-report";
 import { sampleCompanyGateway } from "../../../lib/company/sampleCompanyGateway";
+import { BAR_TARGETS_OK, barTargetsOf } from "../../../test/barTargets";
 import { FinancialsTab } from "./FinancialsTab";
 
 const desktop = { viewport: { value: "desktop", isRotated: false } };
@@ -257,32 +258,14 @@ async function checkBarTargets(
 	);
 	await userEvent.click(await body.findByRole("option", { name: statement }));
 	const plot = await canvas.findByRole("list", { name: "Fiscal years" });
-	const bars = within(plot).getAllByRole("button");
-	const page = canvasElement.ownerDocument.documentElement;
-	const { top, bottom } = plot.getBoundingClientRect();
 
-	const expectedResult = {
-		barsPerYear: 3,
-		smallTargets: [],
-		targetsOutsidePlot: [],
-		invisibleBars: [],
-		pageScrollsSideways: false,
-	};
+	const expectedResult = { ...BAR_TARGETS_OK, barsPerYear: 3 };
 
 	const result = {
-		barsPerYear: bars.length / within(plot).getAllByRole("listitem").length,
-		smallTargets: bars.filter((bar) => {
-			const { width, height } = bar.getBoundingClientRect();
-			return width < 24 || height < 24;
-		}),
-		targetsOutsidePlot: bars.filter((bar) => {
-			const rect = bar.getBoundingClientRect();
-			return rect.top < top - 0.5 || rect.bottom > bottom + 0.5;
-		}),
-		invisibleBars: bars.filter(
-			(bar) => bar.parentElement?.getBoundingClientRect().height === 0,
-		),
-		pageScrollsSideways: page.scrollWidth > page.clientWidth,
+		...barTargetsOf(plot),
+		barsPerYear:
+			within(plot).getAllByRole("button").length /
+			within(plot).getAllByRole("listitem").length,
 	};
 
 	await expect(result).toEqual(expectedResult);

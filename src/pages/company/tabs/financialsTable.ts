@@ -10,6 +10,7 @@ import type { BarKey } from "@/lib/company/sources";
 import type {
 	Claim,
 	CompletedSections,
+	Figure,
 	FinancialsSection,
 	MetricKey,
 	Period,
@@ -172,6 +173,16 @@ export function chartTable(
 	};
 }
 
+/** The bars of a `BarChart`. A column has a full `label` and a `short` axis label. */
+export interface BarTable {
+	readonly columns: readonly { key: string; label: string; short: string }[];
+	readonly lines: readonly {
+		key: string;
+		label: string;
+		points: readonly Figure[];
+	}[];
+}
+
 /** Returns the row of metric `key` over `periods`. */
 function metricRow(
 	key: MetricKey,
@@ -207,7 +218,7 @@ export interface BarBox {
  * {@link MIN_BAR_HEIGHT} tall, within the room on its side of the zero line.
  * A text value is not on the scale.
  */
-export function barScale(table: RowTable): {
+export function barScale(table: BarTable | RowTable): {
 	zero: number;
 	place: (value: number) => BarBox;
 } {
