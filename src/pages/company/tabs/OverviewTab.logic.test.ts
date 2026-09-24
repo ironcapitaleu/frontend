@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { completeSections } from "@/lib/company/metrics";
+import type { Claim, OverviewSection } from "@/lib/company/types";
 import { fakeCompanyReport } from "@/test/fixtures/companies/fake-company-report";
 import {
 	formatInUnit,
@@ -10,6 +11,18 @@ import {
 
 const { overview, financials } = fakeCompanyReport;
 const sections = completeSections(fakeCompanyReport);
+
+/** The overview with seven segments, named A to G, of 1 to 7 dollars of revenue. */
+const sevenSegments: OverviewSection = {
+	...overview,
+	segments: [..."ABCDEFG"].map((name, index) => {
+		const revenue = overview.segments[0]?.revenue as Claim;
+		return {
+			name,
+			revenue: { ...revenue, id: `segments.${name}`, value: index + 1 },
+		};
+	}),
+};
 
 /** The value of the latest point of `line` in the annual income statement. */
 function latestIncome(key: string): number {
@@ -24,6 +37,49 @@ describe("revenueParts", () => {
 		const result = revenueParts(overview, "regions")[0]?.share?.id;
 
 		expect(result).toBe(expectedResult);
+	});
+
+	it("should keep the first four parts and fold the rest into Other when the list has seven rows", () => {
+		const expectedResult = ["A", "B", "C", "D", "Other"];
+
+		const result = revenueParts(sevenSegments, "segments").map(
+			({ label }) => label,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give Other the revenue of the folded rows over all revenue as a derived share when the list has seven rows", () => {
+		// (5 + 6 + 7) ÷ (1 + 2 + … + 7) = 18 ÷ 28.
+		const expectedResult = {
+			value: 18 / 28,
+			formula:
+				"(E revenue + F revenue + G revenue) ÷ (A revenue + B revenue + C revenue + D revenue + E revenue + F revenue + G revenue)",
+			inputs: 7,
+		};
+
+		const other = revenueParts(sevenSegments, "segments")[4]?.share;
+		const source = other?.source.kind === "derived" ? other.source : null;
+		const result = {
+			value: other?.value,
+			formula: source?.formula,
+			inputs: source?.inputs.length,
+		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep every part when the list has five rows", () => {
+		const five = {
+			...sevenSegments,
+			segments: sevenSegments.segments.slice(0, 5),
+		};
+
+		const expectedResult = ["A", "B", "C", "D", "E"];
+
+		const result = revenueParts(five, "segments").map(({ label }) => label);
+
+		expect(result).toEqual(expectedResult);
 	});
 });
 

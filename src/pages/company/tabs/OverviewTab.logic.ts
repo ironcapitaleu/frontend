@@ -1,6 +1,10 @@
 import type { SharePart } from "@/components/company/ShareBar";
 import { formatMarketCap, formatPercent } from "@/components/screener/format";
-import { evaluateMetric, revenueShare } from "@/lib/company/metrics";
+import {
+	evaluateMetric,
+	otherRevenueShare,
+	revenueShare,
+} from "@/lib/company/metrics";
 import type {
 	CompletedSections,
 	LineKey,
@@ -10,18 +14,30 @@ import type {
 	Unit,
 } from "@/lib/company/types";
 
+/** The most parts a `ShareBar` draws, one for each chart color of DESIGN.md §8. */
+const MAX_PARTS = 5;
+
 /**
  * Returns one part for each row of the `list` of `overview`: the row's name
- * and its share of revenue from `revenueShare`.
+ * and its share of revenue from `revenueShare`. A list of more than five rows
+ * keeps its first four and folds the rest into one "Other" part, whose share
+ * comes from `otherRevenueShare`, so the bar never repeats a color.
  */
 export function revenueParts(
 	overview: OverviewSection,
 	list: "segments" | "regions",
 ): SharePart[] {
-	return overview[list].map((part, position) => ({
+	const rows = overview[list];
+	const named = rows.length > MAX_PARTS ? rows.slice(0, MAX_PARTS - 1) : rows;
+	const parts = named.map((part, position) => ({
 		label: part.name,
 		share: revenueShare(overview, list, position),
 	}));
+	if (named.length === rows.length) return parts;
+	return [
+		...parts,
+		{ label: "Other", share: otherRevenueShare(overview, list, named.length) },
+	];
 }
 
 /** One series of "Ten Years at a Glance": a statement line or a metric. */

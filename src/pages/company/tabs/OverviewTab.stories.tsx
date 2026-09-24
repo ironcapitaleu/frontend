@@ -3,6 +3,8 @@ import { expect, screen, userEvent, within } from "storybook/test";
 
 import { CompanyGatewayProvider } from "../../../contexts/CompanyGatewayContext";
 import type { CompanyGateway } from "../../../lib/company/gateway";
+import { meridianOverview } from "../../../lib/company/sample/overview";
+import { sampleCompanyGateway } from "../../../lib/company/sampleCompanyGateway";
 import { Ticker } from "../../../lib/domain/ticker";
 import { alwaysFailingCompanyGateway } from "../../../test/fixtures/companies/always-failing";
 import { OverviewTab } from "./OverviewTab";
@@ -14,6 +16,13 @@ const neverAnsweringGateway: CompanyGateway = {
 	...failingGateway,
 	getOverview: pending,
 	getFinancials: pending,
+};
+
+/** A gateway whose Overview section loads and whose Financials section fails. */
+const sampleGateway = sampleCompanyGateway();
+const financialsFailingGateway: CompanyGateway = {
+	...sampleGateway,
+	getFinancials: failingGateway.getFinancials,
 };
 
 /**
@@ -76,6 +85,59 @@ export const Phone: Story = {
 	},
 };
 
+/**
+ * Play test: at a tablet width, between 768 and 1024 px, the desktop layout
+ * holds, so the four small charts sit in one row (DESIGN.md §8 "Shared Layout").
+ */
+export const Tablet: Story = {
+	globals: { viewport: { value: "tablet", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		await within(canvasElement).findByText("Diluted shares");
+		const charts = canvasElement.querySelectorAll(
+			'[data-slot="mini-bar-chart"]',
+		);
+
+		const expectedResult = { width: true, rows: 1 };
+
+		const result = {
+			width: window.innerWidth >= 768 && window.innerWidth < 1024,
+			rows: new Set(
+				[...charts].map((chart) => chart.getBoundingClientRect().top),
+			).size,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: the business text stays a paragraph of prose, and a short
+ * "Source" after it opens the source card of the text.
+ */
+export const BusinessSource: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const text = String(meridianOverview.business?.value);
+		const paragraph = await canvas.findByText(text);
+		await userEvent.click(canvas.getByRole("button", { name: "Source" }));
+
+		const expectedResult = {
+			tag: "P",
+			insideButton: false,
+			card: "Sources of The business",
+		};
+
+		const result = {
+			tag: paragraph.tagName,
+			insideButton: paragraph.closest("button") !== null,
+			card: (await screen.findByRole("dialog")).getAttribute("aria-label"),
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
 /** Play test: a click on a segment's share pins the source card of that share. */
 export const SegmentSource: Story = {
 	globals: { viewport: { value: "desktop", isRotated: false } },
@@ -112,5 +174,27 @@ export const Failed: Story = {
 		const result = await within(canvasElement).findByText(expectedResult);
 
 		await expect(result).toHaveTextContent(expectedResult);
+	},
+};
+
+/**
+ * Play test: each card loads on its own. Overview loads and Financials fails,
+ * so card 1.1 shows the business and card 1.2 says its figures did not load.
+ */
+export const OneSectionFails: Story = {
+	parameters: { companyGateway: financialsFailingGateway },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const failure = "The ten-year figures did not load. Try again in a moment.";
+
+		const expectedResult = { segmentShare: "81.0%", failure };
+
+		const result = {
+			segmentShare: (await canvas.findByRole("button", { name: "81.0%" }))
+				.textContent,
+			failure: (await canvas.findByText(failure)).textContent,
+		};
+
+		await expect(result).toEqual(expectedResult);
 	},
 };

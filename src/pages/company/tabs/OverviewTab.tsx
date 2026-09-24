@@ -1,4 +1,4 @@
-import type * as React from "react";
+import * as React from "react";
 
 import { CompanyCard, CompanyCardGrid } from "@/components/company/CompanyCard";
 import { MiniBarChart } from "@/components/company/MiniBarChart";
@@ -8,6 +8,7 @@ import { MISSING, MISSING_INK } from "@/components/screener/format";
 import { Spinner } from "@/components/ui/spinner";
 import { Text } from "@/components/ui/text";
 import { type CompanyState, useCompany } from "@/hooks/useCompany";
+import type { CompletedSections } from "@/lib/company/types";
 import type { Ticker } from "@/lib/domain/ticker";
 import { cn } from "@/lib/utils";
 import {
@@ -20,8 +21,8 @@ import {
  * The Overview tab of the company page (DESIGN.md §8 "Overview"). It draws
  * card 1.1 "The Business" from the Overview section and card 1.2 "Ten Years
  * at a Glance" from the Financials section. Each card shows the loading or
- * failed state of its own section, so a slow section never holds back the
- * other card.
+ * failed state of its own section, so a slow section never delays the other
+ * card.
  */
 export function OverviewTab({ ticker }: { ticker: Ticker }) {
 	const overview = useCompany(ticker, "overview");
@@ -39,17 +40,21 @@ export function OverviewTab({ ticker }: { ticker: Ticker }) {
 				<Loaded state={overview} what="business">
 					{({ data }) => (
 						<div className="flex flex-col gap-6">
-							<p className="max-w-prose">
-								{data.business === null ? (
-									<span className={cn("font-monospace", MISSING_INK)}>
-										{MISSING}
-									</span>
-								) : (
-									<SourceTrigger claim={data.business} className="text-left">
-										{data.business.value}
+							{data.business === null ? (
+								<p className={cn("font-monospace", MISSING_INK)}>{MISSING}</p>
+							) : (
+								// The text is prose, not a figure, so it stays a justified
+								// paragraph and a short word after it opens its source.
+								<div className="flex flex-col items-start gap-1">
+									<p>{data.business.value}</p>
+									<SourceTrigger
+										claim={data.business}
+										className="text-muted-foreground text-sm"
+									>
+										Source
 									</SourceTrigger>
-								)}
-							</p>
+								</div>
+							)}
 							<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
 								<ShareBar
 									aria-label="Revenue by segment"
@@ -72,20 +77,30 @@ export function OverviewTab({ ticker }: { ticker: Ticker }) {
 				span={2}
 			>
 				<Loaded state={financials} what="ten-year figures">
-					{({ sections }) => (
-						<div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
-							{tenYearsSeries(sections).map((series) => (
-								<MiniBarChart
-									key={series.key}
-									series={series}
-									formatValue={(value) => formatInUnit(value, series.unit)}
-								/>
-							))}
-						</div>
-					)}
+					{({ sections }) => <TenYears sections={sections} />}
 				</Loaded>
 			</CompanyCard>
 		</CompanyCardGrid>
+	);
+}
+
+/**
+ * The four small charts of card 1.2: two to a row on a phone and four from
+ * 768 px, where DESIGN.md §8 "Shared Layout" keeps the desktop layout.
+ */
+function TenYears({ sections }: { sections: CompletedSections }) {
+	// The same series on each render keep their claim identities stable.
+	const series = React.useMemo(() => tenYearsSeries(sections), [sections]);
+	return (
+		<div className="grid grid-cols-2 gap-6 md:grid-cols-4">
+			{series.map((each) => (
+				<MiniBarChart
+					key={each.key}
+					series={each}
+					formatValue={(value) => formatInUnit(value, each.unit)}
+				/>
+			))}
+		</div>
 	);
 }
 

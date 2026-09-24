@@ -1,4 +1,5 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import { meridianFinancials } from "@/lib/company/sample/financials";
@@ -151,6 +152,46 @@ describe("MiniBarChart", () => {
 		const expectedResult = `${revenue.label} —`;
 
 		const result = screen.getByRole("figure");
+
+		expect(result).toHaveAccessibleName(expectedResult);
+	});
+
+	it("should make each known year's bar a button named by its year and value when one point is null", () => {
+		render(
+			<MiniBarChart series={seriesOf(-2, null, 3)} formatValue={String} />,
+		);
+
+		const expectedResult = ["FY2024: -2", "FY2026: 3"];
+
+		const result = within(screen.getByRole("list"))
+			.getAllByRole("button")
+			.map((button) => button.textContent);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should pin the source card of an older year when its bar is clicked", async () => {
+		const user = userEvent.setup();
+		const series = seriesOf(-2, null, 3);
+		render(<MiniBarChart series={series} formatValue={String} />);
+
+		const expectedResult = `Sources of ${series.points[0]?.label}`;
+
+		await user.click(screen.getByRole("button", { name: "FY2024: -2" }));
+		const result = await screen.findByRole("dialog");
+
+		expect(result).toHaveAccessibleName(expectedResult);
+	});
+
+	it("should preview the source card of an older year when its bar takes focus from the keyboard", async () => {
+		const user = userEvent.setup();
+		const series = seriesOf(-2, null);
+		render(<MiniBarChart series={series} formatValue={String} />);
+
+		const expectedResult = `Sources of ${series.points[0]?.label}`;
+
+		await user.tab();
+		const result = await screen.findByRole("dialog");
 
 		expect(result).toHaveAccessibleName(expectedResult);
 	});

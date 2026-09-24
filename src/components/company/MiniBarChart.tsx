@@ -83,15 +83,17 @@ function miniBars(series: Series): MiniBars {
 
 /**
  * A small bar chart of one series, one bar per fiscal year, with the latest
- * figure above the bars. The latest figure opens its source card. Overview's
- * "Ten Years at a Glance" draws four of them (DESIGN.md §8 "Overview").
+ * figure above the bars. The latest figure and each bar open the source card
+ * of their year (DESIGN.md §8: a point of a chart shows its own sources).
+ * Overview's "Ten Years at a Glance" draws four of them.
  *
  * It draws the years the series has, up to the last ten. A negative value
  * draws below the zero line. A missing or non-finite point leaves a gap with
  * a small dot on the zero line, so it never reads as zero. The latest year
- * draws in a stronger fill. The bars are hidden from assistive technology,
- * and a list of each year and its value is their text alternative, with a
- * dash for a missing year. There are no axes. The chart fills the width of
+ * draws in a stronger fill. The bars form a list, one item per year. The
+ * name of each item is its year and value, with a dash for a missing year.
+ * A known year's bar is a button, so hover, focus, a click or a tap opens its
+ * card. A missing year has no source, so it is no button. There are no axes. The chart fills the width of
  * its card, so the phone layout of two charts to a row comes from the tab.
  */
 function MiniBarChart({
@@ -102,6 +104,7 @@ function MiniBarChart({
 }: MiniBarChartProps) {
 	const captionId = useId();
 	const { bars, zero } = miniBars(series);
+	const offset = series.periods.length - bars.length;
 	const latest = bars.at(-1);
 	const latestValue = latest?.value ?? null;
 	const latestClaim = series.points[series.periods.length - 1] ?? null;
@@ -132,31 +135,55 @@ function MiniBarChart({
 					)}
 				</span>
 			</figcaption>
-			<div className="relative h-16 flex gap-0.5" aria-hidden="true">
-				{bars.map((bar, index) => (
-					<div key={bar.key} className="relative flex-1">
-						{bar.value === null ? (
-							<span
-								data-slot="mini-bar-chart-gap"
-								className="absolute left-1/2 size-1.5 -translate-1/2 rounded-full bg-muted-foreground/60"
-								style={{ top: `${zero}%` }}
-							/>
-						) : (
-							<div
-								data-slot="mini-bar-chart-bar"
-								className={cn(
-									"absolute inset-x-0 mx-auto max-w-6",
-									bar.value > 0 ? "rounded-t-sm" : "rounded-b-sm",
-									index === bars.length - 1 ? "bg-chart-3" : "bg-chart-1",
+			<div className="relative h-16">
+				<ul className="flex h-full gap-0.5">
+					{bars.map((bar, index) => {
+						const claim = series.points[offset + index] ?? null;
+						const mark =
+							bar.value === null ? (
+								<span
+									data-slot="mini-bar-chart-gap"
+									className="absolute left-1/2 size-1.5 -translate-1/2 rounded-full bg-muted-foreground/60"
+									style={{ top: `${zero}%` }}
+								/>
+							) : (
+								<span
+									data-slot="mini-bar-chart-bar"
+									className={cn(
+										"absolute inset-x-0 mx-auto block max-w-6",
+										bar.value > 0 ? "rounded-t-sm" : "rounded-b-sm",
+										index === bars.length - 1 ? "bg-chart-3" : "bg-chart-1",
+									)}
+									style={{ top: `${bar.top}%`, height: `${bar.height}%` }}
+								/>
+							);
+						const text = (
+							<span className="sr-only">{`${bar.year}: ${format(bar.value)}`}</span>
+						);
+						return (
+							<li key={bar.key} className="relative flex-1">
+								{bar.value === null || claim === null ? (
+									<>
+										{mark}
+										{text}
+									</>
+								) : (
+									<SourceTrigger
+										claim={claim}
+										className="absolute inset-0 block"
+									>
+										{mark}
+										{text}
+									</SourceTrigger>
 								)}
-								style={{ top: `${bar.top}%`, height: `${bar.height}%` }}
-							/>
-						)}
-					</div>
-				))}
+							</li>
+						);
+					})}
+				</ul>
 				<div
-					className="absolute inset-x-0 h-px bg-muted-foreground/50"
+					className="pointer-events-none absolute inset-x-0 h-px bg-muted-foreground/50"
 					style={{ top: `${zero}%` }}
+					aria-hidden="true"
 				/>
 			</div>
 			<div
@@ -166,11 +193,6 @@ function MiniBarChart({
 				<span>{bars[0]?.year}</span>
 				<span>{bars.length > 1 ? latest?.year : null}</span>
 			</div>
-			<ul className="sr-only">
-				{bars.map((bar) => (
-					<li key={bar.key}>{`${bar.year}: ${format(bar.value)}`}</li>
-				))}
-			</ul>
 		</figure>
 	);
 }
