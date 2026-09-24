@@ -16,10 +16,13 @@ import { type FiscalQuarter, isoDate } from "./calendar";
  * A line record: the place of one figure in a document. `path` is the line as
  * the document prints it, such as `Consolidated statements of income › Revenue`.
  * `xbrlTag` is `null` when the document reports no XBRL fact for the figure.
+ * `exhibit` names the document inside the filing when the figure sits in an
+ * exhibit, such as `ex21.htm` for Exhibit 21, and not in the primary document.
  */
 export interface LineRecord {
 	readonly path: string;
 	readonly xbrlTag: Nullable<string>;
+	readonly exhibit?: string;
 }
 
 /** The made-up company that files the sample filings. */
@@ -131,6 +134,38 @@ export function tenQ({ year, quarter }: FiscalQuarter): Filing {
 	);
 }
 
+// The date on which Meridian filed the proxy statement for each annual meeting.
+const PROXY_FILED_ON: Partial<Record<number, string>> = {
+	2017: "2017-05-05",
+	2018: "2018-05-04",
+	2019: "2019-05-10",
+	2020: "2020-05-08",
+	2021: "2021-05-07",
+	2022: "2022-05-06",
+	2023: "2023-05-05",
+	2024: "2024-05-10",
+	2025: "2025-05-09",
+	2026: "2026-05-08",
+};
+
+/**
+ * Returns the DEF 14A record for the annual meeting of a year, such as the
+ * proxy statement filed on 8 May 2026. Its summary compensation table reports
+ * the pay of the fiscal year that ended in January of that year.
+ */
+export function proxy(year: number): Filing {
+	const filedOn = PROXY_FILED_ON[year];
+	if (filedOn === undefined) {
+		throw new MissingSampleData(`the DEF 14A of ${year}`);
+	}
+	return filing(
+		"DEF 14A",
+		`0001234567-${filedOn.slice(2, 4)}-000018`,
+		filedOn,
+		`${year} annual meeting`,
+	);
+}
+
 /**
  * The 10-K and 10-Q records of Meridian, oldest first: the 10-K for each
  * fiscal year from FY2017 to FY2026, and the 10-Q for each quarter of the
@@ -161,7 +196,7 @@ function reportedSource(
 		xbrlTag: line.xbrlTag,
 		url:
 			document.kind === "filing"
-				? `${document.indexUrl}${document.filer === MERIDIAN ? "mrdn-" : ""}${DOCUMENT_NAMES[document.form]}`
+				? `${document.indexUrl}${document.filer === MERIDIAN ? "mrdn-" : ""}${line.exhibit ?? DOCUMENT_NAMES[document.form]}`
 				: document.url,
 	};
 }

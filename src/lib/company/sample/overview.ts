@@ -4,29 +4,15 @@ import type {
 	MetricKey,
 	OverviewSection,
 	RevenuePart,
-	SectorBenchmark,
 } from "../types";
-import {
-	dateInstant,
-	fiscalYearPeriod,
-	printedDate,
-	yearEndInstant,
-} from "./calendar";
-import { atLeastOne, derived, filing, reported, tenK, tenQ } from "./sources";
+import { fiscalYearPeriod, yearEndInstant } from "./calendar";
+import { ownershipSummary } from "./holdings";
+import { type Spread, sectorBenchmark } from "./peers";
+import { proxy, reported, tenK } from "./sources";
 
 const TEN_K = tenK(2026);
-const TEN_Q = tenQ({ year: 2027, quarter: 2 });
-const PROXY = filing(
-	"DEF 14A",
-	"0001234567-26-000018",
-	"2026-05-08",
-	"2026 annual meeting",
-);
+const PROXY = proxy(2026);
 const FY2026_REVENUE = 212_000_000_000;
-
-function sum(claims: Claim[]): number {
-	return claims.reduce((total, claim) => total + Number(claim.value), 0);
-}
 
 // The share of FY2026 revenue of each segment and each region, in percent.
 const SEGMENTS: [string, number][] = [
@@ -64,16 +50,12 @@ function revenueParts(
 }
 
 // The lowest peer, the lower quartile, the median, the upper quartile and
-// the highest peer of each metric, over 61 US-listed semiconductor companies.
-const PEER_COUNT = 61;
+// the highest peer of each metric, over the US-listed semiconductor peers.
 type BenchmarkedMetric = Extract<
 	MetricKey,
 	"operatingMargin" | "returnOnEquity" | "dividendYield" | "buybackYield"
 >;
-const SECTOR_SPREAD: Record<
-	BenchmarkedMetric,
-	[number, number, number, number, number]
-> = {
+const SECTOR_SPREAD: Record<BenchmarkedMetric, Spread> = {
 	operatingMargin: [-0.15, 0.09, 0.18, 0.27, 0.45],
 	returnOnEquity: [-0.2, 0.07, 0.14, 0.22, 0.6],
 	dividendYield: [0, 0.002, 0.008, 0.016, 0.045],
@@ -85,188 +67,6 @@ const METRIC_LABELS: Record<BenchmarkedMetric, string> = {
 	dividendYield: "Dividend yield",
 	buybackYield: "Buyback yield",
 };
-
-/**
- * Builds the quartiles of one metric over made-up peers. The peer figures rise
- * in straight steps between the five points of `SECTOR_SPREAD`, so the 16th,
- * 31st and 46th peer hold the quartiles and the median.
- */
-function benchmark(metric: BenchmarkedMetric): SectorBenchmark {
-	const spread = SECTOR_SPREAD[metric];
-	const name = METRIC_LABELS[metric];
-	const quarter = (PEER_COUNT - 1) / 4;
-	const peers = Array.from({ length: PEER_COUNT }, (_, rank) => {
-		const step = Math.min(Math.floor(rank / quarter), 3);
-		const fraction = (rank - step * quarter) / quarter;
-		const value =
-			Math.round(
-				(spread[step] + (spread[step + 1] - spread[step]) * fraction) * 10_000,
-			) / 10_000;
-		const peer = `Semiconductor peer ${rank + 1}`;
-		const document = filing(
-			"10-K",
-			`000900${String(rank + 1).padStart(4, "0")}-26-000001`,
-			"2026-03-20",
-			"Latest fiscal year",
-			peer,
-		);
-		return reported(
-			{
-				id: `overview.sectorBenchmarks.${metric}.peers.${rank}`,
-				label: `${name}, ${peer}`,
-				value,
-				unit: "percent",
-				period: null,
-			},
-			document,
-			{ path: `Peer figure › ${name}`, xbrlTag: null },
-		);
-	});
-	const quartile = (
-		field: "lowerQuartile" | "median" | "upperQuartile",
-		title: string,
-		position: number,
-	) =>
-		derived(
-			{
-				id: `overview.sectorBenchmarks.${metric}.${field}`,
-				label: `Sector ${name.toLowerCase()}, ${title.toLowerCase()}`,
-				value: peers[position].value,
-				unit: "percent",
-				period: null,
-			},
-			`${title} of ${name.toLowerCase()} across ${PEER_COUNT} US-listed semiconductor companies`,
-			atLeastOne(peers, `the peers of ${metric}`),
-		);
-	return {
-		metric,
-		peerGroup: "US-listed semiconductor companies",
-		peerCount: PEER_COUNT,
-		lowerQuartile: quartile("lowerQuartile", "Lower quartile", quarter),
-		median: quartile("median", "Median", 2 * quarter),
-		upperQuartile: quartile("upperQuartile", "Upper quartile", 3 * quarter),
-	};
-}
-
-// The six largest funds from the mock-up, in billions of shares at 30 Jun
-// 2026. 32 smaller funds hold the rest of the 16.10B shares of all 38 filers.
-const LARGEST_FUNDS: [string, number][] = [
-	["Harbor Point Index Funds", 2.13],
-	["Northfield Asset Management", 1.84],
-	["Granite Bay Advisors", 0.98],
-	["Larkspur Capital", 0.95],
-	["Oakmont Trust Company", 0.55],
-	["Eastline Investors", 0.44],
-];
-const INSTITUTION_SHARES = 16.1;
-
-function fundHoldings(): [string, number][] {
-	const smaller = Array.from({ length: 31 }, (_, row): [string, number] => [
-		`Fund ${row + 7}`,
-		0.43 - 0.009 * row,
-	]);
-	const listed = [...LARGEST_FUNDS, ...smaller];
-	const rest =
-		INSTITUTION_SHARES -
-		listed.reduce((total, [, shares]) => total + shares, 0);
-	return [...listed, ["Fund 38", rest]];
-}
-
-// The officers and directors with their shares in millions, and the date of
-// the latest Form 4 of each.
-const INSIDERS: [string, number, string][] = [
-	["Elena Marsh", 861.4, "2026-06-18"],
-	["Robert Chen-Hale", 51.8, "2026-04-21"],
-	["Tomas Lindqvist", 28.6, "2026-06-02"],
-	["Miriam Holt", 12.3, "2026-03-14"],
-	["Grace Adeyemi", 4.1, "2026-03-14"],
-	["Priya Raman", 3.2, "2026-06-02"],
-];
-
-function ownership(): OverviewSection["ownership"] {
-	const quarterEnd = dateInstant("2026-06-30");
-	const funds = fundHoldings().map(([fund, shares], row) =>
-		reported(
-			{
-				id: `overview.ownership.institutionShares.funds.${row}`,
-				label: `Shares held by ${fund}`,
-				value: Math.round(shares * 1000) * 1_000_000,
-				unit: "shares",
-				period: quarterEnd,
-			},
-			filing(
-				"13F-HR",
-				`000800${String(row + 1).padStart(4, "0")}-26-000004`,
-				"2026-08-14",
-				"Q2 2026",
-				fund,
-			),
-			{ path: "Information table › Shares (sshPrnamt)", xbrlTag: null },
-		),
-	);
-	const insiders = INSIDERS.map(([name, shares, filedOn], row) =>
-		reported(
-			{
-				id: `overview.ownership.insiderShares.insiders.${row}`,
-				label: `Shares held by ${name}`,
-				value: Math.round(shares * 10) * 100_000,
-				unit: "shares",
-				period: dateInstant(filedOn),
-			},
-			filing(
-				"Form 4",
-				`000700${String(row + 1).padStart(4, "0")}-26-000001`,
-				filedOn,
-				printedDate(filedOn),
-				name,
-			),
-			{
-				path: "Table I › Amount beneficially owned following reported transactions",
-				xbrlTag: null,
-			},
-		),
-	);
-	const institutionShares = derived(
-		{
-			id: "overview.ownership.institutionShares",
-			label: "Shares held by institutions",
-			value: sum(funds),
-			unit: "shares",
-			period: quarterEnd,
-		},
-		`Sum of the shares in the 13F-HR filings of ${funds.length} funds`,
-		atLeastOne(funds, "the 13F-HR funds"),
-	);
-	return {
-		asOf: quarterEnd.endsOn,
-		sharesOutstanding: reported(
-			{
-				id: "overview.ownership.sharesOutstanding.2026-08-21",
-				label: "Shares outstanding",
-				value: 24_400_000_000,
-				unit: "shares",
-				period: dateInstant("2026-08-21"),
-			},
-			TEN_Q,
-			{
-				path: "Cover page › Shares outstanding",
-				xbrlTag: "dei:EntityCommonStockSharesOutstanding",
-			},
-		),
-		institutionShares,
-		insiderShares: derived(
-			{
-				id: "overview.ownership.insiderShares",
-				label: "Shares held by insiders",
-				value: sum(insiders),
-				unit: "shares",
-				period: null,
-			},
-			"Sum of the shares of each officer and director, from the latest Form 4 of each",
-			atLeastOne(insiders, "the Form 4 insiders"),
-		),
-	};
-}
 
 function profileFact(
 	key: string,
@@ -309,9 +109,16 @@ export const meridianOverview: OverviewSection = {
 	segments: revenueParts("segments", "Segment information", SEGMENTS),
 	regions: revenueParts("regions", "Revenue by geography", REGIONS),
 	sectorBenchmarks: (Object.keys(SECTOR_SPREAD) as BenchmarkedMetric[]).map(
-		benchmark,
+		(metric) =>
+			sectorBenchmark(
+				"overview",
+				metric,
+				METRIC_LABELS[metric],
+				SECTOR_SPREAD[metric],
+				"percent",
+			),
 	),
-	ownership: ownership(),
+	ownership: ownershipSummary("overview"),
 	profile: {
 		founded: profileFact(
 			"founded",
