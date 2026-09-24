@@ -6,6 +6,7 @@ import { meridianFinancials } from "./sample/financials";
 import { meridianMasthead } from "./sample/masthead";
 import { meridianOverview } from "./sample/overview";
 import { MERIDIAN, MissingSampleData, tenK } from "./sample/sources";
+import { meridianValuation } from "./sample/valuation";
 import { sampleCompanyGateway } from "./sampleCompanyGateway";
 import type {
 	Claim,
@@ -17,7 +18,12 @@ import type {
 
 const MRDN = Ticker.parse("MRDN");
 const AAPL = Ticker.parse("AAPL");
-const SECTIONS = [meridianMasthead, meridianOverview, meridianFinancials];
+const SECTIONS = [
+	meridianMasthead,
+	meridianOverview,
+	meridianFinancials,
+	meridianValuation,
+];
 const STATEMENTS = {
 	income: meridianFinancials.income,
 	balance: meridianFinancials.balance,
@@ -120,6 +126,26 @@ describe("sampleCompanyGateway", () => {
 		expect(result).toBe(expectedResult);
 	});
 
+	it("should resolve the MRDN valuation when the ticker is MRDN", async () => {
+		const gateway = sampleCompanyGateway();
+
+		const expectedResult = meridianValuation;
+
+		const result = await gateway.getValuation(MRDN);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should reject the valuation with MissingCompany when the ticker is not MRDN", async () => {
+		const gateway = sampleCompanyGateway();
+
+		const expectedResult = new MissingCompany(AAPL);
+
+		const result = gateway.getValuation(AAPL);
+
+		await expect(result).rejects.toEqual(expectedResult);
+	});
+
 	it("should resolve the masthead when the ticker is a new MRDN value parsed from lower case", async () => {
 		const gateway = sampleCompanyGateway();
 
@@ -163,7 +189,6 @@ describe("sampleCompanyGateway", () => {
 
 describe("sampleCompanyGateway, sections with no sample data yet", () => {
 	const unserved = [
-		"getValuation",
 		"getShareholderReturns",
 		"getRelationships",
 		"getManagement",
@@ -713,6 +738,110 @@ describe("the MRDN sample data", () => {
 			).toFixed(1),
 			marketCap: ((price * shares) / 1e12).toFixed(2),
 		};
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("the MRDN valuation sample data", () => {
+	it("should give the Treasury series the periods of the year-end price series when pairing a yield with a price", () => {
+		const expectedResult = meridianMasthead.priceAtFiscalYearEnds.periods;
+
+		const result = meridianValuation.treasuryYieldAtFiscalYearEnds.points.map(
+			(point) => point?.period,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should hold the mock-up yields when reading the Treasury yields in percent", () => {
+		const expectedResult = {
+			yearEnds: [2.45, 2.72, 2.63, 1.51, 1.11, 1.78, 3.52, 4.14, 4.54, 4.24],
+			now: 4.1,
+		};
+
+		const result = {
+			yearEnds: meridianValuation.treasuryYieldAtFiscalYearEnds.points.map(
+				(point) => Math.round(Number(point?.value) * 10_000) / 100,
+			),
+			now:
+				Math.round(Number(meridianValuation.treasuryYieldNow?.value) * 10_000) /
+				100,
+		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should date the latest Treasury yield on the day of the latest price when reading the yield now", () => {
+		const expectedResult = meridianMasthead.price?.period;
+
+		const result = meridianValuation.treasuryYieldNow?.period;
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should hold the four valuation ratios when reading the sector benchmarks", () => {
+		const expectedResult = [
+			"priceToEarnings",
+			"priceToFreeCashFlow",
+			"priceToBook",
+			"enterpriseValueToEbit",
+		];
+
+		const result = meridianValuation.sectorBenchmarks.map(
+			(benchmark) => benchmark.metric,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should share no metric with the Overview benchmarks when reading both benchmark lists", () => {
+		const overview = meridianOverview.sectorBenchmarks.map(
+			(benchmark) => benchmark.metric,
+		);
+
+		const expectedResult: string[] = [];
+
+		const result = meridianValuation.sectorBenchmarks
+			.map((benchmark) => benchmark.metric)
+			.filter((metric) => overview.includes(metric));
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should hold the mock-up quartiles when reading each valuation ratio", () => {
+		const expectedResult = [
+			[22.6, 31.4, 44],
+			[24.1, 35.2, 51.3],
+			[2.9, 5.1, 9.8],
+			[18.5, 26.8, 38.9],
+		];
+
+		const result = meridianValuation.sectorBenchmarks.map((benchmark) =>
+			[benchmark.lowerQuartile, benchmark.median, benchmark.upperQuartile].map(
+				(quartile) => quartile?.value,
+			),
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should read the same peer filings as the Overview when comparing the peers of the two benchmark lists", () => {
+		const accessions = (median: Claim | null) =>
+			median?.source.kind === "derived"
+				? median.source.inputs.map((peer) =>
+						peer.source.kind === "reported" &&
+						peer.source.document.kind === "filing"
+							? peer.source.document.accessionNumber
+							: null,
+					)
+				: [];
+
+		const expectedResult = accessions(
+			meridianOverview.sectorBenchmarks[0].median,
+		);
+
+		const result = accessions(meridianValuation.sectorBenchmarks[0].median);
 
 		expect(result).toEqual(expectedResult);
 	});
