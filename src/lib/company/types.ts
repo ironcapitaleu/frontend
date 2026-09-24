@@ -1,4 +1,5 @@
 import type { Ticker } from "../domain/ticker";
+import type { Assert, SameMembers } from "../types";
 
 declare const isoDateBrand: unique symbol;
 declare const completedBrand: unique symbol;
@@ -315,6 +316,22 @@ export type TabKey =
 	| "relationships"
 	| "management"
 	| "filings";
+
+/** The seven {@link TabKey} values, in the order of the tab strip and the URL table of DESIGN.md §8. */
+export const tabKeys = [
+	"overview",
+	"financials",
+	"valuation",
+	"shareholderReturns",
+	"relationships",
+	"management",
+	"filings",
+] as const satisfies readonly TabKey[];
+
+// Fails the type check when `tabKeys` misses a `TabKey` or names one that does not exist.
+export type TabKeysListed = Assert<
+	SameMembers<TabKey, (typeof tabKeys)[number]>
+>;
 
 /**
  * Names one chart, table or check card of a tab. It is a code key, so a card

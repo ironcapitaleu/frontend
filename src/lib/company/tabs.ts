@@ -40,3 +40,13 @@ export function findTab(segment: string | undefined): CompanyTab | null {
 	const wanted = lowered === "overview" ? null : lowered;
 	return COMPANY_TABS.find((tab) => tab.segment === wanted) ?? null;
 }
+
+/**
+ * Builds the URL of one tab of a company page, such as
+ * `/companies/MRDN/returns`. Overview has no segment, so its URL is
+ * `/companies/MRDN`. The tab strip links with it, and the page redirects to it.
+ */
+export function tabPath(symbol: string, tab: CompanyTab): string {
+	const base = `/companies/${symbol}`;
+	return tab.segment === null ? base : `${base}/${tab.segment}`;
+}
