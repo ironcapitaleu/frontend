@@ -20,10 +20,14 @@ import type {
 	LineKey,
 	StatementTable,
 } from "./types";
+import { ratioRanges, valuationRatios } from "./valuationRatios";
 
 const sections = completeSections(fakeCompanyReport);
 
 const { masthead, overview, financials, valuation } = fakeCompanyReport;
+
+/** The ratios of card 3.1. */
+const ratios = new Set<string>(valuationRatios);
 
 /** The accession number of the FY2025 10-K of the fixture. */
 const TEN_K_2025 = "0001999999-26-000003";
@@ -278,6 +282,59 @@ describe("figureGroupsOf", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should read each ratio now and its own range and median when the company group of card 3.1 is built", () => {
+		const expectedResult = ratioRanges(sections)
+			.flatMap(({ now, ownLow, ownMedian, ownHigh }) => [
+				now,
+				ownLow,
+				ownMedian,
+				ownHigh,
+			])
+			.map((figure) => claim(figure).id);
+
+		const result = claimsOf("valuationRatios", "company", sections).map(
+			({ id }) => id,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should read the three quartiles of the four Valuation ratios when the sector group of card 3.1 is built", () => {
+		const expectedResult = valuation.sectorBenchmarks
+			.filter(({ metric }) => ratios.has(metric))
+			.flatMap((row) => [row.lowerQuartile, row.median, row.upperQuartile])
+			.map((figure) => claim(figure).id);
+
+		const result = claimsOf("valuationRatios", "sector", sections).map(
+			({ id }) => id,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give a company group and a sector group when the Valuation tab is read", () => {
+		const expectedResult = ["company", "sector"];
+
+		const result = figureGroupsOf("valuation", sections).map(
+			({ ref }) => ref.figures,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give no Valuation group when the masthead has not loaded", () => {
+		const withoutMasthead = completeSections({
+			...fakeCompanyReport,
+			masthead: null,
+		});
+
+		const expectedResult: FigureGroup[] = [];
+
+		const result = figureGroupsOf("valuation", withoutMasthead);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should read the counts of the listed funds only when there are more funds than LISTED_FUNDS", () => {
 		const { relationships } = fakeCompanyReport;
 		const [harlow] = relationships.funds;
@@ -349,7 +406,7 @@ describe("figureGroupsOf", () => {
 	it("should give no group when a tab has no blocks", () => {
 		const expectedResult: FigureGroup[] = [];
 
-		const result = figureGroupsOf("valuation", sections);
+		const result = figureGroupsOf("management", sections);
 
 		expect(result).toEqual(expectedResult);
 	});

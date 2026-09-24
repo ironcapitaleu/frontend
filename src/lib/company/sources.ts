@@ -19,6 +19,7 @@ import type {
 	StatementTable,
 	TabKey,
 } from "./types";
+import { ratioRanges } from "./valuationRatios";
 
 /**
  * Returns the claims of one kind that `block` draws. The `sector` claims are
@@ -153,6 +154,7 @@ const blockKeys = [
 	"balanceTable",
 	"cashFlowChart",
 	"cashFlowTable",
+	"valuationRatios",
 	"largestFunds",
 	"insiders",
 	"ownershipSplit",
@@ -311,6 +313,30 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 				...pointsOf(financials.cashFlow.quarterly),
 			],
 	},
+	// Card 3.1 reads the masthead, the financials and the valuation section.
+	// The company figures are each ratio now and its own range and median.
+	// The sector figures are the quartiles, so the index names no peer filing.
+	valuationRatios: {
+		tab: "valuation",
+		label: "Ratios Against Their Own Ten Years and the Sector",
+		company: (sections) =>
+			valuationLoaded(sections)
+				? ratioRanges(sections).flatMap((range) => [
+						range.now,
+						range.ownLow,
+						range.ownMedian,
+						range.ownHigh,
+					])
+				: null,
+		sector: (sections) =>
+			valuationLoaded(sections)
+				? ratioRanges(sections).flatMap(({ sector }) =>
+						sector
+							? [sector.lowerQuartile, sector.median, sector.upperQuartile]
+							: [],
+					)
+				: null,
+	},
 	// The block reads the reported inputs of `fundShare` and `fundChange` for
 	// the rows that card 5.1 lists, so the index names no other fund's 13F.
 	largestFunds: {
@@ -350,6 +376,15 @@ function read(
 ): Nullable<Claim[]> {
 	const reader = figures === "company" ? block.company : block.sector;
 	return reader?.(sections)?.filter((figure) => figure !== null) ?? null;
+}
+
+/** Tells whether the sections that card 3.1 reads have loaded. */
+function valuationLoaded({
+	masthead,
+	financials,
+	valuation,
+}: CompletedSections): boolean {
+	return masthead !== null && financials !== null && valuation !== null;
 }
 
 /** Returns the points of the lines `keys` of `table`, or of every line when `keys` is absent. */
