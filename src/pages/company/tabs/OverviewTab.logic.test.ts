@@ -3,8 +3,13 @@ import { describe, expect, it } from "vitest";
 import { completeSections } from "@/lib/company/metrics";
 import type { Claim, OverviewSection } from "@/lib/company/types";
 import { fakeCompanyReport } from "@/test/fixtures/companies/fake-company-report";
+import type { CompanySectionKey, CompanyState } from "@/hooks/useCompany";
+import { MissingCompany } from "@/lib/company/errors";
+import { Ticker } from "@/lib/domain/ticker";
 import {
 	formatInUnit,
+	heldBack,
+	joinSections,
 	revenueParts,
 	tenYearsSeries,
 } from "./OverviewTab.logic";
@@ -138,6 +143,7 @@ describe("formatInUnit", () => {
 		[212_000_000_000, "$212.0B", "usd"],
 		[-4_000_000_000, "−$4.0B", "usd"],
 		[24_500_000_000, "24.5B", "shares"],
+		[18.44, "18.4", "ratio"],
 		[0.312, "31.2%", "percent"],
 	] as const)(
 		"should write %s as %s when the unit is %s",
@@ -147,4 +153,73 @@ describe("formatInUnit", () => {
 			expect(result).toBe(expectedResult);
 		},
 	);
+});
+
+describe("joinSections", () => {
+	const overviewOnly = completeSections({
+		...fakeCompanyReport,
+		financials: null,
+	});
+	const financialsOnly = completeSections({
+		...fakeCompanyReport,
+		overview: null,
+	});
+
+	it("should keep the loaded section of each load when a later load lacks it", () => {
+		const expectedResult = { overview: true, financials: true };
+
+		const joined = joinSections([overviewOnly, null, financialsOnly]);
+		const result = {
+			overview: joined?.overview === overviewOnly.overview,
+			financials: joined?.financials === financialsOnly.financials,
+		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give null when no load holds sections", () => {
+		const expectedResult = null;
+
+		const result = joinSections([null, null]);
+
+		expect(result).toBe(expectedResult);
+	});
+});
+
+describe("heldBack", () => {
+	const lead: CompanyState<"financials"> = {
+		status: "loaded",
+		data: sections.financials ?? financials,
+		sections,
+	};
+	const loaded: CompanyState<CompanySectionKey> = lead;
+
+	it("should be loading when the lead has loaded and another load is still loading", () => {
+		const expectedResult = "loading";
+
+		const result = heldBack(lead, [loaded, { status: "loading" }]).status;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should be failed when the lead has loaded and another load finds no company", () => {
+		const missing: CompanyState<"masthead"> = {
+			status: "missing",
+			error: new MissingCompany(Ticker.parse("XYZ")),
+		};
+
+		const expectedResult = "failed";
+
+		const result = heldBack(lead, [missing]).status;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should give the lead back when every load has loaded", () => {
+		const expectedResult = lead;
+
+		const result = heldBack(lead, [loaded]);
+
+		expect(result).toBe(expectedResult);
+	});
 });

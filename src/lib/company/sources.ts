@@ -1,5 +1,5 @@
 import { listedFundPositions } from "./holdings";
-import { ownershipShares } from "./metrics";
+import { keyFigureKeys, keyFigureOf, ownershipShares } from "./metrics";
 import type {
 	BlockKey,
 	Claim,
@@ -9,6 +9,8 @@ import type {
 	FigureGroup,
 	FigureGroupRef,
 	FigureKind,
+	Filing,
+	FinancialsSection,
 	LineKey,
 	MetricKey,
 	Nullable,
@@ -20,6 +22,18 @@ import type {
 	TabKey,
 } from "./types";
 import { ratioRanges } from "./valuationRatios";
+
+/**
+ * The statement lines each Financials chart draws, as bars in this order
+ * (DESIGN.md §8 "Financials"). The chart blocks read these lines only. Free
+ * cash flow, which §8 also names for the income chart, is a metric, not a
+ * statement line, and it joins the chart later.
+ */
+export const chartLines: Record<keyof FinancialsSection, readonly LineKey[]> = {
+	income: ["revenue", "netIncome"],
+	balance: ["totalAssets", "totalLiabilities", "shareholdersEquity"],
+	cashFlow: ["operatingCashFlow", "capitalExpenditure", "shareRepurchases"],
+};
 
 /**
  * Returns the claims of one kind that `block` draws. The `sector` claims are
@@ -77,6 +91,34 @@ export function isSectorBenchmark(ref: FigureGroupRef): boolean {
  */
 export function isPrintedOnly(ref: FigureGroupRef): boolean {
 	return blocks[ref.block].printed === true;
+}
+
+/**
+ * Returns the filings behind `claims`, newest first, as {@link sourcesOf}
+ * orders them. It leaves out the market data.
+ */
+export function filingsOf(claims: readonly Claim[]): Filing[] {
+	return sourcesOf(claims)
+		.groups.map(({ document }) => document)
+		.filter((document): document is Filing => document.kind === "filing");
+}
+
+/**
+ * Returns the sector median of the key figure `metric`. P/E, P/FCF and P/B
+ * read it from Valuation, and the other key figures from Overview. Returns
+ * `null` when that section has not loaded or lists no benchmark of `metric`.
+ */
+export function sectorMedianOf(
+	metric: MetricKey,
+	sections: CompletedSections,
+): Figure {
+	const section = valuationKeyFigures.has(metric)
+		? sections.valuation
+		: sections.overview;
+	return (
+		section?.sectorBenchmarks.find((row) => row.metric === metric)?.median ??
+		null
+	);
 }
 
 /**
@@ -186,10 +228,8 @@ const valuationKeyFigures: ReadonlySet<MetricKey> = new Set<MetricKey>([
 	"priceToBook",
 ]);
 
-// The derived metrics of the Overview blocks, such as the operating margin,
-// the free cash flow and the ratios of Key Figures, need `evaluateMetric`
-// (STA-229). Until it exists, each block reads its reported figures only. A
-// later part of STA-226 adds the checks, so "Checks by Area" reads no figure yet.
+// A later part of STA-226 adds the checks, so "Checks by Area" reads no
+// figure yet.
 const blocks: Readonly<Record<BlockKey, Block>> = {
 	business: {
 		tab: "overview",
@@ -212,16 +252,15 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	keyFigures: {
 		tab: "overview",
 		label: "Key Figures",
-		company: ({ overview }) => overview && [],
-		sector: ({ overview, valuation }) =>
-			overview && [
-				...overview.sectorBenchmarks
-					.filter(({ metric }) => !valuationKeyFigures.has(metric))
-					.map((row) => row.median),
-				...(valuation?.sectorBenchmarks ?? [])
-					.filter(({ metric }) => valuationKeyFigures.has(metric))
-					.map((row) => row.median),
-			],
+		company: (sections) =>
+			sections.masthead && sections.financials
+				? keyFigureKeys.map((key) => keyFigureOf(key, sections))
+				: null,
+		// The medians the card draws: every key figure but market cap.
+		sector: (sections) =>
+			keyFigureKeys
+				.filter((key) => key !== "marketCap")
+				.map((key) => sectorMedianOf(key, sections)),
 	},
 	financialPosition: {
 		tab: "overview",
@@ -267,15 +306,12 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 				shareholderReturns.latestDividendDeclared,
 			],
 	},
-	// DESIGN.md §8 names the lines of the income chart only. The other two
-	// charts read every line of their annual table until the Financials tab
-	// ticket names them. Free cash flow waits for STA-229.
+	// Free cash flow joins the income chart with STA-229.
 	incomeChart: {
 		tab: "financials",
 		label: "Income statement chart",
 		company: ({ financials }) =>
-			financials &&
-			pointsOf(financials.income.annual, ["revenue", "netIncome"]),
+			financials && pointsOf(financials.income.annual, chartLines.income),
 	},
 	incomeTable: {
 		tab: "financials",
@@ -290,7 +326,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		tab: "financials",
 		label: "Balance sheet chart",
 		company: ({ financials }) =>
-			financials && pointsOf(financials.balance.annual),
+			financials && pointsOf(financials.balance.annual, chartLines.balance),
 	},
 	balanceTable: {
 		tab: "financials",
@@ -305,7 +341,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		tab: "financials",
 		label: "Cash flow chart",
 		company: ({ financials }) =>
-			financials && pointsOf(financials.cashFlow.annual),
+			financials && pointsOf(financials.cashFlow.annual, chartLines.cashFlow),
 	},
 	cashFlowTable: {
 		tab: "financials",
