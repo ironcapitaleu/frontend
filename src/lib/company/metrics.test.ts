@@ -540,6 +540,58 @@ describe("evaluateMetric", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should divide the operating income by the revenue of FY2025 when it evaluates the operating margin at FY2025", () => {
+		const sections = completed;
+		const [fiscalYear2025] = income.annual.periods.slice(9);
+
+		// Operating income 450M ÷ revenue 3,200M.
+		const expectedResult = 450_000_000 / 3_200_000_000;
+
+		const margin = evaluateMetric("operatingMargin", sections, fiscalYear2025);
+		const result = margin.kind === "value" ? margin.claim.value : null;
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should divide the net buybacks of the last four derived quarters by market cap when it evaluates the buyback yield", () => {
+		const sections = completed;
+
+		// The last four quarters are FY2025, with a cash flow base of 330M:
+		// repurchases 0.3 × 330M = 99M, stock plan proceeds 0.05 × 330M = 16.5M.
+		// Market cap is $84.2 × 151.1M shares.
+		const expectedResult = (99_000_000 - 16_500_000) / (84.2 * 151_100_000);
+
+		const buyback = evaluateMetric("buybackYield", sections);
+		const result = buyback.kind === "value" ? buyback.claim.value : null;
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should add the short-term and long-term debt of the latest quarter end when it evaluates total debt", () => {
+		const sections = completed;
+
+		// Short-term debt 0.05 × current assets 1,350M = 67.5M, long-term debt
+		// 0.15 × total assets 3,900M = 585M.
+		const expectedResult = 67_500_000 + 585_000_000;
+
+		const debt = evaluateMetric("totalDebt", sections);
+		const result = debt.kind === "value" ? debt.claim.value : null;
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should divide the current assets by the current liabilities of the latest quarter end when it evaluates the current ratio", () => {
+		const sections = completed;
+
+		// Current assets 1,350M ÷ current liabilities 0.5 × 1,350M = 675M.
+		const expectedResult = 1_350_000_000 / 675_000_000;
+
+		const current = evaluateMetric("currentRatio", sections);
+		const result = current.kind === "value" ? current.claim.value : null;
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should read the ten covered fiscal years when the price series has a year with no 10-K", () => {
 		const { masthead } = fakeCompanyReport;
 		const series = masthead.priceAtFiscalYearEnds;
