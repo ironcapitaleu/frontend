@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { sourcesOf } from "../../../lib/company/sources";
-import type { Claim } from "../../../lib/company/types";
+import type {
+	Claim,
+	InsiderHolding,
+	MetricKey,
+} from "../../../lib/company/types";
 import { fakeCompanyReport } from "./fake-company-report";
 
 /** Returns every accession number that the report's sources name. */
@@ -29,6 +33,15 @@ function companyClaimsOf(value: unknown): Claim[] {
 	);
 }
 
+/** Returns the rows of `insiders` without the claim ids, which each section sets under its own name. */
+function insiderRowsOf(insiders: readonly InsiderHolding[]) {
+	return insiders.map(({ name, role, shares }) => ({
+		name,
+		role,
+		shares: shares === null ? null : { ...shares, id: null },
+	}));
+}
+
 describe("fakeCompanyReport", () => {
 	it("should give every filing an accession number in the SEC form when the report is built", () => {
 		const accessionNumbers = accessionNumbersOf(fakeCompanyReport);
@@ -53,6 +66,29 @@ describe("fakeCompanyReport", () => {
 			.filter((document) => document.kind === "filing")
 			.map((document) => document.accessionNumber)
 			.filter((accessionNumber) => !listed.includes(accessionNumber));
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should name no metric in both lists when the Overview and Valuation benchmarks are compared", () => {
+		const { overview, valuation } = fakeCompanyReport;
+		const overviewMetrics = overview.sectorBenchmarks.map((row) => row.metric);
+
+		const expectedResult: MetricKey[] = [];
+
+		const result = valuation.sectorBenchmarks
+			.map((row) => row.metric)
+			.filter((metric) => overviewMetrics.includes(metric));
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should hold the same insider rows in the same order when the Relationships and Management sections are compared", () => {
+		const { relationships, management } = fakeCompanyReport;
+
+		const expectedResult = insiderRowsOf(management.insiders);
+
+		const result = insiderRowsOf(relationships.insiders);
 
 		expect(result).toEqual(expectedResult);
 	});
