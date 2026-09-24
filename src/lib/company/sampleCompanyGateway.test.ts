@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import { Ticker } from "../domain/ticker";
 import { FailedCompanyRequest, MissingCompany } from "./errors";
 import { meridianFinancials } from "./sample/financials";
+import { fiscalYearOf } from "./sample/calendar";
+import { meridianManagement } from "./sample/management";
 import { meridianMasthead } from "./sample/masthead";
 import { meridianOverview } from "./sample/overview";
 import { meridianRelationships } from "./sample/relationships";
@@ -27,6 +29,7 @@ const SECTIONS = [
 	meridianValuation,
 	meridianShareholderReturns,
 	meridianRelationships,
+	meridianManagement,
 ];
 const STATEMENTS = {
 	income: meridianFinancials.income,
@@ -190,6 +193,26 @@ describe("sampleCompanyGateway", () => {
 		await expect(result).rejects.toEqual(expectedResult);
 	});
 
+	it("should resolve the MRDN management when the ticker is MRDN", async () => {
+		const gateway = sampleCompanyGateway();
+
+		const expectedResult = meridianManagement;
+
+		const result = await gateway.getManagement(MRDN);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should reject the management with MissingCompany when the ticker is not MRDN", async () => {
+		const gateway = sampleCompanyGateway();
+
+		const expectedResult = new MissingCompany(AAPL);
+
+		const result = gateway.getManagement(AAPL);
+
+		await expect(result).rejects.toEqual(expectedResult);
+	});
+
 	it("should resolve the masthead when the ticker is a new MRDN value parsed from lower case", async () => {
 		const gateway = sampleCompanyGateway();
 
@@ -232,7 +255,7 @@ describe("sampleCompanyGateway", () => {
 });
 
 describe("sampleCompanyGateway, sections with no sample data yet", () => {
-	const unserved = ["getManagement", "getFilings"] as const;
+	const unserved = ["getFilings"] as const;
 
 	it("should reject each later tab section with FailedCompanyRequest when the ticker is MRDN", async () => {
 		const gateway = sampleCompanyGateway();
@@ -1123,6 +1146,137 @@ describe("the MRDN relationships sample data", () => {
 
 		const result = subsidiaries.map(({ jurisdiction }) =>
 			jurisdiction?.source.kind === "reported" ? jurisdiction.source.url : null,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("the MRDN management sample data", () => {
+	const { people, ceoPay, insiderSharesBought, insiderSharesSold } =
+		meridianManagement;
+	const inputsOf = (point: Claim | null) =>
+		point?.source.kind === "derived" ? point.source.inputs : [];
+
+	it("should equal the Relationships insiders row by row when the section prefix of the ids is ignored", () => {
+		const expectedResult = asSection(
+			meridianRelationships.insiders,
+			"relationships",
+			"management",
+		);
+
+		const result = meridianManagement.insiders;
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give the chief executive of the profile the same start year when reading the people", () => {
+		const { chiefExecutive, chiefExecutiveSince } = meridianOverview.profile;
+
+		const expectedResult = chiefExecutiveSince?.value;
+
+		const result = people.find(
+			(person) => person.name === chiefExecutive?.value,
+		)?.since?.value;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should leave the independence missing only when the person is not a director", () => {
+		const expectedResult = people
+			.filter((person) => !person.isDirector)
+			.map((person) => person.name);
+
+		const result = people
+			.filter((person) => person.independence === null)
+			.map((person) => person.name);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should read each year of CEO pay from the proxy statement of that year when reading the pay rows oldest first", () => {
+		const expectedResult = ceoPay.map(
+			(row) => `FY${row.fiscalYear} ${row.fiscalYear} annual meeting`,
+		);
+
+		const result = ceoPay.map((row) =>
+			row.salary?.source.kind === "reported" &&
+			row.salary.source.document.kind === "filing"
+				? `FY${row.salary.period?.fiscalYear} ${row.salary.source.document.periodLabel}`
+				: null,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should add up to the mock-up total when summing the FY2026 CEO pay", () => {
+		const latest = ceoPay[ceoPay.length - 1];
+
+		const expectedResult = 38_790_000;
+
+		const result = [
+			latest.salary,
+			latest.bonus,
+			latest.stockAwards,
+			latest.other,
+		].reduce((total, figure) => total + Number(figure?.value), 0);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should give the mock-up net insider shares in millions when subtracting the shares sold from the shares bought", () => {
+		const expectedResult = [
+			-4.1, -6.3, 0.6, -3.8, -5.5, -9.2, 1.1, -12.6, -18.9, -21.3,
+		];
+
+		const result = insiderSharesBought.points.map(
+			(bought, row) =>
+				(Number(bought?.value) - Number(insiderSharesSold.points[row]?.value)) /
+				1_000_000,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should equal the sum of its Form 4 trades when reading each yearly point", () => {
+		const expectedResult: string[] = [];
+
+		const result = [...insiderSharesBought.points, ...insiderSharesSold.points]
+			.filter(
+				(point) =>
+					inputsOf(point).reduce(
+						(total, trade) => total + Number(trade.value),
+						0,
+					) !== point?.value,
+			)
+			.map((point) => String(point?.id));
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should date every Form 4 trade inside the fiscal year of its point when reading the insider trades", () => {
+		const expectedResult: string[] = [];
+
+		const result = [...insiderSharesBought.points, ...insiderSharesSold.points]
+			.flatMap((point) =>
+				inputsOf(point).filter(
+					(trade) =>
+						trade.period === null ||
+						fiscalYearOf(trade.period.endsOn) !== point?.period?.fiscalYear,
+				),
+			)
+			.map((trade) => trade.id);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should count the mock-up Form 4 filings when counting the trades of each fiscal year", () => {
+		const expectedResult = [18, 20, 19, 22, 21, 24, 23, 27, 38, 30];
+
+		const result = insiderSharesBought.points.map(
+			(bought, row) =>
+				inputsOf(bought).length +
+				inputsOf(insiderSharesSold.points[row]).length,
 		);
 
 		expect(result).toEqual(expectedResult);

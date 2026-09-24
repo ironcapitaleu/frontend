@@ -126,6 +126,9 @@ const INSIDERS: [string, string, number, string][] = [
 	["Priya Raman", "EVP and CFO", 3.2, "2026-06-02"],
 ];
 
+/** The officers and directors who file a Form 4, in the order of the insider lists. */
+export const INSIDER_NAMES = INSIDERS.map(([name]) => name);
+
 function insiderShares(id: (row: number) => string): Claim[] {
 	return INSIDERS.map(([name, , shares, filedOn], row) =>
 		reported(
