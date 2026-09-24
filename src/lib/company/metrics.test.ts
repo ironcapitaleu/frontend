@@ -15,6 +15,7 @@ import {
 	type MetricResult,
 	type Metric,
 	metrics,
+	otherRevenueShare,
 	ownershipShares,
 	priceChangeOneMonth,
 	resolve,
@@ -1155,6 +1156,14 @@ describe("per-row derived figures", () => {
 		const result = { id: share?.id, value: share?.value };
 
 		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give no Other share when the list has no row where the fold starts", () => {
+		const expectedResult = null;
+
+		const result = otherRevenueShare(overview, "segments", 2);
+
+		expect(result).toBe(expectedResult);
 	});
 
 	it("should read the regions list when it gives a region share", () => {
