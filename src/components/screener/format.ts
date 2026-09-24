@@ -4,6 +4,9 @@
 /** The mark for a value the data does not have. */
 export const MISSING = "—";
 
+/** The dimmed ink of a missing figure (DESIGN.md §8). */
+export const MISSING_INK = "text-muted-foreground/60";
+
 /**
  * Rounds `value` to `decimals` places and writes a loss with a true minus
  * (U+2212), the same sign {@link formatSignedPercent} uses. A value that rounds

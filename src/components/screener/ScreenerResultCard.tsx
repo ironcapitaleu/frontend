@@ -8,6 +8,7 @@ import {
 	CHANGE_TONE_CLASS,
 	METRICS,
 	MISSING,
+	MISSING_INK,
 	changeTone,
 	formatMetric,
 	formatPrice,
@@ -130,7 +131,7 @@ function ScreenerResultCard({
 							<dd
 								className={cn(
 									"font-monospace text-lg",
-									text === MISSING && "text-muted-foreground/60",
+									text === MISSING && MISSING_INK,
 									highlighted && "font-medium",
 								)}
 							>
