@@ -432,6 +432,43 @@ describe("figureGroupsOf", () => {
 		expect(result).toBe(expectedResult);
 	});
 
+	it("should keep the operating cash flow of a year in the group of card 3.2 when its free cash flow is missing", () => {
+		const cashFlow = financials.cashFlow;
+		const noCapex = completeSections({
+			...fakeCompanyReport,
+			financials: {
+				...financials,
+				cashFlow: {
+					...cashFlow,
+					annual: {
+						...cashFlow.annual,
+						lines: cashFlow.annual.lines.map((line) =>
+							line.key === "capitalExpenditure"
+								? {
+										...line,
+										points: line.points.map((point, index) =>
+											index === 4 ? null : point,
+										),
+									}
+								: line,
+						),
+					},
+				},
+			},
+		});
+		const operating = cashFlow.annual.lines.find(
+			(line) => line.key === "operatingCashFlow",
+		)?.points[4];
+
+		const expectedResult = true;
+
+		const result = claimsOf("yieldsAgainstTreasury", "company", noCapex).some(
+			({ id }) => id === operating?.id,
+		);
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should give the groups of cards 3.1, 3.2 and 3.3 in order when the Valuation tab is read", () => {
 		const expectedResult = [
 			"valuationRatios.company",

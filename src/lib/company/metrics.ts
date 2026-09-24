@@ -903,6 +903,32 @@ export function metricInputsOf(
 }
 
 /**
+ * Returns the input claims of metric `key` at `period` like
+ * {@link metricInputsOf}, but an input metric with no value gives its own
+ * inputs in its place, at every depth. So a missing FCF yield keeps the
+ * operating cash flow of a year whose free cash flow is missing.
+ */
+export function nestedMetricInputsOf(
+	key: MetricKey,
+	sections: CompletedSections,
+	period: Nullable<Period> = null,
+): Figure[] {
+	return metrics[key].inputs.flatMap((ref) => {
+		const result = resolve(ref, sections, period);
+		if (!isWindow(result) && result.kind === "value") {
+			return [result.claim];
+		}
+		if (isWindow(result) || ref.from !== "metric") {
+			return [null];
+		}
+		const at = ref.at === null ? null : targetPeriod(ref.at, sections, period);
+		return ref.at !== null && at === null
+			? [null]
+			: nestedMetricInputsOf(ref.key, sections, at);
+	});
+}
+
+/**
  * Evaluates `metric` over `sections` by the rules of {@link evaluateMetric}.
  * It is exported only for tests, so a test can evaluate a metric that is not
  * in {@link metrics}. Call {@link evaluateMetric} everywhere else.

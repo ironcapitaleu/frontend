@@ -266,7 +266,7 @@ export const YieldsOnPhone: Story = {
 	},
 };
 
-/** The dark theme. The yield inks `chart-1`, `-3` and `-5` reach 3:1 there. */
+/** The loaded tab in the dark theme. */
 export const LoadedDark: Story = {
 	globals: { theme: "dark" },
 };

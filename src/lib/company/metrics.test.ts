@@ -18,6 +18,7 @@ import {
 	type Metric,
 	metricInputsOf,
 	metrics,
+	nestedMetricInputsOf,
 	otherRevenueShare,
 	ownershipShares,
 	priceChangeOneMonth,
@@ -780,6 +781,17 @@ describe("evaluateMetric", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should divide the FY2025 EPS by the price when it evaluates the earnings yield", () => {
+		const sections = completed;
+
+		const expectedResult =
+			valueFY2025(income.annual, "dilutedEps") / Number(price.value);
+
+		const result = numberOf(evaluateMetric("earningsYield", sections, null));
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should divide the FY2025 EPS by the FY2025 year-end price when it evaluates the year-end earnings yield", () => {
 		const sections = completed;
 
@@ -1513,6 +1525,34 @@ describe("metricInputsOf", () => {
 		const result = metricInputsOf("enterpriseValueToEbit", sections).map(
 			(input) => input?.id ?? null,
 		);
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("nestedMetricInputsOf", () => {
+	it("should give the inputs of free cash flow in its place when the FY2025 FCF yield has no free cash flow", () => {
+		const sections = sectionsWith(
+			"cashFlow",
+			"annual",
+			"capitalExpenditure",
+			[9],
+			null,
+		);
+		const [operating] = pointsOf(cashFlow.annual, "operatingCashFlow", [9]);
+		const cap = evaluateMetric("marketCapAtYearEnd", sections, YEAR_FY2025);
+
+		const expectedResult = [
+			operating?.id,
+			null,
+			cap.kind === "value" ? cap.claim.id : cap.kind,
+		];
+
+		const result = nestedMetricInputsOf(
+			"freeCashFlowYieldAtYearEnd",
+			sections,
+			YEAR_FY2025,
+		).map((input) => input?.id ?? null);
 
 		expect(result).toEqual(expectedResult);
 	});

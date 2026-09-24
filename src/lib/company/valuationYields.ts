@@ -1,4 +1,9 @@
-import { type FigureRef, isWindow, metricInputsOf, resolve } from "./metrics";
+import {
+	type FigureRef,
+	isWindow,
+	nestedMetricInputsOf,
+	resolve,
+} from "./metrics";
 import type { CompletedSections, Figure, Nullable, Period } from "./types";
 
 /**
@@ -71,8 +76,8 @@ export function yieldTable(sections: CompletedSections): YieldTable {
 }
 
 /**
- * Returns each yield of card 3.2, or the inputs of a missing one, so its
- * filings stay in the sources index.
+ * Returns each yield of card 3.2, or the inputs of a missing one at every
+ * depth, so its filings stay in the sources index.
  */
 export function yieldClaimsOf(sections: CompletedSections): Figure[] {
 	const { columns, lines } = yieldTable(sections);
@@ -83,7 +88,7 @@ export function yieldClaimsOf(sections: CompletedSections): Figure[] {
 			const ref = period ? yearEnd : now;
 			return point !== null || ref?.from !== "metric"
 				? [point]
-				: metricInputsOf(ref.key, sections, period);
+				: nestedMetricInputsOf(ref.key, sections, period);
 		}),
 	);
 }
