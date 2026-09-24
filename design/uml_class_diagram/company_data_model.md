@@ -258,10 +258,12 @@ The value types:
   takes that period. For a fiscal year paired with the instant at its end, it
   takes the fiscal year. A derived quarter of §4 is the one exception. It
   takes the quarter of its column.
-- Two periods are the **same period** when their `kind`, `fiscalYear` and
-  `fiscalQuarter` match. The one exception pairs a fiscal year with the
-  instant at its end, because a year-end price and a year's EPS belong
-  together. The pair reads the annual encoding of the instant, with
+- Two periods are the **same period** when their `kind`, `fiscalYear`,
+  `fiscalQuarter` and `endsOn` match. So the closes of 20 Feb and 20 Mar of
+  one fiscal year are two periods, and so are two sums of the last four
+  quarters that end on different dates. The one exception pairs a fiscal
+  year with the instant at its end, because a year-end price and a year's
+  EPS belong together. The two still need the same `endsOn`. The pair reads the annual encoding of the instant, with
   `fiscalQuarter: null`. §5 uses this rule to pair the inputs of a
   per-period metric.
 - `ClaimId` is a string that is unique on the page. Hover, pin and chart
@@ -1003,6 +1005,16 @@ not derived. Its source is a `ReportedSource` for the Exhibit 21 list, and it
 has no input claims. A row exists even when its jurisdiction is `null`, so
 the count includes that row. An empty list gives a count of 0, and the claim
 still names the exhibit. §8 holds the question and this answer.
+
+STA-230 writes `priceChangeOneMonth`, `revenueShare(overview, list,
+position)` and `ownershipShares`, the functions whose inputs are in the
+sections of `types.ts`. `ownershipShares` gives the parts `institutions`,
+`insiders` and `public`. The public holds the shares outstanding that
+neither institutions nor insiders hold. When institutions and insiders
+together hold more than the shares outstanding, the public share is `null`,
+not a negative share. This happens when the reported holdings overlap, for
+example when several 13F filers report the same shares. The other
+functions wait for the section types of their tabs.
 
 These functions have no `MetricKey`, no `FigureRef` and no guard, and no
 check reads them. A check that needs one of these figures first needs a

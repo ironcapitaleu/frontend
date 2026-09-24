@@ -1,12 +1,15 @@
 import { MissingGuardInput } from "./errors";
 import type {
 	Claim,
+	ClaimId,
 	CompanySections,
 	CompletedSections,
 	Figure,
 	LineKey,
+	MastheadSection,
 	MetricKey,
 	Nullable,
+	OverviewSection,
 	Period,
 	Series,
 	Statement,
@@ -928,20 +931,22 @@ function pointAtSamePeriod(series: readonly Series[], target: Period): Figure {
 }
 
 /**
- * Tells whether two periods are the same period: their kind, fiscal year and
- * fiscal quarter match. A fiscal year also pairs with the annual instant at
- * its end.
+ * Tells whether two periods are the same period: their kind, fiscal year,
+ * fiscal quarter and end date match. A fiscal year also pairs with the
+ * annual instant at its end.
  */
 function isSamePeriod(a: Period, b: Period): boolean {
-	if (a.fiscalYear !== b.fiscalYear || a.fiscalQuarter !== b.fiscalQuarter) {
+	if (
+		a.fiscalYear !== b.fiscalYear ||
+		a.fiscalQuarter !== b.fiscalQuarter ||
+		a.endsOn !== b.endsOn
+	) {
 		return false;
 	}
 	const kinds = [a.kind, b.kind];
 	return (
 		a.kind === b.kind ||
-		(kinds.includes("fiscalYear") &&
-			kinds.includes("instant") &&
-			a.endsOn === b.endsOn)
+		(kinds.includes("fiscalYear") && kinds.includes("instant"))
 	);
 }
 
@@ -1010,4 +1015,142 @@ function periodPart(period: Period): string {
 				? period.endsOn
 				: `Q${period.fiscalQuarter}-${period.endsOn}`;
 	}
+}
+
+/**
+ * Returns the change of the price over one month, as a fraction of the
+ * price a month earlier. The masthead draws it next to the price.
+ */
+export function priceChangeOneMonth(masthead: MastheadSection): Figure {
+	return share(
+		"metric.priceChangeOneMonth",
+		"Price change over one month",
+		"(Price − Price a month earlier) ÷ Price a month earlier",
+		[masthead.price, masthead.priceMonthEarlier],
+		([now, before]) => [now - before, before],
+	);
+}
+
+/**
+ * Returns the share of revenue of the row at `position` in the `list` of
+ * `overview`: the revenue of the row divided by the revenue of every row of
+ * the list. Returns `null` when the list has no row at `position`.
+ */
+export function revenueShare(
+	overview: OverviewSection,
+	list: "segments" | "regions",
+	position: number,
+): Figure {
+	const parts = overview[list];
+	const row = parts[position];
+	if (row === undefined) {
+		return null;
+	}
+	const names = parts.map((part) => `${part.name} revenue`).join(" + ");
+	return share(
+		`metric.revenueShare.${list}.${position}`,
+		`${row.name} share of revenue`,
+		`${row.name} revenue ÷ (${names})`,
+		parts.map((part) => part.revenue),
+		(values) => [
+			values[position],
+			values.reduce((sum, value) => sum + value, 0),
+		],
+	);
+}
+
+/** The three ownership shares of the company, one figure each. */
+export interface OwnershipShares {
+	readonly institutions: Figure;
+	readonly insiders: Figure;
+	readonly public: Figure;
+}
+
+/**
+ * Returns the shares of the company that institutions, insiders and the
+ * public hold, each as a fraction of the shares outstanding. The public
+ * holds the shares that neither institutions nor insiders hold. Its share
+ * is `null` when the other two hold more than the shares outstanding.
+ */
+export function ownershipShares(overview: OverviewSection): OwnershipShares {
+	const { sharesOutstanding, institutionShares, insiderShares } =
+		overview.ownership;
+	const held = [institutionShares, insiderShares, sharesOutstanding];
+	return {
+		institutions: share(
+			"metric.ownershipShares.institutions",
+			"Held by institutions",
+			"Shares held by institutions ÷ Shares outstanding",
+			[institutionShares, sharesOutstanding],
+			([shares, outstanding]) => [shares, outstanding],
+		),
+		insiders: share(
+			"metric.ownershipShares.insiders",
+			"Held by insiders",
+			"Shares held by insiders ÷ Shares outstanding",
+			[insiderShares, sharesOutstanding],
+			([shares, outstanding]) => [shares, outstanding],
+		),
+		public: withinTotal(
+			share(
+				"metric.ownershipShares.public",
+				"Held by the public",
+				"(Shares outstanding − Shares held by institutions − Shares held by insiders) ÷ Shares outstanding",
+				held,
+				([institutions, insiders, outstanding]) => [
+					outstanding - institutions - insiders,
+					outstanding,
+				],
+			),
+		),
+	};
+}
+
+/**
+ * Builds the percent claim of a per-row function, or returns `null` when an
+ * input is missing or not a number, or when the divisor is not above 0. The
+ * claim takes the period that its inputs share, and `null` otherwise.
+ */
+function share(
+	id: ClaimId,
+	label: string,
+	formula: string,
+	inputs: readonly Figure[],
+	part: (values: number[]) => [number, number],
+): Figure {
+	if (!inputs.every(isNumberClaim)) {
+		return null;
+	}
+	const [first, ...rest] = inputs;
+	if (first === undefined) {
+		return null;
+	}
+	const [dividend, divisor] = part(inputs.map((claim) => claim.value));
+	if (!(divisor > 0)) {
+		return null;
+	}
+	return {
+		id,
+		label,
+		value: dividend / divisor,
+		unit: "percent",
+		period: sharedPeriod(inputs),
+		source: { kind: "derived", formula, inputs: [first, ...rest] },
+	};
+}
+
+/**
+ * Returns `null` for a share below 0. Institutions and insiders then hold
+ * more than the shares outstanding, because the reported holdings overlap.
+ */
+function withinTotal(figure: Figure): Figure {
+	return isNumberClaim(figure) && figure.value < 0 ? null : figure;
+}
+
+/** A claim with a number value, so a per-row function can do its arithmetic. */
+type NumberClaim = Claim & { readonly value: number };
+
+/** Tells whether `figure` is a claim with a number value. */
+function isNumberClaim(figure: Figure): figure is NumberClaim {
+	return figure !== null && typeof figure.value === "number";
 }
