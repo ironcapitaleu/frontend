@@ -258,12 +258,12 @@ The value types:
   takes that period. For a fiscal year paired with the instant at its end, it
   takes the fiscal year. A derived quarter of §4 is the one exception. It
   takes the quarter of its column.
-- Two periods are the **same period** when their `kind`, `fiscalYear` and
-  `fiscalQuarter` match. Two instants also need the same `endsOn`, so the
-  closes of 20 Feb and 20 Mar of one fiscal year are two periods. The one
-  exception pairs a fiscal year with the
-  instant at its end, because a year-end price and a year's EPS belong
-  together. The pair reads the annual encoding of the instant, with
+- Two periods are the **same period** when their `kind`, `fiscalYear`,
+  `fiscalQuarter` and `endsOn` match. So the closes of 20 Feb and 20 Mar of
+  one fiscal year are two periods, and so are two sums of the last four
+  quarters that end on different dates. The one exception pairs a fiscal
+  year with the instant at its end, because a year-end price and a year's
+  EPS belong together. The two still need the same `endsOn`. The pair reads the annual encoding of the instant, with
   `fiscalQuarter: null`. §5 uses this rule to pair the inputs of a
   per-period metric.
 - `ClaimId` is a string that is unique on the page. Hover, pin and chart

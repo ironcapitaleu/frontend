@@ -931,20 +931,22 @@ function pointAtSamePeriod(series: readonly Series[], target: Period): Figure {
 }
 
 /**
- * Tells whether two periods are the same period: their kind, fiscal year and
- * fiscal quarter match, and two instants also share their date. A fiscal
- * year also pairs with the annual instant at its end.
+ * Tells whether two periods are the same period: their kind, fiscal year,
+ * fiscal quarter and end date match. A fiscal year also pairs with the
+ * annual instant at its end.
  */
 function isSamePeriod(a: Period, b: Period): boolean {
-	if (a.fiscalYear !== b.fiscalYear || a.fiscalQuarter !== b.fiscalQuarter) {
+	if (
+		a.fiscalYear !== b.fiscalYear ||
+		a.fiscalQuarter !== b.fiscalQuarter ||
+		a.endsOn !== b.endsOn
+	) {
 		return false;
 	}
 	const kinds = [a.kind, b.kind];
 	return (
-		(a.kind === b.kind && (a.kind !== "instant" || a.endsOn === b.endsOn)) ||
-		(kinds.includes("fiscalYear") &&
-			kinds.includes("instant") &&
-			a.endsOn === b.endsOn)
+		a.kind === b.kind ||
+		(kinds.includes("fiscalYear") && kinds.includes("instant"))
 	);
 }
 

@@ -754,6 +754,50 @@ describe("evaluate", () => {
 
 		expect(result).toThrow(expectedResult);
 	});
+
+	it("should give no period when two last-four-quarter inputs end on different dates", () => {
+		const lastQuarter = cashFlow.quarterly.periods.length - 1;
+		const sections = completeSections({
+			...fakeCompanyReport,
+			financials: {
+				...fakeCompanyReport.financials,
+				cashFlow: {
+					...cashFlow,
+					quarterly: {
+						periods: cashFlow.quarterly.periods.slice(0, lastQuarter),
+						lines: cashFlow.quarterly.lines.map((line) => ({
+							...line,
+							periods: line.periods.slice(0, lastQuarter),
+							points: line.points.slice(0, lastQuarter),
+						})),
+					},
+				},
+			},
+		});
+		const metric: Metric = {
+			...metrics.dividendYield,
+			inputs: [
+				{ from: "line", key: "revenue", at: { kind: "lastFourQuarters" } },
+				{
+					from: "line",
+					key: "operatingCashFlow",
+					at: { kind: "lastFourQuarters" },
+				},
+			],
+			guards: [],
+		};
+
+		// Revenue ends on 31 Dec 2025 and operating cash flow on 30 Sep 2025.
+		const expectedResult = { id: "metric.dividendYield", period: null };
+
+		const evaluated = evaluate(metric, sections, null);
+		const result =
+			evaluated.kind === "value"
+				? { id: evaluated.claim.id, period: evaluated.claim.period }
+				: evaluated.kind;
+
+		expect(result).toEqual(expectedResult);
+	});
 });
 
 describe("isValidFigureRef", () => {
@@ -981,4 +1025,5 @@ describe("per-row derived figures", () => {
 
 		expect(result).toEqual(expectedResult);
 	});
+
 });
