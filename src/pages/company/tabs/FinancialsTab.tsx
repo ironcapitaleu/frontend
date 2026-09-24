@@ -46,6 +46,7 @@ import {
 	STATEMENTS,
 	tableCaption,
 	toTitle,
+	withMargins,
 } from "./financialsTable";
 import { StatementChart } from "./StatementChart";
 
@@ -81,7 +82,8 @@ const UNITS: readonly { key: Scale; label: string }[] = [
  * The chart card draws the statement's fiscal years, and its "Data" button
  * swaps the chart for a table. The statement table card below shows the
  * chosen table, and in the annual view a last column of growth per year
- * (CAGR). Every cell and every bar opens the sources of its figure. On a
+ * (CAGR). Operating margin and net margin sit as muted rows under the
+ * line each divides. Every cell and every bar opens the sources of its figure. On a
  * phone, the statement and period switches are select menus and the table
  * shows the newest period first. The tab loads the Financials section through
  * `useCompany`. It shows the page's spinner while
@@ -125,7 +127,7 @@ export function FinancialsTab({ ticker }: { ticker: Ticker }) {
 		);
 	}
 
-	const shown = state.data[statement][view];
+	const shown = withMargins(state.data[statement][view]);
 	const table = phone ? newestFirst(shown) : shown;
 	const label = STATEMENTS.find(({ key }) => key === statement)?.label ?? "";
 	const chart = chartTable(
@@ -284,7 +286,8 @@ function ControlSwitch<K extends string>({
 
 /**
  * The statement table: one row per line and one column per period. With
- * `growth`, a last column shows each line's growth per year. Below 1024 px,
+ * `growth`, a last column shows each line's growth per year, and an empty
+ * cell for a margin row. A margin row is muted. Below 1024 px,
  * a table wider than its card scrolls sideways and the line names stay fixed.
  */
 function StatementGrid({
@@ -313,10 +316,17 @@ function StatementGrid({
 			</TableHeader>
 			<TableBody>
 				{table.lines.map((line) => (
-					<TableRow key={line.key}>
+					<TableRow
+						key={line.key}
+						className={cn(line.margin && "text-muted-foreground")}
+					>
 						<TableHead
 							scope="row"
-							className={cn(FIXED_COLUMN, INDENT[line.level] ?? INDENT[2])}
+							className={cn(
+								FIXED_COLUMN,
+								INDENT[line.level] ?? INDENT[2],
+								line.margin && "font-normal text-muted-foreground",
+							)}
 						>
 							{line.label}
 							<UnitNote note={lineUnitNote(line.unit, scale)} />
@@ -328,9 +338,12 @@ function StatementGrid({
 								scale={scale}
 							/>
 						))}
-						{growth && (
-							<FigureCell figure={growthPerYear(line)} scale={scale} />
-						)}
+						{growth &&
+							(line.margin ? (
+								<TableCell />
+							) : (
+								<FigureCell figure={growthPerYear(line)} scale={scale} />
+							))}
 					</TableRow>
 				))}
 			</TableBody>

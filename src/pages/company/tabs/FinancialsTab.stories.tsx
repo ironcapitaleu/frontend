@@ -538,6 +538,87 @@ export const MissingGrowth: Story = {
 	},
 };
 
+/**
+ * A gateway whose revenue for FY2026 is 0, so both margins of that year have
+ * no value.
+ */
+const zeroRevenueGateway: CompanyGateway = {
+	...sampleGateway,
+	getFinancials: async () => {
+		const financials = await sampleGateway.getFinancials(Ticker.parse("MRDN"));
+		const { annual } = financials.income;
+		const lines = annual.lines.map((line) =>
+			line.key === "revenue"
+				? {
+						...line,
+						points: line.points.map((point, position) =>
+							point !== null && position === line.points.length - 1
+								? { ...point, value: 0 }
+								: point,
+						),
+					}
+				: line,
+		);
+		return {
+			...financials,
+			income: { ...financials.income, annual: { ...annual, lines } },
+		};
+	},
+};
+
+/**
+ * Play test: a margin reads as a percent, and a margin whose revenue is 0
+ * shows the dimmed dash. The margin row has no growth rate.
+ */
+export const MissingMargin: Story = {
+	globals: desktop,
+	parameters: { companyGateway: zeroRevenueGateway },
+	play: async ({ canvasElement }) => {
+		const cells = await cellsOf(canvasElement, "Operating margin");
+
+		const expectedResult = { percent: true, latest: MISSING, growth: "" };
+
+		const result = {
+			percent: /^\d+\.\d%$/.test(cells.at(-3)?.textContent ?? ""),
+			latest: cells.at(-2)?.textContent,
+			growth: cells.at(-1)?.textContent,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: on a phone, the margin rows run newest first and read as a
+ * percent in the annual and the quarterly view. The annual row ends in the
+ * empty cell of the growth column.
+ */
+export const PhoneMargins: Story = {
+	globals: phone,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const texts = async () =>
+			(await cellsOf(canvasElement, "Net margin")).map(
+				({ textContent }) => textContent ?? "",
+			);
+		const percents = (values: string[]) =>
+			values.every((value) => value === MISSING || /%$/.test(value));
+
+		const expectedResult = { annual: true, quarterly: true };
+
+		const annual = percents((await texts()).slice(0, -1));
+		await userEvent.click(canvas.getByRole("combobox", { name: "Period" }));
+		await userEvent.click(
+			await within(canvasElement.ownerDocument.body).findByRole("option", {
+				name: "Quarterly",
+			}),
+		);
+		const result = { annual, quarterly: percents(await texts()) };
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
 /** The Financials section is still loading. */
 export const Loading: Story = {
 	parameters: { companyGateway: neverAnsweringGateway },

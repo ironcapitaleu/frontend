@@ -1667,6 +1667,45 @@ export function growthPerYear(line: Series): Figure {
 	};
 }
 
+/**
+ * The margins of the income statement table, each with the line it divides by
+ * revenue. The data has no gross profit line, so the table has no gross
+ * margin.
+ */
+export const MARGINS = [
+	{ key: "operatingIncome", name: "Operating margin" },
+	{ key: "netIncome", name: "Net margin" },
+] as const satisfies readonly { key: LineKey; name: string }[];
+
+/**
+ * Returns the margin row `name` of `line`: for each period, the figure of
+ * `line` divided by the revenue of the same period. `line` and `revenue` come
+ * from one table, so they share their periods. A point is `null` when either
+ * figure is missing or not a finite number, or when revenue is not above 0.
+ */
+export function marginOf(line: Series, revenue: Series, name: string): Series {
+	const points = line.points.map((point, position) => {
+		const period = line.periods[position];
+		if (period === undefined) return null;
+		const at = periodName(period);
+		const margin = share(
+			`metric.margin.${line.key}.${periodPart(period)}`,
+			`${name}, ${at}`,
+			`${line.label}, ${at} ÷ ${revenue.label}, ${at}`,
+			[point, revenue.points[position] ?? null],
+			([part, whole]) => [part, whole],
+		);
+		return isNumberClaim(margin) ? margin : null;
+	});
+	return {
+		key: `${line.key}Margin`,
+		label: name,
+		unit: "percent",
+		periods: line.periods,
+		points,
+	};
+}
+
 /** Returns the lines `key` reads, through its input metrics, but no market. */
 export function lineKeysOf(key: LineKey | MetricKey): LineKey[] {
 	return isMetricKey(key)
