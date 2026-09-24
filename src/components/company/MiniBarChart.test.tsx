@@ -1,0 +1,127 @@
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+
+import { meridianFinancials } from "@/lib/company/sample/financials";
+import type { Claim, Series } from "@/lib/company/types";
+import { MiniBarChart, miniBars } from "./MiniBarChart";
+
+const revenue = meridianFinancials.income.annual.lines.find(
+	(line) => line.key === "revenue",
+) as Series;
+
+/** The revenue series with the given values for its last years. `null` is a missing point. */
+function seriesOf(...values: (number | null)[]): Series {
+	const periods = revenue.periods.slice(-values.length);
+	const points = revenue.points.slice(-values.length);
+	return {
+		...revenue,
+		periods,
+		points: values.map((value, index) =>
+			value === null ? null : { ...(points[index] as Claim), value },
+		),
+	};
+}
+
+const heights = (series: Series) =>
+	miniBars(series).bars.map((bar) => bar.height);
+
+describe("miniBars", () => {
+	it("should grow every bar up from a zero line at the bottom when all values are positive", () => {
+		const expectedResult = { zero: 100, tops: [50, 0] };
+
+		const { bars, zero } = miniBars(seriesOf(1, 2));
+		const result = { zero, tops: bars.map((bar) => bar.top) };
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should draw the negative bar down from the zero line when one value is negative", () => {
+		const expectedResult = { zero: 75, top: 75, height: 25 };
+
+		const { bars, zero } = miniBars(seriesOf(3, -1));
+		const result = { zero, top: bars[1]?.top, height: bars[1]?.height };
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give the missing year no value and no height when a point is null", () => {
+		const expectedResult = [100, 0, 50];
+
+		const result = heights(seriesOf(2, null, 1));
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should treat the value as missing when it is not finite", () => {
+		const expectedResult = [null, null, 1];
+
+		const result = miniBars(
+			seriesOf(Number.NaN, Number.POSITIVE_INFINITY, 1),
+		).bars.map((bar) => bar.value);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should draw one full bar when the series has a single year", () => {
+		const expectedResult = [{ year: "FY2026", value: 5, top: 0, height: 100 }];
+
+		const result = miniBars(seriesOf(5)).bars;
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should draw no bar and keep the zero line at the bottom when every year is missing", () => {
+		const expectedResult = { zero: 100, heights: [0, 0] };
+
+		const { bars, zero } = miniBars(seriesOf(null, null));
+		const result = { zero, heights: bars.map((bar) => bar.height) };
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep only the last ten years when the series has more", () => {
+		const expectedResult = ["FY2018", "FY2027"];
+
+		const long: Series = {
+			...revenue,
+			periods: [
+				...revenue.periods,
+				{
+					...(revenue.periods.at(-1) as Series["periods"][number]),
+					fiscalYear: 2027,
+				},
+			],
+			points: [...revenue.points, revenue.points.at(-1) ?? null],
+		};
+		const { bars } = miniBars(long);
+		const result = [bars[0]?.year, bars.at(-1)?.year];
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("MiniBarChart", () => {
+	it("should list each year with its value and a dash for the missing year when one point is null", () => {
+		render(
+			<MiniBarChart series={seriesOf(-2, null, 3)} formatValue={String} />,
+		);
+
+		const expectedResult = ["FY2024: -2", "FY2025: —", "FY2026: 3"];
+
+		const result = screen
+			.getAllByRole("listitem")
+			.map((item) => item.textContent);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should print a dash as the latest figure when the latest year is missing", () => {
+		render(<MiniBarChart series={seriesOf(1, null)} formatValue={String} />);
+
+		const expectedResult = `${revenue.label} —`;
+
+		const result = screen.getByRole("figure");
+
+		expect(result).toHaveAccessibleName(expectedResult);
+	});
+});
