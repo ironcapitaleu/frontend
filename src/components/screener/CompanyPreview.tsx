@@ -22,6 +22,7 @@ import {
 import {
 	CHANGE_TONE_CLASS,
 	METRICS,
+	MISSING_INK,
 	type MetricField,
 	changeTone,
 	formatMetric,
@@ -177,7 +178,7 @@ function CompanyPreview({
 									<dd
 										className={cn(
 											"font-monospace text-lg",
-											stock[field] === null && "text-muted-foreground/60",
+											stock[field] === null && MISSING_INK,
 										)}
 									>
 										{formatMetric(stock[field], field)}
