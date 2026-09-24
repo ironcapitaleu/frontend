@@ -34,6 +34,7 @@ const meta: Meta<typeof StockScreener> = {
 	],
 	argTypes: {
 		stocks: { control: { disable: true } },
+		hasCompanyPage: { control: { disable: true } },
 	},
 };
 

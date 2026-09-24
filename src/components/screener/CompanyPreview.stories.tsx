@@ -3,7 +3,6 @@ import { MemoryRouter } from "react-router";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 
 import { EMPTY_FILTERS, STRATEGY_PRESETS } from "./screener.logic";
-import { MERIDIAN_STOCK } from "@/pages/public/StockScreener.sample";
 import { fakeStockScreenerResults } from "@/test/fixtures/stocks/fake-stock-screener-results";
 
 import { CompanyPreview } from "./CompanyPreview";
@@ -59,16 +58,13 @@ type Story = StoryObj<typeof meta>;
 /** BETA under the "Income at a fair price" preset. */
 export const Open: Story = {};
 
-/**
- * MRDN, the sample company with a page. The footer link opens
- * `/companies/MRDN`.
- */
+/** A company with a page. The footer link opens `/companies/BETA`. */
 export const WithCompanyPage: Story = {
-	args: { stock: MERIDIAN_STOCK, filters: EMPTY_FILTERS },
+	args: { filters: EMPTY_FILTERS },
 	play: async ({ canvasElement }) => {
 		const page = within(canvasElement.ownerDocument.body);
 
-		const expectedResult = "/companies/MRDN";
+		const expectedResult = "/companies/BETA";
 
 		const link = await page.findByRole("link", { name: "Open company page" });
 		const result = link.getAttribute("href");

@@ -2,7 +2,6 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { EMPTY_FILTERS, describeActiveFilters } from "./screener.logic";
-import { MERIDIAN_STOCK } from "@/pages/public/StockScreener.sample";
 import { fakeStockScreenerResults } from "@/test/fixtures/stocks/fake-stock-screener-results";
 import { render, screen } from "@/test/render";
 
@@ -160,10 +159,10 @@ describe("CompanyPreview", () => {
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should link to /companies/MRDN when the MRDN preview opens", () => {
+	it("should link to the company page when the stock has one", () => {
 		render(
 			<CompanyPreview
-				stock={MERIDIAN_STOCK}
+				stock={alfa}
 				filters={EMPTY_FILTERS}
 				hasCompanyPage
 				open
@@ -171,7 +170,7 @@ describe("CompanyPreview", () => {
 			/>,
 		);
 
-		const expectedResult = "/companies/MRDN";
+		const expectedResult = "/companies/ALFA";
 
 		const result = screen
 			.getByRole("link", { name: "Open company page" })

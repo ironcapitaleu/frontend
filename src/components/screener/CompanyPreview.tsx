@@ -201,6 +201,8 @@ function CompanyPreview({
 						</Button>
 					) : (
 						<div className="flex flex-col gap-2">
+							{/* No `.btn-tactile` here: it carries `cursor-pointer` and a
+							    hover lift, and `:hover` still matches a disabled button. */}
 							<Button
 								variant="inverted"
 								className="h-11 w-full text-lg"
