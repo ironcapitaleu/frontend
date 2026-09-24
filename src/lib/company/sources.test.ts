@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import { fakeCompanyReport } from "../../test/fixtures/companies/fake-company-report";
 import { LISTED_FUNDS } from "./holdings";
-import { completeSections, metricInputsOf, payMix, tenure } from "./metrics";
+import {
+	completeSections,
+	financialPositionInputs,
+	metricInputsOf,
+	payMix,
+	tenure,
+} from "./metrics";
 import {
 	claimsOf,
 	feedsOf,
@@ -196,9 +202,9 @@ describe("claimsOf", () => {
 	}[] = [
 		{
 			block: "incomeChart",
-			statement: "annual income",
-			tables: [statements.income.annual],
-			keys: ["revenue", "netIncome"],
+			statement: "annual income and cash flow",
+			tables: [statements.income.annual, statements.cashFlow.annual],
+			keys: ["revenue", "netIncome", "operatingCashFlow", "capitalExpenditure"],
 		},
 		{
 			block: "incomeTable",
@@ -240,12 +246,49 @@ describe("claimsOf", () => {
 		},
 	);
 
+	it("should keep the operating cash flow of a year in the income chart block when that year has no free cash flow", () => {
+		const { cashFlow } = fakeCompanyReport.financials;
+		const lines = cashFlow.annual.lines.map((line) =>
+			line.key === "capitalExpenditure"
+				? { ...line, points: line.points.map(() => null) }
+				: line,
+		);
+		const noCapex = completeSections({
+			...fakeCompanyReport,
+			financials: {
+				...fakeCompanyReport.financials,
+				cashFlow: { ...cashFlow, annual: { ...cashFlow.annual, lines } },
+			},
+		});
+
+		const expectedResult = claimsIn(
+			[statements.cashFlow.annual],
+			["operatingCashFlow"],
+		);
+
+		const result = claimsOf("incomeChart", "company", noCapex).filter(
+			({ id }) => id.includes("operatingCashFlow"),
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should return no claim when the section of the block has not loaded", () => {
 		const unloaded = completeSections({ ...fakeCompanyReport, overview: null });
 
 		const expectedResult: Claim[] = [];
 
 		const result = claimsOf("profile", "company", unloaded);
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("claimsOf financialPosition", () => {
+	it("should read the claims of financialPositionInputs when the company figures of Financial Position are read", () => {
+		const expectedResult = financialPositionInputs(sections);
+
+		const result = claimsOf("financialPosition", "company", sections);
 
 		expect(result).toEqual(expectedResult);
 	});
@@ -407,10 +450,73 @@ describe("figureGroupsOf", () => {
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should give the groups of cards 3.1 and 3.3 in order when the Valuation tab is read", () => {
+	it("should keep the EPS of a year in the group of card 3.2 when its year-end price is missing", () => {
+		const prices = masthead.priceAtFiscalYearEnds;
+		const noPrice = completeSections({
+			...fakeCompanyReport,
+			masthead: {
+				...masthead,
+				priceAtFiscalYearEnds: {
+					...prices,
+					points: prices.points.map((point, index) =>
+						index === 4 ? null : point,
+					),
+				},
+			},
+		});
+		const eps = financials.income.annual.lines[3]?.points[4];
+
+		const expectedResult = true;
+
+		const result = claimsOf("yieldsAgainstTreasury", "company", noPrice).some(
+			({ id }) => id === eps?.id,
+		);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should keep the operating cash flow of a year in the group of card 3.2 when its free cash flow is missing", () => {
+		const cashFlow = financials.cashFlow;
+		const noCapex = completeSections({
+			...fakeCompanyReport,
+			financials: {
+				...financials,
+				cashFlow: {
+					...cashFlow,
+					annual: {
+						...cashFlow.annual,
+						lines: cashFlow.annual.lines.map((line) =>
+							line.key === "capitalExpenditure"
+								? {
+										...line,
+										points: line.points.map((point, index) =>
+											index === 4 ? null : point,
+										),
+									}
+								: line,
+						),
+					},
+				},
+			},
+		});
+		const operating = cashFlow.annual.lines.find(
+			(line) => line.key === "operatingCashFlow",
+		)?.points[4];
+
+		const expectedResult = true;
+
+		const result = claimsOf("yieldsAgainstTreasury", "company", noCapex).some(
+			({ id }) => id === operating?.id,
+		);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should give the groups of cards 3.1, 3.2 and 3.3 in order when the Valuation tab is read", () => {
 		const expectedResult = [
 			"valuationRatios.company",
 			"valuationRatios.sector",
+			"yieldsAgainstTreasury.company",
 			"ratioFormulas.company",
 		];
 

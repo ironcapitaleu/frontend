@@ -2,7 +2,14 @@ import { SourceTrigger } from "@/components/company/SourceCard";
 import { MISSING, MISSING_INK } from "@/components/screener/format";
 import type { Claim } from "@/lib/company/types";
 import { cn } from "@/lib/utils";
-import { barScale, type ChartTable, stackScale } from "./financialsTable";
+import {
+	type BarTable,
+	barScale,
+	formatStatementValue,
+	periodLabel,
+	type RowTable,
+	type Scale,
+} from "./financialsTable";
 
 /**
  * The fill of each line, in chart order. Far apart on the ramp, so they tell
@@ -10,18 +17,36 @@ import { barScale, type ChartTable, stackScale } from "./financialsTable";
  */
 const INKS = ["bg-chart-1", "bg-chart-3", "bg-chart-5"];
 
-/** The fills of a stacked chart, the steps `ShareBar` gives four parts. */
-const STACK_INKS = ["bg-chart-1", "bg-chart-2", "bg-chart-3", "bg-chart-4"];
-
 /** The height of the plot in px. It matches the `h-56` class of the plot. */
 const PLOT_HEIGHT = 224;
 
 /** The least tap target of a bar in px, the `min-h-6` of its trigger. */
 const MIN_TARGET = 24;
 
+/** The {@link BarChart} of Financials card 2.1 (DESIGN.md §8 "Financials"). */
+export function StatementChart({
+	table,
+	scale,
+}: {
+	table: RowTable;
+	scale: Scale;
+}) {
+	const columns = table.periods.map((period) => ({
+		key: period.endsOn,
+		label: periodLabel(period),
+		short: `FY${String(period.fiscalYear).slice(-2)}`,
+	}));
+	return (
+		<BarChart
+			table={{ columns, lines: table.lines }}
+			format={(claim) => formatStatementValue(claim, scale)}
+		/>
+	);
+}
+
 /**
- * The bar chart of Financials card 2.1 (DESIGN.md §8 "Financials"): one group
- * of bars per fiscal year and one bar per line of `table`, oldest year first.
+ * The grouped bar chart of the company page: one group of bars per column of
+ * `table`, such as a fiscal year, and one bar per line, oldest column first.
  * Every bar is a figure: hover or focus previews its sources, and a click or
  * a tap pins them. A missing point draws a dimmed dash on the zero line. A
  * legend names the lines. The year labels are short, such as `FY26`, so ten
@@ -36,33 +61,19 @@ const MIN_TARGET = 24;
  * "Financials"). Below 1024 px,
  * a chart that does not fit its card scrolls sideways (DESIGN.md §8 "Shared
  * Layout"), and the year labels scroll with their groups. A table with no
- * fiscal year or no line draws one line that says so. A year that is not a
- * whole number reads as the dash.
- *
- * With `stacked`, each year draws one bar of its parts, first line lowest. A
- * part that is missing or not a number draws nothing, so a year with no part
- * leaves a gap. Each part is a target at least 24 px tall, and a zero part
- * draws a 2 px mark at its foot.
+ * column or no line draws one line that says so. `format` writes a figure.
  */
-export function StatementChart({
+export function BarChart({
 	table,
 	format,
-	stacked = false,
 }: {
-	table: ChartTable;
-	/** Writes a figure for a screen reader, in the caption's unit. */
+	table: BarTable;
 	format: (claim: Claim) => string;
-	stacked?: boolean;
 }) {
-	const bars = barScale(table);
-	const { place } = bars;
-	// A stack stands on the foot of the plot.
-	const zero = stacked ? 100 : bars.zero;
-	const boxes = stacked ? stackScale(table, PLOT_HEIGHT, MIN_TARGET) : [];
-	const width = stacked ? 1 : table.lines.length;
+	const { zero, place } = barScale(table);
 	// A group and its year label take the same width, so the two rows line up.
-	const groupWidth = `calc(${width} * 1.5rem + ${width - 1}px)`;
-	if (table.periods.length === 0 || table.lines.length === 0) {
+	const groupWidth = `calc(${table.lines.length} * 1.5rem + ${table.lines.length - 1}px)`;
+	if (table.columns.length === 0 || table.lines.length === 0) {
 		return (
 			<p className="text-base text-muted-foreground">
 				No fiscal years to chart.
@@ -79,7 +90,7 @@ export function StatementChart({
 					<li key={line.key} className="flex items-center gap-1.5">
 						<span
 							aria-hidden="true"
-							className={cn("size-3 rounded-[2px]", inkOf(index, stacked))}
+							className={cn("size-3 rounded-[2px]", inkOf(index))}
 						/>
 						{line.label}
 					</li>
@@ -89,26 +100,21 @@ export function StatementChart({
 				<div className="flex min-w-max flex-col gap-3">
 					<div className="relative">
 						<ul aria-label="Fiscal years" className="flex h-56 gap-1 md:gap-3">
-							{table.periods.map((period, column) => (
+							{table.columns.map((group, column) => (
 								<li
-									// biome-ignore lint/suspicious/noArrayIndexKey: a year can repeat or be missing
-									key={column}
-									className="relative flex flex-1 justify-center gap-px"
+									key={group.key}
+									className="flex flex-1 justify-center gap-px"
 									style={{ minWidth: groupWidth }}
 								>
-									<span className="sr-only">
-										{yearLabel(period.fiscalYear, true)}
-									</span>
+									<span className="sr-only">{group.label}</span>
 									{table.lines.map((line, index) => {
 										const point = line.points[column] ?? null;
-										const box = boxes[index]?.[column];
 										if (
 											point === null ||
 											typeof point.value !== "number" ||
-											!Number.isFinite(point.value) ||
-											(stacked && !box)
+											!Number.isFinite(point.value)
 										) {
-											return stacked ? null : (
+											return (
 												<span
 													key={line.key}
 													className={cn(
@@ -134,27 +140,18 @@ export function StatementChart({
 										return (
 											<div
 												key={line.key}
-												className={cn(
-													"h-full w-6 shrink-0",
-													stacked ? "absolute inset-x-0 mx-auto" : "relative",
-												)}
+												className="relative h-full w-6 shrink-0"
 											>
 												<div
 													className={cn(
 														"absolute inset-x-0",
-														inkOf(index, stacked),
-														stacked && !zeroMark && "border-t border-card",
+														inkOf(index),
 														negative ? "rounded-b-[2px]" : "rounded-t-[2px]",
 													)}
 													style={
-														box
-															? {
-																	bottom: box.bottom,
-																	height: zeroMark ? 2 : box.height,
-																}
-															: zeroMark
-																? { top: `calc(${top}% - 2px)`, height: "2px" }
-																: { top: `${top}%`, height: `${height}%` }
+														zeroMark
+															? { top: `calc(${top}% - 2px)`, height: "2px" }
+															: { top: `${top}%`, height: `${height}%` }
 													}
 												>
 													<SourceTrigger
@@ -185,14 +182,13 @@ export function StatementChart({
 						aria-hidden="true"
 						className="flex gap-1 font-monospace text-xs text-muted-foreground md:gap-3"
 					>
-						{table.periods.map((period, column) => (
+						{table.columns.map((group) => (
 							<span
-								// biome-ignore lint/suspicious/noArrayIndexKey: the labels follow the columns above
-								key={column}
+								key={group.key}
 								className="flex-1 text-center"
 								style={{ minWidth: groupWidth }}
 							>
-								{yearLabel(period.fiscalYear, false)}
+								{group.short}
 							</span>
 						))}
 					</div>
@@ -203,13 +199,6 @@ export function StatementChart({
 }
 
 /** Returns the fill of the line at `index`. */
-function inkOf(index: number, stacked: boolean): string {
-	const inks = stacked ? STACK_INKS : INKS;
-	return inks[index % inks.length] ?? "";
-}
-
-/** Writes a fiscal year in full, `FY2026`, or short, `FY26`, or the dash when it is not a whole number. */
-export function yearLabel(fiscalYear: number, full: boolean): string {
-	if (!Number.isInteger(fiscalYear)) return MISSING;
-	return `FY${full ? fiscalYear : String(fiscalYear).slice(-2)}`;
+function inkOf(index: number): string {
+	return INKS[index % INKS.length] ?? "";
 }

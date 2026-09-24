@@ -1,10 +1,8 @@
 import { within } from "storybook/test";
 
 /**
- * Measures every bar of the chart plot `plot`, a list of fiscal years: each
- * bar's trigger should be at least 24 px wide and tall and inside the plot,
- * each bar should draw, and the page should not scroll sideways. A play test
- * expects every list empty and `pageScrollsSideways` false.
+ * Lists the bars of chart `plot` whose trigger is under 24 × 24 px or outside
+ * the plot, or that draw nothing, and tells if the page scrolls sideways.
  */
 export function barTargetsOf(plot: HTMLElement) {
 	const bars = within(plot).getAllByRole("button");
@@ -26,8 +24,8 @@ export function barTargetsOf(plot: HTMLElement) {
 	};
 }
 
-/** What {@link barTargetsOf} gives for a chart whose bars can all be tapped. */
-export const TAPPABLE_BARS = {
+/** What {@link barTargetsOf} gives for a chart that follows the rules. */
+export const BAR_TARGETS_OK = {
 	smallTargets: [],
 	targetsOutsidePlot: [],
 	invisibleBars: [],

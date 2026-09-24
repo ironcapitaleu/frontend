@@ -28,8 +28,9 @@ import { Text } from "@/components/ui/text";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useCompany } from "@/hooks/useCompany";
 import { usePhone } from "@/hooks/usePhone";
+import { growthPerYear } from "@/lib/company/metrics";
 import { chartLines, figureGroupsOf } from "@/lib/company/sources";
-import type { BlockKey, StatementTable } from "@/lib/company/types";
+import type { BlockKey, Figure } from "@/lib/company/types";
 import type { Ticker } from "@/lib/domain/ticker";
 import { cn } from "@/lib/utils";
 import {
@@ -39,6 +40,7 @@ import {
 	newestFirst,
 	type PeriodView,
 	periodLabel,
+	type RowTable,
 	type Scale,
 	type StatementKey,
 	STATEMENTS,
@@ -78,8 +80,9 @@ const UNITS: readonly { key: Scale; label: string }[] = [
  * controls picks the statement, the annual or quarterly view and the unit.
  * The chart card draws the statement's fiscal years, and its "Data" button
  * swaps the chart for a table. The statement table card below shows the
- * chosen table. Every cell and every bar opens the sources of its figure. On
- * a phone, the statement and period switches are select menus and the table
+ * chosen table, and in the annual view a last column of growth per year
+ * (CAGR). Every cell and every bar opens the sources of its figure. On a
+ * phone, the statement and period switches are select menus and the table
  * shows the newest period first. The tab loads the Financials section through
  * `useCompany`. It shows the page's spinner while
  * it loads and, when the load fails, the page's failed copy in the panel.
@@ -125,7 +128,11 @@ export function FinancialsTab({ ticker }: { ticker: Ticker }) {
 	const shown = state.data[statement][view];
 	const table = phone ? newestFirst(shown) : shown;
 	const label = STATEMENTS.find(({ key }) => key === statement)?.label ?? "";
-	const chart = chartTable(state.data[statement].annual, chartLines[statement]);
+	const chart = chartTable(
+		state.data[statement].annual,
+		chartLines[statement],
+		state.sections,
+	);
 	const chartClaims =
 		groups.find(({ ref }) => ref.block === `${statement}Chart`)?.claims ?? [];
 	return (
@@ -183,10 +190,7 @@ export function FinancialsTab({ ticker }: { ticker: Ticker }) {
 							label={`${label} chart`}
 						/>
 					) : (
-						<StatementChart
-							table={chart}
-							format={(claim) => formatStatementValue(claim, scale)}
-						/>
+						<StatementChart table={chart} scale={scale} />
 					)}
 				</CompanyCard>
 				<CompanyCard
@@ -197,7 +201,12 @@ export function FinancialsTab({ ticker }: { ticker: Ticker }) {
 					span={2}
 					className="min-w-0"
 				>
-					<StatementGrid table={table} scale={scale} label={label} />
+					<StatementGrid
+						table={table}
+						scale={scale}
+						label={label}
+						growth={view === "annual"}
+					/>
 				</CompanyCard>
 			</CompanyCardGrid>
 			<SourcesIndex groups={groups} />
@@ -274,18 +283,20 @@ function ControlSwitch<K extends string>({
 }
 
 /**
- * The statement table: one row per line and one column per period. Below
- * 1024 px, a table wider than its card scrolls sideways and the line names
- * stay fixed.
+ * The statement table: one row per line and one column per period. With
+ * `growth`, a last column shows each line's growth per year. Below 1024 px,
+ * a table wider than its card scrolls sideways and the line names stay fixed.
  */
 function StatementGrid({
 	table,
 	scale,
 	label,
+	growth = false,
 }: {
-	table: StatementTable;
+	table: RowTable;
 	scale: Scale;
 	label: string;
+	growth?: boolean;
 }) {
 	return (
 		<Table aria-label={`${label} table`} className="text-base">
@@ -297,6 +308,7 @@ function StatementGrid({
 							{periodLabel(period)}
 						</TableHead>
 					))}
+					{growth && <TableHead className="text-right">CAGR</TableHead>}
 				</TableRow>
 			</TableHeader>
 			<TableBody>
@@ -310,23 +322,34 @@ function StatementGrid({
 							<UnitNote note={lineUnitNote(line.unit, scale)} />
 						</TableHead>
 						{line.points.map((point, position) => (
-							<TableCell
+							<FigureCell
 								key={table.periods[position]?.endsOn ?? position}
-								className="text-right font-monospace"
-							>
-								{point === null ? (
-									<span className={MISSING_INK}>{MISSING}</span>
-								) : (
-									<SourceTrigger claim={point}>
-										{formatStatementValue(point, scale)}
-									</SourceTrigger>
-								)}
-							</TableCell>
+								figure={point}
+								scale={scale}
+							/>
 						))}
+						{growth && (
+							<FigureCell figure={growthPerYear(line)} scale={scale} />
+						)}
 					</TableRow>
 				))}
 			</TableBody>
 		</Table>
+	);
+}
+
+/** One figure of the table, or the dimmed dash when it is missing. */
+function FigureCell({ figure, scale }: { figure: Figure; scale: Scale }) {
+	return (
+		<TableCell className="text-right font-monospace">
+			{figure === null ? (
+				<span className={MISSING_INK}>{MISSING}</span>
+			) : (
+				<SourceTrigger claim={figure}>
+					{formatStatementValue(figure, scale)}
+				</SourceTrigger>
+			)}
+		</TableCell>
 	);
 }
 

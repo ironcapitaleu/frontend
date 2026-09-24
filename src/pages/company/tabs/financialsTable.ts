@@ -1,9 +1,12 @@
 import { toFixedWithMinus } from "@/components/screener/format";
+import { evaluateMetric, isMetricKey, metrics } from "@/lib/company/metrics";
+import type { BarKey } from "@/lib/company/sources";
 import type {
 	Claim,
+	CompletedSections,
+	Figure,
 	FinancialsSection,
-	LineKey,
-	Nullable,
+	MetricKey,
 	Period,
 	Series,
 	StatementTable,
@@ -25,6 +28,20 @@ export const STATEMENTS: readonly { key: StatementKey; label: string }[] = [
 	{ key: "balance", label: "Balance sheet" },
 	{ key: "cashFlow", label: "Cash flow" },
 ];
+
+/**
+ * One row of a statement table or a chart: a statement line, or a metric such
+ * as free cash flow.
+ */
+export interface TableRow extends Series {
+	readonly level: number;
+}
+
+/** The rows of a statement table or a chart over a run of periods. */
+export interface RowTable {
+	readonly periods: readonly Period[];
+	readonly lines: readonly TableRow[];
+}
 
 /** The divisor of each unit. */
 export const SCALES: Record<Scale, number> = {
@@ -52,7 +69,7 @@ export function periodLabel(period: Period): string {
  * and that line carries its own note (see {@link lineUnitNote}).
  */
 export function tableCaption(
-	table: StatementTable,
+	table: RowTable,
 	view: PeriodView,
 	scale: Scale,
 ): string {
@@ -82,7 +99,7 @@ export function lineUnitNote(unit: Unit, scale: Scale): string | null {
  * each line with them, so the columns stay aligned. The phone shows the
  * newest year first (DESIGN.md §8 "Financials").
  */
-export function newestFirst(table: StatementTable): StatementTable {
+export function newestFirst(table: RowTable): RowTable {
 	return {
 		periods: [...table.periods].reverse(),
 		lines: table.lines.map((line) => ({
@@ -110,19 +127,48 @@ export function formatStatementValue(claim: Claim, scale: Scale): string {
 }
 
 /**
- * Returns the lines `keys` of `table`, in the order of `keys`, over all its
- * periods. The chart card draws these lines, and its "Data" table shows them.
+ * Returns the rows `keys` of `table`, in the order of `keys`, over all its
+ * periods. A metric key gives the metric's claim for each period, from
+ * `evaluateMetric` over `sections`, and a dimmed dash where it has none. The
+ * chart card draws these rows, and its "Data" table shows them.
  */
 export function chartTable(
 	table: StatementTable,
-	keys: readonly LineKey[],
-): StatementTable {
+	keys: readonly BarKey[],
+	sections: CompletedSections,
+): RowTable {
 	return {
 		periods: table.periods,
-		lines: keys.flatMap((key) =>
-			table.lines.filter((line) => line.key === key),
+		lines: keys.flatMap((key): TableRow[] =>
+			isMetricKey(key)
+				? [metricRow(key, table.periods, sections)]
+				: table.lines.filter((line) => line.key === key),
 		),
 	};
+}
+
+/** The bars of a `BarChart`. A column has a full `label` and a `short` axis label. */
+export interface BarTable {
+	readonly columns: readonly { key: string; label: string; short: string }[];
+	readonly lines: readonly {
+		key: string;
+		label: string;
+		points: readonly Figure[];
+	}[];
+}
+
+/** Returns the row of metric `key` over `periods`. */
+function metricRow(
+	key: MetricKey,
+	periods: readonly Period[],
+	sections: CompletedSections,
+): TableRow {
+	const { name, unit } = metrics[key];
+	const points = periods.map((period) => {
+		const result = evaluateMetric(key, sections, period);
+		return result.kind === "value" ? result.claim : null;
+	});
+	return { key, label: name, unit, level: 0, periods, points };
 }
 
 /**
@@ -131,12 +177,6 @@ export function chartTable(
  * holds the same floor for the same reason.
  */
 export const MIN_BAR_HEIGHT = 2;
-
-/** The figures of a chart: a column for each fiscal year and a line for each series. */
-export interface ChartTable {
-	readonly periods: readonly Pick<Period, "fiscalYear">[];
-	readonly lines: readonly Pick<Series, "key" | "label" | "points">[];
-}
 
 /** Where a bar sits, in percent of the plot height from the top. */
 export interface BarBox {
@@ -152,7 +192,7 @@ export interface BarBox {
  * {@link MIN_BAR_HEIGHT} tall, within the room on its side of the zero line.
  * A text value is not on the scale.
  */
-export function barScale(table: ChartTable): {
+export function barScale(table: BarTable | RowTable): {
 	zero: number;
 	place: (value: number) => BarBox;
 } {
@@ -180,49 +220,4 @@ export function barScale(table: ChartTable): {
 			return { top: value > 0 ? zero - height : zero, height };
 		},
 	};
-}
-
-/** Where a part of a stacked bar sits, in px up from the foot of the plot. */
-export interface StackBox {
-	readonly bottom: number;
-	readonly height: number;
-}
-
-/**
- * Returns where each part of each column sits in a stacked chart `plot` px
- * tall, as `boxes[line][column]`, first line lowest. A part that is not a
- * finite number of at least 0 is `null`, so it never reads as 0. A part is at
- * least `least` px tall, so it can be tapped. That floor adds at most `least`
- * px for each line, so the scale leaves that room and the tallest column fits.
- */
-export function stackScale(
-	table: ChartTable,
-	plot: number,
-	least: number,
-): Nullable<StackBox>[][] {
-	const values = table.lines.map(({ points }) =>
-		table.periods.map((_, column) => {
-			const value = points[column]?.value;
-			return Number.isFinite(value) && Number(value) >= 0
-				? Number(value)
-				: null;
-		}),
-	);
-	const bottoms = table.periods.map(() => 0);
-	const totals = bottoms.map((_, column) =>
-		values.reduce((sum, row) => sum + (row[column] ?? 0), 0),
-	);
-	const high = Math.max(0, ...totals);
-	const unit = high > 0 ? (plot - least * values.length) / high : 0;
-	return values.map((row) =>
-		row.map((value, column) => {
-			if (value === null) return null;
-			const box = {
-				bottom: bottoms[column] ?? 0,
-				height: Math.max(least, value * unit),
-			};
-			bottoms[column] = box.bottom + box.height;
-			return box;
-		}),
-	);
 }

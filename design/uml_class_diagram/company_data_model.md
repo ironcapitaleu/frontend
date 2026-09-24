@@ -609,7 +609,9 @@ These keys cover every statement figure that `DESIGN.md` §8 names for the
 Overview, Valuation and Shareholder returns tabs, the Financials chart and the
 print summary. `operatingIncome` feeds the operating margin and EV/EBIT.
 `totalAssets` and `totalLiabilities` give the long-term parts of Financial
-Position, as the total minus the current part. `shareRepurchases` and
+Position, as the total minus the current part. The point metrics
+`longTermAssets` and `longTermLiabilities` compute them at the latest
+quarter end. `shareRepurchases` and
 `shareIssuanceProceeds` give the net buybacks in dollars. The Financials
 statement table draws more lines than these, such as gross profit. The
 Financials Tab ticket adds their keys to this table. §5 says which table of the
@@ -669,7 +671,7 @@ tab ticket adds its own keys, such as `peRange` and `ceoPay`.
 | ---------- | ----------------- |
 | Overview   | `business`, `tenYears`, `keyFigures`, `financialPosition`, `checksByArea`, `ownership`, `profile`, and the print-only `printedShareholderReturns` |
 | Financials | `incomeChart`, `incomeTable`, `balanceChart`, `balanceTable`, `cashFlowChart`, `cashFlowTable` |
-| Valuation  | `valuationRatios`, `ratioFormulas`, so far |
+| Valuation  | `valuationRatios`, `yieldsAgainstTreasury` (each yield, or the inputs of a missing one), `ratioFormulas` |
 | Relationships | `largestFunds`, `insiders`, `ownershipSplit`, `subsidiaries`, `stakes` |
 | Management | `executivesAndBoard`, `ceoPay`, `payMix`, `insiderHoldings`, so far |
 
@@ -1000,6 +1002,7 @@ ownership shares, returns one `Figure` for each part. §3 gives the ids.
 | A fund's share of the company         | `fundShare`               | `FundHolding.shares`, `OwnershipSummary.sharesOutstanding`               |
 | A fund's change over a quarter        | `fundChange`              | `FundHolding.shares`, `FundHolding.sharesQuarterEarlier`                 |
 | Stake percentage                      | `stakePercent`            | `Stake.sharesHeld`, `Stake.sharesOutstanding`                            |
+| Growth per year over ten years (CAGR) | `growthPerYear`           | the earliest and the latest annual point of a `StatementLine`            |
 | Pay mix                               | `payMix`                  | `salary`, `bonus`, `stockAwards` and `other` of the latest `PayYear`     |
 | Tenure in years                       | `tenure`                  | `Person.since` or `Profile.chiefExecutiveSince`                          |
 | Net shares bought back, per year      | `netSharesBoughtBack`     | `sharesRepurchased` and `sharesIssuedToStaff` at the same fiscal year    |

@@ -505,6 +505,28 @@ export const metrics: Record<MetricKey, Metric> = {
 		line("totalCurrentAssets", latestQuarter),
 		line("totalCurrentLiabilities", latestQuarter),
 	),
+	longTermAssets: metric(
+		"point",
+		"longTermAssets",
+		"Long-term assets",
+		"Total assets − total current assets, latest quarter end",
+		"usd",
+		[
+			line("totalAssets", latestQuarter),
+			line("totalCurrentAssets", latestQuarter),
+		],
+	),
+	longTermLiabilities: metric(
+		"point",
+		"longTermLiabilities",
+		"Long-term liabilities",
+		"Total liabilities − total current liabilities, latest quarter end",
+		"usd",
+		[
+			line("totalLiabilities", latestQuarter),
+			line("totalCurrentLiabilities", latestQuarter),
+		],
+	),
 	stockPayToRevenue: ratio(
 		"point",
 		"stockPayToRevenue",
@@ -711,6 +733,33 @@ export const metrics: Record<MetricKey, Metric> = {
 		guards: [],
 		minPoints: 5,
 	},
+	earningsYield: ratio(
+		"point",
+		"earningsYield",
+		"Earnings yield",
+		"Diluted EPS, latest fiscal year ÷ price",
+		"percent",
+		line("dilutedEps", latestYear),
+		priceNow,
+	),
+	earningsYieldAtYearEnd: ratio(
+		"perPeriod",
+		"earningsYieldAtYearEnd",
+		"Earnings yield at fiscal year end",
+		"Diluted EPS ÷ price at fiscal year end",
+		"percent",
+		line("dilutedEps", samePeriod),
+		priceAtYearEnd,
+	),
+	freeCashFlowYieldAtYearEnd: ratio(
+		"perPeriod",
+		"freeCashFlowYieldAtYearEnd",
+		"Free cash flow yield at fiscal year end",
+		"Free cash flow ÷ market cap at fiscal year end",
+		"percent",
+		{ from: "metric", key: "freeCashFlow", at: samePeriod },
+		marketCapAtYearEndRef,
+	),
 };
 
 /** Returns the value of a single-period input. */
@@ -743,6 +792,8 @@ export const formulas: Record<MetricKey, Formula> = {
 		(amount(bought) - amount(issued)) / amount(cap),
 	totalDebt: ([short, long]) => amount(short) + amount(long),
 	currentRatio: divide,
+	longTermAssets: ([total, current]) => amount(total) - amount(current),
+	longTermLiabilities: ([total, current]) => amount(total) - amount(current),
 	stockPayToRevenue: divide,
 	marketCap: ([price, shares]) => amount(price) * amount(shares),
 	priceToEarnings: divide,
@@ -764,6 +815,9 @@ export const formulas: Record<MetricKey, Formula> = {
 	priceToBookMedian10y: ([window]) => median(window),
 	enterpriseValueToEbitAtYearEnd: divide,
 	enterpriseValueToEbitMedian10y: ([window]) => median(window),
+	earningsYield: divide,
+	earningsYieldAtYearEnd: divide,
+	freeCashFlowYieldAtYearEnd: divide,
 };
 
 /**
@@ -850,23 +904,113 @@ export function keyFigureOf(
 	sections: CompletedSections,
 ): Figure {
 	const at = metrics[key].kind === "perPeriod" ? latestYear : null;
-	const result = resolve({ from: "metric", key, at }, sections, null);
+	return claimAt({ from: "metric", key, at }, sections);
+}
+
+/** Returns the claim that `ref` resolves to, or `null` when it has no value. */
+function claimAt(ref: FigureRef, sections: CompletedSections): Figure {
+	const result = resolve(ref, sections, null);
 	return !isWindow(result) && result.kind === "value" ? result.claim : null;
+}
+
+/** One pair of bars of Overview card 1.4 "Financial Position". */
+export interface PositionRow {
+	readonly term: "Short term" | "Long term";
+	readonly assets: Figure;
+	readonly liabilities: Figure;
+}
+
+/** The figures of card 1.4, at the latest quarter end, in the order of DESIGN.md §8. */
+const positionRefs = [
+	{
+		term: "Short term",
+		assets: line("totalCurrentAssets", latestQuarter),
+		liabilities: line("totalCurrentLiabilities", latestQuarter),
+	},
+	{
+		term: "Long term",
+		assets: { from: "metric", key: "longTermAssets", at: null },
+		liabilities: { from: "metric", key: "longTermLiabilities", at: null },
+	},
+] as const satisfies readonly {
+	term: PositionRow["term"];
+	assets: FigureRef;
+	liabilities: FigureRef;
+}[];
+
+/**
+ * Returns the assets and the liabilities of card 1.4, short term and then
+ * long term. A figure with no value is `null`.
+ */
+export function financialPositionOf(
+	sections: CompletedSections,
+): PositionRow[] {
+	return positionRefs.map(({ term, assets, liabilities }) => ({
+		term,
+		assets: claimAt(assets, sections),
+		liabilities: claimAt(liabilities, sections),
+	}));
+}
+
+/**
+ * Returns the reported claims behind card 1.4: each short-term figure, and
+ * the inputs of each long-term figure. A long-term figure with no value
+ * still names its inputs, so its filing stays in the sources index. Each
+ * claim appears once, by its id, and a missing input is left out.
+ */
+export function financialPositionInputs(sections: CompletedSections): Claim[] {
+	const claims = positionRefs
+		.flatMap(({ assets, liabilities }) => [assets, liabilities])
+		.flatMap((ref) => (ref.from === "metric" ? metrics[ref.key].inputs : [ref]))
+		.map((ref) => claimAt(ref, sections))
+		.filter((claim) => claim !== null);
+	// The current lines feed both terms, so keep the first claim of each id.
+	return claims.filter(
+		(claim, index) => claims.findIndex(({ id }) => id === claim.id) === index,
+	);
 }
 
 /**
  * Returns the input claims of metric `key` in the order of `Metric.inputs`,
  * by the resolution of {@link resolve}. A missing input, an input metric with
  * no value and a window input each give `null`. A failed guard hides no
- * input, so card 3.3 shows the inputs of a ratio that has no value.
+ * input, so card 3.3 shows the inputs of a ratio that has no value. A
+ * per-period metric reads its inputs at `period`.
  */
 export function metricInputsOf(
 	key: MetricKey,
 	sections: CompletedSections,
+	period: Nullable<Period> = null,
 ): Figure[] {
 	return metrics[key].inputs.map((ref) => {
-		const result = resolve(ref, sections, null);
+		const result = resolve(ref, sections, period);
 		return !isWindow(result) && result.kind === "value" ? result.claim : null;
+	});
+}
+
+/**
+ * Returns the input claims of metric `key` at `period` like
+ * {@link metricInputsOf}, but an input metric with no value gives its own
+ * inputs in its place, at every depth. So a missing FCF yield keeps the
+ * operating cash flow of a year whose free cash flow is missing.
+ */
+export function nestedMetricInputsOf(
+	key: MetricKey,
+	sections: CompletedSections,
+	period: Nullable<Period> = null,
+): Figure[] {
+	return metrics[key].inputs.flatMap((ref) => {
+		const result = resolve(ref, sections, period);
+		if (!isWindow(result) && result.kind === "value") {
+			return [result.claim];
+		}
+		if (isWindow(result) || ref.from !== "metric") {
+			return [null];
+		}
+		const at = ref.at === null ? null : targetPeriod(ref.at, sections, period);
+		return ref.at !== null && at === null
+			? [null]
+			: nestedMetricInputsOf(ref.key, sections, at);
 	});
 }
 
@@ -1541,6 +1685,58 @@ function yearsBetween(since: Claim, end: IsoDate): Nullable<number> {
 	if (start === null || !ISO_DATE.test(start)) return null;
 	const years = Number(end.slice(0, 4)) - Number(start.slice(0, 4));
 	return end.slice(5) < start.slice(5) ? years - 1 : years;
+}
+
+/**
+ * Returns the growth per year of `line` over its fiscal years, the CAGR: the
+ * latest figure divided by the earliest, to the power of 1 ÷ the years between
+ * them, minus 1. It reads the earliest and the latest year with a figure in
+ * any order, so the phone's newest-first table gives the same claim. Returns
+ * `null` when fewer than two years have a figure, or either is not above 0.
+ */
+export function growthPerYear(line: Series): Figure {
+	const known = line.points
+		.flatMap((point, position) => {
+			const period = line.periods[position];
+			return isNumberClaim(point) && period ? [{ point, period }] : [];
+		})
+		.sort((a, b) => a.period.fiscalYear - b.period.fiscalYear);
+	const first = known.at(0);
+	const last = known.at(-1);
+	if (first === undefined || last === undefined) {
+		return null;
+	}
+	const years = last.period.fiscalYear - first.period.fiscalYear;
+	if (years < 1 || !(first.point.value > 0) || !(last.point.value > 0)) {
+		return null;
+	}
+	const name = (year: Period) => `${line.label}, FY${year.fiscalYear}`;
+	return {
+		id: `metric.growthPerYear.${line.key}`,
+		label: `${line.label} growth per year`,
+		value: (last.point.value / first.point.value) ** (1 / years) - 1,
+		unit: "percent",
+		period: null,
+		source: {
+			kind: "derived",
+			formula: `(${name(last.period)} ÷ ${name(first.period)})^(1 ÷ ${years}) − 1`,
+			inputs: [last.point, first.point],
+		},
+	};
+}
+
+/** Returns the lines `key` reads, through its input metrics, but no market. */
+export function lineKeysOf(key: LineKey | MetricKey): LineKey[] {
+	return isMetricKey(key)
+		? metrics[key].inputs.flatMap((ref) =>
+				ref.from === "market" ? [] : lineKeysOf(ref.key),
+			)
+		: [key];
+}
+
+/** Tells whether `key` names a metric rather than a statement line. */
+export function isMetricKey(key: string): key is MetricKey {
+	return key in metrics;
 }
 
 /**
