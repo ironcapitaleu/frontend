@@ -738,7 +738,7 @@ export function evaluate(
 }
 
 /** Tells whether `input` is a window of points. */
-function isWindow<T extends object>(
+export function isWindow<T extends object>(
 	input: T | readonly Figure[],
 ): input is readonly Figure[] {
 	return Array.isArray(input);
@@ -774,7 +774,11 @@ export function sameRef(a: FigureRef, b: FigureRef): boolean {
 }
 
 /** Tells whether `value` meets `comparison` against `bound`. */
-function meets(value: number, comparison: Comparison, bound: number): boolean {
+export function meets(
+	value: number,
+	comparison: Comparison,
+	bound: number,
+): boolean {
 	switch (comparison) {
 		case "above":
 			return value > bound;
@@ -790,9 +794,10 @@ function meets(value: number, comparison: Comparison, bound: number): boolean {
 /**
  * Resolves `ref` to a metric result for a single period, or to the points of
  * a window. A statement line or a market figure gives `value`, or
- * `missingInput` for a `null` figure.
+ * `missingInput` for a `null` figure. `checks.ts` reads a check's figures
+ * with it.
  */
-function resolve(
+export function resolve(
 	ref: FigureRef,
 	sections: CompletedSections,
 	period: Nullable<Period>,

@@ -1285,6 +1285,21 @@ classDiagram
   `AreaSummary` for each area, in the order of `CheckArea`.
 - No type has an overall score. The page never adds the met counts together.
 
+**The checks in code.** STA-231 writes the check set of §6 and
+`evaluateChecks` in `checks.ts`. The code differs from the diagram in three
+details:
+
+- `Check.sections` lists keys of `CompanySections`, so a check can name only
+  a section that exists. V2 lists the masthead and the Financials sections
+  until the Valuation section exists. Its Treasury yield resolves to `null`,
+  so V2 reads "not enough data", reason `missingInput`. The ticket that adds
+  `getValuation` adds `valuation` to V2.
+- `Check.rule`, `CheckResult.sentence` and the count claim
+  `check.{id}.count` wait for the ticket that draws the check card.
+- `CheckResult.claims` holds the claims that decide the state: the subject and
+  the threshold figure, the input claim of a failed guard, or the points of a
+  window.
+
 ## 6. The first check set
 
 The mock-up has seven checks. Each area needs two to four checks, so this set

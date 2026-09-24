@@ -1,0 +1,342 @@
+import {
+	type Comparison,
+	type FigureRef,
+	isWindow,
+	meets,
+	type MetricResult,
+	resolve,
+} from "./metrics";
+import type {
+	Claim,
+	CompanySections,
+	CompletedSections,
+	Figure,
+	Nullable,
+} from "./types";
+
+/** Names one check of the first check set, by its short code. */
+export type CheckId =
+	| "B1"
+	| "B2"
+	| "P1"
+	| "P2"
+	| "V1"
+	| "V2"
+	| "S1"
+	| "S2"
+	| "S3"
+	| "C1"
+	| "C2";
+
+/** The areas of the checks, in the order of the page. */
+export const checkAreas = [
+	"balanceSheet",
+	"profitability",
+	"valuation",
+	"shareholderReturns",
+	"consistency",
+] as const;
+
+/** Names one area of the checks. */
+export type CheckArea = (typeof checkAreas)[number];
+
+/**
+ * What a check compares its subject with: a fixed number, another figure, or
+ * a count of the points of a window that meet a condition. A percent number
+ * is a fraction, so 5% is `0.05`.
+ */
+export type Threshold =
+	| {
+			readonly kind: "value";
+			readonly comparison: Comparison;
+			readonly value: number;
+	  }
+	| {
+			readonly kind: "figure";
+			readonly comparison: Comparison;
+			readonly against: FigureRef;
+	  }
+	| {
+			readonly kind: "periodCount";
+			readonly condition: Comparison;
+			readonly conditionValue: number;
+			readonly required: number;
+	  };
+
+/**
+ * One rule that the page tests against the company's figures. `sections`
+ * names the sections that the check reads. A check with an absent section
+ * has not enough data.
+ */
+export interface Check {
+	readonly id: CheckId;
+	readonly area: CheckArea;
+	readonly name: string;
+	readonly subject: FigureRef;
+	readonly threshold: Threshold;
+	readonly sections: readonly (keyof CompanySections)[];
+}
+
+/** How a check ended. */
+export type CheckState = "met" | "notMet" | "notEnoughData";
+
+/** Why a check has not enough data. */
+export type NotEnoughDataReason =
+	| "missingSection"
+	| "missingInput"
+	| "failedGuard"
+	| "shortHistory";
+
+/**
+ * The result of one check. `reason` is `null` unless the state is
+ * `notEnoughData`. `claims` holds the claims that decided the state: the
+ * subject and the threshold figure, the input of a failed guard, or the
+ * points of a window.
+ */
+export interface CheckResult {
+	readonly check: Check;
+	readonly state: CheckState;
+	readonly reason: Nullable<NotEnoughDataReason>;
+	readonly claims: readonly Claim[];
+}
+
+/** The results of the checks of one area, and how many of them are met. */
+export interface AreaSummary {
+	readonly area: CheckArea;
+	readonly results: readonly CheckResult[];
+	readonly metCount: number;
+}
+
+const latestYear = { kind: "fiscalYear", yearsBack: 0 } as const;
+const tenYears = { kind: "lastFiscalYears", count: 10 } as const;
+
+/** Returns a reference to the metric `key` at `at`, or to the point metric `key`. */
+function metric(
+	key: Extract<FigureRef, { from: "metric" }>["key"],
+	at: Extract<FigureRef, { from: "metric" }>["at"] = null,
+): FigureRef {
+	return { from: "metric", key, at };
+}
+
+/** Returns a threshold that compares the subject with the fixed `value`. */
+function value(comparison: Comparison, bound: number): Threshold {
+	return { kind: "value", comparison, value: bound };
+}
+
+/** Returns a threshold that compares the subject with the figure `against`. */
+function figure(comparison: Comparison, against: FigureRef): Threshold {
+	return { kind: "figure", comparison, against };
+}
+
+/** Returns a threshold that needs 8 of the 10 points of a window above 0. */
+const eightOfTenAboveZero: Threshold = {
+	kind: "periodCount",
+	condition: "above",
+	conditionValue: 0,
+	required: 8,
+};
+
+/** Returns a check. The positions follow the columns of the note §6 table. */
+function checkOf(
+	id: CheckId,
+	area: CheckArea,
+	name: string,
+	subject: FigureRef,
+	threshold: Threshold,
+	sections: Check["sections"],
+): Check {
+	return { id, area, name, subject, threshold, sections };
+}
+
+// V2 reads the Treasury yield from the Valuation section. That section does
+// not exist yet, so V2 cannot name it, and the Treasury figure resolves to
+// `null`. The ticket that adds `getValuation` adds "valuation" to V2.
+/** The first check set of note §6, in the order of the note. */
+export const checks: readonly Check[] = [
+	checkOf(
+		"B1",
+		"balanceSheet",
+		"Cash and short-term investments above total debt",
+		{
+			from: "line",
+			key: "cashAndShortTermInvestments",
+			at: { kind: "latestQuarter" },
+		},
+		figure("above", metric("totalDebt")),
+		["financials"],
+	),
+	checkOf(
+		"B2",
+		"balanceSheet",
+		"Current ratio of at least 1.5",
+		metric("currentRatio"),
+		value("atLeast", 1.5),
+		["financials"],
+	),
+	checkOf(
+		"P1",
+		"profitability",
+		"Stock-based pay below 5% of revenue",
+		metric("stockPayToRevenue"),
+		value("below", 0.05),
+		["financials"],
+	),
+	checkOf(
+		"P2",
+		"profitability",
+		"Return on equity of at least 15%",
+		metric("returnOnEquity"),
+		value("atLeast", 0.15),
+		["financials"],
+	),
+	checkOf(
+		"V1",
+		"valuation",
+		"P/E below its own 10-year median",
+		metric("priceToEarnings"),
+		figure("below", metric("priceToEarningsMedian10y")),
+		["masthead", "financials"],
+	),
+	checkOf(
+		"V2",
+		"valuation",
+		"Free cash flow yield above the 10-year Treasury yield",
+		metric("freeCashFlowYield"),
+		figure("above", {
+			from: "market",
+			key: "treasuryYield10y",
+			at: { kind: "latestClose" },
+		}),
+		["masthead", "financials"],
+	),
+	checkOf(
+		"S1",
+		"shareholderReturns",
+		"Fewer diluted shares than five years ago",
+		{ from: "line", key: "dilutedShares", at: latestYear },
+		figure("below", {
+			from: "line",
+			key: "dilutedShares",
+			at: { kind: "fiscalYear", yearsBack: 5 },
+		}),
+		["financials"],
+	),
+	checkOf(
+		"S2",
+		"shareholderReturns",
+		"Dividend yield of at least 2%",
+		metric("dividendYield"),
+		value("atLeast", 0.02),
+		["masthead", "financials"],
+	),
+	checkOf(
+		"S3",
+		"shareholderReturns",
+		"Dividends paid within free cash flow",
+		{ from: "line", key: "dividendsPaid", at: latestYear },
+		figure("atMost", metric("freeCashFlow", latestYear)),
+		["financials"],
+	),
+	checkOf(
+		"C1",
+		"consistency",
+		"Free cash flow positive in at least 8 of 10 years",
+		metric("freeCashFlow", tenYears),
+		eightOfTenAboveZero,
+		["financials"],
+	),
+	checkOf(
+		"C2",
+		"consistency",
+		"Net income positive in at least 8 of 10 years",
+		{ from: "line", key: "netIncome", at: tenYears },
+		eightOfTenAboveZero,
+		["financials"],
+	),
+];
+
+/**
+ * Evaluates every check over `sections` and groups the results by area, in
+ * the order of {@link checkAreas}. No summary adds the areas together.
+ */
+export function evaluateChecks(
+	sections: CompletedSections,
+): readonly AreaSummary[] {
+	const results = checks.map((one) => evaluateCheck(one, sections));
+	return checkAreas.map((area) => {
+		const inArea = results.filter((result) => result.check.area === area);
+		return {
+			area,
+			results: inArea,
+			metCount: inArea.filter((result) => result.state === "met").length,
+		};
+	});
+}
+
+/**
+ * Evaluates one check by the steps of note §5. The first step that matches
+ * decides: an absent section, a period count, a missing or short input, a
+ * failed guard, and last the comparison. Steps 3 and 4 read the subject first.
+ */
+export function evaluateCheck(
+	check: Check,
+	sections: CompletedSections,
+): CheckResult {
+	const { subject, threshold } = check;
+	const done = (
+		state: CheckState,
+		reason: Nullable<NotEnoughDataReason>,
+		claims: readonly Figure[],
+	): CheckResult => ({
+		check,
+		state,
+		reason,
+		claims: claims.filter((claim) => claim !== null),
+	});
+	if (check.sections.some((key) => sections[key] === null)) {
+		return done("notEnoughData", "missingSection", []);
+	}
+	if (threshold.kind === "periodCount") {
+		const resolved = resolve(subject, sections, null);
+		const points = isWindow(resolved) ? resolved : [];
+		const { condition, conditionValue, required } = threshold;
+		const k = points.filter(
+			(point) =>
+				point !== null && meets(Number(point.value), condition, conditionValue),
+		).length;
+		const m = points.filter((point) => point === null).length;
+		return k >= required
+			? done("met", null, points)
+			: k + m < required
+				? done("notMet", null, points)
+				: done("notEnoughData", "shortHistory", points);
+	}
+	const refs =
+		threshold.kind === "figure" ? [subject, threshold.against] : [subject];
+	const inputs = refs.map((ref) => single(resolve(ref, sections, null)));
+	const claims = inputs.map((input) =>
+		input.kind === "value" ? input.claim : null,
+	);
+	const missing = inputs.find(
+		(input) => input.kind === "missingInput" || input.kind === "shortHistory",
+	);
+	if (missing !== undefined) {
+		return done("notEnoughData", missing.kind, claims);
+	}
+	const failed = inputs.find((input) => input.kind === "failedGuard");
+	if (failed !== undefined) {
+		return done("notEnoughData", "failedGuard", [failed.input]);
+	}
+	const [amount, bound] = claims.map((claim) => Number(claim?.value));
+	const met = meets(
+		amount,
+		threshold.comparison,
+		threshold.kind === "figure" ? bound : threshold.value,
+	);
+	return done(met ? "met" : "notMet", null, claims);
+}
+
+/** Maps a window to `missingInput`, so a single-period step never reads one. */
+function single(input: MetricResult | readonly Figure[]): MetricResult {
+	return isWindow(input) ? { kind: "missingInput" } : input;
+}
