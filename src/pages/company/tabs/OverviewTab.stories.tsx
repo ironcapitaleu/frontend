@@ -50,7 +50,7 @@ export const Loaded: Story = {
 		const expectedResult = ["1.1 The Business", "1.2 Ten Years at a Glance"];
 
 		const result = canvas
-			.getAllByRole("heading", { level: 3 })
+			.getAllByRole("heading", { level: 2 })
 			.map((heading) => heading.textContent);
 
 		await expect(result).toEqual(expectedResult);
