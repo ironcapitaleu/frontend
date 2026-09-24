@@ -352,16 +352,20 @@ that reads it, so no claim can reach itself.
 **How a chart or table collects its sources.** STA-226 writes these pure
 functions in `src/lib/company/sources.ts`:
 
-- `claimsOf(block)` returns every claim that a chart, table or check draws.
-- `figureGroupsOf(tab, sections): FigureGroup[]` returns one `FigureGroup`
-  for each chart, table and check of the tab. A `FigureGroup` pairs a
-  `FigureGroupRef` (§4) with `claimsOf` of its block. The tab draws its blocks
-  from the same groups, so the list and the page cannot disagree. A block
-  whose sections have not loaded gives no group. A block that draws
-  `SectorBenchmark` figures next to the company's figures gives two groups:
-  one for the company's figures and one for the sector figures. The two
-  share `block` and `label` and differ by `figures`. No block in `DESIGN.md`
-  §8 draws sector figures alone.
+- `claimsOf(block, figures)` returns the claims that a chart, table or check
+  draws, of one kind. With `"sector"`, it returns the claims that the block
+  reads from a `SectorBenchmark` field. With `"company"`, it returns every
+  other claim of the block. So the two kinds never share a claim, and
+  together they hold every claim that the block draws.
+- `figureGroupsOf(tab, sections): FigureGroup[]` returns the groups of the
+  charts, tables and checks of the tab. A block with no sector figures gives
+  one group, with `figures: "company"`. A block that draws `SectorBenchmark`
+  figures next to the company's figures gives two groups, one of each kind.
+  The two share `block` and `label` and differ by `figures`. No block in
+  `DESIGN.md` §8 draws sector figures alone. A `FigureGroup` pairs a
+  `FigureGroupRef` (§4) with `claimsOf(ref.block, ref.figures)`. The tab
+  draws its blocks from the same groups, so the list and the page cannot
+  disagree. A block whose sections have not loaded gives no group.
 - `isSectorBenchmark(ref: FigureGroupRef): boolean` reads `ref.figures`. It
   is true for a group of sector figures only, so no label decides it and a
   card title is free to change.
@@ -1575,17 +1579,17 @@ const groups: FigureGroup[] = [
 		ref: { tab: "overview", block: "checksByArea", label: "Checks by Area", figures: "company" },
 		// check.V1 → metric.priceToEarnings → financials.dilutedEps.FY2026 (10-K)
 		//                                    → the price (NASDAQ close)
-		claims: claimsOf(checksByArea),
+		claims: claimsOf(checksByArea, "company"),
 	},
 	{
 		ref: { tab: "financials", block: "incomeTable", label: "Income statement, ten years", figures: "company" },
 		// financials.revenue.FY2017 … financials.revenue.FY2026, one 10-K each
-		claims: claimsOf(incomeTable),
+		claims: claimsOf(incomeTable, "company"),
 	},
 	{
 		ref: { tab: "management", block: "ceoPay", label: "CEO Pay by Year", figures: "company" },
 		// management.ceoPay.salary.FY2026 → DEF 14A filed 24 Apr 2026
-		claims: claimsOf(ceoPay),
+		claims: claimsOf(ceoPay, "company"),
 	},
 ]
 
@@ -1699,7 +1703,9 @@ once STA-224 writes the types:
 - "A block with sector figures gives one group of each": a unit test in
   STA-226 checks that each such block of `figureGroupsOf` gives one group
   with `figures: "company"` and one with `figures: "sector"`, with the same
-  `block`.
+  `block`. It also checks that the company group of `peRange` holds no claim
+  read from a `SectorBenchmark` field, and that the sector group holds only
+  such claims.
 
 The period and guard rules reach level 1 through tests. Each worked example
 in §7 becomes a unit test in STA-226, and CI runs the tests. A change that
