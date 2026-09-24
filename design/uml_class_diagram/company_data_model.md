@@ -353,10 +353,11 @@ that reads it, so no claim can reach itself.
 functions in `src/lib/company/sources.ts`:
 
 - `claimsOf(block: BlockKey, figures: "company" | "sector"): Claim[]`
-  returns the claims that a chart, table or check draws, of one kind. With `"sector"`, it returns the claims that the block
-  reads from a `SectorBenchmark` field. With `"company"`, it returns every
-  other claim of the block. So the two kinds never share a claim, and
-  together they hold every claim that the block draws.
+  returns the claims that a chart, table or check draws, of one kind. With
+  `"sector"`, it returns the claims that the block reads from a
+  `SectorBenchmark` field. With `"company"`, it returns every other claim of
+  the block. So the two kinds never share a claim, and together they hold
+  every claim that the block draws.
 - `figureGroupsOf(tab, sections): FigureGroup[]` returns the groups of the
   charts, tables and checks of the tab. A block with no sector figures gives
   one group, with `figures: "company"`. A block that draws `SectorBenchmark`
