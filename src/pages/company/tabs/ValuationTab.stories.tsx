@@ -1,10 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, within } from "storybook/test";
+import { expect, userEvent, within } from "storybook/test";
 
 import { CompanyGatewayProvider } from "../../../contexts/CompanyGatewayContext";
 import type { CompanyGateway } from "../../../lib/company/gateway";
 import { Ticker } from "../../../lib/domain/ticker";
 import { alwaysFailingCompanyGateway } from "../../../test/fixtures/companies/always-failing";
+import { alwaysFoundCompanyGateway } from "../../../test/fixtures/companies/always-found";
 import { ValuationTab } from "./ValuationTab";
 
 const failingGateway = alwaysFailingCompanyGateway();
@@ -15,15 +16,17 @@ const pendingGateway: CompanyGateway = {
 };
 
 /**
- * The Valuation tab for MRDN from the sample gateway (DESIGN.md §8
- * "Valuation"). Card 3.1 draws each ratio now on a bar of its own ten years
- * and a bar of the sector quartiles.
+ * The Valuation tab for MRDN, from the fake gateway of the test fixtures
+ * unless a story sets its own (DESIGN.md §8 "Valuation"). Card 3.1 draws each
+ * ratio now on a bar of its own ten years and a bar of the sector quartiles.
+ * The sources index at the foot lists the filings behind the tab.
  */
 const meta: Meta<typeof ValuationTab> = {
 	title: "Pages/CompanyPage/ValuationTab",
 	component: ValuationTab,
+	tags: ["autodocs"],
 	args: { ticker: Ticker.parse("MRDN") },
-	parameters: { companyGateway: undefined },
+	parameters: { companyGateway: alwaysFoundCompanyGateway() },
 	decorators: [
 		(Story, { parameters }) => (
 			<CompanyGatewayProvider gateway={parameters.companyGateway}>
@@ -45,9 +48,31 @@ export const Loaded: Story = {
 			"3.1 Ratios Against Their Own Ten Years and the Sector",
 		];
 
-		const result = (await canvas.findAllByRole("region")).map(
-			(card) => within(card).getByRole("heading", { level: 2 }).textContent,
+		const headings = await canvas.findAllByRole("heading", { level: 2 });
+		const result = headings
+			.map((heading) => heading.textContent)
+			.filter((title) => /^\d+\.\d+ /.test(title ?? ""));
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: every filing in the sources index feeds card 3.1. */
+export const Sources: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.click(
+			await canvas.findByRole("button", {
+				name: "Where these numbers come from",
+			}),
 		);
+		const feeds = await canvas.findAllByText(/^Feeds /);
+
+		const expectedResult = feeds.map(
+			() => "Feeds Ratios Against Their Own Ten Years and the Sector",
+		);
+
+		const result = feeds.map((line) => line.textContent);
 
 		await expect(result).toEqual(expectedResult);
 	},

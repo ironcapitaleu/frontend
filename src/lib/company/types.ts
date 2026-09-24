@@ -188,7 +188,15 @@ export type MetricKey =
 	| "priceToFreeCashFlow"
 	| "priceToBook"
 	| "enterpriseValue"
-	| "enterpriseValueToEbit";
+	| "enterpriseValueToEbit"
+	| "marketCapAtYearEnd"
+	| "enterpriseValueAtYearEnd"
+	| "priceToFreeCashFlowAtYearEnd"
+	| "priceToFreeCashFlowMedian10y"
+	| "priceToBookAtYearEnd"
+	| "priceToBookMedian10y"
+	| "enterpriseValueToEbitAtYearEnd"
+	| "enterpriseValueToEbitMedian10y";
 
 /** The quartiles of one metric over the company's peer group. */
 export interface SectorBenchmark {
@@ -437,7 +445,8 @@ export type TabKey =
  * Names one chart, table or check card of a tab. It is a code key, so a card
  * title can change. This list holds the blocks of the Overview and Financials
  * tabs, the Shareholder returns block that only the printed Overview shows,
- * and the Relationships blocks built so far. Each later tab adds its own keys.
+ * and the Valuation and Relationships blocks built so far. Each later tab
+ * adds its own keys.
  */
 export type BlockKey =
 	| "business"
@@ -454,6 +463,7 @@ export type BlockKey =
 	| "balanceTable"
 	| "cashFlowChart"
 	| "cashFlowTable"
+	| "valuationRatios"
 	| "largestFunds";
 
 /**

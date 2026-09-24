@@ -1,5 +1,8 @@
+import * as React from "react";
+
 import { CompanyCard, CompanyCardGrid } from "@/components/company/CompanyCard";
 import { SourceTrigger } from "@/components/company/SourceCard";
+import { SourcesIndex } from "@/components/company/SourcesIndex";
 import {
 	formatNumber,
 	MISSING,
@@ -11,7 +14,14 @@ import { Text } from "@/components/ui/text";
 import { cn } from "@/lib/utils";
 import { useCompany } from "../../../hooks/useCompany";
 import { metrics } from "../../../lib/company/metrics";
-import type { CompletedSections, Figure } from "../../../lib/company/types";
+import { figureGroupsOf } from "../../../lib/company/sources";
+import type {
+	CompletedSections,
+	Figure,
+	MastheadSection,
+	Nullable,
+	ValuationSection,
+} from "../../../lib/company/types";
 import {
 	type RatioRange,
 	ratioRanges,
@@ -21,15 +31,24 @@ import type { Ticker } from "../../../lib/domain/ticker";
 
 /**
  * The Valuation tab of the company page (DESIGN.md §8 "Valuation"). It loads
- * the masthead, the financials and the valuation section, and shows card 3.1.
+ * the masthead, the financials and the valuation section, and shows card 3.1,
+ * then the sources index.
  */
 export function ValuationTab({ ticker }: { ticker: Ticker }) {
 	const masthead = useCompany(ticker, "masthead");
 	const financials = useCompany(ticker, "financials");
 	const valuation = useCompany(ticker, "valuation");
 
-	if ([masthead, financials, valuation].some((s) => s.status === "loading")) {
-		return <Spinner size="lg" label="Loading valuation" />;
+	if (
+		[masthead, financials, valuation].some(
+			(state) => state.status === "loading",
+		)
+	) {
+		return (
+			<div className="flex justify-center py-16">
+				<Spinner size="lg" label="Loading valuation" />
+			</div>
+		);
 	}
 	if (
 		masthead.status !== "loaded" ||
@@ -42,27 +61,51 @@ export function ValuationTab({ ticker }: { ticker: Ticker }) {
 			</Text>
 		);
 	}
-	const sections: CompletedSections = {
-		...financials.sections,
-		masthead: masthead.data,
-		valuation: valuation.data,
-	};
 	return (
-		<CompanyCardGrid>
-			<CompanyCard
-				tab="valuation"
-				position={1}
-				span={2}
-				title="Ratios Against Their Own Ten Years and the Sector"
-				caption="Now, the last ten fiscal year ends and the sector's quartiles. Multiples, from 10-K filings and daily prices."
-			>
-				<ul className="flex flex-col gap-6">
-					{ratioRanges(sections).map((range) => (
-						<RatioRow key={range.ratio} range={range} />
-					))}
-				</ul>
-			</CompanyCard>
-		</CompanyCardGrid>
+		<LoadedValuation
+			masthead={masthead.data}
+			financials={financials.sections}
+			valuation={valuation.data}
+		/>
+	);
+}
+
+/** Card 3.1 of the loaded tab, then the sources index. */
+function LoadedValuation(props: {
+	masthead: MastheadSection;
+	financials: CompletedSections;
+	valuation: ValuationSection;
+}) {
+	const { masthead, financials, valuation } = props;
+	// The same `sections` on each render keeps the memos below.
+	const sections = React.useMemo<CompletedSections>(
+		() => ({ ...financials, masthead, valuation }),
+		[masthead, financials, valuation],
+	);
+	const ranges = React.useMemo(() => ratioRanges(sections), [sections]);
+	const groups = React.useMemo(
+		() => figureGroupsOf("valuation", sections),
+		[sections],
+	);
+	return (
+		<div className="flex flex-col gap-10">
+			<CompanyCardGrid>
+				<CompanyCard
+					tab="valuation"
+					position={1}
+					span={2}
+					title="Ratios Against Their Own Ten Years and the Sector"
+					caption="Now, the last ten fiscal year ends and the sector's quartiles. Multiples, from 10-K filings and daily prices."
+				>
+					<ul className="flex flex-col gap-6">
+						{ranges.map((range) => (
+							<RatioRow key={range.ratio} range={range} />
+						))}
+					</ul>
+				</CompanyCard>
+			</CompanyCardGrid>
+			<SourcesIndex groups={groups} />
+		</div>
 	);
 }
 
@@ -78,14 +121,14 @@ function RatioRow({ range }: { range: RatioRange }) {
 			</div>
 			<div className="flex flex-col gap-3">
 				<RangeRow
-					label={["Own", "Own 10 years"]}
+					label={{ short: "Own", long: "Own 10 years" }}
 					band="bg-chart-2"
 					figures={[range.ownLow, range.ownMedian, range.ownHigh]}
 					now={range.now}
 					scale={scale}
 				/>
 				<RangeRow
-					label={["Sector", "Sector quartiles"]}
+					label={{ short: "Sector", long: "Sector quartiles" }}
 					band="bg-chart-4"
 					figures={
 						sector
@@ -103,18 +146,21 @@ function RatioRow({ range }: { range: RatioRange }) {
 /**
  * One range bar: the range as a band, the median as a tick and the figure now
  * as a dot, with the low, the median and the high printed below. `label`
- * holds the phone label and the desktop label.
+ * holds the short phone label and the long desktop label. With no `scale`,
+ * no figure is known, so nothing draws.
  */
 function RangeRow(props: {
-	label: [string, string];
+	label: { short: string; long: string };
 	band: string;
 	figures: [Figure, Figure, Figure];
 	now: Figure;
-	scale: [number, number];
+	scale: Nullable<[number, number]>;
 }) {
 	const [low, median, high] = props.figures;
 	const at = (figure: Figure) =>
-		figure && rangeBarPosition(Number(figure.value), ...props.scale)?.percent;
+		figure &&
+		props.scale &&
+		rangeBarPosition(Number(figure.value), ...props.scale)?.percent;
 	const [left, right] = [at(low), at(high)];
 	const ranged = left != null && right != null;
 	const marks = [
@@ -124,8 +170,8 @@ function RangeRow(props: {
 	return (
 		<div className="grid grid-cols-[4rem_1fr] items-start gap-3 md:grid-cols-[8rem_1fr]">
 			<span className="text-sm text-muted-foreground">
-				<span className="md:hidden">{props.label[0]}</span>
-				<span className="hidden md:inline">{props.label[1]}</span>
+				<span className="md:hidden">{props.label.short}</span>
+				<span className="hidden md:inline">{props.label.long}</span>
 			</span>
 			<div className="flex flex-col gap-1">
 				<div className="relative h-3" aria-hidden="true">
@@ -162,7 +208,7 @@ function RangeRow(props: {
 
 /** A ratio as the page prints it, with its sources, or the dimmed dash when it is missing. */
 function Value({ figure }: { figure: Figure }) {
-	return figure === null ? (
+	return figure === null || typeof figure.value !== "number" ? (
 		<span className={cn("font-monospace", MISSING_INK)}>{MISSING}</span>
 	) : (
 		<SourceTrigger claim={figure} className="font-monospace">
