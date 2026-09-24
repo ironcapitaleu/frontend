@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Link } from "react-router";
 
 import { CompanyCard, CompanyCardGrid } from "@/components/company/CompanyCard";
 import { SourceTrigger } from "@/components/company/SourceCard";
@@ -27,7 +28,9 @@ import {
 	fundChange,
 	fundShare,
 	ownershipShares,
+	stakePercent,
 } from "../../../lib/company/metrics";
+import { servesTicker } from "../../../lib/company/sampleCompanies";
 import { figureGroupsOf } from "../../../lib/company/sources";
 import type {
 	CompletedSections,
@@ -40,10 +43,16 @@ import { formatShares } from "./relationships";
 /**
  * The Relationships tab of the company page (DESIGN.md §8 "Relationships").
  * It loads the Relationships section and shows its cards, then the sources
- * index. Cards 5.1 to 5.3 are built. Row 3, the subsidiaries and the stakes,
- * comes with a later ticket of this track.
+ * index. A stake links to the page of its company only when `hasCompanyPage`
+ * says that page exists, as in the screener. A test can pass its own check.
  */
-export function RelationshipsTab({ ticker }: { ticker: Ticker }) {
+export function RelationshipsTab({
+	ticker,
+	hasCompanyPage = servesTicker,
+}: {
+	ticker: Ticker;
+	hasCompanyPage?: (ticker: Ticker) => boolean;
+}) {
 	const state = useCompany(ticker, "relationships");
 
 	switch (state.status) {
@@ -66,6 +75,7 @@ export function RelationshipsTab({ ticker }: { ticker: Ticker }) {
 				<LoadedRelationships
 					relationships={state.data}
 					sections={state.sections}
+					hasCompanyPage={hasCompanyPage}
 				/>
 			);
 	}
@@ -75,9 +85,11 @@ export function RelationshipsTab({ ticker }: { ticker: Ticker }) {
 function LoadedRelationships({
 	relationships,
 	sections,
+	hasCompanyPage,
 }: {
 	relationships: RelationshipsSection;
 	sections: CompletedSections;
+	hasCompanyPage: (ticker: Ticker) => boolean;
 }) {
 	// The same `groups` on each render lets `SourcesIndex` keep its memo.
 	const groups = React.useMemo(
@@ -90,6 +102,11 @@ function LoadedRelationships({
 				<LargestFundsCard relationships={relationships} />
 				<InsidersCard relationships={relationships} />
 				<OwnershipSplitCard relationships={relationships} />
+				<SubsidiariesCard relationships={relationships} />
+				<StakesCard
+					relationships={relationships}
+					hasCompanyPage={hasCompanyPage}
+				/>
 			</CompanyCardGrid>
 			<SourcesIndex groups={groups} />
 		</div>
@@ -216,6 +233,114 @@ function OwnershipSplitCard({
 					{ label: "Public", share: shares.public },
 				]}
 			/>
+		</CompanyCard>
+	);
+}
+
+/** Card 5.4: the subsidiaries from 10-K Exhibit 21. A subsidiary is not listed, so it has no link. */
+function SubsidiariesCard({
+	relationships,
+}: {
+	relationships: RelationshipsSection;
+}) {
+	return (
+		<CompanyCard
+			tab="relationships"
+			position={4}
+			title="Owns: Subsidiaries"
+			caption="Subsidiaries and the jurisdiction of each, from Exhibit 21 of the latest 10-K"
+		>
+			{relationships.subsidiaries.length === 0 ? (
+				<p className="text-muted-foreground">The 10-K lists no subsidiary.</p>
+			) : (
+				<Table>
+					<TableHeader>
+						<TableRow>
+							<TableHead className="sticky left-0 bg-card">
+								Subsidiary
+							</TableHead>
+							<TableHead>Jurisdiction</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{relationships.subsidiaries.map((row, position) => (
+							// biome-ignore lint/suspicious/noArrayIndexKey: the section fixes the order of the rows, and Exhibit 21 can repeat a name
+							<TableRow key={position}>
+								<TableHead scope="row" className="sticky left-0 bg-card">
+									{row.name}
+								</TableHead>
+								<TableCell>
+									{row.jurisdiction !== null ? (
+										<SourceTrigger claim={row.jurisdiction}>
+											{row.jurisdiction.value}
+										</SourceTrigger>
+									) : (
+										<span className={MISSING_INK}>{MISSING}</span>
+									)}
+								</TableCell>
+							</TableRow>
+						))}
+					</TableBody>
+				</Table>
+			)}
+		</CompanyCard>
+	);
+}
+
+/** Card 5.5: the stakes in other listed companies, from the company's own 13F. */
+function StakesCard({
+	relationships,
+	hasCompanyPage,
+}: {
+	relationships: RelationshipsSection;
+	hasCompanyPage: (ticker: Ticker) => boolean;
+}) {
+	return (
+		<CompanyCard
+			tab="relationships"
+			position={5}
+			title="Owns: Stakes in Listed Companies"
+			caption="Shares held, from the company's own 13F-HR, and the stake against the shares outstanding in each company's latest 10-Q or 10-K"
+		>
+			{relationships.stakes.length === 0 ? (
+				<p className="text-muted-foreground">
+					The 13F-HR lists no stake in a listed company.
+				</p>
+			) : (
+				<Table>
+					<TableHeader>
+						<TableRow>
+							<TableHead className="sticky left-0 bg-card">Company</TableHead>
+							<TableHead className="text-right">Shares</TableHead>
+							<TableHead className="text-right">Stake</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{relationships.stakes.map((row, position) => (
+							// biome-ignore lint/suspicious/noArrayIndexKey: the section fixes the order of the rows, and a stake can have no ticker
+							<TableRow key={position}>
+								<TableHead scope="row" className="sticky left-0 bg-card">
+									{row.ticker !== null && hasCompanyPage(row.ticker) ? (
+										<Link
+											to={`/companies/${row.ticker.value}`}
+											className="underline underline-offset-4 hover:text-primary"
+										>
+											{row.company}
+										</Link>
+									) : (
+										row.company
+									)}
+								</TableHead>
+								<FigureCell figure={row.sharesHeld} format={formatShares} />
+								<FigureCell
+									figure={stakePercent(relationships, position)}
+									format={(value) => formatPercent(value * 100)}
+								/>
+							</TableRow>
+						))}
+					</TableBody>
+				</Table>
+			)}
 		</CompanyCard>
 	);
 }

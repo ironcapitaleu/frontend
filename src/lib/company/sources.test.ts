@@ -381,6 +381,53 @@ describe("figureGroupsOf", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should read each subsidiary's jurisdiction when the Subsidiaries group is built", () => {
+		const expectedResult = [
+			"relationships.subsidiaries.0.jurisdiction",
+			"relationships.subsidiaries.1.jurisdiction",
+		];
+
+		const result = claimsOf("subsidiaries", "company", sections).map(
+			({ id }) => id,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should read the shares held and the shares outstanding of each row when the Stakes group is built", () => {
+		const expectedResult = [
+			"relationships.stakes.0.sharesHeld",
+			"relationships.stakes.0.sharesOutstanding",
+			"relationships.stakes.1.sharesHeld",
+			"relationships.stakes.1.sharesOutstanding",
+		];
+
+		const result = claimsOf("stakes", "company", sections).map(({ id }) => id);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep the shares outstanding of a stake when its shares held are missing", () => {
+		const { relationships } = fakeCompanyReport;
+		const partial = completeSections({
+			...fakeCompanyReport,
+			relationships: {
+				...relationships,
+				stakes: relationships.stakes.map((row, position) =>
+					position === 0 ? { ...row, sharesHeld: null } : row,
+				),
+			},
+		});
+
+		const expectedResult = true;
+
+		const result = claimsOf("stakes", "company", partial).some(
+			({ id }) => id === "relationships.stakes.0.sharesOutstanding",
+		);
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should drop the blocks that read the financials when Overview loads without them", () => {
 		const partial = completeSections({
 			...fakeCompanyReport,
