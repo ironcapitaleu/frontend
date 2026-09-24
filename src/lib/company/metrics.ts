@@ -1017,44 +1017,6 @@ function periodPart(period: Period): string {
 	}
 }
 
-/** A claim with a number value, so a per-row function can do its arithmetic. */
-type NumberClaim = Claim & { readonly value: number };
-
-/** Tells whether `figure` is a claim with a number value. */
-function isNumberClaim(figure: Figure): figure is NumberClaim {
-	return figure !== null && typeof figure.value === "number";
-}
-
-/**
- * Builds the percent claim of a per-row function, or returns `null` when an
- * input is missing or not a number, or when the divisor is not above 0. The
- * claim takes the period that its inputs share, and `null` otherwise.
- */
-function share(
-	id: ClaimId,
-	label: string,
-	formula: string,
-	inputs: readonly Figure[],
-	part: (values: number[]) => [number, number],
-): Figure {
-	if (!inputs.every(isNumberClaim)) {
-		return null;
-	}
-	const [dividend, divisor] = part(inputs.map((claim) => claim.value));
-	const [first, ...rest] = inputs;
-	if (first === undefined || !(divisor > 0)) {
-		return null;
-	}
-	return {
-		id,
-		label,
-		value: dividend / divisor,
-		unit: "percent",
-		period: sharedPeriod(inputs),
-		source: { kind: "derived", formula, inputs: [first, ...rest] },
-	};
-}
-
 /**
  * Returns the change of the price over one month, as a fraction of the
  * price a month earlier. The masthead draws it next to the price.
@@ -1145,9 +1107,50 @@ export function ownershipShares(overview: OverviewSection): OwnershipShares {
 }
 
 /**
+ * Builds the percent claim of a per-row function, or returns `null` when an
+ * input is missing or not a number, or when the divisor is not above 0. The
+ * claim takes the period that its inputs share, and `null` otherwise.
+ */
+function share(
+	id: ClaimId,
+	label: string,
+	formula: string,
+	inputs: readonly Figure[],
+	part: (values: number[]) => [number, number],
+): Figure {
+	if (!inputs.every(isNumberClaim)) {
+		return null;
+	}
+	const [first, ...rest] = inputs;
+	if (first === undefined) {
+		return null;
+	}
+	const [dividend, divisor] = part(inputs.map((claim) => claim.value));
+	if (!(divisor > 0)) {
+		return null;
+	}
+	return {
+		id,
+		label,
+		value: dividend / divisor,
+		unit: "percent",
+		period: sharedPeriod(inputs),
+		source: { kind: "derived", formula, inputs: [first, ...rest] },
+	};
+}
+
+/**
  * Returns `null` for a share below 0. Institutions and insiders then hold
  * more than the shares outstanding, because the reported holdings overlap.
  */
 function withinTotal(figure: Figure): Figure {
 	return isNumberClaim(figure) && figure.value < 0 ? null : figure;
+}
+
+/** A claim with a number value, so a per-row function can do its arithmetic. */
+type NumberClaim = Claim & { readonly value: number };
+
+/** Tells whether `figure` is a claim with a number value. */
+function isNumberClaim(figure: Figure): figure is NumberClaim {
+	return figure !== null && typeof figure.value === "number";
 }
