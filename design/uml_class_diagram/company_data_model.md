@@ -407,7 +407,10 @@ screen hides, the Shareholder returns block of printed region 5
 `figureGroupsOf("overview", sections)` gives it a group like any other. The
 sources footer is `sourcesOf` over the claims of those groups that
 `isSectorBenchmark` rejects, as the per-tab index is. The printed page names
-this company's filings alone.
+this company's filings alone. That group is the one group of a tab that the
+screen does not draw. The Overview index and the Filings walk read it as
+well, so its entry names the printed page rather than a card of the Overview
+tab.
 
 **The masthead gives no figure group.** `figureGroupsOf` takes a `TabKey`,
 and `masthead` is not one. The masthead has no chart, no table and no check,
@@ -433,8 +436,8 @@ groups of the sections that have loaded, and it grows as the other sections
 load. A section that fails adds no groups, and the rows keep the groups they
 have. Overview reads the Financials tables for "Ten Years at a Glance", so one
 row can name the same figures twice, once under Overview and once under
-Financials. Each entry names a place where the reader sees the figures, so the
-row keeps both.
+Financials. Each entry names a place where the reader meets the figures, on
+screen or on the printed page, so the row keeps both.
 
 The Filings walk skips the sector benchmark groups. A sector quartile reads the
 filings of the peers, never a filing of this company, so its trees reach no row
