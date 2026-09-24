@@ -2,6 +2,8 @@ import { describe, expectTypeOf, it } from "vitest";
 
 import type {
 	Claim,
+	CompanySections,
+	FigureGroupRef,
 	FinancialsSection,
 	Filing,
 	IsoDate,
@@ -10,6 +12,7 @@ import type {
 	OwnershipSummary,
 	Period,
 	SectorBenchmark,
+	SourceSet,
 	StatementLine,
 } from "./types";
 
@@ -39,6 +42,27 @@ type BareFigureFields<T, Path extends string = ""> = T extends WalkStop
 							[Key in keyof T & string]: [T, Key] extends RowKey
 								? never
 								: BareFigureFields<T[Key], `${Path}.${Key}`>;
+						}[keyof T & string]
+					: never;
+
+/**
+ * The paths of the fields of `T` that store a `SourceSet` or a
+ * `FigureGroupRef[]`, or `never` when no field stores one.
+ */
+type StoredSourceFields<T, Path extends string = ""> = T extends WalkStop
+	? never
+	: T extends SourceSet | readonly FigureGroupRef[]
+		? Path
+		: T extends readonly (infer Item)[]
+			? StoredSourceFields<Item, `${Path}[]`>
+			: T extends (...args: never[]) => unknown
+				? never
+				: T extends object
+					? {
+							[Key in keyof T & string]: StoredSourceFields<
+								T[Key],
+								`${Path}.${Key}`
+							>;
 						}[keyof T & string]
 					: never;
 
@@ -90,6 +114,36 @@ describe("section types", () => {
 		type ExpectedResult = ".listedOn";
 
 		type Result = BareFigureFields<FaultySection>;
+
+		expectTypeOf<Result>().toEqualTypeOf<ExpectedResult>();
+	});
+
+	it("should find no stored source set when the walk visits CompanySections", () => {
+		type ExpectedResult = never;
+
+		type Result = StoredSourceFields<CompanySections>;
+
+		expectTypeOf<Result>().toEqualTypeOf<ExpectedResult>();
+	});
+
+	it("should name the field when a section type stores a SourceSet", () => {
+		type FaultySection = OverviewSection & { readonly sources: SourceSet };
+
+		type ExpectedResult = ".sources";
+
+		type Result = StoredSourceFields<FaultySection>;
+
+		expectTypeOf<Result>().toEqualTypeOf<ExpectedResult>();
+	});
+
+	it("should name the field when a section type stores a list of FigureGroupRef", () => {
+		type FaultySection = FinancialsSection & {
+			readonly feeds: readonly FigureGroupRef[];
+		};
+
+		type ExpectedResult = ".feeds";
+
+		type Result = StoredSourceFields<FaultySection>;
 
 		expectTypeOf<Result>().toEqualTypeOf<ExpectedResult>();
 	});

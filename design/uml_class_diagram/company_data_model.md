@@ -652,12 +652,29 @@ types:
 | `Stake`            | `company: string`, `ticker: Nullable~Ticker~`, `sharesHeld: Figure`, `sharesOutstanding: Figure`           |
 | `Person`           | `name: string`, `role: string`, `isDirector: boolean`, `since: Figure`, `independence: Figure`            |
 | `PayYear`          | `fiscalYear: number`, `salary`, `bonus`, `stockAwards`, `other`, each a `Figure`                           |
-| `FigureGroupRef`   | `tab: TabKey`, `block: BlockKey`, `label: string`, `figures: "company" \| "sector"`, for example Financials, `incomeTable`, "Income statement, ten years", company |
+| `FigureGroupRef`   | `tab: TabKey`, `block: BlockKey`, `label: string`, `figures: FigureKind`, for example Financials, `incomeTable`, "Income statement table", company |
 | `FigureGroup`      | `ref: FigureGroupRef`, `claims: Claim[]`, built by `figureGroupsOf` (§3), never stored in a section        |
 
 `BlockKey` names one chart, table or check card of a tab, such as
 `incomeTable` or `peRange`. It is a code key, so a card title is free to
 change. `label` is display copy only, and no function reads it to decide.
+`FigureKind` is `"company" | "sector"`.
+
+STA-232 declares the blocks of the Overview and Financials tabs. Each later
+tab ticket adds its own keys, such as `peRange` and `ceoPay`.
+
+| Tab        | `BlockKey` values |
+| ---------- | ----------------- |
+| Overview   | `business`, `tenYears`, `keyFigures`, `financialPosition`, `checksByArea`, `ownership`, `profile`, and the print-only `printedShareholderReturns` |
+| Financials | `incomeChart`, `incomeTable`, `balanceChart`, `balanceTable`, `cashFlowChart`, `cashFlowTable` |
+
+A chart reads the annual table of its statement. A table reads the annual
+table and the completed quarterly table, because the annual and quarterly
+switch shows both. §8 holds the open question of whether the switch also
+flips the chart. Until `ShareholderReturnsSection` exists, the
+`printedShareholderReturns` block gives no group. Until `evaluateMetric`
+(STA-229) exists, a block reads its reported figures only, and `checksByArea`
+and the company figures of `keyFigures` read no claim.
 
 **Share counts for buybacks.** `ShareholderReturnsSection.sharesRepurchased`
 and `sharesIssuedToStaff` hold the shares bought back and the shares issued
@@ -1644,7 +1661,7 @@ const groups: FigureGroup[] = [
 		claims: claimsOf("checksByArea", "company", sections),
 	},
 	{
-		ref: { tab: "financials", block: "incomeTable", label: "Income statement, ten years", figures: "company" },
+		ref: { tab: "financials", block: "incomeTable", label: "Income statement table", figures: "company" },
 		// financials.revenue.FY2017 … financials.revenue.FY2026, one 10-K each
 		claims: claimsOf("incomeTable", "company", sections),
 	},
@@ -1659,7 +1676,7 @@ const feeds = feedsOf(groups)
 ```
 
 `feeds.get("0001234567-26-000012")` holds two refs: Overview "Checks by Area"
-and Financials "Income statement, ten years". The check reaches the 10-K
+and Financials "Income statement table". The check reaches the 10-K
 through the P/E and the EPS of FY2026. Its price reaches a `MarketDataset`,
 which gets no entry. The CEO pay group reaches the DEF 14A only, so it is
 absent from the 10-K row.
@@ -1719,8 +1736,8 @@ does the page label them?** Settled:
   "to 26 Jul 2026". The page does not print the abbreviation "TTM".
 
 **Open for the implementing tickets.** The fifth review raised three questions
-that this note leaves to a ticket. Each one has a default that the ticket
-takes unless it finds a reason not to.
+that this note leaves to a ticket, and the STA-232 review raised a fourth.
+Each one has a default that the ticket takes unless it finds a reason not to.
 
 - STA-226: **Does `marketCap` read a point-in-time share count?** It reads
   `dilutedShares @ fiscalYear(0)`, a weighted average over a year that can be
@@ -1746,6 +1763,14 @@ takes unless it finds a reason not to.
   ships `completeSections` in `metrics.ts` as a function that brands the
   sections and completes nothing. STA-226 then adds `completeQuarters`, and
   `completeSections` holds the completed quarterly tables from that point.
+- Financials tab: **Does the annual and quarterly switch flip the chart?**
+  `DESIGN.md` §8 puts the switch above both Financials cards. STA-232 has each
+  chart read the annual table only (§4). If the switch flips the chart, the
+  chart draws quarterly bars while its "Sources" chip names the annual
+  filings, and §3 exists to stop that disagreement. Default: the chart follows
+  the switch, and its chip reads the same table as the chart. The Financials
+  tab ticket passes the chosen period to the chart readers, since `claimsOf`
+  takes no period today.
 
 ## 9. Enforcement levels
 
@@ -1771,8 +1796,10 @@ once STA-224 writes the types:
   STA-226 checks that each such block of `figureGroupsOf` gives one group
   with `figures: "company"` and one with `figures: "sector"`, with the same
   `block`, and that no `ClaimId` appears in both. It also checks that the
-  company group of `peRange` holds no claim read from a `SectorBenchmark`
-  field, and that the sector group holds only such claims.
+  company groups hold no claim read from a `SectorBenchmark` field, and that
+  the sector group holds only such claims. The test reads `keyFigures`,
+  because `peRange` is a Valuation block that STA-232 does not declare. The
+  Valuation tab ticket adds the same test for `peRange`.
 
 The period and guard rules reach level 1 through tests. Each worked example
 in §7 becomes a unit test in STA-226, and CI runs the tests. A change that

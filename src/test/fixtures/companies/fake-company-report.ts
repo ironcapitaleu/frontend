@@ -252,6 +252,18 @@ function tenKClaim(
 	);
 }
 
+/** The FY2025 10-K of a peer. Each filer has its own accession number. */
+function peerTenK(filer: string, row: number): Filing {
+	const cik = `177777${row}`;
+	const accession = `000${cik}-26-000004`;
+	return {
+		...TEN_K_2025,
+		filer,
+		accessionNumber: accession,
+		indexUrl: `https://www.sec.gov/Archives/edgar/data/${cik}/${accession.replaceAll("-", "")}/`,
+	};
+}
+
 function benchmark(
 	metric: MetricKey,
 	quartiles: [number, number, number],
@@ -266,7 +278,7 @@ function benchmark(
 				quartiles[position],
 				"percent",
 				fiscalYear(2025),
-				{ ...TEN_K_2025, filer: peer },
+				peerTenK(peer, row),
 				`Peer figure › ${metric}`,
 				null,
 			),
