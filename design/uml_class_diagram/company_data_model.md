@@ -1251,7 +1251,13 @@ classDiagram
   - `priceToBook` is `marketCap` ÷ `shareholdersEquity @ latestQuarter`, with
     the guard `shareholdersEquity @ latestQuarter` above 0.
   - `enterpriseValue` is `marketCap` + `totalDebt` −
-    `cashAndShortTermInvestments @ latestQuarter`, with no guard.
+    `cashAndShortTermInvestments @ latestQuarter`, with no guard. When the
+    latest quarter has no `shortTermDebt` or no `longTermDebt` line,
+    `totalDebt` is `missingInput`, so `enterpriseValue` and
+    `enterpriseValueToEbit` are `missingInput` too. This is deliberate. A
+    missing line is not zero debt, and the page does not invent a figure. A
+    filer with no debt shows an enterprise value only when the adapter
+    reports a debt line of 0.
   - `enterpriseValueToEbit` is `enterpriseValue` ÷ `operatingIncome @
     fiscalYear(0)`, with the guard `operatingIncome @ fiscalYear(0)` above 0.
 
