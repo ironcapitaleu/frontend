@@ -489,8 +489,8 @@ seven keys without `masthead`, in the order of the `DESIGN.md` §8 tab table.
 The Overview tab reads Financials for "Ten Years at a Glance", the key figures
 and the financial position. It reads Valuation for one check (V2) and for the
 sector medians of three key figures: P/E, P/FCF and P/B. EV/EBIT is not a key
-figure. Until `getValuation` exists, V2 shows "not enough data" and the three
-medians show a dimmed `—`.
+figure. While `getValuation` has not resolved, V2 shows "not enough data" and
+the three medians show a dimmed `—`.
 
 The Overview tab reads Shareholder returns because of the print summary
 (`DESIGN.md` §8 "Print Summary"). The printed page holds a Shareholder returns

@@ -8,6 +8,7 @@ import type {
 	FigureGroupRef,
 	FigureKind,
 	LineKey,
+	MetricKey,
 	Nullable,
 	ReportedSource,
 	SourceDocument,
@@ -152,6 +153,17 @@ const everyBlockListed: Exclude<
 	: never = true;
 void everyBlockListed;
 
+/**
+ * The key figures whose sector median Overview reads from `ValuationSection`
+ * (note §4). EV/EBIT is not a key figure. A metric in both benchmark lists is
+ * an adapter defect, and the page reads the Valuation entry.
+ */
+const valuationKeyFigures: ReadonlySet<MetricKey> = new Set<MetricKey>([
+	"priceToEarnings",
+	"priceToFreeCashFlow",
+	"priceToBook",
+]);
+
 // The derived metrics of the Overview blocks, such as the operating margin,
 // the free cash flow and the ratios of Key Figures, need `evaluateMetric`
 // (STA-229). Until it exists, each block reads its reported figures only. A
@@ -179,8 +191,15 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		tab: "overview",
 		label: "Key Figures",
 		company: ({ overview }) => overview && [],
-		sector: ({ overview }) =>
-			overview?.sectorBenchmarks.map((row) => row.median) ?? null,
+		sector: ({ overview, valuation }) =>
+			overview && [
+				...overview.sectorBenchmarks
+					.filter(({ metric }) => !valuationKeyFigures.has(metric))
+					.map((row) => row.median),
+				...(valuation?.sectorBenchmarks ?? [])
+					.filter(({ metric }) => valuationKeyFigures.has(metric))
+					.map((row) => row.median),
+			],
 	},
 	financialPosition: {
 		tab: "overview",

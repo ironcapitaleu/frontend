@@ -21,7 +21,7 @@ import type {
 
 const sections = completeSections(fakeCompanyReport);
 
-const { masthead, overview, financials } = fakeCompanyReport;
+const { masthead, overview, financials, valuation } = fakeCompanyReport;
 
 /** The accession number of the FY2025 10-K of the fixture. */
 const TEN_K_2025 = "0001999999-26-000003";
@@ -101,12 +101,31 @@ describe("claimsOf", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should hold only sector benchmark claims when the sector figures of Key Figures are read", () => {
+	it("should hold the Overview medians and the P/E, P/FCF and P/B medians of Valuation when the sector figures of Key Figures are read", () => {
+		// EV/EBIT is not a key figure, so its median stays out.
+		const expectedResult = [
+			...overview.sectorBenchmarks,
+			...valuation.sectorBenchmarks.filter(
+				({ metric }) => metric !== "enterpriseValueToEbit",
+			),
+		].map(({ median }) => claim(median));
+
+		const result = claimsOf("keyFigures", "sector", sections);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should hold only the Overview medians when the sector figures of Key Figures are read and the Valuation section has not loaded", () => {
+		const withoutValuation = completeSections({
+			...fakeCompanyReport,
+			valuation: null,
+		});
+
 		const expectedResult = overview.sectorBenchmarks.map(({ median }) =>
 			claim(median),
 		);
 
-		const result = claimsOf("keyFigures", "sector", sections);
+		const result = claimsOf("keyFigures", "sector", withoutValuation);
 
 		expect(result).toEqual(expectedResult);
 	});
