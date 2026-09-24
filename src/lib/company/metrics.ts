@@ -4,11 +4,14 @@ import type {
 	CompletedSections,
 	Figure,
 	LineKey,
+	MetricKey,
+	Nullable,
 	Period,
 	Series,
 	Statement,
 	StatementLine,
 	StatementTable,
+	Unit,
 } from "./types";
 
 /**
@@ -242,5 +245,728 @@ function periodName(period: Period): string {
 			const unknown: never = period.kind;
 			return unknown;
 		}
+	}
+}
+
+/** Names one market figure. */
+export type MarketKey = "price" | "priceAtFiscalYearEnd" | "treasuryYield10y";
+
+/**
+ * Picks the period that a {@link FigureRef} reads. `lastFiscalYears` picks a
+ * window of `count` fiscal years, oldest first. Every other variant picks one
+ * period. `fiscalYear`, `latestQuarter`, `lastFourQuarters` and
+ * `lastFiscalYears` count from the latest period that a filing covers.
+ */
+export type PeriodChoice =
+	| { readonly kind: "samePeriod" }
+	| { readonly kind: "fiscalYear"; readonly yearsBack: number }
+	| { readonly kind: "latestQuarter" }
+	| { readonly kind: "lastFourQuarters" }
+	| { readonly kind: "latestClose" }
+	| { readonly kind: "lastFiscalYears"; readonly count: number };
+
+/**
+ * Names one figure: a statement line, a metric or a market figure, and the
+ * period to read it at. `at` is `null` only for a point metric, because a
+ * point metric fixes the periods of its own inputs.
+ */
+export type FigureRef =
+	| { readonly from: "line"; readonly key: LineKey; readonly at: PeriodChoice }
+	| {
+			readonly from: "metric";
+			readonly key: MetricKey;
+			readonly at: Nullable<PeriodChoice>;
+	  }
+	| {
+			readonly from: "market";
+			readonly key: MarketKey;
+			readonly at: PeriodChoice;
+	  };
+
+/** How a figure compares with a bound. */
+export type Comparison = "above" | "atLeast" | "below" | "atMost";
+
+/**
+ * A condition that an input must meet before the formula has a reading, such
+ * as "diluted EPS above 0". `input` equals one entry of `Metric.inputs` and
+ * names a single period, never a window.
+ */
+export interface Guard {
+	readonly input: FigureRef;
+	readonly comparison: Comparison;
+	readonly value: number;
+}
+
+/**
+ * The fields that every metric has. `minPoints` is the least number of
+ * points that each window input needs. It is `null` for a metric with no
+ * window input.
+ */
+interface MetricFields {
+	readonly key: MetricKey;
+	readonly name: string;
+	readonly formula: string;
+	readonly unit: Unit;
+	readonly inputs: readonly FigureRef[];
+	readonly guards: readonly Guard[];
+	readonly minPoints: Nullable<number>;
+}
+
+/** A metric that gives one figure. Each input names its own period. */
+export interface PointMetric extends MetricFields {
+	readonly kind: "point";
+}
+
+/**
+ * A metric that gives one figure for any period that its inputs share, such
+ * as free cash flow in FY2021. Every input uses `samePeriod`.
+ */
+export interface PeriodMetric extends MetricFields {
+	readonly kind: "perPeriod";
+}
+
+/**
+ * A derived figure as data. It holds no function, so it serialises. The
+ * arithmetic lives in {@link formulas}.
+ */
+export type Metric = PointMetric | PeriodMetric;
+
+/** Tells that the metric has a figure. `claim` is its derived claim. */
+export interface MetricValue {
+	readonly kind: "value";
+	readonly claim: Claim;
+}
+
+/** Tells that a single-period input of the metric is missing. */
+export interface MissingInput {
+	readonly kind: "missingInput";
+}
+
+/** Tells that an input of a metric fails a guard. `input` is the claim of that input. */
+export interface FailedGuard {
+	readonly kind: "failedGuard";
+	readonly guard: Guard;
+	readonly input: Claim;
+}
+
+/** Tells that a window input has fewer points than `Metric.minPoints`. */
+export interface ShortHistory {
+	readonly kind: "shortHistory";
+}
+
+/**
+ * How the evaluation of a metric ended: a claim, a missing single-period
+ * input, a short window or a failed guard. The page draws each result other
+ * than `value` as a dimmed `—`.
+ */
+export type MetricResult =
+	| MetricValue
+	| MissingInput
+	| ShortHistory
+	| FailedGuard;
+
+/**
+ * One input as a formula gets it: a claim for a single period, or the points
+ * of a window with `null` at each missing point.
+ */
+export type ResolvedInput = Claim | readonly Figure[];
+
+/** The arithmetic of one metric. It gets the inputs in the order of `Metric.inputs`. */
+export type Formula = (inputs: readonly ResolvedInput[]) => number;
+
+const samePeriod: PeriodChoice = { kind: "samePeriod" };
+const latestYear: PeriodChoice = { kind: "fiscalYear", yearsBack: 0 };
+const latestQuarter: PeriodChoice = { kind: "latestQuarter" };
+const lastFourQuarters: PeriodChoice = { kind: "lastFourQuarters" };
+
+/** Returns a reference to statement line `key` at `at`. */
+function line(key: LineKey, at: PeriodChoice): FigureRef {
+	return { from: "line", key, at };
+}
+
+const marketCapRef: FigureRef = { from: "metric", key: "marketCap", at: null };
+const priceNow: FigureRef = {
+	from: "market",
+	key: "price",
+	at: { kind: "latestClose" },
+};
+
+/**
+ * Returns a metric with no window input. A ratio metric passes its divisor
+ * as `divisor`, and the metric guards it with "above 0".
+ */
+function metric(
+	kind: Metric["kind"],
+	key: MetricKey,
+	name: string,
+	formula: string,
+	unit: Unit,
+	inputs: readonly FigureRef[],
+	divisor: Nullable<FigureRef> = null,
+): Metric {
+	const guards: Guard[] =
+		divisor === null ? [] : [{ input: divisor, comparison: "above", value: 0 }];
+	return { kind, key, name, formula, unit, inputs, guards, minPoints: null };
+}
+
+/** Returns a point metric that divides `dividend` by `divisor` and guards the divisor. */
+function ratio(
+	key: MetricKey,
+	name: string,
+	formula: string,
+	unit: Unit,
+	dividend: FigureRef,
+	divisor: FigureRef,
+): Metric {
+	return metric(
+		"point",
+		key,
+		name,
+		formula,
+		unit,
+		[dividend, divisor],
+		divisor,
+	);
+}
+
+/**
+ * The metrics of the page, by key. They cover the metrics that the checks
+ * read and the four metrics of the Overview sector benchmarks.
+ */
+export const metrics: Record<MetricKey, Metric> = {
+	operatingMargin: metric(
+		"perPeriod",
+		"operatingMargin",
+		"Operating margin",
+		"Operating income ÷ revenue",
+		"percent",
+		[line("operatingIncome", samePeriod), line("revenue", samePeriod)],
+		line("revenue", samePeriod),
+	),
+	returnOnEquity: ratio(
+		"returnOnEquity",
+		"Return on equity",
+		"Net income, latest fiscal year ÷ shareholders' equity, latest quarter end",
+		"percent",
+		line("netIncome", latestYear),
+		line("shareholdersEquity", latestQuarter),
+	),
+	dividendYield: ratio(
+		"dividendYield",
+		"Dividend yield",
+		"Dividends paid, last four quarters ÷ market cap",
+		"percent",
+		line("dividendsPaid", lastFourQuarters),
+		marketCapRef,
+	),
+	buybackYield: metric(
+		"point",
+		"buybackYield",
+		"Buyback yield",
+		"(Share repurchases − proceeds from stock plans), last four quarters ÷ market cap",
+		"percent",
+		[
+			line("shareRepurchases", lastFourQuarters),
+			line("shareIssuanceProceeds", lastFourQuarters),
+			marketCapRef,
+		],
+		marketCapRef,
+	),
+	totalDebt: metric(
+		"point",
+		"totalDebt",
+		"Total debt",
+		"Short-term debt + long-term debt, latest quarter end",
+		"usd",
+		[line("shortTermDebt", latestQuarter), line("longTermDebt", latestQuarter)],
+	),
+	currentRatio: ratio(
+		"currentRatio",
+		"Current ratio",
+		"Total current assets ÷ total current liabilities, latest quarter end",
+		"ratio",
+		line("totalCurrentAssets", latestQuarter),
+		line("totalCurrentLiabilities", latestQuarter),
+	),
+	stockPayToRevenue: ratio(
+		"stockPayToRevenue",
+		"Stock-based pay to revenue",
+		"Share-based compensation ÷ revenue, latest fiscal year",
+		"percent",
+		line("shareBasedCompensation", latestYear),
+		line("revenue", latestYear),
+	),
+	marketCap: metric(
+		"point",
+		"marketCap",
+		"Market cap",
+		"Price × diluted shares, latest fiscal year",
+		"usd",
+		[priceNow, line("dilutedShares", latestYear)],
+	),
+	priceToEarnings: ratio(
+		"priceToEarnings",
+		"P/E",
+		"Price ÷ diluted EPS, latest fiscal year",
+		"ratio",
+		priceNow,
+		line("dilutedEps", latestYear),
+	),
+	priceToEarningsAtYearEnd: metric(
+		"perPeriod",
+		"priceToEarningsAtYearEnd",
+		"P/E at fiscal year end",
+		"Price at fiscal year end ÷ diluted EPS",
+		"ratio",
+		[
+			{ from: "market", key: "priceAtFiscalYearEnd", at: samePeriod },
+			line("dilutedEps", samePeriod),
+		],
+		line("dilutedEps", samePeriod),
+	),
+	priceToEarningsMedian10y: {
+		kind: "point",
+		key: "priceToEarningsMedian10y",
+		name: "Median P/E, 10 years",
+		formula: "Median of the P/E at the last 10 fiscal year ends",
+		unit: "ratio",
+		inputs: [
+			{
+				from: "metric",
+				key: "priceToEarningsAtYearEnd",
+				at: { kind: "lastFiscalYears", count: 10 },
+			},
+		],
+		guards: [],
+		minPoints: 5,
+	},
+	freeCashFlow: metric(
+		"perPeriod",
+		"freeCashFlow",
+		"Free cash flow",
+		"Operating cash flow − capital expenditure",
+		"usd",
+		[
+			line("operatingCashFlow", samePeriod),
+			line("capitalExpenditure", samePeriod),
+		],
+	),
+	freeCashFlowYield: ratio(
+		"freeCashFlowYield",
+		"Free cash flow yield",
+		"Free cash flow, latest fiscal year ÷ market cap",
+		"percent",
+		{ from: "metric", key: "freeCashFlow", at: latestYear },
+		marketCapRef,
+	),
+};
+
+/** Returns the value of a single-period input. */
+function amount(input: ResolvedInput): number {
+	return isWindow(input) ? Number.NaN : Number(input.value);
+}
+
+/** Returns the median of the points of a window that are not missing. */
+function median(input: ResolvedInput): number {
+	const values = isWindow(input)
+		? input.flatMap((point) => (point === null ? [] : [Number(point.value)]))
+		: [];
+	const sorted = [...values].sort((a, b) => a - b);
+	const middle = Math.floor(sorted.length / 2);
+	return sorted.length % 2 === 1
+		? sorted[middle]
+		: (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+/** Divides the first input by the last input. */
+const divide: Formula = (inputs) =>
+	amount(inputs[0]) / amount(inputs[inputs.length - 1]);
+
+/** The arithmetic of each metric, by key. */
+export const formulas: Record<MetricKey, Formula> = {
+	operatingMargin: divide,
+	returnOnEquity: divide,
+	dividendYield: divide,
+	buybackYield: ([bought, issued, cap]) =>
+		(amount(bought) - amount(issued)) / amount(cap),
+	totalDebt: ([short, long]) => amount(short) + amount(long),
+	currentRatio: divide,
+	stockPayToRevenue: divide,
+	marketCap: ([price, shares]) => amount(price) * amount(shares),
+	priceToEarnings: divide,
+	priceToEarningsAtYearEnd: divide,
+	priceToEarningsMedian10y: ([window]) => median(window),
+	freeCashFlow: ([operating, capital]) => amount(operating) - amount(capital),
+	freeCashFlowYield: divide,
+};
+
+/**
+ * Tells whether `ref` names a figure that exists. A share count, a per-share
+ * figure or a balance sheet line has no sum over the last four quarters. A
+ * share count and a per-share figure have no fourth quarter, so they have no
+ * latest quarter either. Each market figure has its own period choices.
+ */
+export function isValidFigureRef(ref: FigureRef): boolean {
+	const at = ref.at?.kind ?? null;
+	switch (ref.from) {
+		case "line":
+			return at === "lastFourQuarters"
+				? flowLineKeys.has(ref.key)
+				: at !== "latestClose" &&
+						!(
+							at === "latestQuarter" &&
+							(ref.key === "dilutedShares" || ref.key === "dilutedEps")
+						);
+		case "market":
+			return at === "latestClose"
+				? ref.key !== "priceAtFiscalYearEnd"
+				: ref.key !== "price" &&
+						(at === "fiscalYear" ||
+							at === "samePeriod" ||
+							at === "lastFiscalYears");
+		case "metric":
+			return true;
+	}
+}
+
+/**
+ * Evaluates the metric `key` over `sections`. `period` is the period of a
+ * per-period metric, and `null` for a point metric.
+ *
+ * The rules apply in this order:
+ *
+ * 1. If a single-period input is a metric whose result is not `value`, the
+ *    metric returns that same result, so the innermost failed guard reaches
+ *    the caller.
+ * 2. If a single-period input is missing, the result is `missingInput`.
+ * 3. If a window input has fewer points than `minPoints`, the result is
+ *    `shortHistory`.
+ * 4. The first guard that fails gives `failedGuard`.
+ *
+ * Otherwise the result holds a derived claim with the formula and the input
+ * claims. A per-period metric takes `period`. A point metric takes the period
+ * that its inputs share, or `null` when they share none.
+ */
+export function evaluateMetric(
+	key: MetricKey,
+	sections: CompletedSections,
+	period: Nullable<Period> = null,
+): MetricResult {
+	const metric = metrics[key];
+	const resolved = metric.inputs.map((ref) => resolve(ref, sections, period));
+	const results = resolved.filter(
+		(input): input is MetricResult => !isWindow(input),
+	);
+	const stop =
+		results.find(
+			(result) => result.kind !== "value" && result.kind !== "missingInput",
+		) ?? results.find((result) => result.kind !== "value");
+	if (stop !== undefined) {
+		return stop;
+	}
+	const inputs = resolved.flatMap((input): ResolvedInput[] =>
+		isWindow(input) ? [input] : input.kind === "value" ? [input.claim] : [],
+	);
+	const windows = inputs.filter(isWindow);
+	if (
+		windows.some(
+			(points) =>
+				points.filter((point) => point !== null).length <
+				(metric.minPoints ?? 0),
+		)
+	) {
+		return { kind: "shortHistory" };
+	}
+	for (const guard of metric.guards) {
+		const input =
+			inputs[metric.inputs.findIndex((ref) => sameRef(ref, guard.input))];
+		if (
+			!isWindow(input) &&
+			!meets(amount(input), guard.comparison, guard.value)
+		) {
+			return { kind: "failedGuard", guard, input };
+		}
+	}
+	const claims = inputs.flatMap((input) =>
+		isWindow(input) ? input.filter((point) => point !== null) : [input],
+	);
+	const [first, ...rest] = claims;
+	if (first === undefined) {
+		return { kind: "missingInput" };
+	}
+	const claimPeriod =
+		metric.kind === "perPeriod" ? period : sharedPeriod(claims);
+	return {
+		kind: "value",
+		claim: {
+			id:
+				claimPeriod === null
+					? `metric.${key}`
+					: `metric.${key}.${periodPart(claimPeriod)}`,
+			label: metric.name,
+			value: formulas[key](inputs),
+			unit: metric.unit,
+			period: claimPeriod,
+			source: {
+				kind: "derived",
+				formula: metric.formula,
+				inputs: [first, ...rest],
+			},
+		},
+	};
+}
+
+/** Tells whether `input` is a window of points. */
+function isWindow<T extends object>(
+	input: T | readonly Figure[],
+): input is readonly Figure[] {
+	return Array.isArray(input);
+}
+
+/** Tells whether two references name the same figure at the same period. */
+function sameRef(a: FigureRef, b: FigureRef): boolean {
+	return (
+		a.from === b.from &&
+		a.key === b.key &&
+		JSON.stringify(a.at) === JSON.stringify(b.at)
+	);
+}
+
+/** Tells whether `value` meets `comparison` against `bound`. */
+function meets(value: number, comparison: Comparison, bound: number): boolean {
+	switch (comparison) {
+		case "above":
+			return value > bound;
+		case "atLeast":
+			return value >= bound;
+		case "below":
+			return value < bound;
+		case "atMost":
+			return value <= bound;
+	}
+}
+
+/**
+ * Resolves `ref` to a metric result for a single period, or to the points of
+ * a window. A statement line or a market figure gives `value`, or
+ * `missingInput` for a `null` figure.
+ */
+function resolve(
+	ref: FigureRef,
+	sections: CompletedSections,
+	period: Nullable<Period>,
+): MetricResult | readonly Figure[] {
+	if (ref.at?.kind === "lastFiscalYears") {
+		const single: FigureRef = { ...ref, at: samePeriod };
+		return windowYears(sections, ref.at.count).map((year) => {
+			const result = year === null ? null : resolve(single, sections, year);
+			return result !== null && !isWindow(result) && result.kind === "value"
+				? result.claim
+				: null;
+		});
+	}
+	if (ref.from === "metric") {
+		const at = ref.at === null ? null : targetPeriod(ref.at, sections, period);
+		return ref.at !== null && at === null
+			? { kind: "missingInput" }
+			: evaluateMetric(ref.key, sections, at);
+	}
+	const figure = figureOf(ref, sections, period);
+	return figure === null
+		? { kind: "missingInput" }
+		: { kind: "value", claim: figure };
+}
+
+/** Returns the fiscal years that the annual tables cover, oldest first. */
+function coveredYears(sections: CompletedSections): readonly Period[] {
+	return sections.financials?.income.annual.periods ?? [];
+}
+
+/** Returns the covered fiscal year `yearsBack` years before the latest one, or `null`. */
+function fiscalYearBack(
+	sections: CompletedSections,
+	yearsBack: number,
+): Nullable<Period> {
+	const years = coveredYears(sections);
+	const latest = years.at(-1);
+	return latest === undefined
+		? null
+		: (years.find(
+				(year) => year.fiscalYear === latest.fiscalYear - yearsBack,
+			) ?? null);
+}
+
+/** Returns the last `count` covered fiscal years, oldest first, with `null` for a year with no column. */
+function windowYears(
+	sections: CompletedSections,
+	count: number,
+): Nullable<Period>[] {
+	return Array.from({ length: count }, (_, position) =>
+		fiscalYearBack(sections, count - 1 - position),
+	);
+}
+
+/** Returns the one period that `at` picks, for a choice that names a fiscal year or the same period. */
+function targetPeriod(
+	at: PeriodChoice,
+	sections: CompletedSections,
+	period: Nullable<Period>,
+): Nullable<Period> {
+	switch (at.kind) {
+		case "samePeriod":
+			return period;
+		case "fiscalYear":
+			return fiscalYearBack(sections, at.yearsBack);
+		default:
+			return null;
+	}
+}
+
+/** Returns the figure that a statement line or a market reference names. */
+function figureOf(
+	ref: Exclude<FigureRef, { from: "metric" }>,
+	sections: CompletedSections,
+	period: Nullable<Period>,
+): Figure {
+	const quarterlyLines = linesOf(ref, sections, "quarterly");
+	const [quarterly] = quarterlyLines;
+	switch (ref.at.kind) {
+		case "latestClose":
+			return ref.key === "price" ? (sections.masthead?.price ?? null) : null;
+		case "latestQuarter":
+			return quarterly?.points.at(-1) ?? null;
+		case "lastFourQuarters":
+			return ref.from === "line" && quarterly !== undefined
+				? sumOfLastFourQuarters(ref.key, quarterly)
+				: null;
+		default: {
+			const target = targetPeriod(ref.at, sections, period);
+			const { masthead } = sections;
+			const annual =
+				ref.from === "market"
+					? masthead === null
+						? []
+						: [masthead.priceAtFiscalYearEnds]
+					: linesOf(ref, sections, "annual");
+			return target === null
+				? null
+				: pointAtSamePeriod([...annual, ...quarterlyLines], target);
+		}
+	}
+}
+
+/**
+ * Returns the line of `ref` in the `table` of its statement, or no line for a
+ * market figure.
+ */
+function linesOf(
+	ref: Exclude<FigureRef, { from: "metric" }>,
+	sections: CompletedSections,
+	table: "annual" | "quarterly",
+): Series[] {
+	const { financials } = sections;
+	return ref.from === "market" || financials === null
+		? []
+		: [financials.income, financials.balance, financials.cashFlow].flatMap(
+				(statement) =>
+					statement[table].lines.filter((line) => line.key === ref.key),
+			);
+}
+
+/** Returns the first point of `series` at the same period as `target`, or `null`. */
+function pointAtSamePeriod(series: readonly Series[], target: Period): Figure {
+	for (const { periods, points } of series) {
+		const position = periods.findIndex((period) =>
+			isSamePeriod(period, target),
+		);
+		if (position !== -1) {
+			return points[position] ?? null;
+		}
+	}
+	return null;
+}
+
+/**
+ * Tells whether two periods are the same period: their kind, fiscal year and
+ * fiscal quarter match. A fiscal year also pairs with the annual instant at
+ * its end.
+ */
+function isSamePeriod(a: Period, b: Period): boolean {
+	if (a.fiscalYear !== b.fiscalYear || a.fiscalQuarter !== b.fiscalQuarter) {
+		return false;
+	}
+	const kinds = [a.kind, b.kind];
+	return (
+		a.kind === b.kind ||
+		(kinds.includes("fiscalYear") &&
+			kinds.includes("instant") &&
+			a.endsOn === b.endsOn)
+	);
+}
+
+/**
+ * Returns the period that every claim shares, or `null`. For a fiscal year
+ * paired with the instant at its end, it returns the fiscal year.
+ */
+function sharedPeriod(claims: readonly Claim[]): Nullable<Period> {
+	const periods = claims.map((claim) => claim.period);
+	const first = periods[0];
+	if (
+		first === null ||
+		!periods.every((period) => period !== null && isSamePeriod(period, first))
+	) {
+		return null;
+	}
+	return periods.find((period) => period?.kind !== "instant") ?? first;
+}
+
+/** Sums the last four points of the quarterly line `key`, or returns `null` when `key` is not a flow line. */
+function sumOfLastFourQuarters(key: LineKey, line: Series): Figure {
+	const quarters = line.points.slice(-4);
+	const last = line.periods.at(-1);
+	if (
+		!flowLineKeys.has(key) ||
+		last === undefined ||
+		quarters.length < 4 ||
+		!quarters.every(isPeriodNumberClaim)
+	) {
+		return null;
+	}
+	const [first, ...rest] = quarters;
+	const period: Period = {
+		kind: "lastFourQuarters",
+		fiscalYear: last.fiscalYear,
+		fiscalQuarter: null,
+		endsOn: last.endsOn,
+	};
+	return {
+		id: `metric.${key}.${periodPart(period)}`,
+		label: line.label,
+		value: quarters.reduce((sum, claim) => sum + claim.value, 0),
+		unit: line.unit,
+		period,
+		source: {
+			kind: "derived",
+			formula: quarters.map((claim) => periodName(claim.period)).join(" + "),
+			inputs: [first, ...rest],
+		},
+	};
+}
+
+/** Renders `period` as the period part of a claim id, such as `FY2026` or `L4Q-2026-07-26`. */
+function periodPart(period: Period): string {
+	switch (period.kind) {
+		case "fiscalYear":
+			return `FY${period.fiscalYear}`;
+		case "fiscalQuarter":
+			return `Q${period.fiscalQuarter}-FY${period.fiscalYear}`;
+		case "yearToDate":
+			return `YTD-Q${period.fiscalQuarter}-FY${period.fiscalYear}`;
+		case "lastFourQuarters":
+			return `L4Q-${period.endsOn}`;
+		case "instant":
+			return period.fiscalQuarter === null
+				? period.endsOn
+				: `Q${period.fiscalQuarter}-${period.endsOn}`;
 	}
 }

@@ -161,13 +161,23 @@ export interface MastheadSection {
 
 /**
  * Names one metric. This list holds the metrics that the Overview sector
- * benchmarks name. Later tickets add the rest as they add metrics.
+ * benchmarks name and the metrics that the checks read. Later tickets add
+ * the rest as they add metrics.
  */
 export type MetricKey =
 	| "operatingMargin"
 	| "returnOnEquity"
 	| "dividendYield"
-	| "buybackYield";
+	| "buybackYield"
+	| "totalDebt"
+	| "currentRatio"
+	| "stockPayToRevenue"
+	| "marketCap"
+	| "priceToEarnings"
+	| "priceToEarningsAtYearEnd"
+	| "priceToEarningsMedian10y"
+	| "freeCashFlow"
+	| "freeCashFlowYield";
 
 /** The quartiles of one metric over the company's peer group. */
 export interface SectorBenchmark {
