@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { MemoryRouter } from "react-router";
 import { expect, within } from "storybook/test";
 
 import { CompanyGatewayProvider } from "../../../contexts/CompanyGatewayContext";
@@ -29,6 +30,16 @@ const noInsidersGateway: CompanyGateway = {
 	getRelationships: async () => ({ ...relationships, insiders: [] }),
 };
 
+/** A gateway whose section lists no subsidiary and no stake, so cards 5.4 and 5.5 show their empty copy. */
+const ownsNothingGateway: CompanyGateway = {
+	...found,
+	getRelationships: async () => ({
+		...relationships,
+		subsidiaries: [],
+		stakes: [],
+	}),
+};
+
 /** A gateway that never answers, so the tab stays in its loading state. */
 const loadingGateway: CompanyGateway = {
 	...found,
@@ -40,7 +51,9 @@ const loadingGateway: CompanyGateway = {
  * of the test fixtures unless a story sets its own. Card 5.1 lists the largest
  * funds from 13F filings. Card 5.2 lists the insiders from their latest Form 4,
  * and card 5.3 splits the shares between institutions, insiders and the
- * public. The sources index at the foot lists the filings behind the tab.
+ * public. Card 5.4 lists the subsidiaries from Exhibit 21, and card 5.5 lists
+ * the stakes from the company's own 13F. A stake links to its company page
+ * only when that page exists. The sources index at the foot lists the filings behind the tab.
  */
 const meta: Meta<typeof RelationshipsTab> = {
 	title: "Pages/CompanyPage/RelationshipsTab",
@@ -50,9 +63,11 @@ const meta: Meta<typeof RelationshipsTab> = {
 	parameters: { companyGateway: found },
 	decorators: [
 		(Story, { parameters }) => (
-			<CompanyGatewayProvider gateway={parameters.companyGateway}>
-				<Story />
-			</CompanyGatewayProvider>
+			<MemoryRouter>
+				<CompanyGatewayProvider gateway={parameters.companyGateway}>
+					<Story />
+				</CompanyGatewayProvider>
+			</MemoryRouter>
 		),
 	],
 };
@@ -69,6 +84,8 @@ export const Loaded: Story = {
 			"5.1 Owned By: Largest Funds",
 			"5.2 Owned By: Insiders",
 			"5.3 Ownership Split",
+			"5.4 Owns: Subsidiaries",
+			"5.5 Owns: Stakes in Listed Companies",
 		];
 
 		const headings = await canvas.findAllByRole("heading", { level: 2 });
@@ -123,6 +140,52 @@ export const NoInsiders: Story = {
 		const result = await within(canvasElement).findByText(/No insider/);
 
 		await expect(result).toHaveTextContent(expectedResult);
+	},
+};
+
+/** Play test: a stake whose company has a page links to `/companies/:symbol`. */
+export const StakeWithPage: Story = {
+	args: { hasCompanyPage: (symbol) => symbol === "CRVD" },
+	play: async ({ canvasElement }) => {
+		const expectedResult = "/companies/CRVD";
+
+		const link = await within(canvasElement).findByRole("link", {
+			name: "Corvid Sensing",
+		});
+		const result = link.getAttribute("href");
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/** Play test: a stake whose company has no page shows its name as plain text, even with a known ticker. */
+export const StakeWithoutPage: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+
+		const expectedResult = null;
+
+		await canvas.findByRole("rowheader", { name: "Corvid Sensing" });
+		const result = canvas.queryByRole("link", { name: "Corvid Sensing" });
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/** Play test: with no subsidiary and no stake, cards 5.4 and 5.5 each say so instead of drawing an empty table. */
+export const OwnsNothing: Story = {
+	parameters: { companyGateway: ownsNothingGateway },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+
+		const expectedResult = { subsidiaries: true, stakes: true };
+
+		const result = {
+			subsidiaries: (await canvas.findByText(/lists no subsidiary/)) !== null,
+			stakes: (await canvas.findByText(/lists no stake/)) !== null,
+		};
+
+		await expect(result).toEqual(expectedResult);
 	},
 };
 

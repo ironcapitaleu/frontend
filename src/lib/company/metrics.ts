@@ -1232,6 +1232,28 @@ export function fundChange(
 }
 
 /**
+ * Returns the stake at `position` of `relationships.stakes` as a fraction of
+ * the target company: the shares held divided by the shares outstanding of
+ * that company. Returns `null` when the list has no row at `position`.
+ */
+export function stakePercent(
+	relationships: RelationshipsSection,
+	position: number,
+): Figure {
+	const row = relationships.stakes[position];
+	if (row === undefined) {
+		return null;
+	}
+	return share(
+		`metric.stakePercent.stakes.${position}`,
+		`Stake in ${row.company}`,
+		`Shares of ${row.company} held ÷ Shares outstanding of ${row.company}`,
+		[row.sharesHeld, row.sharesOutstanding],
+		([held, outstanding]) => [held, outstanding],
+	);
+}
+
+/**
  * Builds the percent claim of a per-row function, or returns `null` when an
  * input is missing or not a number, or when the divisor is not above 0. The
  * claim takes the period that its inputs share, and `null` otherwise.

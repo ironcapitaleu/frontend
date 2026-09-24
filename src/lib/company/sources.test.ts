@@ -324,6 +324,32 @@ describe("figureGroupsOf", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should read each subsidiary's jurisdiction when the Subsidiaries group is built", () => {
+		const expectedResult = [
+			"relationships.subsidiaries.0.jurisdiction",
+			"relationships.subsidiaries.1.jurisdiction",
+		];
+
+		const result = claimsOf("subsidiaries", "company", sections).map(
+			({ id }) => id,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should read the shares held and the stake of each row when the Stakes group is built", () => {
+		const expectedResult = [
+			"relationships.stakes.0.sharesHeld",
+			"metric.stakePercent.stakes.0",
+			"relationships.stakes.1.sharesHeld",
+			"metric.stakePercent.stakes.1",
+		];
+
+		const result = claimsOf("stakes", "company", sections).map(({ id }) => id);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should drop the blocks that read the financials when Overview loads without them", () => {
 		const partial = completeSections({
 			...fakeCompanyReport,

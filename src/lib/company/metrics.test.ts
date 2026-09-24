@@ -20,6 +20,7 @@ import {
 	resolve,
 	revenueShare,
 	sameRef,
+	stakePercent,
 } from "./metrics";
 import type {
 	Claim,
@@ -1267,6 +1268,31 @@ describe("per-row derived figures", () => {
 			share: fundShare(section, 2),
 			change: fundChange(section, 2),
 		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should divide the shares held by the shares outstanding of the target when it gives a stake", () => {
+		const section = fakeCompanyReport.relationships;
+
+		// Corvid Sensing 2.4M ÷ 48M.
+		const expectedResult = {
+			id: "metric.stakePercent.stakes.0",
+			value: 2_400_000 / 48_000_000,
+		};
+
+		const stake = stakePercent(section, 0);
+		const result = { id: stake?.id, value: stake?.value };
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should return null when the stakes list has no row at the position", () => {
+		const section = fakeCompanyReport.relationships;
+
+		const expectedResult = null;
+
+		const result = stakePercent(section, 2);
 
 		expect(result).toEqual(expectedResult);
 	});
