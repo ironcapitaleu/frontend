@@ -15,7 +15,7 @@ serves.
 | [2. The port](#2-the-companygateway-port) | `CompanyGateway`, `Ticker`, the errors and the page states         | STA-224          |
 | [3. Claims](#3-claims-periods-and-source-references) | `Claim`, `Period`, source references, `sourcesOf`, `feedsOf`, figure groups | every ticket |
 | [4. Sections](#4-sections)                | The eight section types, the line keys and what the port returns   | STA-224, STA-227 |
-| [5. Metrics and checks](#5-metrics-checks-and-results) | Figure references, market keys, guards, thresholds, check results | STA-226 |
+| [5. Metrics and checks](#5-metrics-checks-and-results) | Figure references, market keys, per-row derived figures, guards, thresholds, check results | STA-226 |
 | [6. The first check set](#6-the-first-check-set) | The 11 checks and the metrics they read                     | STA-226, STA-227 |
 | [7. Worked examples](#7-worked-examples)  | S1, C1, V1, three loss-making cases and one Filings row, in the types | STA-224, STA-226 |
 | [8. Open questions](#8-open-questions-from-the-epic-fog-log) | The three fog questions from the epic             | every ticket     |
@@ -119,9 +119,12 @@ the rejection and maps it to a page state.
 
 The messages follow `AGENTS.md` "Error Display Format". `CompanyFailure`
 renders them the same way as `AuthFailure` in `src/lib/auth/errors.ts`: the
-`, Reason: '<detail>'` tail appears only when `reason` holds a value.
-`MissingCompany` has no reason. It names the ticker that the adapter did not
-know in an `Input:` tail, as `InvalidTicker` does.
+`, Reason: '<detail>'` tail appears only when `reason` holds a value. The
+signature matches too. The constructor of `FailedCompanyRequest` takes
+`reason?: string`, like `FailedAuthRequest`, so a caller writes
+`new FailedCompanyRequest()` without a reason. The field `reason` then holds
+`null`. `MissingCompany` has no reason. It names the ticker that the adapter
+did not know in an `Input:` tail, as `InvalidTicker` does.
 
 | Error                  | When                                        | Page state | Message                                                                                  |
 | ---------------------- | ------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------- |
@@ -257,6 +260,27 @@ The value types:
     `metric.freeCashFlow.FY2026`, or `metric.{key}` for a metric with no single
     period, such as `metric.priceToEarningsMedian10y`.
   - `checks.ts` mints `check.{checkId}.{part}`, such as `check.C1.count`.
+
+  The `{period}` part renders the `Period` from its `kind`. The rendering
+  keeps the annual, quarterly and last-four-quarters claims of one line apart:
+
+  | `PeriodKind`       | `{period}`          | Example id                                  |
+  | ------------------ | ------------------- | ------------------------------------------- |
+  | `fiscalYear`       | `FY{fiscalYear}`    | `financials.revenue.FY2026`                 |
+  | `fiscalQuarter`    | `Q{q}-FY{year}`     | `financials.revenue.Q2-FY2027`              |
+  | `yearToDate`       | `YTD-Q{q}-FY{year}` | `financials.operatingCashFlow.YTD-Q2-FY2027` |
+  | `lastFourQuarters` | `L4Q-{endsOn}`      | `metric.revenue.L4Q-2026-07-26`             |
+  | `instant`          | `{endsOn}`          | `financials.shareholdersEquity.2026-07-26`  |
+
+  A claim with no period drops the part, such as `overview.profile.website`.
+  A figure in a list row puts the list name and the row position before the
+  field, such as `relationships.stakes.2.sharesHeld`. A list whose rows are
+  fiscal years, such as `ceoPay`, puts the period last instead, such as
+  `management.ceoPay.salary.FY2026`. A derived claim from a named function of
+  §5 uses the function name as its key, then the row part or the period,
+  then a part name if the function gives several parts. Examples are
+  `metric.stakePercent.stakes.2`, `metric.netInsiderShares.FY2026`,
+  `metric.ownershipShares.public` and `metric.priceChangeOneMonth`.
 - `IsoDate` is a calendar date as a string, such as `2026-07-26`. STA-224
   brands the type, so a type test can tell it apart from a plain `string`.
 - `FilingForm` is one of `10-K`, `10-Q`, `8-K`, `DEF 14A`, `Form 4` or
@@ -304,7 +328,7 @@ flowchart TD
 The tree has no cycle. `metrics.ts` builds each input claim before the claim
 that reads it, so no claim can reach itself.
 
-**How a chart or table collects its sources.** STA-226 writes three pure
+**How a chart or table collects its sources.** STA-226 writes these pure
 functions in `src/lib/company/sources.ts`:
 
 - `claimsOf(block)` returns every claim that a chart, table or check draws.
@@ -312,7 +336,11 @@ functions in `src/lib/company/sources.ts`:
   for each chart, table and check of the tab. A `FigureGroup` pairs a
   `FigureGroupRef` (§4) with `claimsOf` of its block. The tab draws its blocks
   from the same groups, so the list and the page cannot disagree. A block
-  whose sections have not loaded gives no group.
+  whose sections have not loaded gives no group. A block that draws
+  `SectorBenchmark` figures next to the company's figures gives two groups:
+  one for the company's figures and one for the sector figures.
+- `isSectorBenchmark(ref: FigureGroupRef): boolean` is true for a group of
+  sector figures only.
 - `sourcesOf(claims: Claim[]): SourceSet` walks each tree down to its reported
   sources. It groups the reported claims by document, with one group per
   filing or dataset. It sorts filings newest first and puts market data last.
@@ -329,17 +357,35 @@ functions in `src/lib/company/sources.ts`:
 
 The "Sources" chip of a chart or table shows `sourcesOf(claimsOf(block))`.
 The per-tab sources index is `sourcesOf` over every claim on the tab, and the
-figures that each filing feeds are `feedsOf(figureGroupsOf(tab, sections))`.
-No section stores a source set or a list of what a filing feeds, so neither
-can disagree with the claims.
+figures that each filing feeds on one tab are
+`feedsOf(figureGroupsOf(tab, sections))`. No section stores a source set or a
+list of what a filing feeds, so neither can disagree with the claims. The
+sources footer of the print summary is `sourcesOf` over every claim on the
+printed page.
 
 **The Filings tab loads every section.** Each row of "Filings We Read" shows
 the figures that the filing feeds, over the whole page (`DESIGN.md` §8). So
-the Filings tab calls `getFilings` and every other tab method that exists,
-and calls `feedsOf` over the groups of all six other tabs. It draws its list
-as soon as `getFilings` resolves. Each row starts with the groups of the
-sections that have loaded, and it grows as the other sections load. A
-section that fails adds no groups, and the rows keep the groups they have.
+the Filings tab calls `getFilings` and every other tab method that exists.
+It then flattens the groups of the six other tabs into one list, in the tab
+order of §4, and calls `feedsOf` once:
+
+```ts
+const otherTabs = tabKeys.filter((tab) => tab !== "filings")
+const groups = otherTabs.flatMap((tab) => figureGroupsOf(tab, sections))
+const feeds = feedsOf(groups.filter((group) => !isSectorBenchmark(group.ref)))
+```
+
+It draws its list as soon as `getFilings` resolves. Each row starts with the
+groups of the sections that have loaded, and it grows as the other sections
+load. A section that fails adds no groups, and the rows keep the groups they
+have.
+
+The Filings walk skips the sector benchmark groups. A sector quartile reads the
+filings of the peers, never a filing of this company, so its trees reach no row
+of the list. `figureGroupsOf` gives the sector figures their own group for this
+reason. The first walk then costs one visit for each claim of the company's own
+figures, a few thousand claims for ten years of three statements, and no peer
+claim.
 
 The note picks this over a static map in the repository, with a list of
 `FigureGroupRef` for each `FilingForm`. A static map is hand-maintained, like
@@ -361,7 +407,7 @@ Each tab loads the masthead and the sections in its row.
 | Page part           | Section type                | Port method             | `SectionKey`         | The tab also reads          |
 | ------------------- | --------------------------- | ----------------------- | -------------------- | --------------------------- |
 | Masthead            | `MastheadSection`           | `getMasthead`           | `masthead`           | none                        |
-| Overview            | `OverviewSection`           | `getOverview`           | `overview`           | Financials, Valuation       |
+| Overview            | `OverviewSection`           | `getOverview`           | `overview`           | Financials, Valuation, Shareholder returns |
 | Financials          | `FinancialsSection`         | `getFinancials`         | `financials`         | none                        |
 | Valuation           | `ValuationSection`          | `getValuation`          | `valuation`          | Financials                  |
 | Shareholder returns | `ShareholderReturnsSection` | `getShareholderReturns` | `shareholderReturns` | Financials                  |
@@ -371,10 +417,20 @@ Each tab loads the masthead and the sections in its row.
 
 `SectionKey` is one of the eight keys in the table. `TabKey` is one of the
 seven keys without `masthead`, in the order of the `DESIGN.md` §8 tab table.
+`tabKeys` is the list of the seven `TabKey` values in that order.
 
 The Overview tab reads Financials for "Ten Years at a Glance", the key figures
-and the financial position. It reads Valuation for one check. Until
-`getValuation` exists, that check shows "not enough data".
+and the financial position. It reads Valuation for one check (V2) and for the
+sector medians of three key figures: P/E, P/FCF and P/B. EV/EBIT is not a key
+figure. Until `getValuation` exists, V2 shows "not enough data" and the three
+medians show a dimmed `—`.
+
+The Overview tab reads Shareholder returns because of the print summary
+(`DESIGN.md` §8 "Print Summary"). The printed page holds a Shareholder returns
+block with the dividend per share and the latest dividend declared, and only
+`ShareholderReturnsSection` carries them. The screen shows no figure of that
+section. Until `getShareholderReturns` exists, the printed block shows a
+dimmed `—` for them.
 
 ```mermaid
 classDiagram
@@ -441,6 +497,8 @@ classDiagram
     class ShareholderReturnsSection {
         +dividendPerShare: Series
         +latestDividendDeclared: Figure
+        +sharesRepurchased: Series
+        +sharesIssuedToStaff: Series
     }
     class RelationshipsSection {
         +ownership: OwnershipSummary
@@ -477,12 +535,19 @@ the adapter puts the line only in that statement's tables:
 
 | Statement                  | `LineKey` values                                                                                                           |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Income (`income`)          | `revenue`, `netIncome`, `dilutedEps`, `dilutedShares`                                                                      |
-| Balance sheet (`balance`)  | `totalCurrentAssets`, `totalCurrentLiabilities`, `shareholdersEquity`, `cashAndShortTermInvestments`, `shortTermDebt`, `longTermDebt` |
-| Cash flow (`cashFlow`)     | `operatingCashFlow`, `capitalExpenditure`, `dividendsPaid`, `shareBasedCompensation`                                       |
+| Income (`income`)          | `revenue`, `operatingIncome`, `netIncome`, `dilutedEps`, `dilutedShares`                                                   |
+| Balance sheet (`balance`)  | `totalCurrentAssets`, `totalAssets`, `totalCurrentLiabilities`, `totalLiabilities`, `shareholdersEquity`, `cashAndShortTermInvestments`, `shortTermDebt`, `longTermDebt` |
+| Cash flow (`cashFlow`)     | `operatingCashFlow`, `capitalExpenditure`, `dividendsPaid`, `shareRepurchases`, `shareIssuanceProceeds`, `shareBasedCompensation` |
 
-The tab tickets add keys to this table. §5 says which table of the statement
-each period choice reads.
+These keys cover every statement figure that `DESIGN.md` §8 names for the
+Overview, Valuation and Shareholder returns tabs, the Financials chart and the
+print summary. `operatingIncome` feeds the operating margin and EV/EBIT.
+`totalAssets` and `totalLiabilities` give the long-term parts of Financial
+Position, as the total minus the current part. `shareRepurchases` and
+`shareIssuanceProceeds` give the net buybacks in dollars. The Financials
+statement table draws more lines than these, such as gross profit. The
+Financials Tab ticket adds their keys to this table. §5 says which table of the
+statement each period choice reads.
 
 **A label or a figure.** A `string` field is a label. It names the row or
 places the company, and it carries no source. A `Figure` is a fact that a
@@ -526,15 +591,30 @@ types:
 | `FigureGroupRef`   | `tab: TabKey`, `label: string`, for example Financials, "Income statement, ten years"                      |
 | `FigureGroup`      | `ref: FigureGroupRef`, `claims: Claim[]`, built by `figureGroupsOf` (§3), never stored in a section        |
 
+**Share counts for buybacks.** `ShareholderReturnsSection.sharesRepurchased`
+and `sharesIssuedToStaff` hold the shares bought back and the shares issued
+under staff plans in each fiscal year. Each point is a reported claim from the
+statement of shareholders' equity in the 10-K of that year. They feed
+Shareholder returns card 2, "Buybacks Net of Shares Issued to Staff". They
+are series and not statement lines, because the three statements of §4 do not
+hold them.
+
 `FilingsSection` lists plain `Filing` values. The Filings tab gets "what this
 filing feeds" from `feedsOf` (§3), not from the port.
 
 **Sector benchmarks in two sections.** `OverviewSection` and
 `ValuationSection` both carry `SectorBenchmark` values, because the Overview
-tab ships before `getValuation`. The two lists are disjoint by `metric`.
-`OverviewSection` carries the benchmarks of the sector strip, and
-`ValuationSection` carries the rest. A `MetricKey` in both lists is an adapter
-defect. If one appears twice, the page reads the Valuation entry.
+tab ships before `getValuation`. The two lists are disjoint by `metric`:
+
+| Section            | `SectorBenchmark.metric` values                                                   | Read by                                   |
+| ------------------ | --------------------------------------------------------------------------------- | ----------------------------------------- |
+| `ValuationSection` | `priceToEarnings`, `priceToFreeCashFlow`, `priceToBook`, `enterpriseValueToEbit`  | Valuation card 1, Overview Key Figures (the first three) |
+| `OverviewSection`  | `operatingMargin`, `returnOnEquity`, `dividendYield`, `buybackYield`              | Overview Key Figures                      |
+
+The Valuation tab needs the quartiles of its four ratios, and the table above
+gives it no `OverviewSection`. So the four ratios sit in `ValuationSection`, and
+Overview reads three of them from there. A `MetricKey` in both lists is an
+adapter defect. If one appears twice, the page reads the Valuation entry.
 
 **The annual and quarterly tables.** The three statements each hold an annual
 table of ten fiscal years and a quarterly table of the last eight fiscal
@@ -560,9 +640,9 @@ sections.
 
 | The port returns                                                                                                                         | `metrics.ts` derives                                                                                                                                                                                         |
 | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Statement lines, prices, Treasury yields, dividends per share, holdings, pay, people, subsidiaries, filings                              | Margins, free cash flow, growth a year, market cap, P/E, P/FCF, P/B, EV/EBIT, yields, payout, net buybacks, total shareholder yield, ranges and medians over ten years |
+| Statement lines, prices, Treasury yields, dividends per share, share counts bought back and issued to staff, holdings, pay, people, subsidiaries, filings | Margins, free cash flow, growth a year, growth per year over ten years (CAGR), long-term assets and liabilities, market cap, enterprise value, P/E, P/FCF, P/B, EV/EBIT, earnings, FCF, dividend and buyback yields, payout, net buybacks, total shareholder yield, ranges and medians over ten years |
 | Sector quartiles and medians (inputs: each peer's figure)                                                                               | Fourth-quarter and three-month cash flow figures, sums over the last four quarters                                                                                                                           |
-| Institution totals over all 13F filers, insider shares bought and sold per year (inputs: each 13F or Form 4 figure)                      | Price change over one month, ownership shares, stake percentages, pay mix, tenure, what each filing feeds                                                                                                    |
+| Institution totals over all 13F filers, insider shares bought and sold per year (inputs: each 13F or Form 4 figure)                      | Per-row and section-field figures (§5): price change over one month, segment and region shares of revenue, ownership shares, a fund's share of the company and its change over a quarter, stake percentages, pay mix, tenure, net shares bought back, net insider shares |
 
 No section type holds news, forecasts, analyst ratings, price targets, a fair
 value or community content. Every field is a past fact from a filing or a
@@ -674,6 +754,39 @@ A fiscal year choice on a year-end series reads the instant at the end of
 that fiscal year, by the "same period" rule of §3. Any other pair is a
 defect, and a test in STA-226 rejects it.
 
+**What the metric machinery covers.** `Metric`, `FigureRef` and
+`evaluateMetric` cover the checks and the page-level metrics. A page-level
+metric is a figure whose inputs are statement lines, other metrics or the
+market figures above, such as a margin, a yield or a 10-year median. Each one
+has a `MetricKey`. The other derived figures read a section field that no
+`FigureKey` names, and most of them exist once for each row of a list. A
+`FigureKey` is page-level, so no key can name a figure of one row.
+
+For these figures, `metrics.ts` has one named function each. The function
+reads the section fields directly and returns a `Figure`. A value is a claim
+with a `DerivedSource`: the formula as text and the section figures as
+inputs. If an input is `null` or a divisor is not above 0, the function
+returns `null`. A function that gives several parts, such as the three
+ownership shares, returns one `Figure` for each part. §3 gives the ids.
+
+| Derived figure                        | Function                  | Inputs                                                                   |
+| ------------------------------------- | ------------------------- | ------------------------------------------------------------------------ |
+| Price change over one month           | `priceChangeOneMonth`     | `MastheadSection.price`, `MastheadSection.priceMonthEarlier`             |
+| Segment or region share of revenue    | `revenueShare`            | the `RevenuePart.revenue` of the row and of every row of its list        |
+| Ownership shares                      | `ownershipShares`         | `OwnershipSummary.institutionShares`, `insiderShares`, `sharesOutstanding` |
+| A fund's share of the company         | `fundShare`               | `FundHolding.shares`, `OwnershipSummary.sharesOutstanding`               |
+| A fund's change over a quarter        | `fundChange`              | `FundHolding.shares`, `FundHolding.sharesQuarterEarlier`                 |
+| Stake percentage                      | `stakePercent`            | `Stake.sharesHeld`, `Stake.sharesOutstanding`                            |
+| Pay mix                               | `payMix`                  | `salary`, `bonus`, `stockAwards` and `other` of the latest `PayYear`     |
+| Tenure in years                       | `tenure`                  | `Person.since` or `Profile.chiefExecutiveSince`, and the `filedOn` of the filing that reports it |
+| Net shares bought back, per year      | `netSharesBoughtBack`     | `sharesRepurchased` and `sharesIssuedToStaff` at the same fiscal year    |
+| Net insider shares, per year          | `netInsiderShares`        | `insiderSharesBought` and `insiderSharesSold` at the same fiscal year    |
+
+These functions have no `MetricKey`, no `FigureRef` and no guard, and no
+check reads them. A check that needs one of these figures first needs a
+`MetricKey`, and a new `FigureKey` for each input. The defect tests of this
+section cover `FigureRef` pairs only, so they do not reject these functions.
+
 ```mermaid
 classDiagram
     class Metric {
@@ -707,6 +820,9 @@ classDiagram
     class MissingInput {
         +kind: missingInput
     }
+    class ShortHistory {
+        +kind: shortHistory
+    }
     class FailedGuard {
         +kind: failedGuard
         +guard: Guard
@@ -718,6 +834,7 @@ classDiagram
     Metric *-- Guard
     MetricResult <|-- MetricValue
     MetricResult <|-- MissingInput
+    MetricResult <|-- ShortHistory
     MetricResult <|-- FailedGuard
 ```
 
@@ -740,8 +857,10 @@ The rules, in order:
    reaches the check.
 2. If a single-period input is `null`, the result is `missingInput`.
 3. If a window input has fewer points than `minPoints` that are not missing,
-   the result is `missingInput`. A point is missing when it is `null`, or when
-   it is a metric result other than `value`.
+   the result is `shortHistory`. A point is missing when it is `null`, or when
+   it is a metric result other than `value`. This is the same reason that a
+   `periodCount` check gives for a short window, so two checks on one tab
+   explain a short history the same way.
 4. `metrics.ts` checks the guards in the order of `Metric.guards`. The first
    guard that fails gives `failedGuard`, with that guard and the claim of its
    input.
@@ -760,7 +879,10 @@ passed. It is a `Figure[]` for a window, with `null` at each missing point.
 - `MetricResult` says how the evaluation ended:
   - `value`: the metric has a claim. The claim has a `DerivedSource` with the
     metric's formula and the input claims.
-  - `missingInput`: an input is `null`. The page draws a dimmed `—`.
+  - `missingInput`: a single-period input is `null`. The page draws a dimmed
+    `—`.
+  - `shortHistory`: a window input has fewer than `minPoints` points. The
+    page draws a dimmed `—`.
   - `failedGuard`: an input fails a guard. The page draws a dimmed `—`, and a
     check names the guard and the input claim in its sentence.
 - A **guard** is a condition that an input must meet before the formula has
@@ -770,6 +892,11 @@ passed. It is a `Figure[]` for a window, with `null` at each missing point.
   a year reads `revenue @ fiscalYear(0)` and `revenue @ fiscalYear(1)`, and
   guards the second one only. Every ratio metric guards its divisor with
   "above 0". §6 lists the guards of the first metrics.
+- A guard names a single-period input only. A `Guard.input` whose `at` is a
+  `lastFiscalYears` window is a defect, and a test in STA-226 rejects it. A
+  metric that needs a condition on each point of a window reads a per-period
+  metric that carries the guard. `priceToEarningsMedian10y` does this through
+  `priceToEarningsAtYearEnd`.
 - `minPoints` is the least number of points that each window input needs.
   It is `null` for a metric with no window input. A range or a growth rate
   over a window takes `2`, as `DESIGN.md` §8 asks. A median over a window
@@ -778,8 +905,8 @@ passed. It is a `Figure[]` for a window, with `null` at each missing point.
   is no picture of ten years, and V1 compares the P/E now with that picture.
   So on the Valuation tab, a company with three years shows its range bar
   with a dimmed median.
-- In a window, a point whose metric result is `missingInput` or `failedGuard`
-  counts as a missing point.
+- In a window, a point whose metric result is not `value` counts as a missing
+  point.
 
 ```mermaid
 classDiagram
@@ -856,7 +983,7 @@ classDiagram
     CheckResult --> CheckState
     CheckResult --> NotEnoughDataReason
     CheckResult *-- SentencePart
-    CheckResult --> "1..*" Claim : claims
+    CheckResult --> "0..*" Claim : claims
     AreaSummary *-- CheckResult
     AreaSummary --> CheckArea
     note for SentencePart "A text part or a figure part"
@@ -865,7 +992,7 @@ classDiagram
 - `CheckId` is the short code in the §6 table, such as `S1`. `MetricKey`
   names one metric in `metrics.ts`. §6's metric table lists the metrics that
   the checks read, which is part of the set. The tab tickets add the rest,
-  such as `grossMargin` for the sector strip.
+  such as `operatingMargin` for the Key Figures card.
 - `Comparison` is one of `above`, `atLeast`, `below` or `atMost`.
 - `Check.subject` is the figure that the check tests.
 - A `Threshold` is one of three kinds:
@@ -885,25 +1012,36 @@ classDiagram
 - `checks.ts` makes the count a derived claim, `check.{id}.count`, with the
   points of the window as inputs. The sentence shows it, such as "9 of 10
   years".
+- A window subject goes with a `periodCount` threshold only, and a
+  `periodCount` threshold needs a window subject. Any other pair is a defect,
+  and a test in STA-226 rejects it.
 - `checks.ts` resolves the subject and the threshold figure to a `Figure`
-  or a `MetricResult`, and maps them onto the result in this order:
+  or a `MetricResult`, and maps them onto the result in this order. The first
+  step that matches decides.
   1. A section in `Check.sections` is absent: not enough data, reason
      `missingSection`.
-  2. The subject or the threshold figure is a `null` figure or a
-     `missingInput` result: not enough data, reason `missingInput`.
-  3. The subject or the threshold figure is a `failedGuard` result: not
-     enough data, reason `failedGuard`. The sentence names the guard and
-     draws its input claim, such as "Diluted EPS (−$1.20) is not above 0, so
-     the P/E has no reading".
-     In steps 2 and 3, `checks.ts` reads the subject first.
-  4. For a `periodCount` threshold, the count rule above decides, with
-     reason `shortHistory` for not enough data.
+  2. The threshold is `periodCount`: the count rule above decides, with
+     reason `shortHistory` for not enough data. A point of the window that is
+     a `null` figure or a metric result other than `value` is one missing
+     point, counted in `m`. Steps 3 and 4 never apply to a window subject.
+  3. For a single-period subject: the subject or the threshold figure is a
+     `null` figure, or a `missingInput` or `shortHistory` result. The result
+     is not enough data, with reason `missingInput` for a `null` figure and
+     the reason of the metric result otherwise.
+  4. For a single-period subject: the subject or the threshold figure is a
+     `failedGuard` result. The result is not enough data, reason
+     `failedGuard`. The sentence names the guard and draws its input claim,
+     such as "Diluted EPS (−$1.20) is not above 0, so the P/E has no
+     reading".
+     In steps 3 and 4, `checks.ts` reads the subject first.
   5. Otherwise the check compares the claims of the two `value` results, or
      the claim with the fixed number, and is met or not met.
 - A `SentencePart` is either text or a figure. A figure part holds a `Figure`,
   so a missing input draws a dimmed `—` inside the sentence.
 - `CheckResult.claims` lists the claims of every figure in the sentence. The
-  quiet source line under the sentence is `sourcesOf(claims)`.
+  quiet source line under the sentence is `sourcesOf(claims)`. The list can
+  be empty. Step 1 resolves nothing, and a sentence whose figures are all
+  `null` has no claim.
 - `evaluateChecks(sections)` in `src/lib/company/checks.ts` returns one
   `AreaSummary` for each area, in the order of `CheckArea`.
 - No type has an overall score. The page never adds the met counts together.
@@ -968,7 +1106,8 @@ The metrics that the checks read:
 Every metric in the table has `minPoints: null` except
 `priceToEarningsMedian10y`. The median needs points, not a sign. It has
 `minPoints: 5` (§5). If fewer than 5 of the 10 years have a P/E, the median
-result is `missingInput`, and V1 reads "not enough data".
+result is `shortHistory`, and V1 reads "not enough data", reason
+`shortHistory`. C1 gives the same reason for the same company.
 
 `treasuryYield10y` and `price` are market figures, not metrics.
 `cashAndShortTermInvestments`, `dilutedShares`, `dividendsPaid` and
@@ -1047,7 +1186,7 @@ const c1: Check = {
 
 The subject resolves to ten claims, `metric.freeCashFlow.FY2017` to
 `metric.freeCashFlow.FY2026`. Each claim has a `DerivedSource` with the two
-reported lines of its own year as inputs. Three companies show the three
+reported lines of its own year as inputs. Four companies show the three
 results:
 
 | Company                     | Years above 0 (`k`) | Missing years (`m`) | Result                            |
@@ -1055,12 +1194,19 @@ results:
 | MRDN, one negative year     | 9                   | 0                   | met, "9 of 10 years"              |
 | Ten years, four negative    | 6                   | 0                   | not met, "6 of 10 years"          |
 | Listed in 2024, three years | 3                   | 7                   | not enough data, `shortHistory`   |
+| Ten years, FY2019 capex missing, nine positive | 9      | 1                   | met, "9 of 10 years"              |
 
 The third company has `k + m = 10`, which is at least 8, so the missing years
 can still change the result. A company with three years that has one negative
 year has `k + m = 9`. It also reads "not enough data". With two negative years
 out of three it has `k + m = 8`, so it still reads "not enough data". With four
 years and three negative, `k + m = 7`, and the result is "not met".
+
+The fourth company is the regression case for the step order of §5. Its
+FY2019 10-K reports no capital expenditure, so `metric.freeCashFlow.FY2019` is
+`missingInput`. The subject is a window, so step 2 decides and step 3 never
+runs. The missing year counts in `m`. With `k = 9` at least 8, the result is
+met. The count claim `check.C1.count` has the nine claims as inputs.
 
 ### V1: pair a masthead series with a statement line by year
 
