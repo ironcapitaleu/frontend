@@ -159,6 +159,8 @@ const blockKeys = [
 	"largestFunds",
 	"insiders",
 	"ownershipSplit",
+	"subsidiaries",
+	"stakes",
 ] as const satisfies readonly BlockKey[];
 
 /**
@@ -375,6 +377,30 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		company: ({ relationships }) =>
 			relationships &&
 			Object.values(ownershipShares(relationships, "relationships")),
+	},
+	subsidiaries: {
+		tab: "relationships",
+		label: "Owns: Subsidiaries",
+		company: ({ relationships }) =>
+			relationships
+				? relationships.subsidiaries.map((row) => row.jurisdiction)
+				: null,
+	},
+	// The reported inputs of the rows that card 5.5 draws: the shares held from
+	// the company's own 13F-HR, and the shares outstanding from the 10-Q or
+	// 10-K of the target company. Like the largest funds, the block reads the
+	// inputs and not `stakePercent`, so the target's filing stays in the index
+	// when the stake cannot be computed.
+	stakes: {
+		tab: "relationships",
+		label: "Owns: Stakes in Listed Companies",
+		company: ({ relationships }) =>
+			relationships
+				? relationships.stakes.flatMap((row) => [
+						row.sharesHeld,
+						row.sharesOutstanding,
+					])
+				: null,
 	},
 };
 

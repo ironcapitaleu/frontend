@@ -354,7 +354,11 @@ export interface Subsidiary {
  */
 export interface Stake {
 	readonly company: string;
-	/** `null` when the target company has no page. Compare it with `equals`. */
+	/**
+	 * The ticker of the target company, or `null` when the filing names none.
+	 * A known ticker does not mean the company has a page. The Relationships
+	 * tab asks `servesTicker` before it links. Compare it with `equals`.
+	 */
 	readonly ticker: Nullable<Ticker>;
 	readonly sharesHeld: Figure;
 	readonly sharesOutstanding: Figure;
@@ -445,8 +449,8 @@ export type TabKey =
  * Names one chart, table or check card of a tab. It is a code key, so a card
  * title can change. This list holds the blocks of the Overview and Financials
  * tabs, the Shareholder returns block that only the printed Overview shows,
- * and the Valuation and Relationships blocks built so far. Each later tab
- * adds its own keys.
+ * and the Valuation blocks built so far and the Relationships blocks. Each
+ * later tab adds its own keys.
  */
 export type BlockKey =
 	| "business"
@@ -467,7 +471,9 @@ export type BlockKey =
 	| "ratioFormulas"
 	| "largestFunds"
 	| "insiders"
-	| "ownershipSplit";
+	| "ownershipSplit"
+	| "subsidiaries"
+	| "stakes";
 
 /**
  * The kind of figures in a group. `sector` figures come from a
