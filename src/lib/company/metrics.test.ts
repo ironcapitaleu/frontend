@@ -20,6 +20,7 @@ import {
 	metrics,
 	otherRevenueShare,
 	ownershipShares,
+	payMix,
 	priceChangeOneMonth,
 	resolve,
 	revenueShare,
@@ -1537,6 +1538,83 @@ describe("tenure", () => {
 		const expectedResult = null;
 
 		const result = tenure({ ...section, people }, 0);
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("payMix", () => {
+	const section = fakeCompanyReport.management;
+	const [first, latest] = section.ceoPay;
+
+	it("should divide each part of the latest pay by the four parts added up when all four are reported", () => {
+		// FY2025: 1.0M + 1.4M + 7.2M + 0.25M = 9.85M.
+		const expectedResult = [1, 1.4, 7.2, 0.25].map((part) => part / 9.85);
+
+		const mix = payMix(section);
+		const result = [mix.salary, mix.bonus, mix.stockAwards, mix.other].map(
+			(share) => share?.value ?? null,
+		);
+
+		expect(result).toEqual(
+			expectedResult.map((share) => expect.closeTo(share)),
+		);
+	});
+
+	it("should name the four parts of the latest year as inputs when it gives the bonus share", () => {
+		const expectedResult = [
+			"management.ceoPay.salary.FY2025",
+			"management.ceoPay.bonus.FY2025",
+			"management.ceoPay.stockAwards.FY2025",
+			"management.ceoPay.other.FY2025",
+		];
+
+		const { source } = payMix(section).bonus ?? {};
+		const result =
+			source?.kind === "derived" ? source.inputs.map(({ id }) => id) : [];
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it.each([
+		["a part is missing", [first, { ...latest, bonus: null }]],
+		[
+			"a part is not a finite number",
+			[
+				first,
+				{
+					...latest,
+					other: {
+						...(latest.other as Claim),
+						value: Number.POSITIVE_INFINITY,
+					},
+				},
+			],
+		],
+		[
+			"the fiscal year is not a whole number",
+			[first, { ...latest, fiscalYear: Number.NaN }],
+		],
+		[
+			"a part is negative",
+			[
+				first,
+				{
+					...latest,
+					other: { ...(latest.other as Claim), value: -2_000_000 },
+				},
+			],
+		],
+		["no year is reported", []],
+	])("should give every share as null when %s", (_, ceoPay) => {
+		const expectedResult = {
+			salary: null,
+			bonus: null,
+			stockAwards: null,
+			other: null,
+		};
+
+		const result = payMix({ ...section, ceoPay });
 
 		expect(result).toEqual(expectedResult);
 	});

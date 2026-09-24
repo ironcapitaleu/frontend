@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { fakeCompanyReport } from "../../test/fixtures/companies/fake-company-report";
 import { LISTED_FUNDS } from "./holdings";
-import { completeSections, metricInputsOf, tenure } from "./metrics";
+import { completeSections, metricInputsOf, payMix, tenure } from "./metrics";
 import {
 	claimsOf,
 	feedsOf,
@@ -563,6 +563,50 @@ describe("figureGroupsOf", () => {
 				document.kind === "filing" ? document.accessionNumber : document.name,
 			),
 		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should read the four parts of the latest pay when the Pay Mix group is built", () => {
+		const expectedResult = [
+			"management.ceoPay.salary.FY2025",
+			"management.ceoPay.bonus.FY2025",
+			"management.ceoPay.stockAwards.FY2025",
+			"management.ceoPay.other.FY2025",
+		];
+
+		const result = claimsOf("payMix", "company", sections).map(({ id }) => id);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep the DEF 14A in the sources when a pay part is missing and no share exists", () => {
+		const { management } = fakeCompanyReport;
+		const [first, latest] = management.ceoPay;
+		const ceoPay = [first, { ...latest, bonus: null }];
+		const partial = completeSections({
+			...fakeCompanyReport,
+			management: { ...management, ceoPay },
+		});
+
+		const expectedResult = { salary: null, filings: ["0001999999-26-000014"] };
+
+		const result = {
+			salary: payMix({ ...management, ceoPay }).salary,
+			filings: documentIds(claimsOf("payMix", "company", partial)),
+		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should read each insider's shares under the Management ids when the Insider Holdings group is built", () => {
+		const expectedResult = [0, 1, 2].map(
+			(row) => `management.insiders.${row}.shares`,
+		);
+
+		const result = claimsOf("insiderHoldings", "company", sections).map(
+			({ id }) => id,
+		);
 
 		expect(result).toEqual(expectedResult);
 	});
