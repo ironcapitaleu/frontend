@@ -1,4 +1,5 @@
 import type { SharePart } from "@/components/company/ShareBar";
+import type { CompanySectionKey, CompanyState } from "@/hooks/useCompany";
 import {
 	evaluateMetric,
 	otherRevenueShare,
@@ -9,6 +10,7 @@ import type {
 	LineKey,
 	MetricKey,
 	OverviewSection,
+	Nullable,
 	Series,
 	Unit,
 } from "@/lib/company/types";
@@ -76,4 +78,54 @@ export function tenYearsSeries(sections: CompletedSections): Series[] {
 		});
 		return { key: source.metric, label, unit, periods, points };
 	});
+}
+
+/**
+ * Joins the sections that several `useCompany` loads return into one
+ * `CompletedSections`, so a card can read the figures of several sections.
+ * A section that none of `loaded` holds stays `null`. Returns `null` when
+ * `loaded` holds no sections.
+ */
+export function joinSections(
+	loaded: readonly Nullable<CompletedSections>[],
+): Nullable<CompletedSections> {
+	const found = loaded.filter((sections) => sections !== null);
+	const [first] = found;
+	if (first === undefined) return null;
+	const parts = found.flatMap((sections) =>
+		Object.entries(sections).filter(([, part]) => part !== null),
+	);
+	return { ...first, ...Object.fromEntries(parts) };
+}
+
+/**
+ * Returns the state of the `lead` load, held back until each load of
+ * `others` has loaded too. It is loading while one of them loads, and failed
+ * when one of them is missing or fails. Card 1.3 leads with Financials and
+ * waits for the masthead, the two sections its figures read, so no figure
+ * shows a dash while it loads. The sector medians read Overview and
+ * Valuation, and a median whose section has not loaded shows the dash, as
+ * the data-model note says.
+ */
+export function heldBack<K extends CompanySectionKey>(
+	lead: CompanyState<K>,
+	others: readonly CompanyState<CompanySectionKey>[],
+): CompanyState<K> {
+	if (lead.status !== "loaded") return lead;
+	if (others.some(({ status }) => status === "loading")) {
+		return { status: "loading" };
+	}
+	for (const other of others) {
+		if (other.status === "missing" || other.status === "failed") {
+			return { status: "failed", error: other.error };
+		}
+	}
+	return lead;
+}
+
+/** Returns the sections of a load, or `null` until it loads. */
+export function loadedSections<K extends CompanySectionKey>(
+	state: CompanyState<K>,
+): Nullable<CompletedSections> {
+	return state.status === "loaded" ? state.sections : null;
 }
