@@ -209,6 +209,8 @@ const blockKeys = [
 	"subsidiaries",
 	"stakes",
 	"executivesAndBoard",
+	"payMix",
+	"insiderHoldings",
 ] as const satisfies readonly BlockKey[];
 
 /**
@@ -458,6 +460,25 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 			management
 				? management.people.flatMap((row) => [row.since, row.independence])
 				: null,
+	},
+	// Card 6.3 reads the four parts of the latest pay, not `payMix`, so the
+	// DEF 14A stays in the index when a part is missing and no share exists.
+	payMix: {
+		tab: "management",
+		label: "Pay Mix",
+		company: ({ management }) => {
+			if (!management) return null;
+			const year = management.ceoPay.at(-1);
+			return year
+				? [year.salary, year.bonus, year.stockAwards, year.other]
+				: [];
+		},
+	},
+	insiderHoldings: {
+		tab: "management",
+		label: "Insider Holdings",
+		company: ({ management }) =>
+			management ? management.insiders.map((row) => row.shares) : null,
 	},
 };
 

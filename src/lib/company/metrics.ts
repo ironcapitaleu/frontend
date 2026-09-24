@@ -1474,6 +1474,52 @@ export function tenure(
 	};
 }
 
+/** The four parts of the chief executive's pay in one year, one share each. */
+export interface PayMix {
+	readonly salary: Figure;
+	readonly bonus: Figure;
+	readonly stockAwards: Figure;
+	readonly other: Figure;
+}
+
+/** The parts of {@link PayMix} with the name each formula prints. */
+const PAY_PARTS = [
+	["salary", "Salary"],
+	["bonus", "Bonus"],
+	["stockAwards", "Stock awards"],
+	["other", "Other pay"],
+] as const;
+
+/**
+ * Returns each part of the chief executive's pay in the latest year of
+ * `management.ceoPay` as a fraction of the four parts added up. Every share
+ * is `null` when a part is missing, because the total is then unknown. A
+ * negative part gives a `null` share, and so does an empty `ceoPay` or a
+ * fiscal year that is not a whole number.
+ */
+export function payMix(management: ManagementSection): PayMix {
+	const latest = management.ceoPay.at(-1);
+	const year = Number.isInteger(latest?.fiscalYear) ? latest : undefined;
+	const inputs = PAY_PARTS.map(([key]) => year?.[key] ?? null);
+	const total = PAY_PARTS.map(([, name]) => name).join(" + ");
+	const [salary, bonus, stockAwards, other] = PAY_PARTS.map(
+		([key, name], position) =>
+			withinTotal(
+				share(
+					`metric.payMix.FY${year?.fiscalYear}.${key}`,
+					`${name} share of the chief executive's pay in FY${year?.fiscalYear}`,
+					`${name} ÷ (${total})`,
+					inputs,
+					(values) => [
+						values[position] ?? Number.NaN,
+						values.reduce((sum, value) => sum + value, 0),
+					],
+				),
+			),
+	);
+	return { salary, bonus, stockAwards, other };
+}
+
 /** An ISO date, `YYYY-MM-DD`, the only shape `yearsBetween` reads. */
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -1496,7 +1542,7 @@ function yearsBetween(since: Claim, end: IsoDate): Nullable<number> {
 
 /**
  * Builds the percent claim of a per-row function, or returns `null` when an
- * input is missing or not a number, or when the divisor is not above 0. The
+ * input is missing or not a finite number, or when the divisor is not above 0. The
  * claim takes the period that its inputs share, and `null` otherwise.
  */
 function share(
@@ -1538,7 +1584,11 @@ function withinTotal(figure: Figure): Figure {
 /** A claim with a number value, so a per-row function can do its arithmetic. */
 type NumberClaim = Claim & { readonly value: number };
 
-/** Tells whether `figure` is a claim with a number value. */
+/** Tells whether `figure` is a claim with a finite number value. */
 function isNumberClaim(figure: Figure): figure is NumberClaim {
-	return figure !== null && typeof figure.value === "number";
+	return (
+		figure !== null &&
+		typeof figure.value === "number" &&
+		Number.isFinite(figure.value)
+	);
 }
