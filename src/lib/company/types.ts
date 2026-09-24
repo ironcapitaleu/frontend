@@ -178,6 +178,8 @@ export type MetricKey =
 	| "buybackYield"
 	| "totalDebt"
 	| "currentRatio"
+	| "longTermAssets"
+	| "longTermLiabilities"
 	| "stockPayToRevenue"
 	| "marketCap"
 	| "priceToEarnings"
