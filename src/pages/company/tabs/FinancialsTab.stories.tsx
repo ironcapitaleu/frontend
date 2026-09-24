@@ -243,9 +243,9 @@ export const EmptyChart: Story = {
 };
 
 /**
- * Opens the chart of `statement` and checks every bar: each year draws three,
- * a trigger is at least 24 px wide and tall and inside the plot, the bar
- * draws, and the page does not scroll sideways.
+ * Opens the chart of `statement` and checks every bar: each of the ten years
+ * draws three bars, a trigger is at least 24 px wide and tall and inside the
+ * plot, the bar draws, and the page does not scroll sideways.
  */
 async function checkBarTargets(
 	canvasElement: HTMLElement,
@@ -259,13 +259,13 @@ async function checkBarTargets(
 	await userEvent.click(await body.findByRole("option", { name: statement }));
 	const plot = await canvas.findByRole("list", { name: "Fiscal years" });
 
-	const expectedResult = { ...BAR_TARGETS_OK, barsPerYear: 3 };
+	const expectedResult = { ...BAR_TARGETS_OK, barsPerYear: Array(10).fill(3) };
 
 	const result = {
 		...barTargetsOf(plot),
-		barsPerYear:
-			within(plot).getAllByRole("button").length /
-			within(plot).getAllByRole("listitem").length,
+		barsPerYear: within(plot)
+			.getAllByRole("listitem")
+			.map((year) => within(year).queryAllByRole("button").length),
 	};
 
 	await expect(result).toEqual(expectedResult);

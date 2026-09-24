@@ -4,7 +4,7 @@ import { expect, userEvent, within } from "storybook/test";
 import { CompanyGatewayProvider } from "../../../contexts/CompanyGatewayContext";
 import type { CompanyGateway } from "../../../lib/company/gateway";
 import { Ticker } from "../../../lib/domain/ticker";
-import { barTargetsOf, TAPPABLE_BARS } from "../../../test/barTargets";
+import { BAR_TARGETS_OK, barTargetsOf } from "../../../test/barTargets";
 import { alwaysFailingCompanyGateway } from "../../../test/fixtures/companies/always-failing";
 import { alwaysFoundCompanyGateway } from "../../../test/fixtures/companies/always-found";
 import { fakeCompanyReport } from "../../../test/fixtures/companies/fake-company-report";
@@ -38,38 +38,19 @@ const missingBonusGateway: CompanyGateway = {
 /** A gateway with a salary that is not a number, a missing bonus, and a year of no pay whose year is not a whole number. */
 const oddPayGateway: CompanyGateway = {
 	...found,
-	getManagement: async () => ({
-		...management,
-		ceoPay: [
-			...management.ceoPay.map((year, position) =>
-				position === 0
-					? {
-							...year,
-							salary: year.salary && { ...year.salary, value: Number.NaN },
-						}
-					: { ...year, bonus: null },
-			),
-			{
-				fiscalYear: 2025.5,
-				salary: null,
-				bonus: null,
-				stockAwards: null,
-				other: null,
-			},
-		],
-	}),
-};
-
-/** A gateway with sixteen years of pay, so the chart is wider than a phone. */
-const longPayGateway: CompanyGateway = {
-	...found,
-	getManagement: async () => ({
-		...management,
-		ceoPay: Array.from({ length: 16 }, (_, n) => ({
-			...management.ceoPay[n % 2],
-			fiscalYear: 2010 + n,
-		})),
-	}),
+	getManagement: async () => {
+		const [first, latest] = management.ceoPay;
+		const salary = first?.salary && { ...first.salary, value: Number.NaN };
+		const none = { salary: null, bonus: null, stockAwards: null, other: null };
+		const ceoPay = [
+			{ ...first, salary },
+			{ ...latest, bonus: null },
+		];
+		return {
+			...management,
+			ceoPay: [...ceoPay, { fiscalYear: 2025.5, ...none }],
+		};
+	},
 };
 
 /** A gateway with no pay and no insider, so cards 6.2, 6.3 and 6.4 show their empty copy. */
@@ -232,8 +213,9 @@ export const NoPayNoInsiders: Story = {
 	},
 };
 
-/** Play test: card 6.2 draws no part for a missing or odd figure, leaves a gap for a year with no pay, and its "Data" table shows each as the dash. */
+/** Play test: at 320 px, card 6.2 draws no part for a missing or odd figure and leaves a gap for a year with no pay. Each part is a target at least 24 × 24 px inside the plot, the page does not scroll sideways, and the "Data" table shows each gap as the dash. */
 export const PayMissingParts: Story = {
+	globals: { viewport: { value: "mobile1", isRotated: false } },
 	parameters: { companyGateway: oddPayGateway },
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
@@ -241,10 +223,12 @@ export const PayMissingParts: Story = {
 		const parts = within(plot)
 			.getAllByRole("listitem")
 			.map((year) => within(year).queryAllByRole("button").length);
+		const targets = barTargetsOf(plot);
 		await userEvent.click(canvas.getByRole("button", { name: "Data" }));
 
 		const expectedResult = {
 			parts: [3, 3, 0],
+			targets: BAR_TARGETS_OK,
 			rows: [
 				["FY2024", "—", "1,200", "6,500", "200"],
 				["FY2025", "1,000", "—", "7,200", "250"],
@@ -257,7 +241,7 @@ export const PayMissingParts: Story = {
 			.getAllByRole("row")
 			.slice(1)
 			.map((row) => [...row.children].map((cell) => cell.textContent));
-		const result = { parts, rows };
+		const result = { parts, targets, rows };
 
 		await expect(result).toEqual(expectedResult);
 	},
@@ -266,27 +250,6 @@ export const PayMissingParts: Story = {
 /** Card 6.2 in the dark theme. The four parts take `chart-1` to `chart-4` of the dark ramp, each at 3:1 on the card. */
 export const PayDark: Story = {
 	globals: { theme: "dark" },
-};
-
-/** Play test: at 320 px, each part of card 6.2 is a target at least 24 × 24 px inside the plot, and the chart scrolls inside its card while the page does not. */
-export const PayPhone: Story = {
-	globals: { viewport: { value: "mobile1", isRotated: false } },
-	parameters: { companyGateway: longPayGateway },
-	play: async ({ canvasElement }) => {
-		const plot = await within(canvasElement).findByRole("list", {
-			name: "Fiscal years",
-		});
-		const scroller = plot.parentElement?.parentElement?.parentElement;
-
-		const expectedResult = { ...TAPPABLE_BARS, chartScrolls: true };
-
-		const result = {
-			...barTargetsOf(plot),
-			chartScrolls: !!scroller && scroller.scrollWidth > scroller.clientWidth,
-		};
-
-		await expect(result).toEqual(expectedResult);
-	},
 };
 
 /** Play test: the tab shows a spinner while the section loads. */

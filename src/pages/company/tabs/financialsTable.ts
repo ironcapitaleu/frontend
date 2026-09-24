@@ -7,6 +7,7 @@ import type {
 	Figure,
 	FinancialsSection,
 	MetricKey,
+	Nullable,
 	Period,
 	Series,
 	StatementTable,
@@ -220,4 +221,39 @@ export function barScale(table: BarTable | RowTable): {
 			return { top: value > 0 ? zero - height : zero, height };
 		},
 	};
+}
+
+/**
+ * Returns where each part of a stacked chart `plot` px tall sits, as
+ * `boxes[line][column]` in px up from the foot, first line lowest. A part that is not a finite
+ * number of at least 0 is `null`. A part is at least `least` px tall, so it
+ * can be tapped, and the scale leaves that room so the tallest column fits.
+ */
+export function stackScale(
+	table: BarTable,
+	plot: number,
+	least: number,
+): Nullable<{ bottom: number; height: number }>[][] {
+	const values = table.lines.map(({ points }) =>
+		table.columns.map((_, column) => {
+			const value = points[column]?.value;
+			return typeof value === "number" && Number.isFinite(value) && value >= 0
+				? value
+				: null;
+		}),
+	);
+	const bottoms = table.columns.map(() => 0);
+	const totals = bottoms.map((_, column) =>
+		values.reduce((sum, row) => sum + (row[column] ?? 0), 0),
+	);
+	const unit = (plot - least * values.length) / (Math.max(0, ...totals) || 1);
+	return values.map((row) =>
+		row.map((value, column) => {
+			if (value === null) return null;
+			const bottom = bottoms[column] ?? 0;
+			const height = Math.max(least, value * unit);
+			bottoms[column] = bottom + height;
+			return { bottom, height };
+		}),
+	);
 }

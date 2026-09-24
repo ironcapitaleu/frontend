@@ -28,9 +28,9 @@ import type {
 } from "../../../lib/company/types";
 import type { Ticker } from "../../../lib/domain/ticker";
 import { ClaimCell, FigureCell } from "./FigureCell";
-import type { ChartTable } from "./financialsTable";
+import type { BarTable } from "./financialsTable";
 import { InsiderTable } from "./InsiderTable";
-import { StatementChart, yearLabel } from "./StatementChart";
+import { BarChart } from "./StatementChart";
 
 /** The blocks this tab draws so far. The other cards come in later tickets. */
 const DRAWN_BLOCKS: ReadonlySet<BlockKey> = new Set([
@@ -194,11 +194,17 @@ function PayMixCard({ management }: { management: ManagementSection }) {
 	);
 }
 
-/** Writes a pay figure in USD thousands, such as `7,200`, or the dash when it is not a number. */
+/** Writes a pay figure in USD thousands, such as `7,200`, or the dash when it is not a finite number. */
 function formatPay(value: ClaimValue): string {
-	return typeof value === "number"
+	return typeof value === "number" && Number.isFinite(value)
 		? toFixedWithMinus(value / 1e3, 0, true)
 		: MISSING;
+}
+
+/** Writes a fiscal year in full, `FY2026`, or short, `FY26`, or the dash when it is not a whole number. */
+function yearLabel(fiscalYear: number, full: boolean): string {
+	if (!Number.isInteger(fiscalYear)) return MISSING;
+	return `FY${full ? fiscalYear : String(fiscalYear).slice(-2)}`;
 }
 
 /** Card 6.2: the chief executive's pay in each year, stacked by part. "Data" swaps the chart for a table. */
@@ -211,23 +217,26 @@ function CeoPayCard({
 }) {
 	const [data, setData] = React.useState(false);
 	const { ceoPay } = management;
-	const table: ChartTable = {
-		periods: ceoPay.map(({ fiscalYear }) => ({ fiscalYear })),
+	const table: BarTable = {
+		// A year can repeat or be missing, so a column keys on its position.
+		columns: ceoPay.map(({ fiscalYear }, position) => ({
+			key: String(position),
+			label: yearLabel(fiscalYear, true),
+			short: yearLabel(fiscalYear, false),
+		})),
 		lines: PAY_PARTS.map(([key, label]) => ({
 			key,
 			label,
 			points: ceoPay.map((year) => year[key]),
 		})),
 	};
-	const [first, last] = [ceoPay.at(0), ceoPay.at(-1)].map((year) =>
-		yearLabel(year?.fiscalYear ?? Number.NaN, true),
-	);
+	const [first, last] = [table.columns[0], table.columns.at(-1)];
 	return (
 		<CompanyCard
 			tab="management"
 			position={2}
 			title="CEO Pay by Year"
-			caption={`${first}–${last} · USD thousands · Summary compensation table of each year's DEF 14A`}
+			caption={`${first?.label ?? MISSING}–${last?.label ?? MISSING} · USD thousands · Summary compensation table of each year's DEF 14A`}
 			span={2}
 			className="min-w-0"
 			actions={
@@ -275,7 +284,7 @@ function CeoPayCard({
 					</TableBody>
 				</Table>
 			) : (
-				<StatementChart
+				<BarChart
 					table={table}
 					format={(claim) => formatPay(claim.value)}
 					stacked

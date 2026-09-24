@@ -21,7 +21,6 @@ import type {
 	LineKey,
 	MetricKey,
 	Nullable,
-	PayYear,
 	ReportedSource,
 	SourceDocument,
 	SourceGroup,
@@ -471,13 +470,17 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 				? management.people.flatMap((row) => [row.since, row.independence])
 				: null,
 	},
-	// Card 6.2 reads every reported part of every year, so each year's DEF 14A
-	// stays in the index when a part is missing.
+	// Card 6.2 reads every part, so a year with a missing part keeps its DEF 14A.
 	ceoPay: {
 		tab: "management",
 		label: "CEO Pay by Year",
 		company: ({ management }) =>
-			management ? management.ceoPay.flatMap(payParts) : null,
+			management?.ceoPay.flatMap((y) => [
+				y.salary,
+				y.bonus,
+				y.stockAwards,
+				y.other,
+			]) ?? null,
 	},
 	// Card 6.3 reads the four parts of the latest pay, not `payMix`, so the
 	// DEF 14A stays in the index when a part is missing and no share exists.
@@ -487,7 +490,9 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		company: ({ management }) => {
 			if (!management) return null;
 			const year = management.ceoPay.at(-1);
-			return year ? payParts(year) : [];
+			return year
+				? [year.salary, year.bonus, year.stockAwards, year.other]
+				: [];
 		},
 	},
 	insiderHoldings: {
@@ -497,11 +502,6 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 			management ? management.insiders.map((row) => row.shares) : null,
 	},
 };
-
-/** Returns the four parts of one year's pay. */
-function payParts(year: PayYear): Figure[] {
-	return [year.salary, year.bonus, year.stockAwards, year.other];
-}
 
 /** Returns the claims of `figures`, or `null` when their sections have not loaded. */
 function read(
