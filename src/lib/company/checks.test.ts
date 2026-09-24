@@ -60,6 +60,26 @@ function sectionsWith(...edits: Edit[]): CompletedSections {
 	return completeSections({ ...fakeCompanyReport, financials });
 }
 
+/** Returns the completed sections of the fixture with no annual column at `position` in any statement. */
+function sectionsWithoutYear(position: number): CompletedSections {
+	const kept = (_: unknown, index: number) => index !== position;
+	const withoutColumn = ({ periods, lines }: StatementTable) => ({
+		periods: periods.filter(kept),
+		lines: lines.map((line) => ({
+			...line,
+			periods: line.periods.filter(kept),
+			points: line.points.filter(kept),
+		})),
+	});
+	const { income, balance, cashFlow } = fakeCompanyReport.financials;
+	const financials = {
+		income: { ...income, annual: withoutColumn(income.annual) },
+		balance: { ...balance, annual: withoutColumn(balance.annual) },
+		cashFlow: { ...cashFlow, annual: withoutColumn(cashFlow.annual) },
+	};
+	return completeSections({ ...fakeCompanyReport, financials });
+}
+
 /** Returns the check with `id` evaluated over `sections`, as its state and reason. */
 function outcomeOf(id: string, sections: CompletedSections) {
 	const check = checks.find((candidate) => candidate.id === id);
@@ -291,6 +311,59 @@ describe("evaluateCheck", () => {
 
 		// Free cash flow in FY2025 is one figure, so there are no years to count.
 		const expectedResult = { state: "notEnoughData", reason: "missingInput" };
+
+		const outcome = check && evaluateCheck(check, sections);
+		const result = outcome && { state: outcome.state, reason: outcome.reason };
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	// Note §7 S1: the annual table has no column five years back.
+	it("should read not enough data with reason missingInput for S1 when the annual table has no FY2020 column", () => {
+		const sections = sectionsWithoutYear(4);
+
+		// FY2025 is five years after FY2020, so the threshold figure is null.
+		const expectedResult = { state: "notEnoughData", reason: "missingInput" };
+
+		const result = outcomeOf("S1", sections);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	// Note §7 S2 and V2: a share count that goes negative gives a negative market cap.
+	it("should read not enough data with reason failedGuard for S2 when the market cap is negative", () => {
+		const sections = sectionsWith([
+			"income",
+			"annual",
+			"dilutedShares",
+			[9],
+			-33_000_000,
+		]);
+
+		// The market cap is 84.2 × −33M = −2.8B, which is not above 0.
+		const expectedResult = { state: "notEnoughData", reason: "failedGuard" };
+
+		const result = outcomeOf("S2", sections);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should read not enough data with reason failedGuard for V2 when the market cap is negative and a Treasury yield is given", () => {
+		const sections = sectionsWith([
+			"income",
+			"annual",
+			"dilutedShares",
+			[9],
+			-33_000_000,
+		]);
+		const v2 = checks.find((candidate) => candidate.id === "V2");
+		const check: Check | undefined = v2 && {
+			...v2,
+			threshold: { kind: "value", comparison: "above", value: 0.042 },
+		};
+
+		// A fixed yield of 4.2% stands in for the Treasury yield until a Valuation section gives it.
+		const expectedResult = { state: "notEnoughData", reason: "failedGuard" };
 
 		const outcome = check && evaluateCheck(check, sections);
 		const result = outcome && { state: outcome.state, reason: outcome.reason };
