@@ -1090,6 +1090,24 @@ function asSection(value: unknown, from: string, to: string): unknown {
 }
 
 describe("the MRDN relationships sample data", () => {
+	it("should link no stake to a company the sample gateway cannot serve when the stakes are listed", async () => {
+		const gateway = sampleCompanyGateway();
+		const tickers = meridianRelationships.stakes.flatMap((stake) =>
+			stake.ticker === null ? [] : [stake.ticker],
+		);
+
+		const expectedResult: string[] = [];
+
+		const answers = await Promise.allSettled(
+			tickers.map((ticker) => gateway.getMasthead(ticker)),
+		);
+		const result = tickers
+			.filter((_, position) => answers[position].status === "rejected")
+			.map((ticker) => ticker.value);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	const { ownership, funds, stakes, subsidiaries } = meridianRelationships;
 
 	it("should equal the Overview ownership field by field when the section prefix of the ids is ignored", () => {

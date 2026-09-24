@@ -1,4 +1,3 @@
-import { Ticker } from "../../domain/ticker";
 import type { RelationshipsSection, Stake, Subsidiary } from "../types";
 import { dateInstant } from "./calendar";
 import { fundHoldings, insiderHoldings, ownershipSummary } from "./holdings";
@@ -39,16 +38,17 @@ function subsidiaries(): Subsidiary[] {
 	}));
 }
 
-// The stakes from the mock-up: the company, its ticker, the stake in percent
-// and the shares outstanding in millions from the cover page of its latest
-// 10-Q, with the date of that count and the filing date of the 10-Q.
-const STAKES: [string, string, number, number, string, string][] = [
-	["Halden Data Systems", "HLDN", 12.4, 310, "2026-08-03", "2026-08-06"],
-	["Arcline Photonics", "ARPX", 7.2, 145, "2026-07-24", "2026-07-30"],
-	["Tessellate Networks", "TSNW", 4.8, 520, "2026-08-10", "2026-08-12"],
-	["Quarrystone Robotics", "QSRB", 3.1, 88, "2026-07-31", "2026-08-05"],
-	["Velmora Biosciences", "VLMB", 1.9, 240, "2026-08-04", "2026-08-07"],
-	["Brightkeel Energy", "BKLE", 0.8, 1200, "2026-07-28", "2026-07-31"],
+// The stakes from the mock-up: the company, the stake in percent and the
+// shares outstanding in millions from the cover page of its latest 10-Q, with
+// the date of that count and the filing date of the 10-Q. The sample serves
+// MRDN only, so no target company has a page and every ticker is null.
+const STAKES: [string, number, number, string, string][] = [
+	["Halden Data Systems", 12.4, 310, "2026-08-03", "2026-08-06"],
+	["Arcline Photonics", 7.2, 145, "2026-07-24", "2026-07-30"],
+	["Tessellate Networks", 4.8, 520, "2026-08-10", "2026-08-12"],
+	["Quarrystone Robotics", 3.1, 88, "2026-07-31", "2026-08-05"],
+	["Velmora Biosciences", 1.9, 240, "2026-08-04", "2026-08-07"],
+	["Brightkeel Energy", 0.8, 1200, "2026-07-28", "2026-07-31"],
 ];
 
 /**
@@ -64,9 +64,9 @@ function stakes(): Stake[] {
 		"Q2 2026",
 	);
 	return STAKES.map(
-		([company, symbol, percent, outstanding, countedOn, filedOn], row) => ({
+		([company, percent, outstanding, countedOn, filedOn], row) => ({
 			company,
-			ticker: Ticker.parse(symbol),
+			ticker: null,
 			sharesHeld: reported(
 				{
 					id: `relationships.stakes.${row}.sharesHeld`,
