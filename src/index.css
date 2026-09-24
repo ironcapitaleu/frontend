@@ -36,7 +36,9 @@
 	--border: oklch(0.928 0.006 264.531);
 	--input: oklch(0.928 0.006 264.531);
 	--ring: oklch(0.707 0.022 261.325);
-	--chart-1: oklch(0.809 0.105 251.813);
+	/* Every chart step reaches 3:1 on the card, as WCAG 1.4.11 asks of a
+	   graphical object. The ramp darkens from chart-1 to chart-5. */
+	--chart-1: oklch(0.65 0.15 251.813);
 	--chart-2: oklch(0.623 0.214 259.815);
 	--chart-3: oklch(0.546 0.245 262.881);
 	--chart-4: oklch(0.488 0.243 264.376);
@@ -73,11 +75,13 @@
 	--border: oklch(1 0 0 / 10%);
 	--input: oklch(1 0 0 / 15%);
 	--ring: oklch(0.551 0.027 264.364);
-	--chart-1: oklch(0.809 0.105 251.813);
-	--chart-2: oklch(0.623 0.214 259.815);
-	--chart-3: oklch(0.546 0.245 262.881);
-	--chart-4: oklch(0.488 0.243 264.376);
-	--chart-5: oklch(0.424 0.199 265.638);
+	/* The dark ramp runs the other way: it lightens from chart-1 to chart-5,
+	   so chart-1 stays the quietest step and each one reaches 3:1 on the card. */
+	--chart-1: oklch(0.6 0.2 262);
+	--chart-2: oklch(0.67 0.17 260);
+	--chart-3: oklch(0.74 0.13 257);
+	--chart-4: oklch(0.81 0.085 254);
+	--chart-5: oklch(0.88 0.05 252);
 	--sidebar: oklch(0.21 0.034 264.665);
 	--sidebar-foreground: oklch(0.985 0.002 247.839);
 	--sidebar-primary: oklch(0.623 0.214 259.815);

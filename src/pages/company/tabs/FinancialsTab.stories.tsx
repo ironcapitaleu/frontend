@@ -240,8 +240,10 @@ export const EmptyChart: Story = {
 };
 
 /**
- * Play test: every bar of the cash flow chart can be tapped. A small bar
- * keeps its drawn height, but its trigger is at least 24 px tall.
+ * Play test: every bar of the cash flow chart can be tapped on a phone. Each
+ * bar's trigger is at least 24 px wide and 24 px tall, even when the bar is
+ * drawn smaller, and the chart scrolls inside its card, so the page does not
+ * scroll sideways.
  */
 export const BarTargets: Story = {
 	globals: phone,
@@ -257,15 +259,28 @@ export const BarTargets: Story = {
 		const bars = within(
 			await canvas.findByRole("list", { name: "Fiscal years" }),
 		).getAllByRole("button");
+		const page = canvasElement.ownerDocument.documentElement;
 
-		const expectedResult: HTMLElement[] = [];
+		const expectedResult = { smallTargets: [], pageScrollsSideways: false };
 
-		const result = bars.filter(
-			(bar) => bar.getBoundingClientRect().height < 24,
-		);
+		const result = {
+			smallTargets: bars.filter((bar) => {
+				const { width, height } = bar.getBoundingClientRect();
+				return width < 24 || height < 24;
+			}),
+			pageScrollsSideways: page.scrollWidth > page.clientWidth,
+		};
 
 		await expect(result).toEqual(expectedResult);
 	},
+};
+
+/**
+ * The chart in the dark theme. Each line's fill comes from the dark chart
+ * ramp and reaches 3:1 on the dark card, so the three lines read apart.
+ */
+export const ChartDark: Story = {
+	globals: { ...desktop, theme: "dark" },
 };
 
 /**

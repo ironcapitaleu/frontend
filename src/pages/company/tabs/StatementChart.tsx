@@ -22,9 +22,11 @@ const INKS = ["bg-chart-1", "bg-chart-3", "bg-chart-5"];
  * a tap pins them. A missing point draws a dimmed dash on the zero line. A
  * legend names the lines. The year labels are short, such as `FY26`, so ten
  * of them fit at 390 px. Each group names its full year to a screen reader.
- * A bar keeps its drawn height, but its trigger is at least 24 px tall, so a
- * small bar can still be tapped. A table with no fiscal year or no line
- * draws one line that says so.
+ * A bar keeps its drawn height, but its trigger is at least 24 px tall, and
+ * every bar is 24 px wide, so a small bar can still be tapped. Below 1024 px,
+ * a chart that does not fit its card scrolls sideways (DESIGN.md §8 "Shared
+ * Layout"), and the year labels scroll with their groups. A table with no
+ * fiscal year or no line draws one line that says so.
  */
 export function StatementChart({
 	table,
@@ -34,6 +36,8 @@ export function StatementChart({
 	scale: Scale;
 }) {
 	const { zero, place } = barScale(table);
+	// A group and its year label take the same width, so the two rows line up.
+	const groupWidth = `calc(${table.lines.length} * 1.5rem + ${table.lines.length - 1}px)`;
 	if (table.periods.length === 0 || table.lines.length === 0) {
 		return (
 			<p className="text-base text-muted-foreground">
@@ -57,81 +61,92 @@ export function StatementChart({
 					</li>
 				))}
 			</ul>
-			<div className="relative">
-				<ul aria-label="Fiscal years" className="flex h-56 gap-1 md:gap-3">
-					{table.periods.map((period, column) => (
-						<li
-							key={period.endsOn}
-							className="flex flex-1 justify-center gap-px"
-						>
-							<span className="sr-only">{periodLabel(period)}</span>
-							{table.lines.map((line, index) => {
-								const point = line.points[column] ?? null;
-								if (
-									point === null ||
-									typeof point.value !== "number" ||
-									!Number.isFinite(point.value)
-								) {
-									return (
-										<span
-											key={line.key}
-											className={cn(
-												"relative flex-1 max-w-5 text-center text-xs",
-												MISSING_INK,
-											)}
-											style={{ top: `calc(${zero}% - 0.5rem)` }}
-										>
-											{MISSING}
-										</span>
-									);
-								}
-								const { top, height } = place(point.value);
-								return (
-									<div
-										key={line.key}
-										className="relative h-full max-w-5 flex-1"
-									>
-										<div
-											className={cn(
-												"absolute inset-x-0",
-												inkOf(index),
-												point.value > 0 ? "rounded-t-[2px]" : "rounded-b-[2px]",
-											)}
-											style={{ top: `${top}%`, height: `${height}%` }}
-										>
-											<SourceTrigger
-												claim={point}
-												className={cn(
-													"absolute inset-x-0 block h-full min-h-6 rounded-none",
-													point.value > 0 ? "bottom-0" : "top-0",
-												)}
-											>
-												<span className="sr-only">
-													{`${line.label}: ${formatStatementValue(point, scale)}`}
+			<div className="max-lg:overflow-x-auto">
+				<div className="flex min-w-max flex-col gap-3">
+					<div className="relative">
+						<ul aria-label="Fiscal years" className="flex h-56 gap-1 md:gap-3">
+							{table.periods.map((period, column) => (
+								<li
+									key={period.endsOn}
+									className="flex flex-1 justify-center gap-px"
+									style={{ minWidth: groupWidth }}
+								>
+									<span className="sr-only">{periodLabel(period)}</span>
+									{table.lines.map((line, index) => {
+										const point = line.points[column] ?? null;
+										if (
+											point === null ||
+											typeof point.value !== "number" ||
+											!Number.isFinite(point.value)
+										) {
+											return (
+												<span
+													key={line.key}
+													className={cn(
+														"relative w-6 shrink-0 text-center text-xs",
+														MISSING_INK,
+													)}
+													style={{ top: `calc(${zero}% - 0.5rem)` }}
+												>
+													{MISSING}
 												</span>
-											</SourceTrigger>
-										</div>
-									</div>
-								);
-							})}
-						</li>
-					))}
-				</ul>
-				<div
-					aria-hidden="true"
-					className="pointer-events-none absolute inset-x-0 h-px bg-muted-foreground/50"
-					style={{ top: `${zero}%` }}
-				/>
-			</div>
-			<div
-				aria-hidden="true"
-				className="flex gap-1 font-monospace text-xs text-muted-foreground md:gap-3"
-			>
-				{table.periods.map((period) => (
-					<span key={period.endsOn} className="flex-1 text-center">
-						{`FY${String(period.fiscalYear).slice(-2)}`}
-					</span>
-				))}
+											);
+										}
+										const { top, height } = place(point.value);
+										return (
+											<div
+												key={line.key}
+												className="relative h-full w-6 shrink-0"
+											>
+												<div
+													className={cn(
+														"absolute inset-x-0",
+														inkOf(index),
+														point.value > 0
+															? "rounded-t-[2px]"
+															: "rounded-b-[2px]",
+													)}
+													style={{ top: `${top}%`, height: `${height}%` }}
+												>
+													<SourceTrigger
+														claim={point}
+														className={cn(
+															"absolute inset-x-0 block h-full min-h-6 rounded-none",
+															point.value > 0 ? "bottom-0" : "top-0",
+														)}
+													>
+														<span className="sr-only">
+															{`${line.label}: ${formatStatementValue(point, scale)}`}
+														</span>
+													</SourceTrigger>
+												</div>
+											</div>
+										);
+									})}
+								</li>
+							))}
+						</ul>
+						<div
+							aria-hidden="true"
+							className="pointer-events-none absolute inset-x-0 h-px bg-muted-foreground/50"
+							style={{ top: `${zero}%` }}
+						/>
+					</div>
+					<div
+						aria-hidden="true"
+						className="flex gap-1 font-monospace text-xs text-muted-foreground md:gap-3"
+					>
+						{table.periods.map((period) => (
+							<span
+								key={period.endsOn}
+								className="flex-1 text-center"
+								style={{ minWidth: groupWidth }}
+							>
+								{`FY${String(period.fiscalYear).slice(-2)}`}
+							</span>
+						))}
+					</div>
+				</div>
 			</div>
 		</div>
 	);

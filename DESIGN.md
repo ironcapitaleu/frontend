@@ -137,7 +137,7 @@ light/dark theming keeps working.
 | `destructive`           | Errors and dangerous actions (red).                    |
 | `positive` / `negative` | Gains and losses in data. Not for UI state.            |
 | `border` / `input` / `ring` | Hairlines, field borders, focus rings.             |
-| `chart-1` … `chart-5`   | Data-visualization series (blue-violet ramp).          |
+| `chart-1` … `chart-5`   | Data-visualization series (blue-violet ramp). Each step reaches 3:1 on the card in both themes. The light ramp darkens from 1 to 5 and the dark ramp lightens, so `chart-1` is the quietest step in both. |
 | `sidebar-*`             | Sidebar-specific surface/accent variants.              |
 
 `bg-input-opaque` paints the `input` fill as an opaque layer over the page
@@ -541,6 +541,9 @@ Financials has these cards, from top to bottom:
    total liabilities and equity. For cash flow, it draws operating cash flow,
    capital expenditure and share repurchases. The chart draws the fiscal
    years whatever the annual and quarterly switch says.
+   The lines use `chart-1`, `chart-3` and `chart-5`. Each bar is at least
+   24 px wide, so it can be tapped. Below 1024 px, a chart that does not fit
+   its card scrolls sideways, and the year labels scroll with their groups.
 2. **Statement table.** The 10-year table of the selected statement, one
    column per fiscal year, and a last column for growth per year over ten
    years (CAGR). Margins sit as muted rows under the line they divide.
