@@ -1,0 +1,150 @@
+import { describe, expect, it } from "vitest";
+
+import { completeSections } from "@/lib/company/metrics";
+import type { Claim, OverviewSection } from "@/lib/company/types";
+import { fakeCompanyReport } from "@/test/fixtures/companies/fake-company-report";
+import {
+	formatInUnit,
+	revenueParts,
+	tenYearsSeries,
+} from "./OverviewTab.logic";
+
+const { overview, financials } = fakeCompanyReport;
+const sections = completeSections(fakeCompanyReport);
+
+/** The overview with seven segments, named A to G, of 1 to 7 dollars of revenue. */
+const sevenSegments: OverviewSection = {
+	...overview,
+	segments: [..."ABCDEFG"].map((name, index) => {
+		const revenue = overview.segments[0]?.revenue as Claim;
+		return {
+			name,
+			revenue: { ...revenue, id: `segments.${name}`, value: index + 1 },
+		};
+	}),
+};
+
+/** The value of the latest point of `line` in the annual income statement. */
+function latestIncome(key: string): number {
+	const line = financials.income.annual.lines.find((each) => each.key === key);
+	return Number(line?.points.at(-1)?.value);
+}
+
+describe("revenueParts", () => {
+	it("should give each part the claim of its share of revenue when the list is the regions", () => {
+		const expectedResult = "metric.revenueShare.regions.0";
+
+		const result = revenueParts(overview, "regions")[0]?.share?.id;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should keep the first four parts and fold the rest into Other when the list has seven rows", () => {
+		const expectedResult = ["A", "B", "C", "D", "Other"];
+
+		const result = revenueParts(sevenSegments, "segments").map(
+			({ label }) => label,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give Other the revenue of the folded rows over all revenue as a derived share when the list has seven rows", () => {
+		// (5 + 6 + 7) ÷ (1 + 2 + … + 7) = 18 ÷ 28.
+		const expectedResult = {
+			value: 18 / 28,
+			formula:
+				"(E revenue + F revenue + G revenue) ÷ (A revenue + B revenue + C revenue + D revenue + E revenue + F revenue + G revenue)",
+			inputs: 7,
+		};
+
+		const other = revenueParts(sevenSegments, "segments")[4]?.share;
+		const source = other?.source.kind === "derived" ? other.source : null;
+		const result = {
+			value: other?.value,
+			formula: source?.formula,
+			inputs: source?.inputs.length,
+		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep every part when the list has five rows", () => {
+		const five = {
+			...sevenSegments,
+			segments: sevenSegments.segments.slice(0, 5),
+		};
+
+		const expectedResult = ["A", "B", "C", "D", "E"];
+
+		const result = revenueParts(five, "segments").map(({ label }) => label);
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("tenYearsSeries", () => {
+	it("should give no series when Financials has not loaded", () => {
+		const expectedResult: unknown[] = [];
+
+		const result = tenYearsSeries(
+			completeSections({ ...fakeCompanyReport, financials: null }),
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give revenue, operating margin, free cash flow and diluted shares in that order when Financials has loaded", () => {
+		const expectedResult = [
+			"Revenue",
+			"Operating margin",
+			"Free cash flow",
+			"Diluted shares",
+		];
+
+		const result = tenYearsSeries(sections).map(({ label }) => label);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should divide operating income by revenue when it computes the latest operating margin", () => {
+		const expectedResult =
+			latestIncome("operatingIncome") / latestIncome("revenue");
+
+		const result = tenYearsSeries(sections)[1]?.points.at(-1)?.value;
+
+		expect(result).toBeCloseTo(expectedResult);
+	});
+
+	it("should give a missing point when a year lacks the cash flow lines that its free cash flow reads", () => {
+		const { cashFlow } = financials;
+		const noCashFlow = {
+			...financials,
+			cashFlow: { ...cashFlow, annual: { ...cashFlow.annual, lines: [] } },
+		};
+
+		const expectedResult = null;
+
+		const result = tenYearsSeries(
+			completeSections({ ...fakeCompanyReport, financials: noCashFlow }),
+		)[2]?.points[0];
+
+		expect(result).toBe(expectedResult);
+	});
+});
+
+describe("formatInUnit", () => {
+	it.each([
+		[212_000_000_000, "$212.0B", "usd"],
+		[-4_000_000_000, "−$4.0B", "usd"],
+		[24_500_000_000, "24.5B", "shares"],
+		[0.312, "31.2%", "percent"],
+	] as const)(
+		"should write %s as %s when the unit is %s",
+		(value, expectedResult, unit) => {
+			const result = formatInUnit(value, unit);
+
+			expect(result).toBe(expectedResult);
+		},
+	);
+});
