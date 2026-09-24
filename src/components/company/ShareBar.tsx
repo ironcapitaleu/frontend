@@ -1,8 +1,9 @@
 import type * as React from "react";
 
-import type { Figure } from "@/lib/company/types";
+import type { Claim, Figure } from "@/lib/company/types";
 import { cn } from "@/lib/utils";
 import { formatPercent, MISSING, MISSING_INK } from "../screener/format";
+import { SourceTrigger } from "./SourceCard";
 
 /** One part of a {@link ShareBar}: a label and its share as a `percent` claim. */
 interface SharePart {
@@ -46,6 +47,8 @@ interface ShareSegment {
 	 * the `percent` unit. A negative share keeps its true value.
 	 */
 	readonly share: number | null;
+	/** The claim behind the share, or `null` when the share is missing. */
+	readonly claim: Claim | null;
 	/** The width on the bar from 0 to 100, or `null` for no segment. */
 	readonly width: number | null;
 	readonly fill: (typeof FILLS)[number];
@@ -59,11 +62,14 @@ interface ShareSegment {
  * and their labels still print the true shares.
  */
 function shareSegments(parts: readonly SharePart[]): ShareSegment[] {
-	const shares = parts.map(({ share }) => {
+	const claims = parts.map(({ share }) => {
 		if (share?.unit !== "percent") return null;
 		const { value } = share;
-		return typeof value === "number" && Number.isFinite(value) ? value : null;
+		return typeof value === "number" && Number.isFinite(value) ? share : null;
 	});
+	const shares = claims.map((claim) =>
+		claim === null ? null : Number(claim.value),
+	);
 	const total = shares.reduce<number>(
 		(sum, share) => sum + Math.max(share ?? 0, 0),
 		0,
@@ -75,6 +81,7 @@ function shareSegments(parts: readonly SharePart[]): ShareSegment[] {
 			key: `${index}-${part.label}`,
 			label: part.label,
 			share,
+			claim: claims[index] ?? null,
 			width: share === null || share <= 0 ? null : share * scale * 100,
 			// Math.min keeps the index in range. The `??` only satisfies the type checker.
 			fill: FILLS[Math.min(index, FILLS.length - 1)] ?? "bg-chart-5",
@@ -84,8 +91,8 @@ function shareSegments(parts: readonly SharePart[]): ShareSegment[] {
 
 /**
  * One horizontal bar that splits a whole into parts, with a label and a
- * percentage for each part below it. The company page draws the segment and
- * region splits of revenue and the ownership split with it (DESIGN.md §8
+ * percentage for each part below it. Each known percentage opens its
+ * sources. The company page draws the segment and region splits of revenue and the ownership split with it (DESIGN.md §8
  * "Overview"). It takes the parts as props and computes nothing from the
  * company sections.
  *
@@ -132,9 +139,13 @@ function ShareBar({ parts, className, ...props }: ShareBarProps) {
 								segment.share === null && MISSING_INK,
 							)}
 						>
-							{segment.share === null
-								? MISSING
-								: formatPercent(segment.share * 100)}
+							{segment.share === null || segment.claim === null ? (
+								MISSING
+							) : (
+								<SourceTrigger claim={segment.claim}>
+									{formatPercent(segment.share * 100)}
+								</SourceTrigger>
+							)}
 						</span>
 					</li>
 				))}

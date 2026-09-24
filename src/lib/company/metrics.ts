@@ -10,6 +10,7 @@ import type {
 	MetricKey,
 	Nullable,
 	OverviewSection,
+	OwnershipSummary,
 	Period,
 	RelationshipsSection,
 	Series,
@@ -1144,21 +1145,27 @@ export interface OwnershipShares {
  * public hold, each as a fraction of the shares outstanding. The public
  * holds the shares that neither institutions nor insiders hold. Its share
  * is `null` when the other two hold more than the shares outstanding.
+ * Overview and Relationships each pass their own section and name it as
+ * `owner`, which goes into the claim ids, so the ids stay unique on a page
+ * that draws both.
  */
-export function ownershipShares(overview: OverviewSection): OwnershipShares {
+export function ownershipShares(
+	section: { readonly ownership: OwnershipSummary },
+	owner: "overview" | "relationships" = "overview",
+): OwnershipShares {
 	const { sharesOutstanding, institutionShares, insiderShares } =
-		overview.ownership;
+		section.ownership;
 	const held = [institutionShares, insiderShares, sharesOutstanding];
 	return {
 		institutions: share(
-			"metric.ownershipShares.institutions",
+			`metric.ownershipShares.${owner}.institutions`,
 			"Held by institutions",
 			"Shares held by institutions ÷ Shares outstanding",
 			[institutionShares, sharesOutstanding],
 			([shares, outstanding]) => [shares, outstanding],
 		),
 		insiders: share(
-			"metric.ownershipShares.insiders",
+			`metric.ownershipShares.${owner}.insiders`,
 			"Held by insiders",
 			"Shares held by insiders ÷ Shares outstanding",
 			[insiderShares, sharesOutstanding],
@@ -1166,7 +1173,7 @@ export function ownershipShares(overview: OverviewSection): OwnershipShares {
 		),
 		public: withinTotal(
 			share(
-				"metric.ownershipShares.public",
+				`metric.ownershipShares.${owner}.public`,
 				"Held by the public",
 				"(Shares outstanding − Shares held by institutions − Shares held by insiders) ÷ Shares outstanding",
 				held,

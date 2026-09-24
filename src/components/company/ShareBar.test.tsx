@@ -17,6 +17,16 @@ function partsOf(...shares: (number | null)[]): SharePart[] {
 }
 
 describe("shareSegments", () => {
+	it("should carry each part's own claim when the parts differ", () => {
+		const parts = partsOf(0.2, 0.3);
+
+		const expectedResult = parts.map(({ share }) => share);
+
+		const result = shareSegments(parts).map((segment) => segment.claim);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should take the chart tokens in order when there are five parts", () => {
 		const expectedResult = [
 			"bg-chart-1",
@@ -162,6 +172,18 @@ describe("ShareBar", () => {
 		const result = screen
 			.getAllByRole("listitem")
 			.map((item) => item.textContent);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should make only the known share open its sources when one share is null", () => {
+		render(<ShareBar aria-label="Ownership" parts={partsOf(0.625, null)} />);
+
+		const expectedResult = ["62.5%"];
+
+		const result = screen
+			.getAllByRole("button")
+			.map((button) => button.textContent);
 
 		expect(result).toEqual(expectedResult);
 	});
