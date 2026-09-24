@@ -40,6 +40,20 @@ const ownsNothingGateway: CompanyGateway = {
 	}),
 };
 
+/** A gateway whose first subsidiary has no jurisdiction and whose first stake has no share count. */
+const partialOwnsGateway: CompanyGateway = {
+	...found,
+	getRelationships: async () => ({
+		...relationships,
+		subsidiaries: relationships.subsidiaries.map((row, position) =>
+			position === 0 ? { ...row, jurisdiction: null } : row,
+		),
+		stakes: relationships.stakes.map((row, position) =>
+			position === 0 ? { ...row, sharesHeld: null } : row,
+		),
+	}),
+};
+
 /** A gateway that never answers, so the tab stays in its loading state. */
 const loadingGateway: CompanyGateway = {
 	...found,
@@ -60,6 +74,7 @@ const meta: Meta<typeof RelationshipsTab> = {
 	component: RelationshipsTab,
 	tags: ["autodocs"],
 	args: { ticker: Ticker.parse("MRDN") },
+	argTypes: { hasCompanyPage: { control: { disable: true } } },
 	parameters: { companyGateway: found },
 	decorators: [
 		(Story, { parameters }) => (
@@ -183,6 +198,38 @@ export const OwnsNothing: Story = {
 		const result = {
 			subsidiaries: (await canvas.findByText(/lists no subsidiary/)) !== null,
 			stakes: (await canvas.findByText(/lists no stake/)) !== null,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: a missing jurisdiction and a missing share count each show the
+ * dimmed dash. The stake of that row shows it too, since it has no shares to
+ * divide.
+ */
+export const OwnsMissingFigures: Story = {
+	parameters: { companyGateway: partialOwnsGateway },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+
+		const expectedResult = {
+			jurisdiction: ["—"],
+			stake: ["—", "—"],
+		};
+
+		const subsidiary = await canvas.findByRole("row", {
+			name: /Quillvane Instruments GmbH/,
+		});
+		const stake = await canvas.findByRole("row", { name: /Corvid Sensing/ });
+		const result = {
+			jurisdiction: Array.from(subsidiary.children)
+				.slice(1)
+				.map((cell) => cell.textContent),
+			stake: Array.from(stake.children)
+				.slice(1)
+				.map((cell) => cell.textContent),
 		};
 
 		await expect(result).toEqual(expectedResult);

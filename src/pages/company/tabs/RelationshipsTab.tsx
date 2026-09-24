@@ -272,7 +272,7 @@ function SubsidiariesCard({
 								<TableCell>
 									{row.jurisdiction !== null ? (
 										<SourceTrigger claim={row.jurisdiction}>
-											{String(row.jurisdiction.value)}
+											{row.jurisdiction.value}
 										</SourceTrigger>
 									) : (
 										<span className={MISSING_INK}>{MISSING}</span>

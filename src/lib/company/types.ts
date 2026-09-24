@@ -354,7 +354,11 @@ export interface Subsidiary {
  */
 export interface Stake {
 	readonly company: string;
-	/** `null` when the target company has no page. Compare it with `equals`. */
+	/**
+	 * The ticker of the target company, or `null` when the filing names none.
+	 * A known ticker does not mean the company has a page. The Relationships
+	 * tab asks `servesTicker` before it links. Compare it with `equals`.
+	 */
 	readonly ticker: Nullable<Ticker>;
 	readonly sharesHeld: Figure;
 	readonly sharesOutstanding: Figure;

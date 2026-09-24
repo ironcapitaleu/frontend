@@ -1,5 +1,5 @@
 import { listedFundPositions } from "./holdings";
-import { ownershipShares, stakePercent } from "./metrics";
+import { ownershipShares } from "./metrics";
 import type {
 	BlockKey,
 	Claim,
@@ -350,16 +350,19 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 				? relationships.subsidiaries.map((row) => row.jurisdiction)
 				: null,
 	},
-	// The shares held and the stake of each row that card 5.5 draws. The stake
-	// reaches the 10-Q or 10-K of the target company for its shares outstanding.
+	// The reported inputs of the rows that card 5.5 draws: the shares held from
+	// the company's own 13F-HR, and the shares outstanding from the 10-Q or
+	// 10-K of the target company. Like the largest funds, the block reads the
+	// inputs and not `stakePercent`, so the target's filing stays in the index
+	// when the stake cannot be computed.
 	stakes: {
 		tab: "relationships",
 		label: "Owns: Stakes in Listed Companies",
 		company: ({ relationships }) =>
 			relationships
-				? relationships.stakes.flatMap((row, position) => [
+				? relationships.stakes.flatMap((row) => [
 						row.sharesHeld,
-						stakePercent(relationships, position),
+						row.sharesOutstanding,
 					])
 				: null,
 	},
