@@ -196,6 +196,24 @@ export const MissingMedian: Story = {
 	},
 };
 
+/**
+ * Play test: Key Figures needs the Financials section too, so when it fails
+ * the card says so instead of showing a dash for every figure.
+ */
+export const KeyFiguresNeedFinancials: Story = {
+	parameters: { companyGateway: financialsFailingGateway },
+	play: async ({ canvasElement }) => {
+		const expectedResult =
+			"The key figures did not load. Try again in a moment.";
+
+		const result = await within(canvasElement).findByText(
+			/key figures did not load/,
+		);
+
+		await expect(result).toHaveTextContent(expectedResult);
+	},
+};
+
 /** Play test: each card shows a spinner while its section loads. */
 export const Loading: Story = {
 	parameters: { companyGateway: neverAnsweringGateway },

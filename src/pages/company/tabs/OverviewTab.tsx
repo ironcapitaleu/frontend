@@ -137,7 +137,10 @@ export function OverviewTab({ ticker }: { ticker: Ticker }) {
 				title="Key Figures"
 				caption="Latest price, fiscal year and quarter · Sector median of the peer group · Form 10-K and 10-Q"
 			>
-				<Loaded state={overview} what="key figures">
+				<Loaded
+					state={heldBack(overview, [masthead, financials])}
+					what="key figures"
+				>
 					{() => sections && <KeyFigures sections={sections} />}
 				</Loaded>
 			</CompanyCard>
@@ -146,6 +149,28 @@ export function OverviewTab({ ticker }: { ticker: Ticker }) {
 			</div>
 		</CompanyCardGrid>
 	);
+}
+
+/**
+ * Returns the state of the Overview load, held back until each load of
+ * `others` has loaded too. It is loading while one of them loads, and failed
+ * when one of them fails. Card 1.3 needs the masthead and Financials for its
+ * figures, so it never shows a dash for a figure that is still loading.
+ */
+function heldBack(
+	overview: CompanyState<"overview">,
+	others: readonly CompanyState<CompanySectionKey>[],
+): CompanyState<"overview"> {
+	if (overview.status !== "loaded") return overview;
+	if (others.some(({ status }) => status === "loading")) {
+		return { status: "loading" };
+	}
+	for (const other of others) {
+		if (other.status === "missing" || other.status === "failed") {
+			return { status: "failed", error: other.error };
+		}
+	}
+	return overview;
 }
 
 /** The sections of a load, or `null` until it loads. */
