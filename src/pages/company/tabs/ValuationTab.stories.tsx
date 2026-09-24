@@ -64,7 +64,8 @@ const missingPriceGateway: CompanyGateway = {
  * unless a story sets its own (DESIGN.md §8 "Valuation"). Card 3.1 draws each
  * ratio now on a bar of its own ten years and a bar of the sector quartiles.
  * Card 3.2 draws the earnings yield, the FCF yield and the 10-year Treasury
- * yield at each fiscal year end and now.
+ * yield at each fiscal year end and now. Its "Data" button swaps the bars for
+ * a table of the same figures.
  * Card 3.3 lists each ratio with its formula, its inputs and its figure now.
  * The sources index at the foot lists the filings behind the tab.
  */
@@ -261,6 +262,86 @@ export const YieldsOnPhone: Story = {
 		const expectedResult = BAR_TARGETS_OK;
 
 		const result = barTargetsOf(plot);
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Opens the table of card 3.2 and returns it. */
+async function openYieldTable(
+	canvasElement: HTMLElement,
+): Promise<HTMLElement> {
+	const card = await within(canvasElement).findByRole("region", {
+		name: "3.2 Earnings Yield and FCF Yield Next to the 10-Year Treasury",
+	});
+	await userEvent.click(within(card).getByRole("button", { name: "Data" }));
+	return within(card).getByRole("table", {
+		name: "Earnings Yield and FCF Yield Next to the 10-Year Treasury table",
+	});
+}
+
+/**
+ * Play test: the "Data" button of card 3.2 swaps the bars for a table with
+ * one figure for each bar.
+ */
+export const YieldsData: Story = {
+	play: async ({ canvasElement }) => {
+		const bars = (await yieldBars(canvasElement)).reduce((a, b) => a + b, 0);
+
+		const expectedResult = bars;
+
+		const table = await openYieldTable(canvasElement);
+		const result = within(table).getAllByRole("button").length;
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/**
+ * Play test: with no FY2020 year-end price, the table of card 3.2 shows the
+ * dimmed dash for the earnings yield of FY2020.
+ */
+export const YieldsDataMissing: Story = {
+	parameters: { companyGateway: missingPriceGateway },
+	play: async ({ canvasElement }) => {
+		const expectedResult = "—";
+
+		const table = await openYieldTable(canvasElement);
+		const row = within(table).getByRole("row", { name: /^Earnings yield/ });
+		const result = within(row).getAllByRole("cell")[4]?.textContent;
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/**
+ * Play test: at 390 px the page does not scroll sideways. The table of card
+ * 3.2 scrolls inside its card, and the yield names stay fixed at its left
+ * edge.
+ */
+export const YieldsDataOnPhone: Story = {
+	globals: { viewport: { value: "mobile1", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const table = await openYieldTable(canvasElement);
+		const line = within(table).getByRole("rowheader", {
+			name: "Earnings yield",
+		});
+		const scroller = line.closest("[data-slot=table-container]") as HTMLElement;
+		const left = line.getBoundingClientRect().left;
+		scroller.scrollLeft = scroller.scrollWidth;
+		await new Promise(requestAnimationFrame);
+
+		const expectedResult = {
+			pageScrolls: false,
+			tableScrolls: true,
+			fixed: left,
+		};
+
+		const result = {
+			pageScrolls: document.documentElement.scrollWidth > window.innerWidth,
+			tableScrolls: scroller.scrollLeft > 0,
+			fixed: line.getBoundingClientRect().left,
+		};
 
 		await expect(result).toEqual(expectedResult);
 	},
