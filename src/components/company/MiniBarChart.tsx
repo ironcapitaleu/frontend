@@ -4,6 +4,7 @@ import { useId } from "react";
 import type { Series } from "@/lib/company/types";
 import { cn } from "@/lib/utils";
 import { MISSING, MISSING_INK } from "../screener/format";
+import { SourceTrigger } from "./SourceCard";
 
 /** The chart draws at most this many years, the latest ones. */
 const MAX_YEARS = 10;
@@ -82,8 +83,8 @@ function miniBars(series: Series): MiniBars {
 
 /**
  * A small bar chart of one series, one bar per fiscal year, with the latest
- * figure above the bars. Overview's "Ten Years at a Glance" draws four of
- * them (DESIGN.md §8 "Overview").
+ * figure above the bars. The latest figure opens its source card. Overview's
+ * "Ten Years at a Glance" draws four of them (DESIGN.md §8 "Overview").
  *
  * It draws the years the series has, up to the last ten. A negative value
  * draws below the zero line. A missing or non-finite point leaves a gap with
@@ -103,6 +104,7 @@ function MiniBarChart({
 	const { bars, zero } = miniBars(series);
 	const latest = bars.at(-1);
 	const latestValue = latest?.value ?? null;
+	const latestClaim = series.points[series.periods.length - 1] ?? null;
 	const format = (value: number | null) =>
 		value === null ? MISSING : formatValue(value);
 
@@ -121,7 +123,13 @@ function MiniBarChart({
 						latestValue === null && MISSING_INK,
 					)}
 				>
-					{format(latestValue)}
+					{latestValue === null || latestClaim === null ? (
+						MISSING
+					) : (
+						<SourceTrigger claim={latestClaim}>
+							{format(latestValue)}
+						</SourceTrigger>
+					)}
 				</span>
 			</figcaption>
 			<div className="relative h-16 flex gap-0.5" aria-hidden="true">

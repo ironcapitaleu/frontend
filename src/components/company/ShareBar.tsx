@@ -1,8 +1,9 @@
 import type * as React from "react";
 
-import type { Figure } from "@/lib/company/types";
+import type { Claim, Figure } from "@/lib/company/types";
 import { cn } from "@/lib/utils";
 import { formatPercent, MISSING, MISSING_INK } from "../screener/format";
+import { SourceTrigger } from "./SourceCard";
 
 /** One part of a {@link ShareBar}: a label and its share as a `percent` claim. */
 interface SharePart {
@@ -90,7 +91,8 @@ function shareSegments(parts: readonly SharePart[]): ShareSegment[] {
  * company sections.
  *
  * The bar is hidden from assistive technology. The list of labels and
- * percentages is its text alternative. A missing share prints a dimmed `—`
+ * percentages is its text alternative. Each known percentage opens the
+ * source card of its claim. A missing share prints a dimmed `—`
  * and draws no segment, so it never reads as 0%. On a phone the list stacks
  * in one column.
  */
@@ -119,7 +121,7 @@ function ShareBar({ parts, className, ...props }: ShareBarProps) {
 				)}
 			</div>
 			<ul className="flex flex-col gap-1 text-sm md:flex-row md:flex-wrap md:gap-x-5">
-				{segments.map((segment) => (
+				{segments.map((segment, index) => (
 					<li key={segment.key} className="flex items-center gap-2">
 						<span
 							className={cn("size-2.5 rounded-xs", segment.fill)}
@@ -132,9 +134,13 @@ function ShareBar({ parts, className, ...props }: ShareBarProps) {
 								segment.share === null && MISSING_INK,
 							)}
 						>
-							{segment.share === null
-								? MISSING
-								: formatPercent(segment.share * 100)}
+							{segment.share === null ? (
+								MISSING
+							) : (
+								<SourceTrigger claim={parts[index]?.share as Claim}>
+									{formatPercent(segment.share * 100)}
+								</SourceTrigger>
+							)}
 						</span>
 					</li>
 				))}
