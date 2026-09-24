@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import { COMPANY_TABS, findTab, tabPath } from "./tabs";
-import { tabKeys } from "./types";
 
 describe("findTab", () => {
 	it("should return Overview when the URL has no tab segment", () => {
@@ -61,16 +60,6 @@ describe("COMPANY_TABS", () => {
 			segment: tab.segment,
 			key: findTab(tab.segment ?? undefined)?.key,
 		}));
-
-		expect(result).toEqual(expectedResult);
-	});
-});
-
-describe("COMPANY_TABS order", () => {
-	it("should list the tabs in the order of tabKeys when compared key by key", () => {
-		const expectedResult = [...tabKeys];
-
-		const result = COMPANY_TABS.map((tab) => tab.key);
 
 		expect(result).toEqual(expectedResult);
 	});

@@ -454,7 +454,9 @@ Every tab shares these regions, from top to bottom:
    full list.
 
 A test in `src/lib/company/tabs.test.ts` fails when the tab strip leaves the
-order of the URL table or of `tabKeys`. The card numbers are documentation only
+order of the URL table. The type check fails when `COMPANY_TABS` in
+`src/lib/company/tabs.ts` misses a `TabKey` or names one that does not exist.
+The card numbers are documentation only
 for now. Each tab ticket adds a story test that checks its card titles against
 this section.
 
