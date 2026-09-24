@@ -390,8 +390,14 @@ named fakes (`always{Behaviour}CompanyGateway`) stay test-only.
 `CompanyGatewayProvider` injects the adapter into `useCompany`.
 
 A `:symbol` that `Ticker.parse` rejects renders the missing state, the same
-state an unknown ticker reaches. For a valid `Ticker`, `useCompany` returns a
-loading, loaded, missing, or failed state.
+state an unknown ticker reaches. The `:tab` segment matches without regard to
+case. A segment in another spelling redirects, with `replace`, to the tab's own
+URL: `/companies/:symbol/Financials` goes to `/companies/:symbol/financials`,
+and `/companies/:symbol/overview` goes to `/companies/:symbol`. For a valid
+`Ticker`, any other unknown tab renders the no-such-tab state. Its copy does
+not blame the ticker, and it links to the company's Overview. For a valid
+`Ticker` and a known tab, `useCompany` returns a loading, loaded, missing, or
+failed state.
 
 ```mermaid
 flowchart TD

@@ -77,6 +77,14 @@ export const InvalidSymbol: Story = {
 	parameters: { path: "/companies/MR..DN" },
 };
 
+/**
+ * The ticker is valid but the address names no tab of the page. The state
+ * links to the company's Overview and does not blame the ticker.
+ */
+export const MissingTab: Story = {
+	parameters: { path: "/companies/MRDN/news" },
+};
+
 /** The masthead request did not complete. */
 export const Failed: Story = {
 	parameters: { companyGateway: failingGateway },

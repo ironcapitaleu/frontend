@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Link, useParams } from "react-router";
+import { Link, Navigate, useParams } from "react-router";
 
 import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
@@ -13,20 +13,29 @@ import { Ticker } from "../../lib/domain/ticker";
  * The company page at `/companies/:symbol` and `/companies/:symbol/:tab`.
  *
  * The page parses `:symbol` into a `Ticker` and `:tab` into one of the seven
- * tabs of DESIGN.md §8. When either part is not valid, it shows the missing
- * state, the same state as a ticker that the gateway does not know. Otherwise
- * it loads the masthead through `useCompany` and shows the loading, missing,
- * failed or loaded state.
+ * tabs of DESIGN.md §8. A symbol that is not a valid ticker shows the missing
+ * state, the same state as a ticker that the gateway does not know. A tab
+ * segment in another spelling, such as `Financials` or `overview`, redirects
+ * to the tab's own URL. Any other unknown tab shows the no-such-tab state.
+ * Otherwise the page loads the masthead through `useCompany` and shows the
+ * loading, missing, failed or loaded state.
  *
  * The loaded state is a placeholder that names the company and the tab. The
  * masthead and the tab strip replace it in a later ticket.
  */
 function CompanyPage() {
 	const { symbol = "", tab: segment } = useParams();
-	const tab = findTab(segment);
 
-	if (tab === null || !Ticker.isValid(symbol)) {
+	if (!Ticker.isValid(symbol)) {
 		return <MissingCompanyState />;
+	}
+	const tab = findTab(segment);
+	if (tab === null) {
+		return <MissingTabState symbol={symbol} />;
+	}
+	if ((segment ?? null) !== tab.segment) {
+		const tabPath = tab.segment === null ? "" : `/${tab.segment}`;
+		return <Navigate to={`/companies/${symbol}${tabPath}`} replace />;
 	}
 	return <CompanyContent ticker={Ticker.parse(symbol)} tab={tab} />;
 }
@@ -69,12 +78,27 @@ function MissingCompanyState() {
 	);
 }
 
+function MissingTabState({ symbol }: { symbol: string }) {
+	return (
+		<PageState
+			title="The company page has no such tab."
+			action={{ to: `/companies/${symbol}`, label: "Open the overview" }}
+		>
+			The address names a tab that the company page does not have.
+		</PageState>
+	);
+}
+
+const SCREENER_ACTION = { to: "/screener", label: "Open the screener" };
+
 /** A centered message for a state without company data, in the style of the not-found page. */
 function PageState({
 	title,
+	action = SCREENER_ACTION,
 	children,
 }: {
 	title: string;
+	action?: { to: string; label: string };
 	children: ReactNode;
 }) {
 	return (
@@ -90,9 +114,9 @@ function PageState({
 					size="lg"
 					variant="outline"
 					className="px-8 tracking-wide"
-					render={<Link to="/screener" />}
+					render={<Link to={action.to} />}
 				>
-					Open the screener
+					{action.label}
 				</Button>
 			</section>
 		</div>

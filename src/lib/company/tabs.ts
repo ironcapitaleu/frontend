@@ -29,11 +29,14 @@ export const COMPANY_TABS: readonly CompanyTab[] = [
 
 /**
  * Finds the tab for the `:tab` part of a company page URL. No segment means
- * Overview.
+ * Overview. The match ignores case, and the segment `overview` also names
+ * Overview. The page redirects such a segment to the tab's own URL, so
+ * compare the result's `segment` with the input to tell the two apart.
  *
  * @returns the tab, or `null` when no tab has this segment.
  */
 export function findTab(segment: string | undefined): CompanyTab | null {
-	const wanted = segment ?? null;
+	const lowered = segment?.toLowerCase() ?? null;
+	const wanted = lowered === "overview" ? null : lowered;
 	return COMPANY_TABS.find((tab) => tab.segment === wanted) ?? null;
 }
