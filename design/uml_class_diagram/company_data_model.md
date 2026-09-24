@@ -294,7 +294,10 @@ The value types:
   the quarterly column at one fiscal year end get two ids.
   A claim with no period drops the part, such as `overview.profile.website`.
   A figure in a list row puts the list name and the row position before the
-  field, such as `relationships.stakes.2.sharesHeld`. A list whose rows are
+  field, such as `relationships.stakes.2.sharesHeld`. A row of
+  `sectorBenchmarks` puts its `MetricKey` in place of the row position, such
+  as `overview.sectorBenchmarks.operatingMargin.median`, so the id stays the
+  same when the list changes order. A list whose rows are
   fiscal years, such as `ceoPay`, puts the period last instead, such as
   `management.ceoPay.salary.FY2026`. A claim from a named function of §5,
   derived or reported, uses the function name as its key, then the row part
@@ -772,6 +775,22 @@ once each time a section loads, and hands the result to the tab.
 `evaluateMetric`, `evaluateChecks`, `claimsOf` and `figureGroupsOf` take
 `CompletedSections` and never the sections of the port. STA-224 brands the
 type, so the compiler rejects a call with the sections of the port.
+
+**The types in code.** STA-224 writes the types of §3 and §4 in
+`src/lib/company/types.ts`, for the masthead, the Overview tab and the
+Financials tab only. The later milestones add the types of the other five tabs.
+The code differs from the diagrams in four details:
+
+- Every field is `readonly`, and every list is a `readonly` array
+  (`AGENTS.md` "TypeScript-Specific Guidelines").
+- `DerivedSource.inputs` is the tuple `readonly [Claim, ...Claim[]]`, so the
+  compiler enforces the `1..*` of the diagram.
+- `CompanySections` names the sections that `completeSections` takes. It has
+  one field for each section that the port returns, and `null` marks a section
+  that has not loaded.
+- `MetricKey` sits in `types.ts`, because `SectorBenchmark` reads it. It lists
+  the four metrics of the Overview benchmarks. The tickets that add metrics add
+  their keys.
 
 **What the port returns and what `metrics.ts` derives.** The port returns
 every reported figure. It also returns the derived figures whose inputs are in
@@ -1528,8 +1547,9 @@ though the FY2026 year-end price exists.
 
 STA-226 builds this fixture next to the one at 20 Mar 2026. Its
 `FilingsSection.filings` lists the 10-Q for Q3 FY2026 and no 10-K for FY2026.
-A test in STA-224 gives a fake port this list and fails when the port returns
-a FY2026 column, or a cash flow window that ends before Q3 FY2026.
+A test in the ticket that adds `getFilings` gives a fake port this list and
+fails when the port returns a FY2026 column, or a cash flow window that ends
+before Q3 FY2026. STA-224 has no `FilingsSection`, so it cannot write the test.
 
 ### P/B: one date in two tables
 
@@ -1687,12 +1707,13 @@ takes unless it finds a reason not to.
   Default: `subsidiaryCount` gives a reported claim, with a `ReportedSource`
   for the Exhibit 21 list, the line `Exhibit 21 › Subsidiaries of the
   registrant` and no XBRL tag. A count of 0 still names the exhibit.
-- STA-224: **Which ticket owns `CompletedSections`?** `useCompany` (STA-224)
+- STA-224: **Which ticket owns `CompletedSections`?** `useCompany` (STA-225)
   calls `completeSections`, and `metrics.ts` (STA-226) completes the
-  quarters. Default: STA-224 declares the branded type and ships
-  `completeSections` in `metrics.ts` as a function that brands the sections
-  and completes nothing. Until STA-226 adds `completeQuarters`, a derived
-  quarter reads `null`, and a metric that needs one gives `missingInput`.
+  quarters. Settled by the default: STA-224 declares the branded type and
+  ships `completeSections` in `metrics.ts` as a function that brands the
+  sections and completes nothing. Until STA-226 adds `completeQuarters`, a
+  derived quarter reads `null`, and a metric that needs one gives
+  `missingInput`.
 
 ## 9. Enforcement levels
 
@@ -1709,8 +1730,11 @@ once STA-224 writes the types:
   document. `Claim.value` and a `MarketDataset` sit inside a claim, so the
   walk never reaches them. The only other exceptions are the row keys that
   the §4 label rule names. §7 walks one type through.
+  The test lives in `src/lib/company/types.test.ts`. The walk also skips
+  methods, so it passes over the methods of `Ticker`.
 - "No section stores a source set": the same type test fails when a section
-  type has a field of type `SourceSet` or `FigureGroupRef[]`.
+  type has a field of type `SourceSet` or `FigureGroupRef[]`. STA-226 adds
+  this part, because it declares the two types.
 - "A block with sector figures gives one group of each": a unit test in
   STA-226 checks that each such block of `figureGroupsOf` gives one group
   with `figures: "company"` and one with `figures: "sector"`, with the same
