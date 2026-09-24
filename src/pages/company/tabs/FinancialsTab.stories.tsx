@@ -222,6 +222,53 @@ export const MissingFigure: Story = {
 };
 
 /**
+ * Play test: with no annual table, the chart card says so in one line
+ * instead of drawing an empty plot (DESIGN.md §8).
+ */
+export const EmptyChart: Story = {
+	globals: desktop,
+	parameters: { companyGateway: missingFourthQuartersGateway },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+
+		const expectedResult = "No fiscal years to chart.";
+
+		const result = await canvas.findByText(expectedResult);
+
+		await expect(result).toBeVisible();
+	},
+};
+
+/**
+ * Play test: every bar of the cash flow chart can be tapped. A small bar
+ * keeps its drawn height, but its trigger is at least 24 px tall.
+ */
+export const BarTargets: Story = {
+	globals: phone,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const body = within(canvasElement.ownerDocument.body);
+		await userEvent.click(
+			await canvas.findByRole("combobox", { name: "Statement" }),
+		);
+		await userEvent.click(
+			await body.findByRole("option", { name: "Cash flow" }),
+		);
+		const bars = within(
+			await canvas.findByRole("list", { name: "Fiscal years" }),
+		).getAllByRole("button");
+
+		const expectedResult: HTMLElement[] = [];
+
+		const result = bars.filter(
+			(bar) => bar.getBoundingClientRect().height < 24,
+		);
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
  * Play test: a click on a bar pins its sources, and the "Data" button swaps
  * the chart for a table of the same figures.
  */

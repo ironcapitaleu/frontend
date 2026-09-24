@@ -3,24 +3,23 @@ import { useMemo } from "react";
 
 import { buttonVariants } from "@/components/ui/button/variants";
 import { formatDate } from "@/lib/company/dates";
-import { sourcesOf } from "@/lib/company/sources";
-import type { Claim, Filing } from "@/lib/company/types";
+import { filingsOf } from "@/lib/company/sources";
+import type { Claim } from "@/lib/company/types";
 import { cn } from "@/lib/utils";
 
 /**
  * The "Sources" chip of a chart card (DESIGN.md §8). A click opens the
  * filings behind all of `claims`, newest first, each with its filing date and
  * a link. Like the sources index, it lists no market data. It sits in the
- * card header, next to the "Data" button.
+ * card header, next to the "Data" button. When no filing is left, it renders
+ * nothing, as the sources index does, since a chip that opens onto nothing
+ * only adds a control.
  */
 function SourcesChip({ claims }: { claims: readonly Claim[] }) {
-	const filings = useMemo(
-		() =>
-			sourcesOf(claims)
-				.groups.map(({ document }) => document)
-				.filter((document): document is Filing => document.kind === "filing"),
-		[claims],
-	);
+	const filings = useMemo(() => filingsOf(claims), [claims]);
+	if (filings.length === 0) {
+		return null;
+	}
 	return (
 		<Popover.Root>
 			<Popover.Trigger

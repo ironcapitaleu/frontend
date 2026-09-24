@@ -536,11 +536,11 @@ on the left. The unit and the "Download CSV" button sit on the right.
 Financials has these cards, from top to bottom:
 
 1. **Chart.** One bar chart per statement, with one group of bars per fiscal
-   year. For the income statement, it draws revenue, net income and free cash
-   flow. For the balance sheet, it draws total assets, total liabilities and
-   equity. For cash flow, it draws operating cash flow, capital expenditure
-   and share repurchases. The chart draws the fiscal years whatever the
-   annual and quarterly switch says.
+   year. For the income statement, it draws revenue and net income, and free
+   cash flow joins them later. For the balance sheet, it draws total assets,
+   total liabilities and equity. For cash flow, it draws operating cash flow,
+   capital expenditure and share repurchases. The chart draws the fiscal
+   years whatever the annual and quarterly switch says.
 2. **Statement table.** The 10-year table of the selected statement, one
    column per fiscal year, and a last column for growth per year over ten
    years (CAGR). Margins sit as muted rows under the line they divide.

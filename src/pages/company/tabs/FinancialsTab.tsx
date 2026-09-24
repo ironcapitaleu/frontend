@@ -83,10 +83,11 @@ const UNITS: readonly { key: Scale; label: string }[] = [
  * The Financials tab of the company page (DESIGN.md §8 "Financials"). A row of
  * controls picks the statement, the annual or quarterly view and the unit.
  * The chart card draws the statement's fiscal years, and its "Data" button
- * swaps the chart for a table. The statement table card below shows the chosen
- * table. Every cell and every bar opens the sources of its figure. On a phone, the statement and period switches are
- * select menus and the table shows the newest period first. The tab loads the
- * Financials section through `useCompany`. It shows the page's spinner while
+ * swaps the chart for a table. The statement table card below shows the
+ * chosen table. Every cell and every bar opens the sources of its figure. On
+ * a phone, the statement and period switches are select menus and the table
+ * shows the newest period first. The tab loads the Financials section through
+ * `useCompany`. It shows the page's spinner while
  * it loads and, when the load fails, the page's failed copy in the panel.
  */
 export function FinancialsTab({ ticker }: { ticker: Ticker }) {

@@ -123,6 +123,13 @@ export function chartTable(
 	};
 }
 
+/**
+ * The least height of a known non-zero bar, in percent of the plot. It keeps
+ * a small value visible, so it never reads as a missing year. `MiniBarChart`
+ * holds the same floor for the same reason.
+ */
+export const MIN_BAR_HEIGHT = 2;
+
 /** Where a bar sits, in percent of the plot height from the top. */
 export interface BarBox {
 	readonly top: number;
@@ -133,7 +140,9 @@ export interface BarBox {
  * Returns the zero line of the chart of `table`, in percent of the plot
  * height from the top, and a function that places a bar. One scale spans the
  * lowest and the highest value of every line and always holds zero, so a
- * negative value draws below the zero line. A text value is not on the scale.
+ * negative value draws below the zero line. A known non-zero bar is at least
+ * {@link MIN_BAR_HEIGHT} tall, within the room on its side of the zero line.
+ * A text value is not on the scale.
  */
 export function barScale(table: StatementTable): {
 	zero: number;
@@ -152,7 +161,14 @@ export function barScale(table: StatementTable): {
 	return {
 		zero,
 		place: (value) => {
-			const height = span === 0 ? 0 : (Math.abs(value) / span) * 100;
+			const room = value > 0 ? zero : 100 - zero;
+			const height =
+				span === 0 || value === 0
+					? 0
+					: Math.min(
+							Math.max((Math.abs(value) / span) * 100, MIN_BAR_HEIGHT),
+							room,
+						);
 			return { top: value > 0 ? zero - height : zero, height };
 		},
 	};
