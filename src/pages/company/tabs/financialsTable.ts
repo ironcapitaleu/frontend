@@ -1,8 +1,10 @@
+import { toFixedWithMinus } from "@/components/screener/format";
 import type {
 	Claim,
 	FinancialsSection,
 	Period,
 	StatementTable,
+	Unit,
 } from "@/lib/company/types";
 
 /** One of the three statements of the statement switch. */
@@ -27,6 +29,11 @@ export const SCALES: Record<Scale, number> = {
 	millions: 1e6,
 };
 
+/** Writes a statement name in title case, such as `Income Statement`. */
+export function toTitle(label: string): string {
+	return label.replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 /** Returns the column header of `period`, such as `FY2026` or `Q2 FY2027`. */
 export function periodLabel(period: Period): string {
 	const year = `FY${period.fiscalYear}`;
@@ -37,7 +44,9 @@ export function periodLabel(period: Period): string {
 
 /**
  * Returns the muted caption of the table: the periods, the unit and the
- * filings, such as `FY2017–FY2026 · USD billions · 10-K`.
+ * filings, such as `FY2017–FY2026 · USD billions · 10-K`. When a line reads
+ * in another unit, such as shares, the unit reads `USD billions unless noted`
+ * and that line carries its own note (see {@link lineUnitNote}).
  */
 export function tableCaption(
 	table: StatementTable,
@@ -49,33 +58,50 @@ export function tableCaption(
 	const periods =
 		first && last ? `${periodLabel(first)}–${periodLabel(last)}` : "No periods";
 	const filings = view === "annual" ? "10-K" : "10-Q and 10-K";
-	return `${periods} · USD ${scale} · ${filings}`;
+	const noted = table.lines.some(({ unit }) => lineUnitNote(unit, scale));
+	const unit = noted ? `USD ${scale} unless noted` : `USD ${scale}`;
+	return `${periods} · ${unit} · ${filings}`;
+}
+
+/**
+ * Returns the unit note of a line whose figures do not read in the caption's
+ * USD unit, such as `billions of shares` or `USD per share`, or `null` when
+ * the caption's unit fits the line.
+ */
+export function lineUnitNote(unit: Unit, scale: Scale): string | null {
+	if (unit === "shares") return `${scale} of shares`;
+	if (unit === "usdPerShare") return "USD per share";
+	return null;
+}
+
+/**
+ * Returns `table` with its periods in the reverse order, and the points of
+ * each line with them, so the columns stay aligned. The phone shows the
+ * newest year first (DESIGN.md §8 "Financials").
+ */
+export function newestFirst(table: StatementTable): StatementTable {
+	return {
+		periods: [...table.periods].reverse(),
+		lines: table.lines.map((line) => ({
+			...line,
+			periods: [...line.periods].reverse(),
+			points: [...line.points].reverse(),
+		})),
+	};
 }
 
 /**
  * Writes the value of `claim` as a statement cell. A dollar or share figure
- * reads in `scale` with one decimal. A per-share figure keeps its cents. A
- * text value stays as it is.
+ * reads in `scale` with one decimal and a comma between thousands. A per-share
+ * figure keeps its cents. A percent, stored as a fraction, reads with one
+ * decimal and a `%`. A text value stays as it is.
  */
 export function formatStatementValue(claim: Claim, scale: Scale): string {
 	const { value, unit } = claim;
 	if (typeof value === "string") return value;
-	return unit === "usd" || unit === "shares"
-		? grouped(value / SCALES[scale], 1)
-		: grouped(value, 2);
-}
-
-/**
- * Writes `value` with `decimals` places, a comma between thousands and a true
- * minus (U+2212) for a loss, as the screener writes a loss.
- */
-function grouped(value: number, decimals: number): string {
-	// `|| 0` turns a rounded -0 into 0, so a value that rounds to zero has no sign.
-	const rounded = Number(value.toFixed(decimals)) || 0;
-	return rounded
-		.toLocaleString("en-US", {
-			minimumFractionDigits: decimals,
-			maximumFractionDigits: decimals,
-		})
-		.replace("-", "−");
+	if (unit === "usd" || unit === "shares") {
+		return toFixedWithMinus(value / SCALES[scale], 1, true);
+	}
+	if (unit === "percent") return `${toFixedWithMinus(value * 100, 1, true)}%`;
+	return toFixedWithMinus(value, 2, true);
 }
