@@ -106,6 +106,34 @@ export const ReportedZero: Story = {
 	},
 };
 
+/**
+ * Play test: when every other year is a loss, the zero line is the top edge of
+ * the plot, and a reported zero's mark still draws inside the plot.
+ */
+export const ReportedZeroAmongLosses: Story = {
+	args: {
+		series: withValues({
+			...Object.fromEntries(revenue.points.map((_, index) => [index, -5e9])),
+			4: 0,
+		}),
+	},
+	play: async ({ canvasElement }) => {
+		const item = within(canvasElement).getAllByRole("listitem")[4];
+		const bar = item?.querySelector('[data-slot="mini-bar-chart-bar"]');
+
+		const expectedResult = { insidePlot: true, height: 2 };
+
+		const result = {
+			insidePlot:
+				(bar?.getBoundingClientRect().top ?? -1) >=
+				(item?.getBoundingClientRect().top ?? 0) - 0.5,
+			height: Math.round(bar?.getBoundingClientRect().height ?? 0),
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
 /** A value that is not a finite number draws as a missing year, never as a bar. */
 export const NotFinite: Story = {
 	args: { series: withValues({ 6: Number.NaN }) },

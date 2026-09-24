@@ -84,16 +84,13 @@ function barBoxes(values: readonly (number | null)[]): {
 /**
  * Returns the `top` and `height` style of a known value's bar at `box`. A
  * reported zero has no height, so it draws as a 2 px mark on the zero line
- * and never reads as a missing year. The mark sits above the line, or below
- * it when the line is the top edge of the plot, so it stays inside the plot.
+ * and never reads as a missing year. The mark sits above the line, but never
+ * above the top edge of the plot, so it stays inside the plot.
  */
 function barStyle({ top, height }: BarBox): React.CSSProperties {
-	if (height !== 0) {
-		return { top: `${top}%`, height: `${height}%` };
-	}
-	return top === 0
-		? { top: "0%", height: "2px" }
-		: { top: `calc(${top}% - 2px)`, height: "2px" };
+	return height === 0
+		? { top: `max(0px, calc(${top}% - 2px))`, height: "2px" }
+		: { top: `${top}%`, height: `${height}%` };
 }
 
 /**

@@ -133,17 +133,20 @@ describe("miniBars", () => {
 
 describe("barStyle", () => {
 	it("should draw a 2 px mark above the zero line when the bar has no height", () => {
-		const expectedResult = { top: "calc(75% - 2px)", height: "2px" };
+		const expectedResult = { top: "max(0px, calc(75% - 2px))", height: "2px" };
 
 		const result = barStyle({ top: 75, height: 0 });
 
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should draw the 2 px mark below the zero line when the zero line is the top edge of the plot", () => {
-		const expectedResult = { top: "0%", height: "2px" };
+	it("should keep the 2 px mark inside the plot when the zero line is near its top edge", () => {
+		const expectedResult = {
+			top: "max(0px, calc(0.01% - 2px))",
+			height: "2px",
+		};
 
-		const result = barStyle({ top: 0, height: 0 });
+		const result = barStyle({ top: 0.01, height: 0 });
 
 		expect(result).toEqual(expectedResult);
 	});
