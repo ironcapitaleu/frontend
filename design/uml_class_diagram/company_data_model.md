@@ -307,7 +307,7 @@ The value types:
   or the period, then a part name if the function gives several parts.
   Examples are
   `metric.stakePercent.stakes.2`, `metric.netInsiderShares.FY2026`,
-  `metric.ownershipShares.public` and `metric.priceChangeOneMonth`.
+  `metric.ownershipShares.overview.public` and `metric.priceChangeOneMonth`.
 - `IsoDate` is a calendar date as a string, such as `2026-07-26`. STA-224
   brands the type, so a type test can tell it apart from a plain `string`.
 - `FilingForm` is one of `10-K`, `10-Q`, `8-K`, `DEF 14A`, `Form 4` or
@@ -670,7 +670,7 @@ tab ticket adds its own keys, such as `peRange` and `ceoPay`.
 | Overview   | `business`, `tenYears`, `keyFigures`, `financialPosition`, `checksByArea`, `ownership`, `profile`, and the print-only `printedShareholderReturns` |
 | Financials | `incomeChart`, `incomeTable`, `balanceChart`, `balanceTable`, `cashFlowChart`, `cashFlowTable` |
 | Valuation  | `valuationRatios`, so far |
-| Relationships | `largestFunds`, so far |
+| Relationships | `largestFunds`, `insiders`, `ownershipSplit`, so far |
 
 A chart reads the annual table of its statement. A table reads the annual
 table and the completed quarterly table, because the annual and quarterly

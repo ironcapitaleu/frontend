@@ -15,6 +15,7 @@ import {
 	type MetricResult,
 	type Metric,
 	metrics,
+	otherRevenueShare,
 	ownershipShares,
 	priceChangeOneMonth,
 	resolve,
@@ -1157,6 +1158,14 @@ describe("per-row derived figures", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should give no Other share when the list has no row where the fold starts", () => {
+		const expectedResult = null;
+
+		const result = otherRevenueShare(overview, "segments", 2);
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should read the regions list when it gives a region share", () => {
 		const section = overview;
 
@@ -1208,6 +1217,22 @@ describe("per-row derived figures", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should give Overview and Relationships different claim ids when both give the ownership shares", () => {
+		const section = overview;
+
+		const expectedResult = [
+			"metric.ownershipShares.overview.institutions",
+			"metric.ownershipShares.relationships.institutions",
+		];
+
+		const result = [
+			ownershipShares(section, "overview").institutions?.id,
+			ownershipShares(section, "relationships").institutions?.id,
+		];
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should divide each holding by the shares outstanding when it gives the ownership shares", () => {
 		const section = overview;
 
@@ -1236,6 +1261,24 @@ describe("per-row derived figures", () => {
 			"overview.ownership.institutionShares",
 			"overview.ownership.insiderShares",
 			"overview.ownership.sharesOutstanding",
+		];
+
+		const { source } = ownershipShares(section).public ?? {};
+		const result =
+			source?.kind === "derived"
+				? source.inputs.map((claim) => claim.id)
+				: null;
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should name the Relationships share counts as inputs when it gives the public share of the Relationships section", () => {
+		const section = fakeCompanyReport.relationships;
+
+		const expectedResult = [
+			"relationships.ownership.institutionShares",
+			"relationships.ownership.insiderShares",
+			"relationships.ownership.sharesOutstanding",
 		];
 
 		const { source } = ownershipShares(section).public ?? {};
