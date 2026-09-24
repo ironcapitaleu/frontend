@@ -139,6 +139,7 @@ const blockKeys = [
 	"balanceTable",
 	"cashFlowChart",
 	"cashFlowTable",
+	"largestFunds",
 ] as const satisfies readonly BlockKey[];
 
 /**
@@ -291,6 +292,19 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 			financials && [
 				...pointsOf(financials.cashFlow.annual),
 				...pointsOf(financials.cashFlow.quarterly),
+			],
+	},
+	// The block reads the reported inputs of `fundShare` and `fundChange`.
+	largestFunds: {
+		tab: "relationships",
+		label: "Owned By: Largest Funds",
+		company: ({ relationships }) =>
+			relationships && [
+				relationships.ownership.sharesOutstanding,
+				...relationships.funds.flatMap((row) => [
+					row.shares,
+					row.sharesQuarterEarlier,
+				]),
 			],
 	},
 };

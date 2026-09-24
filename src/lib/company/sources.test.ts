@@ -260,6 +260,22 @@ describe("figureGroupsOf", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should read the shares outstanding and each fund's two 13F counts when the Largest Funds group is built", () => {
+		const expectedResult = [
+			"relationships.ownership.sharesOutstanding",
+			"relationships.funds.0.shares",
+			"relationships.funds.0.sharesQuarterEarlier",
+			"relationships.funds.1.shares",
+			"relationships.funds.1.sharesQuarterEarlier",
+		];
+
+		const result = claimsOf("largestFunds", "company", sections).map(
+			({ id }) => id,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should drop the blocks that read the financials when Overview loads without them", () => {
 		const partial = completeSections({
 			...fakeCompanyReport,
