@@ -352,21 +352,22 @@ that reads it, so no claim can reach itself.
 **How a chart or table collects its sources.** STA-226 writes these pure
 functions in `src/lib/company/sources.ts`:
 
-- `claimsOf(block: BlockKey, figures: "company" | "sector"): Claim[]`
-  returns the claims that a chart, table or check draws, of one kind. With
-  `"sector"`, it returns the claims that the block reads from a
-  `SectorBenchmark` field. With `"company"`, it returns every other claim of
-  the block. So the two kinds never share a claim, and together they hold
-  every claim that the block draws.
+- `claimsOf(block: BlockKey, figures: "company" | "sector", sections:
+  CompletedSections): Claim[]` returns the claims that a chart, table or check
+  draws, of one kind. With `"sector"`, it returns the claims that the block
+  reads from a `SectorBenchmark` field. With `"company"`, it returns every
+  other claim of the block. So the two kinds never share a claim, and together
+  they hold every claim that the block draws.
 - `figureGroupsOf(tab, sections): FigureGroup[]` returns the groups of the
   charts, tables and checks of the tab. A block with no sector figures gives
   one group, with `figures: "company"`. A block that draws `SectorBenchmark`
   figures next to the company's figures gives two groups, one of each kind.
   The two share `block` and `label` and differ by `figures`. No block in
   `DESIGN.md` §8 draws sector figures alone. A `FigureGroup` pairs a
-  `FigureGroupRef` (§4) with `claimsOf(ref.block, ref.figures)`. The tab
-  draws its blocks from the same groups, so the list and the page cannot
-  disagree. A block whose sections have not loaded gives no group.
+  `FigureGroupRef` (§4) with `claimsOf(ref.block, ref.figures, sections)`. The
+  tab draws its blocks from the same groups, on screen or in print, so the
+  list and the page cannot disagree. A block whose sections have not loaded
+  gives no group.
 - `isSectorBenchmark(ref: FigureGroupRef): boolean` reads `ref.figures`. It
   is true for a group of sector figures only, so no label decides it and a
   card title is free to change.
@@ -400,9 +401,13 @@ over the same groups. A peer's filing is not a filing behind this company's
 figures, so the index names none. A sector quartile still shows its peers on
 its own source card (§8). No section stores a source
 set or a list of what a filing feeds, so neither can disagree with the claims.
-The sources footer of the print summary is `sourcesOf` over the claims of
-the printed page's groups that `isSectorBenchmark` rejects, as the per-tab
-index is. The printed page names this company's filings alone.
+The printed page draws the blocks of the Overview tab and one block that the
+screen hides, the Shareholder returns block of printed region 5
+(`DESIGN.md` §8). That block has a `BlockKey` under the `overview` tab, so
+`figureGroupsOf("overview", sections)` gives it a group like any other. The
+sources footer is `sourcesOf` over the claims of those groups that
+`isSectorBenchmark` rejects, as the per-tab index is. The printed page names
+this company's filings alone.
 
 **The masthead gives no figure group.** `figureGroupsOf` takes a `TabKey`,
 and `masthead` is not one. The masthead has no chart, no table and no check,
@@ -1576,22 +1581,23 @@ masthead and four tabs have loaded. `getRelationships` is still loading, and
 others, to `feedsOf`:
 
 ```ts
+// `sections` is the CompletedSections of this example.
 const groups: FigureGroup[] = [
 	{
 		ref: { tab: "overview", block: "checksByArea", label: "Checks by Area", figures: "company" },
 		// check.V1 → metric.priceToEarnings → financials.dilutedEps.FY2026 (10-K)
 		//                                    → the price (NASDAQ close)
-		claims: claimsOf(checksByArea, "company"),
+		claims: claimsOf("checksByArea", "company", sections),
 	},
 	{
 		ref: { tab: "financials", block: "incomeTable", label: "Income statement, ten years", figures: "company" },
 		// financials.revenue.FY2017 … financials.revenue.FY2026, one 10-K each
-		claims: claimsOf(incomeTable, "company"),
+		claims: claimsOf("incomeTable", "company", sections),
 	},
 	{
 		ref: { tab: "management", block: "ceoPay", label: "CEO Pay by Year", figures: "company" },
 		// management.ceoPay.salary.FY2026 → DEF 14A filed 24 Apr 2026
-		claims: claimsOf(ceoPay, "company"),
+		claims: claimsOf("ceoPay", "company", sections),
 	},
 ]
 
