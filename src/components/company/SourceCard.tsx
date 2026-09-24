@@ -250,6 +250,7 @@ function subscribeToPhone(onChange: () => void): () => void {
 }
 
 export {
+	formatDate,
 	SourceCard,
 	type SourceCardProps,
 	SourceTrigger,
