@@ -2,20 +2,16 @@ import * as React from "react";
 import { Link } from "react-router";
 
 import { CompanyCard, CompanyCardGrid } from "@/components/company/CompanyCard";
-import { SourceTrigger } from "@/components/company/SourceCard";
 import { ShareBar } from "@/components/company/ShareBar";
 import { SourcesIndex } from "@/components/company/SourcesIndex";
 import {
 	formatPercent,
 	formatSignedPercent,
-	MISSING,
-	MISSING_INK,
 } from "@/components/screener/format";
 import { Spinner } from "@/components/ui/spinner";
 import {
 	Table,
 	TableBody,
-	TableCell,
 	TableHead,
 	TableHeader,
 	TableRow,
@@ -37,7 +33,8 @@ import type {
 	RelationshipsSection,
 } from "../../../lib/company/types";
 import type { Ticker } from "../../../lib/domain/ticker";
-import { FigureCell } from "./FigureCell";
+import { ClaimCell, FigureCell } from "./FigureCell";
+import { InsiderTable } from "./InsiderTable";
 import { formatShares } from "./relationships";
 
 /**
@@ -182,31 +179,7 @@ function InsidersCard({
 			title="Owned By: Insiders"
 			caption="Shares held by each officer and director, from their latest Form 4"
 		>
-			{relationships.insiders.length === 0 ? (
-				<p className="text-muted-foreground">No insider reports a holding.</p>
-			) : (
-				<Table>
-					<TableHeader>
-						<TableRow>
-							<TableHead className="sticky left-0 bg-card">Insider</TableHead>
-							<TableHead>Role</TableHead>
-							<TableHead className="text-right">Shares</TableHead>
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{relationships.insiders.map((row, position) => (
-							// biome-ignore lint/suspicious/noArrayIndexKey: the section fixes the order of the rows, and two insiders can share a name and role
-							<TableRow key={position}>
-								<TableHead scope="row" className="sticky left-0 bg-card">
-									{row.name}
-								</TableHead>
-								<TableCell>{row.role}</TableCell>
-								<FigureCell figure={row.shares} format={formatShares} />
-							</TableRow>
-						))}
-					</TableBody>
-				</Table>
-			)}
+			<InsiderTable insiders={relationships.insiders} />
 		</CompanyCard>
 	);
 }
@@ -269,15 +242,7 @@ function SubsidiariesCard({
 								<TableHead scope="row" className="sticky left-0 bg-card">
 									{row.name}
 								</TableHead>
-								<TableCell>
-									{row.jurisdiction !== null ? (
-										<SourceTrigger claim={row.jurisdiction}>
-											{row.jurisdiction.value}
-										</SourceTrigger>
-									) : (
-										<span className={MISSING_INK}>{MISSING}</span>
-									)}
-								</TableCell>
+								<ClaimCell claim={row.jurisdiction} />
 							</TableRow>
 						))}
 					</TableBody>
