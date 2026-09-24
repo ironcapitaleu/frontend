@@ -6,7 +6,12 @@ import {
 	AccordionItem,
 	AccordionTrigger,
 } from "@/components/ui/accordion";
-import { feedsOf, isSectorBenchmark, sourcesOf } from "@/lib/company/sources";
+import {
+	feedsOf,
+	isPrintedOnly,
+	isSectorBenchmark,
+	sourcesOf,
+} from "@/lib/company/sources";
 import type { Filing, FigureGroup } from "@/lib/company/types";
 import { formatDate } from "./SourceCard";
 
@@ -21,11 +26,14 @@ interface SourcesIndexProps {
  * (DESIGN.md §8 "Shared Layout", region 4). It lists the filings behind the
  * tab's figures, newest first, each with its filing date, the figures it
  * feeds and a link to the filing. It skips the sector benchmark groups, so it
- * names no peer filing, and it lists no market data.
+ * names no peer filing, and the groups only the printed page draws, so it
+ * names no filing that no figure on the screen uses. It lists no market data.
  */
 function SourcesIndex({ groups }: SourcesIndexProps) {
 	const { filings, feeds } = React.useMemo(() => {
-		const own = groups.filter(({ ref }) => !isSectorBenchmark(ref));
+		const own = groups.filter(
+			({ ref }) => !isSectorBenchmark(ref) && !isPrintedOnly(ref),
+		);
 		const documents = sourcesOf(own.flatMap(({ claims }) => claims)).groups.map(
 			({ document }) => document,
 		);
