@@ -294,8 +294,9 @@ Rules for the screener:
 
 > **Target state.** This section records the decided rules for the company
 > page (Linear epic P-STA-10 "Company Page"). The routes, the page states,
-> the masthead and the tab strip are built. Each tab shows an empty panel
-> until its tab ticket fills it. Audit the live page against this section
+> the masthead and the tab strip are built, except the masthead's Export
+> button, which lands with the Export milestone. Each tab shows an empty
+> panel until its tab ticket fills it. Audit the live page against this section
 > once the epic's Page Shell milestone lands. The layout below records
 > Version 5 of the
 > [company page design canvas](https://claude.ai/artifact/CwP59tuPZtXasw8dg7vpco),
