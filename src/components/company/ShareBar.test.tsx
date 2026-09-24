@@ -54,11 +54,55 @@ describe("shareSegments", () => {
 		expect(result).toBeCloseTo(expectedResult);
 	});
 
-	it("should draw no segment when a share is not finite", () => {
+	it("should draw no segment when a share is NaN", () => {
 		const expectedResult = { share: null, width: null };
 
 		const [segment] = shareSegments(partsOf(Number.NaN));
 		const result = { share: segment?.share, width: segment?.width };
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should draw no segment when a share is Infinity", () => {
+		const expectedResult = { share: null, width: null };
+
+		const [segment] = shareSegments(partsOf(Number.POSITIVE_INFINITY));
+		const result = { share: segment?.share, width: segment?.width };
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should fill the bar exactly when a negative share would pull the total below 100%", () => {
+		const expectedResult = 100;
+
+		const result = shareSegments(partsOf(0.7, 0.4, -0.2)).reduce(
+			(sum, segment) => sum + (segment.width ?? 0),
+			0,
+		);
+
+		expect(result).toBeCloseTo(expectedResult);
+	});
+
+	it("should treat the share as missing when its claim is not in the percent unit", () => {
+		const expectedResult = { share: null, width: null };
+
+		const [segment] = shareSegments([
+			{
+				label: "Revenue",
+				share: { ...institutions, unit: "usd", value: 8.1e12 },
+			},
+		]);
+		const result = { share: segment?.share, width: segment?.width };
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should reuse chart-5 for every part past the fifth when there are more than five parts", () => {
+		const expectedResult = ["bg-chart-5", "bg-chart-5"];
+
+		const result = shareSegments(partsOf(0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1))
+			.slice(5)
+			.map((segment) => segment.fill);
 
 		expect(result).toEqual(expectedResult);
 	});
@@ -70,6 +114,51 @@ describe("ShareBar", () => {
 
 		const expectedResult = ["Part 162.5%", "Part 2—"];
 
+		const result = screen
+			.getAllByRole("listitem")
+			.map((item) => item.textContent);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should print the true share and draw no segment when a share is negative", () => {
+		const { container } = render(
+			<ShareBar aria-label="Revenue by segment" parts={partsOf(0.5, -0.03)} />,
+		);
+
+		const expectedResult = {
+			labels: ["Part 150.0%", "Part 2−3.0%"],
+			segments: 1,
+		};
+
+		// Deviation from TESTING.md §2.2: the bar is hidden from assistive
+		// technology, so no accessible query reaches its segments.
+		const result = {
+			labels: screen.getAllByRole("listitem").map((item) => item.textContent),
+			segments: container.querySelectorAll('[data-slot="share-bar-segment"]')
+				.length,
+		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should print each part with its own share when two parts share a label and a part is added before them", () => {
+		const others: SharePart[] = partsOf(0.1, 0.2).map((part) => ({
+			...part,
+			label: "Other",
+		}));
+		const { rerender } = render(
+			<ShareBar aria-label="Revenue by segment" parts={others} />,
+		);
+
+		const expectedResult = ["Part 15.0%", "Other10.0%", "Other20.0%"];
+
+		rerender(
+			<ShareBar
+				aria-label="Revenue by segment"
+				parts={[...partsOf(0.05), ...others]}
+			/>,
+		);
 		const result = screen
 			.getAllByRole("listitem")
 			.map((item) => item.textContent);

@@ -2,12 +2,15 @@ import type * as React from "react";
 
 import type { Figure } from "@/lib/company/types";
 import { cn } from "@/lib/utils";
-import { formatPercent, MISSING } from "../screener/format";
+import { formatPercent, MISSING, MISSING_INK } from "../screener/format";
 
 /** One part of a {@link ShareBar}: a label and its share as a `percent` claim. */
 interface SharePart {
 	readonly label: string;
-	/** A fraction, so `0.15` is 15%. `null` for a missing share. */
+	/**
+	 * A fraction, so `0.15` is 15%. `null` for a missing share. A claim in any
+	 * unit other than `percent` counts as missing.
+	 */
 	readonly share: Figure;
 }
 
@@ -16,7 +19,11 @@ interface ShareBarProps
 	extends Omit<React.ComponentProps<"figure">, "aria-label"> {
 	/** Names the whole, such as "Revenue by segment". */
 	"aria-label": string;
-	/** At most five parts. A sixth part and later reuse `chart-5`. */
+	/**
+	 * At most five parts. The caller folds any parts past the fifth into one
+	 * "Other" part, since DESIGN.md §8 has only five chart colors. As a fallback
+	 * a sixth part and later reuse `chart-5`.
+	 */
 	parts: readonly SharePart[];
 }
 
@@ -31,8 +38,13 @@ const FILLS = [
 
 /** How one part draws: its share, its width on the bar, and its fill. */
 interface ShareSegment {
+	/** A React key built from the index and the label, since labels can repeat. */
+	readonly key: string;
 	readonly label: string;
-	/** The share as a fraction, or `null` when missing or not finite. */
+	/**
+	 * The share as a fraction, or `null` when missing, not finite, or not in
+	 * the `percent` unit. A negative share keeps its true value.
+	 */
 	readonly share: number | null;
 	/** The width on the bar from 0 to 100, or `null` for no segment. */
 	readonly width: number | null;
@@ -40,26 +52,31 @@ interface ShareSegment {
 }
 
 /**
- * Returns how each part draws. A missing share gets no segment. Shares that
- * sum to less than 1 leave the rest of the bar empty. Shares that sum to more
- * than 1 shrink in step so the bar never overflows, and their labels still
- * print the true shares.
+ * Returns how each part draws. A missing share gets no segment. A negative
+ * share keeps its true value for the label, gets no segment, and stays out of
+ * the total. Shares that sum to less than 1 leave the rest of the bar empty.
+ * Shares that sum to more than 1 shrink in step so the bar never overflows,
+ * and their labels still print the true shares.
  */
 function shareSegments(parts: readonly SharePart[]): ShareSegment[] {
 	const shares = parts.map(({ share }) => {
-		const value = share?.value;
-		return typeof value === "number" && Number.isFinite(value) && value >= 0
-			? value
-			: null;
+		if (share?.unit !== "percent") return null;
+		const { value } = share;
+		return typeof value === "number" && Number.isFinite(value) ? value : null;
 	});
-	const total = shares.reduce<number>((sum, share) => sum + (share ?? 0), 0);
+	const total = shares.reduce<number>(
+		(sum, share) => sum + Math.max(share ?? 0, 0),
+		0,
+	);
 	const scale = total > 1 ? 1 / total : 1;
 	return parts.map((part, index) => {
 		const share = shares[index] ?? null;
 		return {
+			key: `${index}-${part.label}`,
 			label: part.label,
 			share,
-			width: share === null ? null : share * scale * 100,
+			width: share === null || share <= 0 ? null : share * scale * 100,
+			// Math.min keeps the index in range. The `??` only satisfies the type checker.
 			fill: FILLS[Math.min(index, FILLS.length - 1)] ?? "bg-chart-5",
 		};
 	});
@@ -93,7 +110,7 @@ function ShareBar({ parts, className, ...props }: ShareBarProps) {
 				{segments.map((segment) =>
 					segment.width ? (
 						<div
-							key={segment.label}
+							key={segment.key}
 							data-slot="share-bar-segment"
 							className={cn("min-w-0 shrink", segment.fill)}
 							style={{ flexBasis: `${segment.width}%` }}
@@ -103,7 +120,7 @@ function ShareBar({ parts, className, ...props }: ShareBarProps) {
 			</div>
 			<ul className="flex flex-col gap-1 text-sm md:flex-row md:flex-wrap md:gap-x-5">
 				{segments.map((segment) => (
-					<li key={segment.label} className="flex items-center gap-2">
+					<li key={segment.key} className="flex items-center gap-2">
 						<span
 							className={cn("size-2.5 rounded-xs", segment.fill)}
 							aria-hidden="true"
@@ -112,7 +129,7 @@ function ShareBar({ parts, className, ...props }: ShareBarProps) {
 						<span
 							className={cn(
 								"font-monospace",
-								segment.share === null && "text-muted-foreground/60",
+								segment.share === null && MISSING_INK,
 							)}
 						>
 							{segment.share === null
