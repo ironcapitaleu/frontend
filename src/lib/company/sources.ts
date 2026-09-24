@@ -1,5 +1,5 @@
 import { listedFundPositions } from "./holdings";
-import { ownershipShares } from "./metrics";
+import { keyFigureKeys, keyFigureOf, ownershipShares } from "./metrics";
 import type {
 	BlockKey,
 	Claim,
@@ -76,6 +76,24 @@ export function isSectorBenchmark(ref: FigureGroupRef): boolean {
  */
 export function isPrintedOnly(ref: FigureGroupRef): boolean {
 	return blocks[ref.block].printed === true;
+}
+
+/**
+ * Returns the sector median of the key figure `metric`. P/E, P/FCF and P/B
+ * read it from Valuation, and the other key figures from Overview. Returns
+ * `null` when that section has not loaded or lists no benchmark of `metric`.
+ */
+export function sectorMedianOf(
+	metric: MetricKey,
+	sections: CompletedSections,
+): Figure {
+	const section = valuationKeyFigures.has(metric)
+		? sections.valuation
+		: sections.overview;
+	return (
+		section?.sectorBenchmarks.find((row) => row.metric === metric)?.median ??
+		null
+	);
 }
 
 /**
@@ -181,10 +199,8 @@ const valuationKeyFigures: ReadonlySet<MetricKey> = new Set<MetricKey>([
 	"priceToBook",
 ]);
 
-// The derived metrics of the Overview blocks, such as the operating margin,
-// the free cash flow and the ratios of Key Figures, need `evaluateMetric`
-// (STA-229). Until it exists, each block reads its reported figures only. A
-// later part of STA-226 adds the checks, so "Checks by Area" reads no figure yet.
+// A later part of STA-226 adds the checks, so "Checks by Area" reads no
+// figure yet.
 const blocks: Readonly<Record<BlockKey, Block>> = {
 	business: {
 		tab: "overview",
@@ -207,7 +223,9 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	keyFigures: {
 		tab: "overview",
 		label: "Key Figures",
-		company: ({ overview }) => overview && [],
+		company: (sections) =>
+			sections.overview &&
+			keyFigureKeys.map((key) => keyFigureOf(key, sections)),
 		sector: ({ overview, valuation }) =>
 			overview && [
 				...overview.sectorBenchmarks

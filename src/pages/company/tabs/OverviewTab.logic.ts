@@ -1,5 +1,9 @@
 import type { SharePart } from "@/components/company/ShareBar";
-import { formatMarketCap, formatPercent } from "@/components/screener/format";
+import {
+	formatMarketCap,
+	formatNumber,
+	formatPercent,
+} from "@/components/screener/format";
 import {
 	evaluateMetric,
 	otherRevenueShare,
@@ -10,6 +14,7 @@ import type {
 	LineKey,
 	MetricKey,
 	OverviewSection,
+	Nullable,
 	Series,
 	Unit,
 } from "@/lib/company/types";
@@ -80,13 +85,32 @@ export function tenYearsSeries(sections: CompletedSections): Series[] {
 }
 
 /**
- * Writes a value of a series in its unit: `$212.0B` for dollars, `24.5B` for
- * a share count and `31.2%` for a percent, which the series holds as a
- * fraction. A loss takes a true minus, such as `−$4.0B`.
+ * Writes a value in its unit: `$212.0B` for dollars, `24.5B` for a share
+ * count, `18.4` for a ratio and `31.2%` for a percent, which the value holds
+ * as a fraction. A loss takes a true minus, such as `−$4.0B`.
  */
 export function formatInUnit(value: number, unit: Unit): string {
 	if (unit === "percent") return formatPercent(value * 100);
+	if (unit === "ratio") return formatNumber(value);
 	const sign = value < 0 ? "−" : "";
 	const amount = formatMarketCap(Math.abs(value));
 	return `${sign}${unit === "usd" ? amount : amount.slice(1)}`;
+}
+
+/**
+ * Joins the sections that several `useCompany` loads return into one
+ * `CompletedSections`, so a card can read the figures of several sections.
+ * A section that none of `loaded` holds stays `null`. Returns `null` when
+ * `loaded` holds no sections.
+ */
+export function joinSections(
+	loaded: readonly Nullable<CompletedSections>[],
+): Nullable<CompletedSections> {
+	const found = loaded.filter((sections) => sections !== null);
+	const [first] = found;
+	if (first === undefined) return null;
+	const parts = found.flatMap((sections) =>
+		Object.entries(sections).filter(([, part]) => part !== null),
+	);
+	return { ...first, ...Object.fromEntries(parts) };
 }

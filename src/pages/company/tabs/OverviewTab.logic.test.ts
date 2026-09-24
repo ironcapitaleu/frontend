@@ -5,6 +5,7 @@ import type { Claim, OverviewSection } from "@/lib/company/types";
 import { fakeCompanyReport } from "@/test/fixtures/companies/fake-company-report";
 import {
 	formatInUnit,
+	joinSections,
 	revenueParts,
 	tenYearsSeries,
 } from "./OverviewTab.logic";
@@ -138,6 +139,7 @@ describe("formatInUnit", () => {
 		[212_000_000_000, "$212.0B", "usd"],
 		[-4_000_000_000, "−$4.0B", "usd"],
 		[24_500_000_000, "24.5B", "shares"],
+		[18.44, "18.4", "ratio"],
 		[0.312, "31.2%", "percent"],
 	] as const)(
 		"should write %s as %s when the unit is %s",
@@ -147,4 +149,35 @@ describe("formatInUnit", () => {
 			expect(result).toBe(expectedResult);
 		},
 	);
+});
+
+describe("joinSections", () => {
+	const overviewOnly = completeSections({
+		...fakeCompanyReport,
+		financials: null,
+	});
+	const financialsOnly = completeSections({
+		...fakeCompanyReport,
+		overview: null,
+	});
+
+	it("should keep the loaded section of each load when a later load lacks it", () => {
+		const expectedResult = { overview: true, financials: true };
+
+		const joined = joinSections([overviewOnly, null, financialsOnly]);
+		const result = {
+			overview: joined?.overview === overviewOnly.overview,
+			financials: joined?.financials === financialsOnly.financials,
+		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give null when no load holds sections", () => {
+		const expectedResult = null;
+
+		const result = joinSections([null, null]);
+
+		expect(result).toBe(expectedResult);
+	});
 });

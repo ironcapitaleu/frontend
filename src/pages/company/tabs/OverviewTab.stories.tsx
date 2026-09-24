@@ -20,6 +20,11 @@ const neverAnsweringGateway: CompanyGateway = {
 
 /** A gateway whose Overview section loads and whose Financials section fails. */
 const sampleGateway = sampleCompanyGateway();
+/** A gateway whose Valuation section fails, so the P/E, P/FCF and P/B medians are missing. */
+const valuationFailingGateway: CompanyGateway = {
+	...sampleGateway,
+	getValuation: failingGateway.getValuation,
+};
 const financialsFailingGateway: CompanyGateway = {
 	...sampleGateway,
 	getFinancials: failingGateway.getFinancials,
@@ -27,7 +32,8 @@ const financialsFailingGateway: CompanyGateway = {
 
 /**
  * The Overview tab with the sample data of Meridian Semiconductor (MRDN).
- * It draws card 1.1 "The Business" and card 1.2 "Ten Years at a Glance".
+ * It draws card 1.1 "The Business", card 1.2 "Ten Years at a Glance" and
+ * card 1.3 "Key Figures", then the sources index.
  * A story sets its gateway in `parameters`. Without one, the tab reads the
  * default sample gateway.
  */
@@ -56,7 +62,11 @@ export const Loaded: Story = {
 		const canvas = within(canvasElement);
 		await canvas.findByText("Diluted shares");
 
-		const expectedResult = ["1.1 The Business", "1.2 Ten Years at a Glance"];
+		const expectedResult = [
+			"1.1 The Business",
+			"1.2 Ten Years at a Glance",
+			"1.3 Key Figures",
+		];
 
 		const result = canvas
 			.getAllByRole("heading", { level: 2 })
@@ -153,11 +163,44 @@ export const SegmentSource: Story = {
 	},
 };
 
+/** Play test: a click on a key figure pins its source card with the formula. */
+export const KeyFigureSource: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const row = await canvas.findByRole("row", { name: /^P\/E / });
+		await userEvent.click(within(row).getAllByRole("button")[0]);
+
+		const expectedResult = "Price ÷ diluted EPS, latest fiscal year";
+
+		const result = await within(await screen.findByRole("dialog")).findByText(
+			expectedResult,
+		);
+
+		await expect(result).toHaveTextContent(expectedResult);
+	},
+};
+
+/** Play test: while Valuation is missing, the P/E median is a dimmed dash. */
+export const MissingMedian: Story = {
+	parameters: { companyGateway: valuationFailingGateway },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const row = await canvas.findByRole("row", { name: /^P\/E / });
+
+		const expectedResult = "—";
+
+		const result = within(row).getAllByRole("cell").at(-1);
+
+		await expect(result).toHaveTextContent(expectedResult);
+	},
+};
+
 /** Play test: each card shows a spinner while its section loads. */
 export const Loading: Story = {
 	parameters: { companyGateway: neverAnsweringGateway },
 	play: async ({ canvasElement }) => {
-		const expectedResult = 2;
+		const expectedResult = 3;
 
 		const result = within(canvasElement).getAllByRole("status").length;
 

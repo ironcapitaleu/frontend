@@ -9,6 +9,7 @@ import {
 	figureGroupsOf,
 	isPrintedOnly,
 	isSectorBenchmark,
+	sectorMedianOf,
 	sourcesOf,
 } from "./sources";
 import type {
@@ -86,9 +87,14 @@ function documentIds(claims: Claim[]): string[] {
 }
 
 describe("claimsOf", () => {
-	// TODO(STA-229): the company claims of Key Figures stay empty until
-	// `evaluateMetric` exists, so this test cannot fail before then. The next
-	// test pins the sector side exactly, so it binds today.
+	it("should read the eight key figures when the company figures of Key Figures are read", () => {
+		const expectedResult = 8;
+
+		const result = claimsOf("keyFigures", "company", sections).length;
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should share no ClaimId when the two kinds of Key Figures are read", () => {
 		const sector = new Set(
 			claimsOf("keyFigures", "sector", sections).map(({ id }) => id),
@@ -131,6 +137,18 @@ describe("claimsOf", () => {
 
 		expect(result).toEqual(expectedResult);
 	});
+
+	it.each([
+		["priceToEarnings", "valuation.sectorBenchmarks.priceToEarnings.median"],
+		["returnOnEquity", "overview.sectorBenchmarks.returnOnEquity.median"],
+	] as const)(
+		"should read the median of %s from its section when sectorMedianOf is called",
+		(metric, expectedResult) => {
+			const result = sectorMedianOf(metric, sections)?.id;
+
+			expect(result).toBe(expectedResult);
+		},
+	);
 
 	it("should return no claim when a block with no sector reader is read for sector figures", () => {
 		const expectedResult: Claim[] = [];
