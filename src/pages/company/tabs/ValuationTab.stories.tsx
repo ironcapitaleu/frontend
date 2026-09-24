@@ -46,7 +46,7 @@ export const Loaded: Story = {
 		];
 
 		const result = (await canvas.findAllByRole("region")).map(
-			(card) => within(card).getByRole("heading", { level: 3 }).textContent,
+			(card) => within(card).getByRole("heading", { level: 2 }).textContent,
 		);
 
 		await expect(result).toEqual(expectedResult);

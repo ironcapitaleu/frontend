@@ -144,7 +144,7 @@ describe("CompanyPage", () => {
 		const result = (
 			await within(
 				await screen.findByRole("region", { name: "Valuation" }),
-			).findByRole("heading", { level: 3, name: /^3\.1/ })
+			).findByRole("heading", { level: 2, name: /^3\.1/ })
 		).textContent;
 
 		expect(result).toBe(expectedResult);
