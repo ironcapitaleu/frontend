@@ -132,9 +132,11 @@ function CompanyMasthead({
 	);
 }
 
-/** The number a figure holds, or `null` for a missing figure or a text claim. */
+/** The number a figure holds, or `null` for a missing, non-finite or text claim. */
 function figureNumber(figure: Figure): number | null {
-	return typeof figure?.value === "number" ? figure.value : null;
+	return typeof figure?.value === "number" && Number.isFinite(figure.value)
+		? figure.value
+		: null;
 }
 
 function listingLabel(listing: MastheadSection["listings"][number]): string {

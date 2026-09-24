@@ -107,6 +107,46 @@ describe("CompanyMasthead", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should show a dash for the price and the change when the price is not a number", () => {
+		const masthead: MastheadSection = {
+			...meridianMasthead,
+			price: meridianMasthead.price && {
+				...meridianMasthead.price,
+				value: Number.NaN,
+			},
+		};
+		render(<CompanyMasthead masthead={masthead} />);
+
+		const expectedResult = { price: "—", change: "—" };
+
+		const result = {
+			price: definitionOf("Price"),
+			change: definitionOf("Change over one month"),
+		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should show a dash for the price and the change when the price is infinite", () => {
+		const masthead: MastheadSection = {
+			...meridianMasthead,
+			price: meridianMasthead.price && {
+				...meridianMasthead.price,
+				value: Number.POSITIVE_INFINITY,
+			},
+		};
+		render(<CompanyMasthead masthead={masthead} />);
+
+		const expectedResult = { price: "—", change: "—" };
+
+		const result = {
+			price: definitionOf("Price"),
+			change: definitionOf("Change over one month"),
+		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should show a dash for the change when the price a month earlier is missing", () => {
 		const masthead: MastheadSection = {
 			...meridianMasthead,
