@@ -210,6 +210,7 @@ const blockKeys = [
 	"ownershipSplit",
 	"subsidiaries",
 	"stakes",
+	"executivesAndBoard",
 ] as const satisfies readonly BlockKey[];
 
 /**
@@ -455,6 +456,16 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 						row.sharesHeld,
 						row.sharesOutstanding,
 					])
+				: null,
+	},
+	// Card 6.1 reads each start, not `tenure`, so the DEF 14A stays in the
+	// index when a tenure cannot be computed.
+	executivesAndBoard: {
+		tab: "management",
+		label: "Executives and Board",
+		company: ({ management }) =>
+			management
+				? management.people.flatMap((row) => [row.since, row.independence])
 				: null,
 	},
 };

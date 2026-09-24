@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { fakeCompanyReport } from "../../test/fixtures/companies/fake-company-report";
 import { LISTED_FUNDS } from "./holdings";
-import { completeSections, metricInputsOf } from "./metrics";
+import { completeSections, metricInputsOf, tenure } from "./metrics";
 import {
 	claimsOf,
 	feedsOf,
@@ -553,6 +553,46 @@ describe("figureGroupsOf", () => {
 		expect(result).toBe(expectedResult);
 	});
 
+	it("should read each person's start and independence when the Executives and Board group is built", () => {
+		const expectedResult = [
+			"management.people.0.since",
+			"management.people.0.independence",
+			"management.people.1.since",
+			"management.people.1.independence",
+		];
+
+		const result = claimsOf("executivesAndBoard", "company", sections).map(
+			({ id }) => id,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep the DEF 14A of a person in the sources when their tenure cannot be computed", () => {
+		const { management } = fakeCompanyReport;
+		const [first] = management.people;
+		// A start after the filing date gives no tenure, and the person has no independence claim.
+		const since = { ...claim(first.since), value: "2030-01-01" };
+		const people = [{ ...first, since, independence: null }];
+		const partial = completeSections({
+			...fakeCompanyReport,
+			management: { ...management, people },
+		});
+
+		const expectedResult = { tenure: null, filings: ["0001999999-25-000014"] };
+
+		const result = {
+			tenure: tenure({ ...management, people }, 0),
+			filings: sourcesOf(
+				claimsOf("executivesAndBoard", "company", partial),
+			).groups.map(({ document }) =>
+				document.kind === "filing" ? document.accessionNumber : document.name,
+			),
+		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should drop the blocks that read the financials when Overview loads without them", () => {
 		const partial = completeSections({
 			...fakeCompanyReport,
@@ -578,7 +618,7 @@ describe("figureGroupsOf", () => {
 	it("should give no group when a tab has no blocks", () => {
 		const expectedResult: FigureGroup[] = [];
 
-		const result = figureGroupsOf("management", sections);
+		const result = figureGroupsOf("filings", sections);
 
 		expect(result).toEqual(expectedResult);
 	});

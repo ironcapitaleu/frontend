@@ -452,8 +452,8 @@ export type TabKey =
  * Names one chart, table or check card of a tab. It is a code key, so a card
  * title can change. This list holds the blocks of the Overview and Financials
  * tabs, the Shareholder returns block that only the printed Overview shows,
- * and the Valuation blocks built so far and the Relationships blocks. Each
- * later tab adds its own keys.
+ * the Valuation blocks built so far, the Relationships blocks and the
+ * Management blocks built so far. Each later tab adds its own keys.
  */
 export type BlockKey =
 	| "business"
@@ -477,7 +477,8 @@ export type BlockKey =
 	| "insiders"
 	| "ownershipSplit"
 	| "subsidiaries"
-	| "stakes";
+	| "stakes"
+	| "executivesAndBoard";
 
 /**
  * The kind of figures in a group. `sector` figures come from a
