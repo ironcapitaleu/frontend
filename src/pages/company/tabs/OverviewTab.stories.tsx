@@ -329,8 +329,9 @@ export const FinancialPositionMissing: Story = {
 };
 
 /**
- * Play test: on a phone, card 1.4 stacks below card 1.3, and each of its
- * bars is a target of at least 24 × 24 px inside its plot.
+ * Play test: on a phone, card 1.4 stacks below card 1.3, its plots and
+ * legends fit inside the card, and each of its bars is a target of at least
+ * 24 × 24 px inside its plot.
  */
 export const FinancialPositionPhone: Story = {
 	globals: { viewport: { value: "mobile1", isRotated: false } },
@@ -346,10 +347,28 @@ export const FinancialPositionPhone: Story = {
 			.getBoundingClientRect();
 		const plots = [...card.querySelectorAll("[data-slot=position-plot] ul")];
 
-		const expectedResult = { stacked: true, targets: [true, true, true, true] };
+		const expectedResult = {
+			stacked: true,
+			fits: true,
+			targets: [true, true, true, true],
+		};
 
 		const result = {
 			stacked: position.left === figures.left && position.top >= figures.bottom,
+			fits:
+				card.scrollWidth <= card.clientWidth &&
+				[
+					...card.querySelectorAll(
+						"[data-slot=position-plot], [data-slot=position-plot] :is(dt, dd)",
+					),
+				].every((part) => {
+					const { left, right } = part.getBoundingClientRect();
+					return (
+						part.scrollWidth <= part.clientWidth &&
+						left >= position.left &&
+						right <= position.right
+					);
+				}),
 			targets: plots.flatMap((plot) => {
 				const box = plot.getBoundingClientRect();
 				return [...plot.querySelectorAll("button")].map((button) => {

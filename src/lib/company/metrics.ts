@@ -925,16 +925,19 @@ export function financialPositionOf(
 /**
  * Returns the reported claims behind card 1.4: each short-term figure, and
  * the inputs of each long-term figure. A long-term figure with no value
- * still names its inputs, so its filing stays in the sources index. A
- * missing input is `null`.
+ * still names its inputs, so its filing stays in the sources index. Each
+ * claim appears once, by its id, and a missing input is left out.
  */
-export function financialPositionInputs(sections: CompletedSections): Figure[] {
+export function financialPositionInputs(sections: CompletedSections): Claim[] {
 	const claims = positionRefs
 		.flatMap(({ assets, liabilities }) => [assets, liabilities])
 		.flatMap((ref) => (ref.from === "metric" ? metrics[ref.key].inputs : [ref]))
-		.map((ref) => claimAt(ref, sections));
-	// The current lines feed both terms, so each claim appears once.
-	return [...new Set(claims)];
+		.map((ref) => claimAt(ref, sections))
+		.filter((claim) => claim !== null);
+	// The current lines feed both terms, so keep the first claim of each id.
+	return claims.filter(
+		(claim, index) => claims.findIndex(({ id }) => id === claim.id) === index,
+	);
 }
 
 /**

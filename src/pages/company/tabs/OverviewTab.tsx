@@ -223,7 +223,7 @@ function PositionBars({ rows }: { rows: readonly PositionRow[] }) {
 	);
 	const high = Math.max(0, ...values.filter((value) => value !== null));
 	return (
-		<div className="grid grid-cols-2 gap-6">
+		<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
 			{rows.map((row) => (
 				<figure
 					key={row.term}

@@ -1123,7 +1123,7 @@ describe("financialPositionInputs", () => {
 			"totalLiabilities",
 		]);
 
-		const result = financialPositionInputs(completed).map((claim) => claim?.id);
+		const result = financialPositionInputs(completed).map((claim) => claim.id);
 
 		expect(result).toEqual(expectedResult);
 	});
@@ -1142,6 +1142,31 @@ describe("financialPositionInputs", () => {
 		const result = financialPositionInputs(sections).at(-1)?.id;
 
 		expect(result).toBe(expectedResult);
+	});
+
+	it("should leave out both missing inputs when the latest quarter lacks both current lines", () => {
+		const quarterly = withPoint(
+			withPoint(balance.quarterly, "totalCurrentAssets", 7, null),
+			"totalCurrentLiabilities",
+			7,
+			null,
+		);
+		const sections = completeSections({
+			...fakeCompanyReport,
+			financials: {
+				...fakeCompanyReport.financials,
+				balance: { ...balance, quarterly },
+			},
+		});
+
+		const expectedResult = latestBalanceIds([
+			"totalAssets",
+			"totalLiabilities",
+		]);
+
+		const result = financialPositionInputs(sections).map((claim) => claim.id);
+
+		expect(result).toEqual(expectedResult);
 	});
 });
 
