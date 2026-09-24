@@ -287,6 +287,10 @@ Rules for the screener:
   bordered frames. Only the preview sheet casts a shadow.
 - **Column groups carry meaning.** The table groups its columns under
   Valuation, Balance sheet, Shareholder yield, and Price.
+- **The preview never links to a missing page.** For a company without a
+  company page, the footer shows the "Open company page" button disabled, with
+  "Company page coming soon" below it in `muted-foreground`. §8 names the
+  source of that answer.
 
 ---
 
@@ -331,6 +335,13 @@ change, because it renumbers every card title.
 | Filings             | `/companies/:symbol/filings`       |
 
 The "Open company page" link in the screener's company preview opens Overview.
+`hasCompanyPage(symbol)` in `src/lib/company/sampleCompanies.ts` tells the
+screener which companies have a page. The sample adapter asks the same module
+before it serves a ticker, so the two cannot disagree, and the screener never
+imports the gateway. Today only MRDN has a page. The screener sample derives
+its MRDN row from the company sample, so the row and the page show the same
+figures. Company pages are routes with a parameter, so the sitemap does not
+list them: `src/pages/company/` sits outside the sitemap's page discovery.
 On a phone, the tab strip scrolls sideways.
 
 Rules for the company page:

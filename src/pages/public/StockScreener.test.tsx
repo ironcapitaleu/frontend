@@ -169,7 +169,12 @@ describe("StockScreener", () => {
 			<Routes>
 				<Route
 					path="/"
-					element={<StockScreener stocks={fakeStockScreenerResults} />}
+					element={
+						<StockScreener
+							stocks={fakeStockScreenerResults}
+							hasCompanyPage={() => true}
+						/>
+					}
 				/>
 				<Route
 					path="/companies/:symbol"

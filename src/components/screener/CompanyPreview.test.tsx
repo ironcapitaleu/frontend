@@ -2,6 +2,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { EMPTY_FILTERS, describeActiveFilters } from "./screener.logic";
+import { MERIDIAN_STOCK } from "@/pages/public/StockScreener.sample";
 import { fakeStockScreenerResults } from "@/test/fixtures/stocks/fake-stock-screener-results";
 import { render, screen } from "@/test/render";
 
@@ -106,6 +107,7 @@ describe("CompanyPreview", () => {
 			<CompanyPreview
 				stock={alfa}
 				filters={{ ...EMPTY_FILTERS, peMax: "25" }}
+				hasCompanyPage
 				open
 				onOpenChange={() => {}}
 			/>,
@@ -125,6 +127,7 @@ describe("CompanyPreview", () => {
 			<CompanyPreview
 				stock={alfa}
 				filters={EMPTY_FILTERS}
+				hasCompanyPage
 				open
 				onOpenChange={onOpenChange}
 			/>,
@@ -143,6 +146,7 @@ describe("CompanyPreview", () => {
 			<CompanyPreview
 				stock={null}
 				filters={EMPTY_FILTERS}
+				hasCompanyPage={false}
 				open
 				onOpenChange={() => {}}
 			/>,
@@ -156,22 +160,52 @@ describe("CompanyPreview", () => {
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should link to the company page when it opens", () => {
+	it("should link to /companies/MRDN when the MRDN preview opens", () => {
 		render(
 			<CompanyPreview
-				stock={alfa}
+				stock={MERIDIAN_STOCK}
 				filters={EMPTY_FILTERS}
+				hasCompanyPage
 				open
 				onOpenChange={() => {}}
 			/>,
 		);
 
-		const expectedResult = "/companies/ALFA";
+		const expectedResult = "/companies/MRDN";
 
 		const result = screen
 			.getByRole("link", { name: "Open company page" })
 			.getAttribute("href");
 
 		expect(result).toBe(expectedResult);
+	});
+
+	it("should show the company page as unavailable, not as a link, when the stock has no page", () => {
+		render(
+			<CompanyPreview
+				stock={alfa}
+				filters={EMPTY_FILTERS}
+				hasCompanyPage={false}
+				open
+				onOpenChange={() => {}}
+			/>,
+		);
+
+		const expectedResult = {
+			link: null,
+			disabled: true,
+			description: "Company page coming soon",
+		};
+
+		const button = screen.getByRole("button", { name: "Open company page" });
+		const result = {
+			link: screen.queryByRole("link", { name: "Open company page" }),
+			disabled: button.hasAttribute("disabled"),
+			description: document.getElementById(
+				button.getAttribute("aria-describedby") ?? "",
+			)?.textContent,
+		};
+
+		expect(result).toEqual(expectedResult);
 	});
 });
