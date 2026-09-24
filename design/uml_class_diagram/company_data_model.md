@@ -720,11 +720,14 @@ and `metrics.ts` completes it:
   statement, this is each second, third and fourth quarter. A 10-K reports the
   balance sheet at the fourth quarter end, so the balance sheet has no `null`
   point of this kind.
-- The cash flow statement also has a `yearToDate` table with the reported
-  six-month and nine-month figures. The other two statements have
-  `yearToDate: null`. The `yearToDate` table holds the six-month and
+- The income statement and the cash flow statement also have a `yearToDate`
+  table with the reported six-month and nine-month figures. The balance sheet
+  has `yearToDate: null`. The `yearToDate` table holds the six-month and
   nine-month figures of each fiscal year that has a quarter in the quarterly
-  window.
+  window. When it has the nine-month figure, Q4 is the fiscal year minus the
+  nine months, for both statements. Otherwise Q4 is the fiscal year minus the
+  reported Q1, Q2 and Q3. For MRDN on 23 Sep 2026 the window starts at Q3
+  FY2025, so Q4 FY2025 needs the nine months to Q3 FY2025.
 - `metrics.ts` returns a new, complete `StatementTable` from
   `completeQuarters(statement)`. It never writes to a section. Every section
   that the port returns stays unchanged.
@@ -778,9 +781,10 @@ figure up to a fourth quarter is the fiscal year of the annual table, and the
 figure up to a second or third quarter is the six-month or nine-month figure
 of the `yearToDate` table. The figure up to the quarter before is the first
 quarter or the year-to-date figure when a table reports it, and the reported
-quarters of the fiscal year otherwise. So the income statement gets
-Q4 = FY − Q1 − Q2 − Q3, and the cash flow statement gets Q2 = six months − Q1,
-Q3 = nine months − six months and Q4 = FY − nine months. A first quarter is
+quarters of the fiscal year otherwise. So a fourth quarter is FY − nine
+months when the `yearToDate` table reports the nine months, and
+FY − Q1 − Q2 − Q3 otherwise. The cash flow statement gets Q2 = six months − Q1
+and Q3 = nine months − six months. A first quarter is
 never derived. A missing input, a text value or an input with no period keeps
 the point `null`. When the quarterly window starts after the first quarter of
 a fiscal year, the earlier quarters of that year are outside the table. So the
@@ -1372,11 +1376,11 @@ const s1: Check = {
 }
 ```
 
-MRDN reports 2.46B diluted shares in FY2026 and 2.61B in FY2021. The subject
+MRDN reports 24.5B diluted shares in FY2026 and 25.0B in FY2021. The subject
 resolves to the claim `financials.dilutedShares.FY2026`, and the threshold
-figure resolves to `financials.dilutedShares.FY2021`. 2.46B is below 2.61B, so
-S1 is met. The sentence reads "Diluted shares in FY2026 (2.46B) are below
-diluted shares in FY2021 (2.61B)". If the annual table has no FY2021 column,
+figure resolves to `financials.dilutedShares.FY2021`. 24.5B is below 25.0B, so
+S1 is met. The sentence reads "Diluted shares in FY2026 (24.5B) are below
+diluted shares in FY2021 (25.0B)". If the annual table has no FY2021 column,
 the threshold figure is `null` and S1 reads "not enough data", reason
 `missingInput`.
 
@@ -1410,12 +1414,13 @@ const c1: Check = {
 
 The subject resolves to ten claims, `metric.freeCashFlow.FY2017` to
 `metric.freeCashFlow.FY2026`. Each claim has a `DerivedSource` with the two
-reported lines of its own year as inputs. Four companies show the three
-results:
+reported lines of its own year as inputs. MRDN has free cash flow above 0 in
+all ten years, so C1 reads met, "10 of 10 years". Four other companies show
+the three results:
 
 | Company                     | Years above 0 (`k`) | Missing years (`m`) | Result                            |
 | --------------------------- | ------------------- | ------------------- | --------------------------------- |
-| MRDN, one negative year     | 9                   | 0                   | met, "9 of 10 years"              |
+| Ten years, one negative     | 9                   | 0                   | met, "9 of 10 years"              |
 | Ten years, four negative    | 6                   | 0                   | not met, "6 of 10 years"          |
 | Listed in 2024, three years | 3                   | 7                   | not enough data, `shortHistory`   |
 | Ten years, FY2019 capex missing, nine positive | 9      | 1                   | met, "9 of 10 years"              |
@@ -1521,27 +1526,28 @@ const marketCap: PointMetric = {
 }
 ```
 
-The 10-Qs report about 2.47B diluted shares in each of Q1 to Q3, and the
-10-K reports 2.46B for the year. A subtraction gives a fourth quarter of
-2.46B − 7.41B = −4.95B shares, and a market cap of $210.60 × −4.95B ≈
-−$1.04T. The `marketCap` guards of `dividendYield` and `freeCashFlowYield`
-then fail, and S2 and V2 read "not enough data", reason `failedGuard`.
+The Q3 10-Q reports 24.533B diluted shares for nine months, the average of
+24.6B, 24.5B and 24.5B. The 10-K reports 24.5B for the year. A subtraction
+gives a fourth quarter of 24.5B − 24.533B = −0.033B shares, and a market cap
+of $210.60 × −0.033B ≈ −$6.95B. The `marketCap` guards of `dividendYield`
+and `freeCashFlowYield` then fail, and S2 and V2 read "not enough data",
+reason `failedGuard`.
 
 The types prevent each step:
 
 | Step                                         | Result                                                        |
 | -------------------------------------------- | ------------------------------------------------------------- |
 | `completeQuarters` on `dilutedShares`, Q4    | `null`, because a share count is not a flow                   |
-| `marketCap`                                  | $210.60 × 2.46B = $518.1B, from `dilutedShares @ fiscalYear(0)` |
+| `marketCap`                                  | $210.60 × 24.5B = $5.16T, from `dilutedShares @ fiscalYear(0)` |
 | A metric with `dilutedShares @ latestQuarter` | rejected by the STA-226 test                                 |
 
 S2 reads `dividendsPaid @ lastFourQuarters`. The port returns the Q1
-dividends of $0.60B and `null` at Q2, Q3 and Q4. The `yearToDate` table holds
-$1.21B for six months and $1.83B for nine months, and the 10-K holds $2.46B
-for the year. `completeSections` derives Q2 = $0.61B, Q3 = $0.62B and Q4 =
-$0.63B. The sum over the last four quarters is $2.46B, with the four
-quarterly claims as inputs. The dividend yield is $2.46B ÷ $518.1B = 0.47%,
-so S2 is not met: "Dividend yield (0.47%) is not at least 2%". If a test
+dividends of $102M and `null` at Q2, Q3 and Q4. The `yearToDate` table holds
+$210M for six months and $342M for nine months, and the 10-K holds $490M
+for the year. `completeSections` derives Q2 = $108M, Q3 = $132M and Q4 =
+$148M. The sum over the last four quarters is $490M, with the four
+quarterly claims as inputs. The dividend yield is $490M ÷ $5.16T = 0.01%,
+so S2 is not met: "Dividend yield (0.01%) is not at least 2%". If a test
 passes the sections of the port instead, the compiler rejects the call. At
 run time the same input gives three `null` points and `missingInput`.
 
@@ -1590,7 +1596,7 @@ before Q3 FY2026. STA-224 has no `FilingsSection`, so it cannot write the test.
 
 ### P/B: one date in two tables
 
-MRDN reports shareholders' equity of $150.0B at 25 Jan 2026. That date ends
+MRDN reports shareholders' equity of $157.3B at 25 Jan 2026. That date ends
 FY2026 and also ends Q4 FY2026, so the date sits in two tables:
 
 | Table                       | `Period`                                                 | `ClaimId`                                       |
@@ -1613,9 +1619,9 @@ is 26 Jul 2026, and the annual view adds the column
 
 The sample adapter fills `OverviewSection.ownership` and
 `RelationshipsSection.ownership` from the same 13F totals, at the quarter end
-30 Jun 2026. Institutions hold 1.68B of 2.46B shares, so both bars show
-68.3%. A faulty adapter fills the Relationships copy from the 13F totals at
-31 Mar 2026 instead, with 1.66B shares, so the bar shows 67.5%. Both copies
+30 Jun 2026. Institutions hold 16.10B of 24.4B shares, so both bars show
+66.0%. A faulty adapter fills the Relationships copy from the 13F totals at
+31 Mar 2026 instead, with 15.90B shares, so the bar shows 65.2%. Both copies
 carry valid sources. The STA-227 test compares the copies field by field and
 fails on `asOf` first: `2026-06-30` against `2026-03-31`.
 
@@ -1703,13 +1709,15 @@ does the page label them?** Settled:
 
 - All three statements have annual and quarterly tables. §4 fixes which
   quarterly points the port returns as `null`.
-- Income statement: a 10-Q reports three months for Q1 to Q3. For
-  `revenue`, `operatingIncome` and `netIncome`, `metrics.ts` derives Q4 as
-  the fiscal year minus Q1 to Q3. `dilutedShares` and `dilutedEps` do not add
-  up over a year, so their Q4 stays `null` (§4).
+- Income statement: a 10-Q reports three months for Q1 to Q3, and six or
+  nine months to date. For `revenue`, `operatingIncome` and `netIncome`,
+  `metrics.ts` derives Q4 by the rule of §4: the fiscal year minus the
+  nine-month figure, or minus the reported Q1 to Q3 when no table has the
+  nine-month figure. `dilutedShares` and `dilutedEps` do not add up over a
+  year, so their Q4 stays `null` (§4).
 - Cash flow statement: a 10-Q reports year to date. `metrics.ts` derives each
-  quarter as the difference of two year-to-date figures, and Q4 as the fiscal
-  year minus the nine-month figure.
+  quarter as the difference of two year-to-date figures, and Q4 by the same
+  rule of §4.
 - Balance sheet: each figure is at a quarter end. It has no sum over four
   quarters. The annual view adds a column for the latest quarter end, such as
   "26 Jul 2026", when that date is not the end of the latest fiscal year. At a

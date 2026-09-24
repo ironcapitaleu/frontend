@@ -273,7 +273,10 @@ export interface Statement {
 	readonly annual: StatementTable;
 	/** The last eight fiscal quarters. */
 	readonly quarterly: StatementTable;
-	/** The reported six-month and nine-month figures. Only the cash flow statement has them. */
+	/**
+	 * The reported six-month and nine-month figures. The income statement and
+	 * the cash flow statement have them. The balance sheet has `null`.
+	 */
 	readonly yearToDate: Nullable<StatementTable>;
 }
 

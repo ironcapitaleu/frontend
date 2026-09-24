@@ -63,10 +63,9 @@ export function completeSections(sections: CompanySections): CompletedSections {
  * is the six-month or nine-month figure of the year-to-date table. The figure
  * up to the quarter before is the first quarter or the year-to-date figure
  * when a table reports it, and the reported quarters of the fiscal year
- * otherwise. So the income
- * statement gets Q4 = FY − Q1 − Q2 − Q3, and the cash flow statement gets
- * Q2 = six months − Q1, Q3 = nine months − six months and Q4 = FY − nine
- * months.
+ * otherwise. So a fourth quarter is FY − nine months when the year-to-date
+ * table reports the nine months, and FY − Q1 − Q2 − Q3 otherwise. The cash
+ * flow statement gets Q2 = six months − Q1 and Q3 = nine months − six months.
  *
  * A point stays `null` when the line is not a flow line, when the quarter is
  * a first quarter, or when one of its inputs is missing, is not a number or
