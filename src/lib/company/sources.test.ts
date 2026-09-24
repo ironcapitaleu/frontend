@@ -209,6 +209,7 @@ describe("claimsOf", () => {
 			block: "balanceChart",
 			statement: "annual balance",
 			tables: [statements.balance.annual],
+			keys: ["totalAssets", "totalLiabilities", "shareholdersEquity"],
 		},
 		{
 			block: "balanceTable",
@@ -219,6 +220,7 @@ describe("claimsOf", () => {
 			block: "cashFlowChart",
 			statement: "annual cash flow",
 			tables: [statements.cashFlow.annual],
+			keys: ["operatingCashFlow", "capitalExpenditure", "shareRepurchases"],
 		},
 		{
 			block: "cashFlowTable",

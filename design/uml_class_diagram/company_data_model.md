@@ -674,9 +674,9 @@ tab ticket adds its own keys, such as `peRange` and `ceoPay`.
 
 A chart reads the annual table of its statement. A table reads the annual
 table and the completed quarterly table, because the annual and quarterly
-switch shows both. §8 holds the open question of whether the switch also
-flips the chart. The `printedShareholderReturns` block reads the latest
-point of `dividendPerShare` and `latestDividendDeclared` from
+switch shows both. The switch does not flip the chart. A chart reads only the
+lines it draws, as `chartLines` in `sources.ts` lists them. The
+`printedShareholderReturns` block reads the latest point of `dividendPerShare` and `latestDividendDeclared` from
 `ShareholderReturnsSection`, and gives no group until that section loads.
 The company figures of `keyFigures` are the eight claims of `keyFigureOf`, the
 figures card 1.3 draws. Its sector figures are the medians of the benchmark
