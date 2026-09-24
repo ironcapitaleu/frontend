@@ -1595,6 +1595,16 @@ describe("payMix", () => {
 			"the fiscal year is not a whole number",
 			[first, { ...latest, fiscalYear: Number.NaN }],
 		],
+		[
+			"a part is negative",
+			[
+				first,
+				{
+					...latest,
+					other: { ...(latest.other as Claim), value: -2_000_000 },
+				},
+			],
+		],
 		["no year is reported", []],
 	])("should give every share as null when %s", (_, ceoPay) => {
 		const expectedResult = {

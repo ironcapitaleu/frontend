@@ -1493,9 +1493,10 @@ const PAY_PARTS = [
 /**
  * Returns each part of the chief executive's pay in the latest year of
  * `management.ceoPay` as a fraction of the four parts added up. Every share
- * is `null` when a part is missing, because the total is then unknown. A
- * negative part gives a `null` share, and so does an empty `ceoPay` or a
- * fiscal year that is not a whole number.
+ * is `null` when a part is missing, because the total is then unknown, and
+ * when a part is negative, because the other shares would then add up to
+ * more than 100%. An empty `ceoPay` or a fiscal year that is not a whole
+ * number also gives every share as `null`.
  */
 export function payMix(management: ManagementSection): PayMix {
 	const latest = management.ceoPay.at(-1);
@@ -1512,7 +1513,9 @@ export function payMix(management: ManagementSection): PayMix {
 					inputs,
 					(values) => [
 						values[position] ?? Number.NaN,
-						values.reduce((sum, value) => sum + value, 0),
+						values.some((value) => value < 0)
+							? Number.NaN
+							: values.reduce((sum, value) => sum + value, 0),
 					],
 				),
 			),
