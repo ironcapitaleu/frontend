@@ -2,6 +2,7 @@ import { toFixedWithMinus } from "@/components/screener/format";
 import type {
 	Claim,
 	FinancialsSection,
+	LineKey,
 	Period,
 	StatementTable,
 	Unit,
@@ -104,4 +105,71 @@ export function formatStatementValue(claim: Claim, scale: Scale): string {
 	}
 	if (unit === "percent") return `${toFixedWithMinus(value * 100, 1, true)}%`;
 	return toFixedWithMinus(value, 2, true);
+}
+
+/**
+ * Returns the lines `keys` of `table`, in the order of `keys`, over all its
+ * periods. The chart card draws these lines, and its "Data" table shows them.
+ */
+export function chartTable(
+	table: StatementTable,
+	keys: readonly LineKey[],
+): StatementTable {
+	return {
+		periods: table.periods,
+		lines: keys.flatMap((key) =>
+			table.lines.filter((line) => line.key === key),
+		),
+	};
+}
+
+/**
+ * The least height of a known non-zero bar, in percent of the plot. It keeps
+ * a small value visible, so it never reads as a missing year. `MiniBarChart`
+ * holds the same floor for the same reason.
+ */
+export const MIN_BAR_HEIGHT = 2;
+
+/** Where a bar sits, in percent of the plot height from the top. */
+export interface BarBox {
+	readonly top: number;
+	readonly height: number;
+}
+
+/**
+ * Returns the zero line of the chart of `table`, in percent of the plot
+ * height from the top, and a function that places a bar. One scale spans the
+ * lowest and the highest value of every line and always holds zero, so a
+ * negative value draws below the zero line. A known non-zero bar is at least
+ * {@link MIN_BAR_HEIGHT} tall, within the room on its side of the zero line.
+ * A text value is not on the scale.
+ */
+export function barScale(table: StatementTable): {
+	zero: number;
+	place: (value: number) => BarBox;
+} {
+	const values = table.lines.flatMap(({ points }) =>
+		points.flatMap((point) =>
+			typeof point?.value === "number" && Number.isFinite(point.value)
+				? [point.value]
+				: [],
+		),
+	);
+	const high = Math.max(0, ...values);
+	const span = high - Math.min(0, ...values);
+	const zero = span === 0 ? 100 : (high / span) * 100;
+	return {
+		zero,
+		place: (value) => {
+			const room = value > 0 ? zero : 100 - zero;
+			const height =
+				span === 0 || value === 0
+					? 0
+					: Math.min(
+							Math.max((Math.abs(value) / span) * 100, MIN_BAR_HEIGHT),
+							room,
+						);
+			return { top: value > 0 ? zero - height : zero, height };
+		},
+	};
 }
