@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import { CompanyCard, CompanyCardGrid } from "@/components/company/CompanyCard";
+import { formatInUnit } from "@/components/company/format";
 import { MiniBarChart } from "@/components/company/MiniBarChart";
 import { ShareBar } from "@/components/company/ShareBar";
 import { SourceTrigger } from "@/components/company/SourceCard";
@@ -23,7 +24,6 @@ import type { BlockKey, CompletedSections, Figure } from "@/lib/company/types";
 import type { Ticker } from "@/lib/domain/ticker";
 import { cn } from "@/lib/utils";
 import {
-	formatInUnit,
 	heldBack,
 	joinSections,
 	loadedSections,

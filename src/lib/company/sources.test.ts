@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { fakeCompanyReport } from "../../test/fixtures/companies/fake-company-report";
 import { LISTED_FUNDS } from "./holdings";
-import { completeSections } from "./metrics";
+import { completeSections, metricInputsOf, tenure } from "./metrics";
 import {
 	claimsOf,
 	feedsOf,
@@ -385,11 +385,64 @@ describe("figureGroupsOf", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should give a company group and a sector group when the Valuation tab is read", () => {
-		const expectedResult = ["company", "sector"];
+	it("should read each ratio now and its inputs when the group of card 3.3 is built", () => {
+		const expectedResult = ratioRanges(sections).flatMap(({ ratio, now }) => [
+			claim(now).id,
+			...metricInputsOf(ratio, sections).map((input) => claim(input).id),
+		]);
+
+		const result = claimsOf("ratioFormulas", "company", sections).map(
+			({ id }) => id,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep the operating income in the group of card 3.3 when EV/EBIT fails its guard", () => {
+		const { financials } = fakeCompanyReport;
+		const { annual } = financials.income;
+		const latest = annual.periods.length - 1;
+		const lines = annual.lines.map((line) =>
+			line.key !== "operatingIncome"
+				? line
+				: {
+						...line,
+						points: line.points.map((point, index) =>
+							index === latest && point !== null
+								? { ...point, value: -50_000_000 }
+								: point,
+						),
+					},
+		);
+		const operatingLoss = completeSections({
+			...fakeCompanyReport,
+			financials: {
+				...financials,
+				income: { ...financials.income, annual: { ...annual, lines } },
+			},
+		});
+		const loss = lines.find(({ key }) => key === "operatingIncome")?.points[
+			latest
+		];
+
+		const expectedResult = true;
+
+		const result = claimsOf("ratioFormulas", "company", operatingLoss).some(
+			({ id }) => id === loss?.id,
+		);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should give the groups of cards 3.1 and 3.3 in order when the Valuation tab is read", () => {
+		const expectedResult = [
+			"valuationRatios.company",
+			"valuationRatios.sector",
+			"ratioFormulas.company",
+		];
 
 		const result = figureGroupsOf("valuation", sections).map(
-			({ ref }) => ref.figures,
+			({ ref }) => `${ref.block}.${ref.figures}`,
 		);
 
 		expect(result).toEqual(expectedResult);
@@ -501,6 +554,46 @@ describe("figureGroupsOf", () => {
 		expect(result).toBe(expectedResult);
 	});
 
+	it("should read each person's start and independence when the Executives and Board group is built", () => {
+		const expectedResult = [
+			"management.people.0.since",
+			"management.people.0.independence",
+			"management.people.1.since",
+			"management.people.1.independence",
+		];
+
+		const result = claimsOf("executivesAndBoard", "company", sections).map(
+			({ id }) => id,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep the DEF 14A of a person in the sources when their tenure cannot be computed", () => {
+		const { management } = fakeCompanyReport;
+		const [first] = management.people;
+		// A start after the filing date gives no tenure, and the person has no independence claim.
+		const since = { ...claim(first.since), value: "2030-01-01" };
+		const people = [{ ...first, since, independence: null }];
+		const partial = completeSections({
+			...fakeCompanyReport,
+			management: { ...management, people },
+		});
+
+		const expectedResult = { tenure: null, filings: ["0001999999-25-000014"] };
+
+		const result = {
+			tenure: tenure({ ...management, people }, 0),
+			filings: sourcesOf(
+				claimsOf("executivesAndBoard", "company", partial),
+			).groups.map(({ document }) =>
+				document.kind === "filing" ? document.accessionNumber : document.name,
+			),
+		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should drop the blocks that read the financials when Overview loads without them", () => {
 		const partial = completeSections({
 			...fakeCompanyReport,
@@ -526,7 +619,7 @@ describe("figureGroupsOf", () => {
 	it("should give no group when a tab has no blocks", () => {
 		const expectedResult: FigureGroup[] = [];
 
-		const result = figureGroupsOf("management", sections);
+		const result = figureGroupsOf("filings", sections);
 
 		expect(result).toEqual(expectedResult);
 	});

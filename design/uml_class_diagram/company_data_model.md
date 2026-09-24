@@ -669,8 +669,9 @@ tab ticket adds its own keys, such as `peRange` and `ceoPay`.
 | ---------- | ----------------- |
 | Overview   | `business`, `tenYears`, `keyFigures`, `financialPosition`, `checksByArea`, `ownership`, `profile`, and the print-only `printedShareholderReturns` |
 | Financials | `incomeChart`, `incomeTable`, `balanceChart`, `balanceTable`, `cashFlowChart`, `cashFlowTable` |
-| Valuation  | `valuationRatios`, so far |
+| Valuation  | `valuationRatios`, `ratioFormulas`, so far |
 | Relationships | `largestFunds`, `insiders`, `ownershipSplit`, `subsidiaries`, `stakes` |
+| Management | `executivesAndBoard`, so far |
 
 A chart reads the annual table of its statement. A table reads the annual
 table and the completed quarterly table, because the annual and quarterly
@@ -1024,8 +1025,14 @@ sections of `types.ts`. `ownershipShares` gives the parts `institutions`,
 neither institutions nor insiders hold. When institutions and insiders
 together hold more than the shares outstanding, the public share is `null`,
 not a negative share. This happens when the reported holdings overlap, for
-example when several 13F filers report the same shares. The other
-functions wait for the section types of their tabs.
+example when several 13F filers report the same shares. STA-253 writes
+`tenure`. It counts whole years, in the unit `count`, and a `since` in the
+unit `year` counts from that year. The `executivesAndBoard` block reads
+`since` and not the tenure, so the DEF 14A stays in the sources index when
+the tenure is `null`. A person with neither a `since` nor an `independence`
+claim gives the block no claim, because `Person` has no claim for the row
+itself. The other functions wait for the
+section types of their tabs.
 
 These functions have no `MetricKey`, no `FigureRef` and no guard, and no
 check reads them. A check that needs one of these figures first needs a

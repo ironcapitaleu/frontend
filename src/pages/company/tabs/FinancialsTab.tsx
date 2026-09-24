@@ -4,6 +4,7 @@ import { CompanyCard, CompanyCardGrid } from "@/components/company/CompanyCard";
 import { SourceTrigger } from "@/components/company/SourceCard";
 import { SourcesChip } from "@/components/company/SourcesChip";
 import { SourcesIndex } from "@/components/company/SourcesIndex";
+import { FIXED_COLUMN } from "@/components/company/format";
 import { MISSING, MISSING_INK } from "@/components/screener/format";
 import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
@@ -50,13 +51,6 @@ import { StatementChart } from "./StatementChart";
 
 /** The indent of a statement line, by its `level`. */
 const INDENT = ["", "pl-6", "pl-10"];
-
-/**
- * The fixed first column below 1024 px. Its card ink lets the scrolled
- * figures pass under it. At 1024 px and wider it has no ink of its own, so
- * the row hover reaches it.
- */
-const FIXED_COLUMN = "max-lg:sticky max-lg:left-0 max-lg:z-10 max-lg:bg-card";
 
 /**
  * The blocks this tab draws: the three charts and the three statement
