@@ -1,10 +1,19 @@
 import { createContext, useContext, type ReactNode } from "react";
 
 import type { CompanyGateway } from "../lib/company/gateway";
+import { sampleCompanyGateway } from "../lib/company/sampleCompanyGateway";
 
 const CompanyGatewayContext = createContext<CompanyGateway | undefined>(
 	undefined,
 );
+
+/**
+ * The default gateway, which serves the sample MRDN data until a backend
+ * adapter exists. The module creates it once, so its identity stays the same
+ * across renders and `useCompany` starts no extra load. Tests inject their own
+ * fake through the `gateway` prop.
+ */
+const defaultGateway = sampleCompanyGateway();
 
 /**
  * Gives its subtree one {@link CompanyGateway}. Each tab reads its company data
@@ -12,7 +21,8 @@ const CompanyGatewayContext = createContext<CompanyGateway | undefined>(
  *
  * Why the `gateway` prop? The page depends on the port and not on an adapter.
  * A test passes a named fake, so no test needs `vi.mock`. A later backend
- * adapter replaces the sample adapter without a change to any tab.
+ * adapter replaces the sample adapter without a change to any tab. Without the
+ * prop, the provider uses the sample adapter.
  *
  * Pass the same gateway object on every render. `useCompany` ties each load
  * to the gateway instance, so a new instance starts every load under this
@@ -22,10 +32,10 @@ const CompanyGatewayContext = createContext<CompanyGateway | undefined>(
  */
 export function CompanyGatewayProvider({
 	children,
-	gateway,
+	gateway = defaultGateway,
 }: {
 	children: ReactNode;
-	gateway: CompanyGateway;
+	gateway?: CompanyGateway;
 }) {
 	return (
 		<CompanyGatewayContext.Provider value={gateway}>
