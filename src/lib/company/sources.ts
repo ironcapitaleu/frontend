@@ -123,7 +123,7 @@ interface Block {
 }
 
 /** The blocks of every tab, in the order of the page. */
-const blockKeys: readonly BlockKey[] = [
+const blockKeys = [
 	"business",
 	"tenYears",
 	"keyFigures",
@@ -138,7 +138,19 @@ const blockKeys: readonly BlockKey[] = [
 	"balanceTable",
 	"cashFlowChart",
 	"cashFlowTable",
-];
+] as const satisfies readonly BlockKey[];
+
+/**
+ * Fails the type check when a `BlockKey` is missing from {@link blockKeys},
+ * so a new block cannot drop out of its tab.
+ */
+const everyBlockListed: Exclude<
+	BlockKey,
+	(typeof blockKeys)[number]
+> extends never
+	? true
+	: never = true;
+void everyBlockListed;
 
 // The derived metrics of the Overview blocks, such as the operating margin,
 // the free cash flow and the ratios of Key Figures, need `evaluateMetric`

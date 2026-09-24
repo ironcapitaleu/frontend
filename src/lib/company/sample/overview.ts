@@ -66,8 +66,12 @@ function revenueParts(
 // The lowest peer, the lower quartile, the median, the upper quartile and
 // the highest peer of each metric, over 61 US-listed semiconductor companies.
 const PEER_COUNT = 61;
-const SECTOR_SPREAD: Record<
+type BenchmarkedMetric = Extract<
 	MetricKey,
+	"operatingMargin" | "returnOnEquity" | "dividendYield" | "buybackYield"
+>;
+const SECTOR_SPREAD: Record<
+	BenchmarkedMetric,
 	[number, number, number, number, number]
 > = {
 	operatingMargin: [-0.15, 0.09, 0.18, 0.27, 0.45],
@@ -75,7 +79,7 @@ const SECTOR_SPREAD: Record<
 	dividendYield: [0, 0.002, 0.008, 0.016, 0.045],
 	buybackYield: [-0.01, 0.003, 0.011, 0.022, 0.06],
 };
-const METRIC_LABELS: Record<MetricKey, string> = {
+const METRIC_LABELS: Record<BenchmarkedMetric, string> = {
 	operatingMargin: "Operating margin",
 	returnOnEquity: "Return on equity",
 	dividendYield: "Dividend yield",
@@ -87,7 +91,7 @@ const METRIC_LABELS: Record<MetricKey, string> = {
  * in straight steps between the five points of `SECTOR_SPREAD`, so the 16th,
  * 31st and 46th peer hold the quartiles and the median.
  */
-function benchmark(metric: MetricKey): SectorBenchmark {
+function benchmark(metric: BenchmarkedMetric): SectorBenchmark {
 	const spread = SECTOR_SPREAD[metric];
 	const name = METRIC_LABELS[metric];
 	const quarter = (PEER_COUNT - 1) / 4;
@@ -304,7 +308,9 @@ export const meridianOverview: OverviewSection = {
 	),
 	segments: revenueParts("segments", "Segment information", SEGMENTS),
 	regions: revenueParts("regions", "Revenue by geography", REGIONS),
-	sectorBenchmarks: (Object.keys(SECTOR_SPREAD) as MetricKey[]).map(benchmark),
+	sectorBenchmarks: (Object.keys(SECTOR_SPREAD) as BenchmarkedMetric[]).map(
+		benchmark,
+	),
 	ownership: ownership(),
 	profile: {
 		founded: profileFact(

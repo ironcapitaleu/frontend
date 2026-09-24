@@ -927,8 +927,9 @@ a value is the metric's `MetricResult`, so the caller keeps a failed guard
 and its input claim. The rules below say how a metric and a check read a
 `MetricResult`.
 
-`FigureKey` is `LineKey`, `MetricKey` or `MarketKey`, as `from` says.
-`at` is `null` only when the key names a point metric, because a point metric
+`FigureKey` is `LineKey`, `MetricKey` or `MarketKey`, as `from` says. In
+code, `FigureRef` is a union with one member for each `from`, so the
+compiler rejects a `LineKey` with `from: "metric"`. `at` is `null` only when the key names a point metric, because a point metric
 fixes the periods of its own inputs. A window always resolves to `count`
 values. A year with no figure gives a `null` at its position, so a company
 with three years of filings gives seven `null` figures in a 10-year window.
@@ -940,7 +941,9 @@ that column is the latest quarter end. `lastFourQuarters` reads the sum that
 `metrics.ts` derives, which exists for the flow lines only (§4). A balance
 sheet line, `dilutedShares` or `dilutedEps` with `lastFourQuarters` is a
 defect, and so is `dilutedShares` or `dilutedEps` with `latestQuarter`. A
-test in STA-226 rejects each of them. Resolution reads `CompletedSections`
+test in STA-226 rejects each of them. `isValidFigureRef(ref)` in `metrics.ts`
+returns `false` for each of these defects and for each market pair outside
+the table below. A test runs it over every input of every metric. Resolution reads `CompletedSections`
 (§4), so it reads the completed quarterly table and never the table from the
 port. For a flow line, the latest quarterly column can be a derived quarter:
 a fourth quarter of the income statement, or a second, third or fourth
@@ -1064,10 +1067,13 @@ the arithmetic:
 - `formulas: Record<MetricKey, Formula>` holds one function for each
   `MetricKey`. A `Formula` is `(inputs: ResolvedInput[]) => number`. It gets
   the inputs in the order of `Metric.inputs` and does the arithmetic only.
-- `evaluateMetric(metric, sections, period)` returns a `MetricResult`.
-  `sections` is `CompletedSections` (§4).
+- `metrics: Record<MetricKey, Metric>` holds one `Metric` for each
+  `MetricKey`.
+- `evaluateMetric(key, sections, period)` returns a `MetricResult`. It reads
+  the metric from `metrics[key]`, so a metric input evaluates the other
+  metric by its key. `sections` is `CompletedSections` (§4).
   `period` is the period of a per-period metric, and `null` for a point
-  metric. The function resolves each input, then applies the rules below in
+  metric, which is the default. The function resolves each input, then applies the rules below in
   order, then calls the formula and builds the claim.
 
 The rules, in order:
@@ -1213,8 +1219,14 @@ classDiagram
 
 - `CheckId` is the short code in the §6 table, such as `S1`. `MetricKey`
   names one metric in `metrics.ts`. §6's metric table lists the metrics that
-  the checks read, which is part of the set. The tab tickets add the rest,
-  such as `operatingMargin` for the Key Figures card.
+  the checks read, which is part of the set. STA-229 also defines the two
+  benchmark metrics that no check reads, because `formulas` needs a function
+  for each `MetricKey`. `operatingMargin` is a per-period metric,
+  `operatingIncome @ samePeriod` ÷ `revenue @ samePeriod`, with the guard
+  `revenue @ samePeriod` above 0. `buybackYield` is a point metric,
+  (`shareRepurchases @ lastFourQuarters` − `shareIssuanceProceeds @
+  lastFourQuarters`) ÷ `marketCap`, with the guard `marketCap` above 0. The
+  tab tickets add the rest.
 - `Comparison` is one of `above`, `atLeast`, `below` or `atMost`.
 - `Check.subject` is the figure that the check tests.
 - A `Threshold` is one of three kinds:
