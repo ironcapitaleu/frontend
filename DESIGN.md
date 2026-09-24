@@ -343,6 +343,8 @@ Rules for the company page:
   previews its source card. A click or a tap pins the card: a popover on a
   desktop, a bottom sheet on a phone. For a reported figure, the card names the
   filing type, filing date, line label, and XBRL tag, and links to the filing.
+  A document that reports no XBRL fact, such as a 13F information table, a
+  Form 4 or a 10-K exhibit, names the line alone.
   A derived figure, such as a margin or a growth rate, shows its formula and
   the source of each input. A reader can trace any figure back to reported
   filing lines. With a keyboard, focus on a figure previews its card, `Enter`
@@ -365,9 +367,9 @@ Rules for the company page:
   score and no snowflake chart.
 - **A check shows its evidence.** Each check states its rule with the
   threshold, the company's figure, and the source. The figure sits inside the
-  sentence, such as "Short-term assets ($197.4B) exceed short-term liabilities
-  ($43.0B)". Each check has one of three results: met, not met, or not enough
-  data.
+  sentence, such as "Current assets ($197.4B) are 4.6 times current
+  liabilities ($43.0B), at least the threshold of 1.5". Each check has one
+  of three results: met, not met, or not enough data.
 - **A check name carries no verdict.** The name states the rule and never
   judges the company. The page never shows a name such as "Notable Dividend"
   next to a red cross.
@@ -377,12 +379,15 @@ Rules for the company page:
   Each financial statement table downloads as CSV. There is no server-side PDF.
 
 The page reads its data through the `CompanyGateway` port (AGENTS.md
-"Dependency Injection & Ports"). Until the backend adapter exists in a later
-epic, the sample adapter `sampleCompanyGateway` serves made-up data for
-Meridian Semiconductor (MRDN). It is a real adapter in the sense of AGENTS.md:
-production wires it, and its data source is the sample files in the repository,
-as for the screener. The named fakes (`always{Behaviour}CompanyGateway`) stay
-test-only. `CompanyGatewayProvider` injects the adapter into `useCompany`.
+"Dependency Injection & Ports"). The types behind the port, the claims and
+the checks are in
+[`design/uml_class_diagram/company_data_model.md`](design/uml_class_diagram/company_data_model.md).
+Until the backend adapter exists in a later epic, the sample adapter
+`sampleCompanyGateway` serves made-up data for Meridian Semiconductor (MRDN).
+It is a real adapter in the sense of AGENTS.md: production wires it, and its
+data source is the sample files in the repository, as for the screener. The
+named fakes (`always{Behaviour}CompanyGateway`) stay test-only.
+`CompanyGatewayProvider` injects the adapter into `useCompany`.
 
 A `:symbol` that `Ticker.parse` rejects renders the missing state, the same
 state an unknown ticker reaches. For a valid `Ticker`, `useCompany` returns a
