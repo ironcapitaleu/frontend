@@ -1006,6 +1006,13 @@ has no input claims. A row exists even when its jurisdiction is `null`, so
 the count includes that row. An empty list gives a count of 0, and the claim
 still names the exhibit. §8 holds the question and this answer.
 
+STA-230 writes `priceChangeOneMonth`, `revenueShare(overview, list,
+position)` and `ownershipShares`, the functions whose inputs are in the
+sections of `types.ts`. `ownershipShares` gives the parts `institutions`,
+`insiders` and `public`. The public holds the shares outstanding that
+neither institutions nor insiders hold. The other functions wait for the
+section types of their tabs.
+
 These functions have no `MetricKey`, no `FigureRef` and no guard, and no
 check reads them. A check that needs one of these figures first needs a
 `MetricKey`, and a new `FigureKey` for each input. The defect tests of this

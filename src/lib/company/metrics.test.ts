@@ -13,6 +13,9 @@ import {
 	type MetricResult,
 	type Metric,
 	metrics,
+	ownershipShares,
+	priceChangeOneMonth,
+	revenueShare,
 	sameRef,
 } from "./metrics";
 import type {
@@ -813,6 +816,168 @@ describe("isValidFigureRef", () => {
 				);
 			})
 			.map((metric) => metric.key);
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("per-row derived figures", () => {
+	const { masthead, overview } = fakeCompanyReport;
+
+	/** Returns the value of `figure`, or `null` when the figure is missing. */
+	const figureValue = (figure: Figure) => figure?.value ?? null;
+
+	it("should divide the price change by the price a month earlier when it gives the price change over one month", () => {
+		const section = masthead;
+
+		// ($84.20 − $79.50) ÷ $79.50.
+		const expectedResult = (84.2 - 79.5) / 79.5;
+
+		const result = figureValue(priceChangeOneMonth(section));
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give no period when the two prices of the price change fall on different dates", () => {
+		const section = masthead;
+
+		// 20 Mar 2026 and 20 Feb 2026 are two instants of FY2026.
+		const expectedResult = null;
+
+		const result = priceChangeOneMonth(section)?.period;
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should return null when the price a month earlier is missing", () => {
+		const section = { ...masthead, priceMonthEarlier: null };
+
+		const expectedResult = null;
+
+		const result = priceChangeOneMonth(section);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should divide the revenue of the row by the revenue of its list when it gives a segment share", () => {
+		const section = overview;
+
+		// Sensors 1,900M ÷ (1,900M + 1,300M) = 0.59375.
+		const expectedResult = {
+			id: "metric.revenueShare.segments.0",
+			value: 1_900_000_000 / 3_200_000_000,
+		};
+
+		const share = revenueShare(section, "segments", 0);
+		const result = { id: share?.id, value: share?.value };
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should read the regions list when it gives a region share", () => {
+		const section = overview;
+
+		// Europe 1,200M ÷ (2,000M + 1,200M) = 0.375.
+		const expectedResult = 1_200_000_000 / 3_200_000_000;
+
+		const result = figureValue(revenueShare(section, "regions", 1));
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should return null when another row of the list has no revenue", () => {
+		const [sensors, testEquipment] = overview.segments;
+		const section = {
+			...overview,
+			segments: [sensors, { ...testEquipment, revenue: null }],
+		};
+
+		const expectedResult = null;
+
+		const result = revenueShare(section, "segments", 0);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should return null when the revenue of the list adds up to 0", () => {
+		const section = {
+			...overview,
+			segments: overview.segments.map((part) => ({
+				...part,
+				revenue: part.revenue && { ...part.revenue, value: 0 },
+			})),
+		};
+
+		const expectedResult = null;
+
+		const result = revenueShare(section, "segments", 0);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should return null when the list has no row at the position", () => {
+		const section = overview;
+
+		const expectedResult = null;
+
+		const result = revenueShare(section, "segments", 2);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should divide each holding by the shares outstanding when it gives the ownership shares", () => {
+		const section = overview;
+
+		// Institutions 108M ÷ 150M, insiders 4.5M ÷ 150M, and the public
+		// (150M − 108M − 4.5M) ÷ 150M = 37.5M ÷ 150M.
+		const expectedResult = {
+			institutions: 108_000_000 / 150_000_000,
+			insiders: 4_500_000 / 150_000_000,
+			public: 37_500_000 / 150_000_000,
+		};
+
+		const shares = ownershipShares(section);
+		const result = {
+			institutions: figureValue(shares.institutions),
+			insiders: figureValue(shares.insiders),
+			public: figureValue(shares.public),
+		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should name the three share counts as inputs when it gives the public share", () => {
+		const section = overview;
+
+		const expectedResult = [
+			"overview.ownership.institutionShares",
+			"overview.ownership.insiderShares",
+			"overview.ownership.sharesOutstanding",
+		];
+
+		const { source } = ownershipShares(section).public ?? {};
+		const result =
+			source?.kind === "derived"
+				? source.inputs.map((claim) => claim.id)
+				: null;
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should return three null shares when the shares outstanding are 0", () => {
+		const { ownership } = overview;
+		const outstanding = ownership.sharesOutstanding;
+		const section = {
+			...overview,
+			ownership: {
+				...ownership,
+				sharesOutstanding: outstanding && { ...outstanding, value: 0 },
+			},
+		};
+
+		const expectedResult = { institutions: null, insiders: null, public: null };
+
+		const result = ownershipShares(section);
 
 		expect(result).toEqual(expectedResult);
 	});
