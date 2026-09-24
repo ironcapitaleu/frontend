@@ -137,11 +137,15 @@ describe("CompanyPage", () => {
 		});
 		const user = userEvent.setup();
 
-		const expectedResult = "The Valuation tab has no content yet.";
+		const expectedResult =
+			"3.1 Ratios Against Their Own Ten Years and the Sector";
 
 		await user.click(await screen.findByRole("link", { name: "Valuation" }));
-		const result = (await screen.findByRole("region", { name: "Valuation" }))
-			.textContent;
+		const result = (
+			await within(
+				await screen.findByRole("region", { name: "Valuation" }),
+			).findByRole("heading", { level: 2, name: /^3\.1/ })
+		).textContent;
 
 		expect(result).toBe(expectedResult);
 	});
