@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import {
 	CHANGE_TONE_CLASS,
 	MISSING,
+	MISSING_INK,
 	changeTone,
 	formatPrice,
 	formatSignedPercent,
@@ -16,9 +17,6 @@ import {
 interface CompanyMastheadProps extends React.ComponentProps<"header"> {
 	masthead: MastheadSection;
 }
-
-/** The dimmed ink of a missing figure (DESIGN.md §8). */
-const DIMMED = "text-muted-foreground/60";
 
 const CHIP =
 	"inline-flex rounded-md border border-border px-2 py-0.5 font-monospace text-base";
@@ -81,7 +79,7 @@ function CompanyMasthead({
 							)}
 						</ul>
 					) : (
-						<span className={DIMMED}>{MISSING}</span>
+						<span className={MISSING_INK}>{MISSING}</span>
 					)}
 					<span>
 						{masthead.sector} · {masthead.country} · Reports in{" "}
@@ -98,7 +96,10 @@ function CompanyMasthead({
 					<div>
 						<dt className="sr-only">Price</dt>
 						<dd
-							className={cn("text-4xl font-medium", price === null && DIMMED)}
+							className={cn(
+								"text-4xl font-medium",
+								price === null && MISSING_INK,
+							)}
 						>
 							{price === null ? MISSING : formatPrice(price)}
 						</dd>
@@ -109,7 +110,7 @@ function CompanyMasthead({
 							className={cn(
 								"text-lg",
 								change === null
-									? DIMMED
+									? MISSING_INK
 									: CHANGE_TONE_CLASS[changeTone(change)],
 							)}
 						>

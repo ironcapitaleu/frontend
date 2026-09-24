@@ -19,7 +19,7 @@ import {
 	NUMBER_COLUMNS,
 	type NumberColumn,
 } from "./ScreenerTable.logic";
-import { MISSING, formatPrice } from "./format";
+import { MISSING, MISSING_INK, formatPrice } from "./format";
 
 /** The empty-state line, shared with the page's card list. */
 const NO_MATCHES = "No companies match these filters.";
@@ -179,7 +179,7 @@ function ScreenerTable({
 														!isSelected &&
 														"bg-muted/60",
 													text === MISSING
-														? "text-muted-foreground/60"
+														? MISSING_INK
 														: column.toneOf?.(stock),
 												)}
 											>
