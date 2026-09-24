@@ -293,9 +293,9 @@ Rules for the screener:
 ## 8. The Company Page
 
 > **Target state.** This section records the decided rules for the company
-> page (Linear epic P-STA-10 "Company Page"). The routes and the page states
-> are built. The loaded page shows a placeholder until the masthead and the
-> tab strip land. Audit the live page against this section
+> page (Linear epic P-STA-10 "Company Page"). The routes, the page states,
+> the masthead and the tab strip are built. Each tab shows an empty panel
+> until its tab ticket fills it. Audit the live page against this section
 > once the epic's Page Shell milestone lands. The layout below records
 > Version 5 of the
 > [company page design canvas](https://claude.ai/artifact/CwP59tuPZtXasw8dg7vpco),
@@ -452,9 +452,9 @@ Every tab shares these regions, from top to bottom:
    own. The Filings tab has no separate index, because its one card is the
    full list.
 
-The tab order and the card numbers are documentation only for now. The Page
-Shell milestone of the epic adds a test that the tab strip follows the URL
-table. Each tab ticket adds a story test that checks its card titles against
+A test in `src/lib/company/tabs.test.ts` fails when the tab strip leaves the
+order of the URL table or of `tabKeys`. The card numbers are documentation only
+for now. Each tab ticket adds a story test that checks its card titles against
 this section.
 
 
