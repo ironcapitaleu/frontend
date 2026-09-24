@@ -3,9 +3,75 @@
 // their own fixture and this list can change freely.
 
 import type { Stock } from "@/components/screener/screener.logic";
+import {
+	completeSections,
+	evaluateMetric,
+	priceChangeOneMonth,
+} from "@/lib/company/metrics";
+import { meridianFinancials } from "@/lib/company/sample/financials";
+import { meridianMasthead } from "@/lib/company/sample/masthead";
+import { meridianOverview } from "@/lib/company/sample/overview";
+import type { MetricKey } from "@/lib/company/types";
 
-/** Twelve large companies across five countries, with sample figures. */
+// The Meridian sections, as the company page reads them.
+const MERIDIAN_SECTIONS = completeSections({
+	masthead: meridianMasthead,
+	overview: meridianOverview,
+	financials: meridianFinancials,
+	valuation: null,
+	shareholderReturns: null,
+	relationships: null,
+	management: null,
+	filings: null,
+});
+
+// The screener names a country by its two-letter code.
+const COUNTRY_CODES: Readonly<Record<string, string>> = {
+	"United States": "US",
+};
+
+/** The value of a Meridian metric, or `null` when the metric has none. */
+function meridianMetric(key: MetricKey): number | null {
+	const result = evaluateMetric(key, MERIDIAN_SECTIONS);
+	return result.kind === "value" ? Number(result.claim.value) : null;
+}
+
+/** Turns a fraction into the percent the screener shows, such as 0.012 → 1.2. */
+function asPercent(value: number | null): number | null {
+	return value === null ? null : value * 100;
+}
+
+/**
+ * Meridian Semiconductor (MRDN), the one company with a company page. Each
+ * figure comes from the company sample, so the row and the page agree. The
+ * port has no P/Cash metric and no inventory line for the quick ratio, so
+ * both stay `null`.
+ */
+export const MERIDIAN_STOCK: Stock = {
+	symbol: meridianMasthead.ticker.value,
+	name: meridianMasthead.name,
+	sector: meridianMasthead.sector,
+	country: COUNTRY_CODES[meridianMasthead.country] ?? meridianMasthead.country,
+	price: Number(meridianMasthead.price?.value),
+	marketCap: meridianMetric("marketCap") ?? 0,
+	changePercent1M: Number(priceChangeOneMonth(meridianMasthead)?.value) * 100,
+	peRatio: meridianMetric("priceToEarnings"),
+	priceToCash: null,
+	priceToFcf: meridianMetric("priceToFreeCashFlow"),
+	quickRatio: null,
+	currentRatio: meridianMetric("currentRatio"),
+	buybackYield: asPercent(meridianMetric("buybackYield")),
+	dividendYield: asPercent(meridianMetric("dividendYield")),
+	weekLow52: Number(meridianMasthead.low52Weeks?.value),
+	weekHigh52: Number(meridianMasthead.high52Weeks?.value),
+};
+
+/**
+ * Twelve large companies across five countries, with sample figures, and
+ * {@link MERIDIAN_STOCK}.
+ */
 export const SAMPLE_STOCKS: readonly Stock[] = [
+	MERIDIAN_STOCK,
 	{
 		symbol: "AAPL",
 		name: "Apple Inc.",

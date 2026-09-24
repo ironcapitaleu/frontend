@@ -104,7 +104,7 @@ export const Empty: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 
-		const expectedResult = "0 of 12 companies";
+		const expectedResult = "0 of 13 companies";
 
 		await userEvent.type(
 			canvas.getByRole("searchbox", { name: "Search by ticker or company" }),
