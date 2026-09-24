@@ -337,7 +337,8 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		tab: "relationships",
 		label: "Ownership Split",
 		company: ({ relationships }) =>
-			relationships && Object.values(ownershipShares(relationships)),
+			relationships &&
+			Object.values(ownershipShares(relationships, "relationships")),
 	},
 };
 

@@ -177,9 +177,9 @@ function InsidersCard({
 						</TableRow>
 					</TableHeader>
 					<TableBody>
-						{relationships.insiders.map((row) => (
-							// Two insiders can share a name, so the key is the claim id of the shares.
-							<TableRow key={row.shares?.id ?? `${row.name} ${row.role}`}>
+						{relationships.insiders.map((row, position) => (
+							// biome-ignore lint/suspicious/noArrayIndexKey: the section fixes the order of the rows, and two insiders can share a name and role
+							<TableRow key={position}>
 								<TableHead scope="row" className="sticky left-0 bg-card">
 									{row.name}
 								</TableHead>
@@ -200,7 +200,7 @@ function OwnershipSplitCard({
 }: {
 	relationships: RelationshipsSection;
 }) {
-	const shares = ownershipShares(relationships);
+	const shares = ownershipShares(relationships, "relationships");
 	return (
 		<CompanyCard
 			tab="relationships"

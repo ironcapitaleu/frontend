@@ -1104,6 +1104,22 @@ describe("per-row derived figures", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should give Overview and Relationships different claim ids when both give the ownership shares", () => {
+		const section = overview;
+
+		const expectedResult = [
+			"metric.ownershipShares.overview.institutions",
+			"metric.ownershipShares.relationships.institutions",
+		];
+
+		const result = [
+			ownershipShares(section, "overview").institutions?.id,
+			ownershipShares(section, "relationships").institutions?.id,
+		];
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should divide each holding by the shares outstanding when it gives the ownership shares", () => {
 		const section = overview;
 

@@ -312,9 +312,9 @@ describe("figureGroupsOf", () => {
 
 	it("should read the three drawn shares when the Ownership Split group is built", () => {
 		const expectedResult = [
-			"metric.ownershipShares.institutions",
-			"metric.ownershipShares.insiders",
-			"metric.ownershipShares.public",
+			"metric.ownershipShares.relationships.institutions",
+			"metric.ownershipShares.relationships.insiders",
+			"metric.ownershipShares.relationships.public",
 		];
 
 		const result = claimsOf("ownershipSplit", "company", sections).map(

@@ -17,6 +17,16 @@ function partsOf(...shares: (number | null)[]): SharePart[] {
 }
 
 describe("shareSegments", () => {
+	it("should carry each part's own claim when the parts differ", () => {
+		const parts = partsOf(0.2, 0.3);
+
+		const expectedResult = parts.map(({ share }) => share);
+
+		const result = shareSegments(parts).map((segment) => segment.claim);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should take the chart tokens in order when there are five parts", () => {
 		const expectedResult = [
 			"bg-chart-1",
