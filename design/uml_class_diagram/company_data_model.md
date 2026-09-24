@@ -294,7 +294,10 @@ The value types:
   the quarterly column at one fiscal year end get two ids.
   A claim with no period drops the part, such as `overview.profile.website`.
   A figure in a list row puts the list name and the row position before the
-  field, such as `relationships.stakes.2.sharesHeld`. A list whose rows are
+  field, such as `relationships.stakes.2.sharesHeld`. A row of
+  `sectorBenchmarks` puts its `MetricKey` in place of the row position, such
+  as `overview.sectorBenchmarks.operatingMargin.median`, so the id stays the
+  same when the list changes order. A list whose rows are
   fiscal years, such as `ceoPay`, puts the period last instead, such as
   `management.ceoPay.salary.FY2026`. A claim from a named function of §5,
   derived or reported, uses the function name as its key, then the row part

@@ -8,7 +8,17 @@ describe("completeSections", () => {
 	it("should keep every section unchanged when the quarters are not yet completed", () => {
 		const sections: CompanySections = fakeCompanyReport;
 
-		const expectedResult = fakeCompanyReport;
+		const expectedResult = structuredClone(fakeCompanyReport);
+
+		const result = completeSections(sections);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep the unloaded section null when one section has not loaded", () => {
+		const sections: CompanySections = { ...fakeCompanyReport, overview: null };
+
+		const expectedResult = structuredClone(sections);
 
 		const result = completeSections(sections);
 

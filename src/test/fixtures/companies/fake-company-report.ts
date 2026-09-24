@@ -19,29 +19,18 @@ import type {
 	Unit,
 } from "../../../lib/company/types";
 
-/**
- * The sections of Quillvane Instruments (QVAN), a made-up company for tests.
- * Its fiscal year ends on 31 December. It has two fiscal years, FY2024 and
- * FY2025, and the four quarters of FY2025. The 10-K for FY2025 is filed, so
- * the quarterly table ends at Q4 FY2025.
- *
- * The data follows the rules of the company data model, so a test can read
- * each kind of figure:
- *
- * - the income statement has a `null` fourth quarter, because no 10-Q reports it;
- * - the cash flow statement has `null` points for Q2 to Q4 and a year-to-date table;
- * - the balance sheet holds 31 Dec 2025 once in each table, with two encodings;
- * - each sector quartile is a derived claim over two peer claims;
- * - `profile.website` has no period.
- *
- * It uses its own company instead of MRDN, so a change to the sample data of
- * the app breaks no test that uses it.
- */
+// The SEC EDGAR folder of the made-up filer.
 const EDGAR = "https://www.sec.gov/Archives/edgar/data/1999999";
+
+/** The fiscal years of the annual tables, FY2016 to FY2025. */
+const YEARS = Array.from({ length: 10 }, (_, position) => 2016 + position);
+
+/** The fiscal years of the quarterly tables. */
+const QUARTER_YEARS = [2024, 2025];
 
 function buildReport() {
 	return {
-		masthead: buildMasthead(),
+		masthead: fakeMasthead(Ticker.parse("QVAN")),
 		overview: buildOverview(),
 		financials: buildFinancials(),
 	};
@@ -49,6 +38,10 @@ function buildReport() {
 
 function date(value: string): IsoDate {
 	return value as IsoDate;
+}
+
+function quarterEnd(year: number, quarter: number): string {
+	return `${year}-${["03-31", "06-30", "09-30", "12-31"][quarter - 1]}`;
 }
 
 function fiscalYear(year: number): Period {
@@ -60,21 +53,21 @@ function fiscalYear(year: number): Period {
 	};
 }
 
-function fiscalQuarter(quarter: number, endsOn: string): Period {
+function fiscalQuarter(year: number, quarter: number): Period {
 	return {
 		kind: "fiscalQuarter",
-		fiscalYear: 2025,
+		fiscalYear: year,
 		fiscalQuarter: quarter,
-		endsOn: date(endsOn),
+		endsOn: date(quarterEnd(year, quarter)),
 	};
 }
 
-function yearToDate(quarter: number, endsOn: string): Period {
+function yearToDate(year: number, quarter: number): Period {
 	return {
 		kind: "yearToDate",
-		fiscalYear: 2025,
+		fiscalYear: year,
 		fiscalQuarter: quarter,
-		endsOn: date(endsOn),
+		endsOn: date(quarterEnd(year, quarter)),
 	};
 }
 
@@ -85,6 +78,10 @@ function instant(year: number, quarter: number | null, endsOn: string): Period {
 		fiscalQuarter: quarter,
 		endsOn: date(endsOn),
 	};
+}
+
+function yearEnd(year: number): Period {
+	return instant(year, null, `${year}-12-31`);
 }
 
 function filing(
@@ -104,35 +101,35 @@ function filing(
 	};
 }
 
-const TEN_K_2024 = filing(
-	"10-K",
-	"0001999999-25-000004",
-	"2025-02-20",
-	"FY2024",
-);
-const TEN_K_2025 = filing(
-	"10-K",
-	"0001999999-26-000003",
-	"2026-02-19",
-	"FY2025",
-);
-const TEN_Q = [
-	filing("10-Q", "0001999999-25-000011", "2025-05-01", "Q1 FY2025"),
-	filing("10-Q", "0001999999-25-000019", "2025-07-31", "Q2 FY2025"),
-	filing("10-Q", "0001999999-25-000027", "2025-10-30", "Q3 FY2025"),
-];
+/** The 10-K for a fiscal year, filed in February of the next year. */
+function tenK(year: number): Filing {
+	const filedIn = year + 1;
+	return filing(
+		"10-K",
+		`0001999999-${String(filedIn).slice(2)}-000003`,
+		`${filedIn}-02-19`,
+		`FY${year}`,
+	);
+}
+
+/** The 10-Q for one of the first three quarters of a fiscal year. */
+function tenQ(year: number, quarter: number): Filing {
+	return filing(
+		"10-Q",
+		`0001999999-${String(year).slice(2)}-${String(3 + 8 * quarter).padStart(6, "0")}`,
+		`${year}-${["05-01", "07-31", "10-30"][quarter - 1]}`,
+		`Q${quarter} FY${year}`,
+	);
+}
+
+const TEN_K_2025 = tenK(2025);
+const TEN_Q3_2025 = tenQ(2025, 3);
 const THIRTEEN_F = filing(
 	"13F-HR",
 	"0001888888-25-000031",
 	"2025-11-14",
 	"Q3 2025",
 );
-const PRICES: MarketDataset = {
-	kind: "market",
-	name: "End-of-day prices, NASDAQ",
-	asOf: date("2026-03-20"),
-	url: "https://prices.example/QVAN",
-};
 
 function reported(
 	id: string,
@@ -180,66 +177,62 @@ function periodId(period: Period): string {
 	}
 }
 
-function buildMasthead(): MastheadSection {
-	const yearEnds = [
-		instant(2024, null, "2024-12-31"),
-		instant(2025, null, "2025-12-31"),
-	];
-	const price = (id: string, value: number, on: string) =>
+/** The closing price at each fiscal year end, FY2016 to FY2025. */
+const PRICE_AT_YEAR_ENDS = [
+	38.2, 41.5, 36.9, 45.3, 40.1, 52.6, 48.8, 57.4, 64.1, 82.75,
+];
+
+/**
+ * The masthead of Quillvane Instruments, listed under `ticker`. The listing
+ * and the link of the price dataset carry `ticker`. Every other field is the
+ * same for each ticker.
+ */
+export function fakeMasthead(ticker: Ticker): MastheadSection {
+	const prices: MarketDataset = {
+		kind: "market",
+		name: "End-of-day prices, NASDAQ",
+		asOf: date("2026-03-20"),
+		url: `https://prices.example/${ticker.value}`,
+	};
+	const price = (key: string, value: number, period: Period) =>
 		reported(
-			`masthead.${id}`,
+			`masthead.${key}.${periodId(period)}`,
 			"Price",
 			value,
 			"usdPerShare",
-			instant(Number(on.slice(0, 4)), null, on),
-			PRICES,
+			period,
+			prices,
 			"Closing price, NASDAQ",
 			null,
 		);
+	const on = (endsOn: string) =>
+		instant(Number(endsOn.slice(0, 4)), null, endsOn);
+	const yearEnds = YEARS.map(yearEnd);
 	return {
-		ticker: Ticker.parse("QVAN"),
+		ticker,
 		name: "Quillvane Instruments, Inc.",
-		listings: [{ exchange: "NASDAQ", symbol: "QVAN" }],
+		listings: [{ exchange: "NASDAQ", symbol: ticker.value }],
 		sector: "Industrials",
 		country: "United States",
 		reportingCurrency: "USD",
 		fiscalYearEnd: "31 December",
-		price: price("price", 84.2, "2026-03-20"),
-		priceMonthEarlier: price("priceMonthEarlier", 79.5, "2026-02-20"),
-		low52Weeks: price("low52Weeks", 61.35, "2025-04-08"),
-		high52Weeks: price("high52Weeks", 88.9, "2026-01-14"),
+		price: price("price", 84.2, on("2026-03-20")),
+		priceMonthEarlier: price("priceMonthEarlier", 79.5, on("2026-02-20")),
+		low52Weeks: price("low52Weeks", 61.35, on("2025-04-08")),
+		high52Weeks: price("high52Weeks", 88.9, on("2026-01-14")),
 		priceAtFiscalYearEnds: {
 			key: "priceAtFiscalYearEnds",
 			label: "Price at fiscal year end",
 			unit: "usdPerShare",
 			periods: yearEnds,
-			points: [
-				reported(
-					"masthead.priceAtFiscalYearEnds.2024-12-31",
-					"Price",
-					64.1,
-					"usdPerShare",
-					yearEnds[0],
-					PRICES,
-					"Closing price, NASDAQ",
-					null,
-				),
-				reported(
-					"masthead.priceAtFiscalYearEnds.2025-12-31",
-					"Price",
-					82.75,
-					"usdPerShare",
-					yearEnds[1],
-					PRICES,
-					"Closing price, NASDAQ",
-					null,
-				),
-			],
+			points: yearEnds.map((period, position) =>
+				price("priceAtFiscalYearEnds", PRICE_AT_YEAR_ENDS[position], period),
+			),
 		},
 	};
 }
 
-function tenK(
+function tenKClaim(
 	id: string,
 	label: string,
 	value: ClaimValue,
@@ -304,7 +297,7 @@ function benchmark(
 function buildOverview(): OverviewSection {
 	const revenuePart = (list: string, name: string, value: number) => ({
 		name,
-		revenue: tenK(
+		revenue: tenKClaim(
 			`${list}.${name}.revenue`,
 			`${name} revenue`,
 			value,
@@ -333,7 +326,7 @@ function buildOverview(): OverviewSection {
 			xbrlTag,
 		);
 	return {
-		business: tenK(
+		business: tenKClaim(
 			"business",
 			"Business",
 			"Quillvane Instruments builds sensors and test equipment for factories.",
@@ -361,7 +354,7 @@ function buildOverview(): OverviewSection {
 				"sharesOutstanding",
 				"Shares outstanding",
 				150_000_000,
-				TEN_Q[2],
+				TEN_Q3_2025,
 				"Cover page › Shares outstanding",
 				"dei:EntityCommonStockSharesOutstanding",
 			),
@@ -377,13 +370,13 @@ function buildOverview(): OverviewSection {
 				"insiderShares",
 				"Shares held by insiders",
 				4_500_000,
-				TEN_Q[2],
+				TEN_Q3_2025,
 				"Security ownership › Directors and officers",
 				null,
 			),
 		},
 		profile: {
-			founded: tenK(
+			founded: tenKClaim(
 				"profile.founded",
 				"Founded",
 				1987,
@@ -391,7 +384,7 @@ function buildOverview(): OverviewSection {
 				"Item 1 › History",
 				null,
 			),
-			headquarters: tenK(
+			headquarters: tenKClaim(
 				"profile.headquarters",
 				"Headquarters",
 				"Portland, Oregon",
@@ -399,7 +392,7 @@ function buildOverview(): OverviewSection {
 				"Cover page › Address",
 				"dei:EntityAddressCityOrTown",
 			),
-			employees: tenK(
+			employees: tenKClaim(
 				"profile.employees",
 				"Employees",
 				9_400,
@@ -407,7 +400,7 @@ function buildOverview(): OverviewSection {
 				"Item 1 › Human capital",
 				"dei:EntityNumberOfEmployees",
 			),
-			chiefExecutive: tenK(
+			chiefExecutive: tenKClaim(
 				"profile.chiefExecutive",
 				"Chief executive",
 				"Dana Whitcombe",
@@ -415,7 +408,7 @@ function buildOverview(): OverviewSection {
 				"Item 10 › Executive officers",
 				null,
 			),
-			chiefExecutiveSince: tenK(
+			chiefExecutiveSince: tenKClaim(
 				"profile.chiefExecutiveSince",
 				"Chief executive since",
 				date("2019-04-01"),
@@ -423,7 +416,7 @@ function buildOverview(): OverviewSection {
 				"Item 10 › Executive officers",
 				null,
 			),
-			auditor: tenK(
+			auditor: tenKClaim(
 				"profile.auditor",
 				"Auditor",
 				"Hollis & Grant LLP",
@@ -445,33 +438,149 @@ function buildOverview(): OverviewSection {
 	};
 }
 
-type LineSpec = [
-	key: LineKey,
-	label: string,
-	unit: Unit,
-	level: number,
-	xbrlTag: string,
-	values: (number | null)[],
-];
+/** The label, unit, indent level and XBRL tag of each statement line. */
+const LINES: Record<LineKey, [string, Unit, number, string]> = {
+	revenue: ["Revenue", "usd", 0, "us-gaap:Revenues"],
+	operatingIncome: [
+		"Operating income",
+		"usd",
+		1,
+		"us-gaap:OperatingIncomeLoss",
+	],
+	netIncome: ["Net income", "usd", 1, "us-gaap:NetIncomeLoss"],
+	dilutedEps: [
+		"Diluted EPS",
+		"usdPerShare",
+		2,
+		"us-gaap:EarningsPerShareDiluted",
+	],
+	dilutedShares: [
+		"Diluted shares",
+		"shares",
+		2,
+		"us-gaap:WeightedAverageNumberOfDilutedSharesOutstanding",
+	],
+	totalCurrentAssets: [
+		"Total current assets",
+		"usd",
+		1,
+		"us-gaap:AssetsCurrent",
+	],
+	totalAssets: ["Total assets", "usd", 0, "us-gaap:Assets"],
+	totalCurrentLiabilities: [
+		"Total current liabilities",
+		"usd",
+		1,
+		"us-gaap:LiabilitiesCurrent",
+	],
+	totalLiabilities: ["Total liabilities", "usd", 0, "us-gaap:Liabilities"],
+	shareholdersEquity: [
+		"Total shareholders' equity",
+		"usd",
+		0,
+		"us-gaap:StockholdersEquity",
+	],
+	cashAndShortTermInvestments: [
+		"Cash and short-term investments",
+		"usd",
+		2,
+		"us-gaap:CashCashEquivalentsAndShortTermInvestments",
+	],
+	shortTermDebt: ["Short-term debt", "usd", 2, "us-gaap:DebtCurrent"],
+	longTermDebt: ["Long-term debt", "usd", 1, "us-gaap:LongTermDebtNoncurrent"],
+	operatingCashFlow: [
+		"Net cash from operating activities",
+		"usd",
+		0,
+		"us-gaap:NetCashProvidedByUsedInOperatingActivities",
+	],
+	capitalExpenditure: [
+		"Purchases of property and equipment",
+		"usd",
+		1,
+		"us-gaap:PaymentsToAcquirePropertyPlantAndEquipment",
+	],
+	dividendsPaid: ["Dividends paid", "usd", 1, "us-gaap:PaymentsOfDividends"],
+	shareRepurchases: [
+		"Repurchases of common stock",
+		"usd",
+		1,
+		"us-gaap:PaymentsForRepurchaseOfCommonStock",
+	],
+	shareIssuanceProceeds: [
+		"Proceeds from stock plans",
+		"usd",
+		1,
+		"us-gaap:ProceedsFromStockPlans",
+	],
+	shareBasedCompensation: [
+		"Share-based compensation",
+		"usd",
+		1,
+		"us-gaap:ShareBasedCompensation",
+	],
+};
 
-const ANNUAL = [fiscalYear(2024), fiscalYear(2025)];
-const ANNUAL_DOCUMENTS = [TEN_K_2024, TEN_K_2025];
-const QUARTERS = [
-	fiscalQuarter(1, "2025-03-31"),
-	fiscalQuarter(2, "2025-06-30"),
-	fiscalQuarter(3, "2025-09-30"),
-	fiscalQuarter(4, "2025-12-31"),
-];
-const QUARTER_DOCUMENTS = [...TEN_Q, TEN_K_2025];
+type Values = (number | null)[];
+
+/** One statement line: its key and one value for each period of the table. */
+type Row = [key: LineKey, values: Values];
+
+/** A table of the ten fiscal years, with one 10-K for each year. */
+const ANNUAL = { periods: YEARS.map(fiscalYear), documents: YEARS.map(tenK) };
+
+/**
+ * A table of the eight quarters, with one filing for each quarter: three 10-Qs
+ * and the 10-K for each fiscal year.
+ */
+const QUARTERLY = {
+	periods: QUARTER_YEARS.flatMap((year) =>
+		[1, 2, 3, 4].map((quarter) => fiscalQuarter(year, quarter)),
+	),
+	documents: QUARTER_YEARS.flatMap((year) => [
+		tenQ(year, 1),
+		tenQ(year, 2),
+		tenQ(year, 3),
+		tenK(year),
+	]),
+};
+
+/** The six-month and nine-month cash flow table, with the 10-Q of each period. */
+const YEAR_TO_DATE = {
+	periods: QUARTER_YEARS.flatMap((year) => [
+		yearToDate(year, 2),
+		yearToDate(year, 3),
+	]),
+	documents: QUARTER_YEARS.flatMap((year) => [tenQ(year, 2), tenQ(year, 3)]),
+};
+
+/** Turns amounts in millions into whole units. */
+function millions(...values: Values): Values {
+	return values.map((value) =>
+		value === null ? null : Math.round(value * 1_000_000),
+	);
+}
+
+/** Adds the `null` fourth quarter after the three reported quarters of each fiscal year. */
+function withoutFourthQuarters(...years: number[][]): Values {
+	return millions(...years.flatMap((quarters) => [...quarters, null]));
+}
+
+/** Adds the `null` second to fourth quarters after the first quarter of each fiscal year. */
+function withFirstQuartersOnly(...firstQuarters: number[]): Values {
+	return millions(
+		...firstQuarters.flatMap((value) => [value, null, null, null]),
+	);
+}
 
 function table(
 	title: string,
-	periods: Period[],
-	documents: Filing[],
-	specs: LineSpec[],
+	{ periods, documents }: { periods: Period[]; documents: Filing[] },
+	rows: Row[],
 ): StatementTable {
-	const lines: StatementLine[] = specs.map(
-		([key, label, unit, level, xbrlTag, values]) => ({
+	const lines: StatementLine[] = rows.map(([key, values]) => {
+		const [label, unit, level, xbrlTag] = LINES[key];
+		return {
 			key,
 			label,
 			unit,
@@ -491,296 +600,180 @@ function table(
 							xbrlTag,
 						),
 			),
-		}),
-	);
+		};
+	});
 	return { periods, lines };
 }
 
-function statement(
-	title: string,
-	annual: LineSpec[],
-	quarterly: LineSpec[],
-	periods: Period[],
-	yearToDate: StatementTable | null,
-): Statement {
-	return {
-		annual: table(title, ANNUAL, ANNUAL_DOCUMENTS, annual),
-		quarterly: table(title, periods, QUARTER_DOCUMENTS, quarterly),
-		yearToDate,
-	};
+/** Builds the five income lines. Diluted EPS is net income over diluted shares. */
+function incomeRows(
+	revenue: Values,
+	operatingIncome: Values,
+	netIncome: Values,
+	dilutedShares: Values,
+): Row[] {
+	const eps = netIncome.map((value, position) => {
+		const shares = dilutedShares[position];
+		return value === null || shares === null
+			? null
+			: Math.round((value / shares) * 100) / 100;
+	});
+	return [
+		["revenue", revenue],
+		["operatingIncome", operatingIncome],
+		["netIncome", netIncome],
+		["dilutedEps", eps],
+		["dilutedShares", dilutedShares],
+	];
+}
+
+/** Scales the current assets and the total assets into the eight balance sheet lines. */
+function balanceRows(currentAssets: Values, totalAssets: Values): Row[] {
+	const part = (values: Values, share: number) =>
+		values.map((value) => (value === null ? null : Math.round(value * share)));
+	return [
+		["totalCurrentAssets", currentAssets],
+		["totalAssets", totalAssets],
+		["totalCurrentLiabilities", part(currentAssets, 0.5)],
+		["totalLiabilities", part(totalAssets, 0.45)],
+		["shareholdersEquity", part(totalAssets, 0.55)],
+		["cashAndShortTermInvestments", part(currentAssets, 0.4)],
+		["shortTermDebt", part(currentAssets, 0.05)],
+		["longTermDebt", part(totalAssets, 0.15)],
+	];
+}
+
+/** Builds the six cash flow lines from the operating cash flow and one base amount. */
+function cashFlowRows(operating: Values, base: Values): Row[] {
+	const part = (share: number) =>
+		base.map((value) => (value === null ? null : Math.round(value * share)));
+	return [
+		["operatingCashFlow", operating],
+		["capitalExpenditure", part(0.4)],
+		["dividendsPaid", part(0.2)],
+		["shareRepurchases", part(0.3)],
+		["shareIssuanceProceeds", part(0.05)],
+		["shareBasedCompensation", part(0.25)],
+	];
 }
 
 function buildFinancials(): FinancialsSection {
 	const income = "Consolidated statements of income";
 	const balance = "Consolidated balance sheets";
 	const cashFlow = "Consolidated statements of cash flows";
-	const quarterEnds = [
-		instant(2025, 1, "2025-03-31"),
-		instant(2025, 2, "2025-06-30"),
-		instant(2025, 3, "2025-09-30"),
-		instant(2025, 4, "2025-12-31"),
-	];
-	const yearEnds = [
-		instant(2024, null, "2024-12-31"),
-		instant(2025, null, "2025-12-31"),
-	];
-	const ytd = [yearToDate(2, "2025-06-30"), yearToDate(3, "2025-09-30")];
-	return {
-		income: statement(
+	const incomeStatement: Statement = {
+		annual: table(
 			income,
-			[
-				[
-					"revenue",
-					"Revenue",
-					"usd",
-					0,
-					"us-gaap:Revenues",
-					[2_900_000_000, 3_200_000_000],
-				],
-				[
-					"operatingIncome",
-					"Operating income",
-					"usd",
-					1,
-					"us-gaap:OperatingIncomeLoss",
-					[380_000_000, 450_000_000],
-				],
-				[
-					"netIncome",
-					"Net income",
-					"usd",
-					1,
-					"us-gaap:NetIncomeLoss",
-					[290_000_000, 340_000_000],
-				],
-				[
-					"dilutedEps",
-					"Diluted EPS",
-					"usdPerShare",
-					2,
-					"us-gaap:EarningsPerShareDiluted",
-					[1.9, 2.25],
-				],
-				[
-					"dilutedShares",
-					"Diluted shares",
-					"shares",
-					2,
-					"us-gaap:WeightedAverageNumberOfDilutedSharesOutstanding",
-					[152_600_000, 151_100_000],
-				],
-			],
-			[
-				[
-					"revenue",
-					"Revenue",
-					"usd",
-					0,
-					"us-gaap:Revenues",
-					[760_000_000, 790_000_000, 810_000_000, null],
-				],
-				[
-					"operatingIncome",
-					"Operating income",
-					"usd",
-					1,
-					"us-gaap:OperatingIncomeLoss",
-					[104_000_000, 110_000_000, 115_000_000, null],
-				],
-				[
-					"netIncome",
-					"Net income",
-					"usd",
-					1,
-					"us-gaap:NetIncomeLoss",
-					[79_000_000, 83_000_000, 87_000_000, null],
-				],
-				[
-					"dilutedEps",
-					"Diluted EPS",
-					"usdPerShare",
-					2,
-					"us-gaap:EarningsPerShareDiluted",
-					[0.52, 0.55, 0.58, null],
-				],
-				[
-					"dilutedShares",
-					"Diluted shares",
-					"shares",
-					2,
-					"us-gaap:WeightedAverageNumberOfDilutedSharesOutstanding",
-					[151_600_000, 151_200_000, 150_800_000, null],
-				],
-			],
-			QUARTERS,
-			null,
+			ANNUAL,
+			incomeRows(
+				millions(1800, 1880, 1960, 2050, 1900, 2150, 2450, 2700, 2900, 3200),
+				millions(220, 232, 245, 260, 190, 270, 320, 350, 380, 450),
+				millions(165, 175, 185, 196, 140, 205, 245, 268, 290, 340),
+				millions(
+					162,
+					161.2,
+					160.1,
+					159,
+					158.4,
+					157.3,
+					156,
+					154.2,
+					152.6,
+					151.1,
+				),
+			),
 		),
-		balance: {
-			annual: table(
-				balance,
-				yearEnds,
-				ANNUAL_DOCUMENTS,
-				balanceLines(
-					[1_200_000_000, 1_350_000_000],
-					[3_600_000_000, 3_900_000_000],
-				),
+		quarterly: table(
+			income,
+			QUARTERLY,
+			incomeRows(
+				withoutFourthQuarters([690, 710, 730], [760, 790, 810]),
+				withoutFourthQuarters([88, 92, 96], [104, 110, 115]),
+				withoutFourthQuarters([67, 70, 73], [79, 83, 87]),
+				withoutFourthQuarters([153.2, 152.9, 152.6], [151.6, 151.2, 150.8]),
 			),
-			quarterly: table(
-				balance,
-				quarterEnds,
-				QUARTER_DOCUMENTS,
-				balanceLines(
-					[1_250_000_000, 1_280_000_000, 1_310_000_000, 1_350_000_000],
-					[3_700_000_000, 3_750_000_000, 3_820_000_000, 3_900_000_000],
-				),
+		),
+		yearToDate: null,
+	};
+	const balanceSheet: Statement = {
+		annual: table(
+			balance,
+			{ periods: YEARS.map(yearEnd), documents: ANNUAL.documents },
+			balanceRows(
+				millions(800, 830, 870, 910, 950, 980, 1040, 1110, 1200, 1350),
+				millions(2400, 2500, 2620, 2750, 2850, 2950, 3150, 3350, 3600, 3900),
 			),
-			yearToDate: null,
-		},
-		cashFlow: statement(
+		),
+		quarterly: table(
+			balance,
+			{
+				periods: QUARTERLY.periods.map((period) =>
+					instant(period.fiscalYear, period.fiscalQuarter, period.endsOn),
+				),
+				documents: QUARTERLY.documents,
+			},
+			balanceRows(
+				millions(1120, 1150, 1180, 1200, 1250, 1280, 1310, 1350),
+				millions(3400, 3460, 3530, 3600, 3700, 3750, 3820, 3900),
+			),
+		),
+		yearToDate: null,
+	};
+	const cashFlowStatement: Statement = {
+		annual: table(
 			cashFlow,
-			cashFlowLines([420_000_000, 480_000_000], [300_000_000, 330_000_000]),
-			cashFlowLines(
-				[110_000_000, null, null, null],
-				[75_000_000, null, null, null],
-			),
-			QUARTERS,
-			table(
-				cashFlow,
-				ytd,
-				TEN_Q.slice(1),
-				cashFlowLines([225_000_000, 350_000_000], [155_000_000, 240_000_000]),
+			ANNUAL,
+			cashFlowRows(
+				millions(250, 262, 275, 290, 240, 305, 350, 390, 420, 480),
+				millions(180, 188, 195, 205, 170, 215, 245, 275, 300, 330),
 			),
 		),
+		quarterly: table(
+			cashFlow,
+			QUARTERLY,
+			cashFlowRows(
+				withFirstQuartersOnly(95, 110),
+				withFirstQuartersOnly(68, 75),
+			),
+		),
+		yearToDate: table(
+			cashFlow,
+			YEAR_TO_DATE,
+			cashFlowRows(millions(195, 300, 225, 350), millions(140, 215, 155, 240)),
+		),
+	};
+	return {
+		income: incomeStatement,
+		balance: balanceSheet,
+		cashFlow: cashFlowStatement,
 	};
 }
 
-/** Scales the current assets and the total assets into the eight balance sheet lines. */
-function balanceLines(
-	currentAssets: number[],
-	totalAssets: number[],
-): LineSpec[] {
-	const part = (values: number[], share: number) =>
-		values.map((value) => Math.round(value * share));
-	return [
-		[
-			"totalCurrentAssets",
-			"Total current assets",
-			"usd",
-			1,
-			"us-gaap:AssetsCurrent",
-			currentAssets,
-		],
-		["totalAssets", "Total assets", "usd", 0, "us-gaap:Assets", totalAssets],
-		[
-			"totalCurrentLiabilities",
-			"Total current liabilities",
-			"usd",
-			1,
-			"us-gaap:LiabilitiesCurrent",
-			part(currentAssets, 0.5),
-		],
-		[
-			"totalLiabilities",
-			"Total liabilities",
-			"usd",
-			0,
-			"us-gaap:Liabilities",
-			part(totalAssets, 0.45),
-		],
-		[
-			"shareholdersEquity",
-			"Total shareholders' equity",
-			"usd",
-			0,
-			"us-gaap:StockholdersEquity",
-			part(totalAssets, 0.55),
-		],
-		[
-			"cashAndShortTermInvestments",
-			"Cash and short-term investments",
-			"usd",
-			2,
-			"us-gaap:CashCashEquivalentsAndShortTermInvestments",
-			part(currentAssets, 0.4),
-		],
-		[
-			"shortTermDebt",
-			"Short-term debt",
-			"usd",
-			2,
-			"us-gaap:DebtCurrent",
-			part(currentAssets, 0.05),
-		],
-		[
-			"longTermDebt",
-			"Long-term debt",
-			"usd",
-			1,
-			"us-gaap:LongTermDebtNoncurrent",
-			part(totalAssets, 0.15),
-		],
-	];
-}
-
-/** Builds the six cash flow lines from the operating cash flow and one base amount. */
-function cashFlowLines(
-	operating: (number | null)[],
-	base: (number | null)[],
-): LineSpec[] {
-	const part = (share: number) =>
-		base.map((value) => (value === null ? null : Math.round(value * share)));
-	return [
-		[
-			"operatingCashFlow",
-			"Net cash from operating activities",
-			"usd",
-			0,
-			"us-gaap:NetCashProvidedByUsedInOperatingActivities",
-			operating,
-		],
-		[
-			"capitalExpenditure",
-			"Purchases of property and equipment",
-			"usd",
-			1,
-			"us-gaap:PaymentsToAcquirePropertyPlantAndEquipment",
-			part(0.4),
-		],
-		[
-			"dividendsPaid",
-			"Dividends paid",
-			"usd",
-			1,
-			"us-gaap:PaymentsOfDividends",
-			part(0.2),
-		],
-		[
-			"shareRepurchases",
-			"Repurchases of common stock",
-			"usd",
-			1,
-			"us-gaap:PaymentsForRepurchaseOfCommonStock",
-			part(0.3),
-		],
-		[
-			"shareIssuanceProceeds",
-			"Proceeds from stock plans",
-			"usd",
-			1,
-			"us-gaap:ProceedsFromStockPlans",
-			part(0.05),
-		],
-		[
-			"shareBasedCompensation",
-			"Share-based compensation",
-			"usd",
-			1,
-			"us-gaap:ShareBasedCompensation",
-			part(0.25),
-		],
-	];
-}
-
+/**
+ * The sections of Quillvane Instruments (QVAN), a made-up company for tests.
+ * Its fiscal year ends on 31 December. The window matches the port contract:
+ *
+ * - the annual tables hold ten fiscal years, FY2016 to FY2025;
+ * - the quarterly tables hold the eight quarters of FY2024 and FY2025;
+ * - each point comes from one filing: a 10-K for each fiscal year and each
+ *   fourth quarter, and a 10-Q for each other quarter.
+ *
+ * The data follows the rules of the company data model, so a test can read
+ * each kind of figure:
+ *
+ * - the income statement has a `null` point at each fourth quarter, because no 10-Q reports it;
+ * - the cash flow statement has `null` points at each second to fourth quarter,
+ *   and a year-to-date table with the six-month and nine-month figures;
+ * - the balance sheet has no `null` point, and holds each fiscal year end of
+ *   FY2024 and FY2025 in both tables, with two encodings;
+ * - for each flow line, the first three quarters and the derived fourth
+ *   quarter add up to the fiscal year, in both fiscal years;
+ * - each sector quartile is a derived claim over two peer claims;
+ * - `profile.website` has no period.
+ *
+ * It uses its own company instead of MRDN, so a change to the sample data of
+ * the app breaks no test that uses it.
+ */
 export const fakeCompanyReport: {
 	readonly masthead: MastheadSection;
 	readonly overview: OverviewSection;
