@@ -256,7 +256,8 @@ The value types:
   now reads a price on 23 Sep 2026 and the EPS of FY2026, so its period is
   `null`. A derived claim whose inputs share one period by the rule below
   takes that period. For a fiscal year paired with the instant at its end, it
-  takes the fiscal year.
+  takes the fiscal year. A derived quarter of §4 is the one exception. It
+  takes the quarter of its column.
 - Two periods are the **same period** when their `kind`, `fiscalYear` and
   `fiscalQuarter` match. The one exception pairs a fiscal year with the
   instant at its end, because a year-end price and a year's EPS belong
@@ -721,11 +722,12 @@ and `metrics.ts` completes it:
   point of this kind.
 - The income statement and the cash flow statement also have a `yearToDate`
   table with the reported six-month and nine-month figures. The balance sheet
-  has `yearToDate: null`. When the `yearToDate` table has the nine-month
-  figure, Q4 is the fiscal year minus the nine months, for both statements.
-  Otherwise Q4 is the fiscal year minus the reported Q1, Q2 and Q3. For MRDN
-  on 23 Sep 2026 the window starts at Q3 FY2025, so Q4 FY2025 needs the
-  nine months to Q3 FY2025.
+  has `yearToDate: null`. The `yearToDate` table holds the six-month and
+  nine-month figures of each fiscal year that has a quarter in the quarterly
+  window. When it has the nine-month figure, Q4 is the fiscal year minus the
+  nine months, for both statements. Otherwise Q4 is the fiscal year minus the
+  reported Q1, Q2 and Q3. For MRDN on 23 Sep 2026 the window starts at Q3
+  FY2025, so Q4 FY2025 needs the nine months to Q3 FY2025.
 - `metrics.ts` returns a new, complete `StatementTable` from
   `completeQuarters(statement)`. It never writes to a section. Every section
   that the port returns stays unchanged.
@@ -770,6 +772,28 @@ stays `null`, and the quarterly chart draws it as a dimmed `—`. A
 because the first is `null` for one quarter in four and the second does not
 exist. A test in STA-226 rejects both. A metric that needs a share count
 reads `dilutedShares @ fiscalYear(0)`, which a 10-K always reports.
+`metrics.ts` exports the set of flow lines as `flowLineKeys`, so the tests of
+this rule and `completeQuarters` read one list.
+
+**A derived quarter is a derived claim.** A quarter is the figure up to the
+end of the quarter minus the figure up to the end of the quarter before. The
+figure up to a fourth quarter is the fiscal year of the annual table, and the
+figure up to a second or third quarter is the six-month or nine-month figure
+of the `yearToDate` table. The figure up to the quarter before is the first
+quarter or the year-to-date figure when a table reports it, and the reported
+quarters of the fiscal year otherwise. So the income statement gets
+Q4 = FY − Q1 − Q2 − Q3, and the cash flow statement gets Q2 = six months − Q1,
+Q3 = nine months − six months and Q4 = FY − nine months. A first quarter is
+never derived. A missing input, a text value or an input with no period keeps
+the point `null`. When the quarterly window starts after the first quarter of
+a fiscal year, the earlier quarters of that year are outside the table. So the
+oldest fourth quarter can stay `null`, unless the `yearToDate` table holds the
+nine-month figure of its fiscal year. The claim has the id `metric.{key}.Q{q}-FY{year}` (§3), the
+label and unit of its line, and a `DerivedSource` whose formula names the
+period of each input, such as `FY2025 − 9 months to Q3 FY2025`. Its `period`
+is the quarter of its column, although its inputs do not share one period.
+This is the one exception to the `Claim.period` rule of §3: the column fixes
+the period, and a `null` period would hide which quarter the figure covers.
 
 **The tab reads completed sections.** `metrics.ts` exports
 `completeSections(sections): CompletedSections`. It returns a new object with
@@ -1719,9 +1743,8 @@ takes unless it finds a reason not to.
   calls `completeSections`, and `metrics.ts` (STA-226) completes the
   quarters. Settled by the default: STA-224 declares the branded type and
   ships `completeSections` in `metrics.ts` as a function that brands the
-  sections and completes nothing. Until STA-226 adds `completeQuarters`, a
-  derived quarter reads `null`, and a metric that needs one gives
-  `missingInput`.
+  sections and completes nothing. STA-226 then adds `completeQuarters`, and
+  `completeSections` holds the completed quarterly tables from that point.
 
 ## 9. Enforcement levels
 
