@@ -409,8 +409,12 @@ function metric(
 	return { kind, key, name, formula, unit, inputs, guards, minPoints: null };
 }
 
-/** Returns a point metric that divides `dividend` by `divisor` and guards the divisor. */
+/**
+ * Returns a metric of `kind` that divides `dividend` by `divisor` and guards
+ * the divisor, so the metric names its divisor once.
+ */
 function ratio(
+	kind: Metric["kind"],
 	key: MetricKey,
 	name: string,
 	formula: string,
@@ -418,15 +422,7 @@ function ratio(
 	dividend: FigureRef,
 	divisor: FigureRef,
 ): Metric {
-	return metric(
-		"point",
-		key,
-		name,
-		formula,
-		unit,
-		[dividend, divisor],
-		divisor,
-	);
+	return metric(kind, key, name, formula, unit, [dividend, divisor], divisor);
 }
 
 /**
@@ -434,16 +430,17 @@ function ratio(
  * read and the four metrics of the Overview sector benchmarks.
  */
 export const metrics: Record<MetricKey, Metric> = {
-	operatingMargin: metric(
+	operatingMargin: ratio(
 		"perPeriod",
 		"operatingMargin",
 		"Operating margin",
 		"Operating income ÷ revenue",
 		"percent",
-		[line("operatingIncome", samePeriod), line("revenue", samePeriod)],
+		line("operatingIncome", samePeriod),
 		line("revenue", samePeriod),
 	),
 	returnOnEquity: ratio(
+		"point",
 		"returnOnEquity",
 		"Return on equity",
 		"Net income, latest fiscal year ÷ shareholders' equity, latest quarter end",
@@ -452,6 +449,7 @@ export const metrics: Record<MetricKey, Metric> = {
 		line("shareholdersEquity", latestQuarter),
 	),
 	dividendYield: ratio(
+		"point",
 		"dividendYield",
 		"Dividend yield",
 		"Dividends paid, last four quarters ÷ market cap",
@@ -481,6 +479,7 @@ export const metrics: Record<MetricKey, Metric> = {
 		[line("shortTermDebt", latestQuarter), line("longTermDebt", latestQuarter)],
 	),
 	currentRatio: ratio(
+		"point",
 		"currentRatio",
 		"Current ratio",
 		"Total current assets ÷ total current liabilities, latest quarter end",
@@ -489,6 +488,7 @@ export const metrics: Record<MetricKey, Metric> = {
 		line("totalCurrentLiabilities", latestQuarter),
 	),
 	stockPayToRevenue: ratio(
+		"point",
 		"stockPayToRevenue",
 		"Stock-based pay to revenue",
 		"Share-based compensation ÷ revenue, latest fiscal year",
@@ -505,6 +505,7 @@ export const metrics: Record<MetricKey, Metric> = {
 		[priceNow, line("dilutedShares", latestYear)],
 	),
 	priceToEarnings: ratio(
+		"point",
 		"priceToEarnings",
 		"P/E",
 		"Price ÷ diluted EPS, latest fiscal year",
@@ -512,16 +513,13 @@ export const metrics: Record<MetricKey, Metric> = {
 		priceNow,
 		line("dilutedEps", latestYear),
 	),
-	priceToEarningsAtYearEnd: metric(
+	priceToEarningsAtYearEnd: ratio(
 		"perPeriod",
 		"priceToEarningsAtYearEnd",
 		"P/E at fiscal year end",
 		"Price at fiscal year end ÷ diluted EPS",
 		"ratio",
-		[
-			{ from: "market", key: "priceAtFiscalYearEnd", at: samePeriod },
-			line("dilutedEps", samePeriod),
-		],
+		{ from: "market", key: "priceAtFiscalYearEnd", at: samePeriod },
 		line("dilutedEps", samePeriod),
 	),
 	priceToEarningsMedian10y: {
@@ -552,6 +550,7 @@ export const metrics: Record<MetricKey, Metric> = {
 		],
 	),
 	freeCashFlowYield: ratio(
+		"point",
 		"freeCashFlowYield",
 		"Free cash flow yield",
 		"Free cash flow, latest fiscal year ÷ market cap",
@@ -578,9 +577,9 @@ function median(input: ResolvedInput): number {
 		: (sorted[middle - 1] + sorted[middle]) / 2;
 }
 
-/** Divides the first input by the last input. */
-const divide: Formula = (inputs) =>
-	amount(inputs[0]) / amount(inputs[inputs.length - 1]);
+/** Divides the dividend by the divisor of a metric that {@link ratio} builds. */
+const divide: Formula = ([dividend, divisor]) =>
+	amount(dividend) / amount(divisor);
 
 /** The arithmetic of each metric, by key. */
 export const formulas: Record<MetricKey, Formula> = {
