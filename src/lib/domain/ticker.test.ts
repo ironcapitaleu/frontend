@@ -99,6 +99,7 @@ describe("Ticker accepted inputs", () => {
 		{ input: "MRDN", value: "MRDN" },
 		{ input: "BRK.B", value: "BRK.B" },
 		{ input: "BF-B", value: "BF-B" },
+		{ input: "0700", value: "0700" },
 	];
 
 	it.each(cases)(
@@ -113,7 +114,7 @@ describe("Ticker accepted inputs", () => {
 	);
 });
 
-// Table-driven pass/fail cases. Add a row here to check a new ticker; each row
+// Table-driven pass/fail cases. Add a row here to check a new ticker. Each row
 // runs as its own single-assertion test.
 describe("Ticker validity", () => {
 	const cases: ReadonlyArray<{ input: string; valid: boolean }> = [
@@ -150,6 +151,9 @@ describe("Ticker rejection reasons", () => {
 		{ input: "MERIDIANSEMI", reason: "too-long" },
 		{ input: "MR DN", reason: "invalid-character" },
 		{ input: "MRDN/X", reason: "invalid-character" },
+		{ input: "ıbm", reason: "invalid-character" },
+		{ input: "ß", reason: "invalid-character" },
+		{ input: "ﬁ", reason: "invalid-character" },
 		{ input: ".MRDN", reason: "invalid-separator" },
 		{ input: "MRDN-", reason: "invalid-separator" },
 		{ input: "BRK..B", reason: "invalid-separator" },

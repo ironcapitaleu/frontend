@@ -1,18 +1,23 @@
 /**
  * # Ticker
  *
- * A validated ticker, the short code under which an exchange lists a company
- * (e.g. `MRDN`). Parsed once where the `:symbol` part of the company page URL
- * enters the app, so the rest of the app holds a checked type instead of raw
- * URL text. Follows the "parse, don't validate" rule of AGENTS.md "Value
- * Objects (Newtypes)", like `Email` in `email.ts`.
+ * A validated ticker, the short code under which an exchange lists a company,
+ * for example `MRDN`. The company page parses the `:symbol` part of its URL
+ * into a `Ticker` once, where the URL enters the app, so the rest of the app
+ * holds a checked type instead of raw URL text. No caller does this yet. The
+ * company page shell adds the first one. Follows the "parse, don't validate"
+ * rule of AGENTS.md "Value Objects (Newtypes)", like `Email` in `email.ts`.
  *
- * The inner value is private and normalised (trimmed + upper-cased); a `Ticker`
- * is only obtainable through {@link Ticker.parse}, which throws
+ * The inner value is private and normalised (trimmed and upper-cased). A
+ * `Ticker` is only obtainable through {@link Ticker.parse}, which throws
  * {@link InvalidTicker} on malformed input.
  */
 
-/** The longest normalised ticker accepted: five letters plus a share-class suffix. */
+/**
+ * The longest normalised ticker accepted. US tickers have at most five letters.
+ * The cap leaves room for a share-class suffix and for longer codes on other
+ * exchanges.
+ */
 const MAX_LENGTH = 10;
 
 /** Why a ticker string was rejected — one variant per rule, in check order. */
@@ -67,17 +72,25 @@ export class Ticker {
 	 * two letters or digits. The first rule that fails sets the reason.
 	 */
 	static parse(raw: string): Ticker {
-		const value = raw.trim().toUpperCase();
+		const trimmed = raw.trim();
 
-		if (value.length === 0) {
+		if (trimmed.length === 0) {
 			throw new InvalidTicker("empty", raw);
 		}
-		if (value.length > MAX_LENGTH) {
+		if (trimmed.length > MAX_LENGTH) {
 			throw new InvalidTicker("too-long", raw);
 		}
-		if (!/^[A-Z0-9.-]+$/.test(value)) {
+		// Check the character set before upper-casing. Unicode case mapping turns
+		// some non-ASCII characters into ASCII letters ("ı" becomes "I", "ß"
+		// becomes "SS"), so a check after toUpperCase accepts input that is not a
+		// ticker. The two patterns below allow the same characters and must change
+		// together. The first one only picks the reason.
+		if (!/^[A-Za-z0-9.-]+$/.test(trimmed)) {
 			throw new InvalidTicker("invalid-character", raw);
 		}
+
+		const value = trimmed.toUpperCase();
+
 		if (!/^[A-Z0-9]+(?:[.-][A-Z0-9]+)*$/.test(value)) {
 			throw new InvalidTicker("invalid-separator", raw);
 		}
