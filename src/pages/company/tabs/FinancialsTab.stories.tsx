@@ -242,9 +242,9 @@ export const EmptyChart: Story = {
 };
 
 /**
- * Opens the chart of `statement` and checks every bar: its trigger is at
- * least 24 px wide and tall and inside the plot, the bar draws, and the page
- * does not scroll sideways.
+ * Opens the chart of `statement` and checks every bar: each year draws three,
+ * a trigger is at least 24 px wide and tall and inside the plot, the bar
+ * draws, and the page does not scroll sideways.
  */
 async function checkBarTargets(
 	canvasElement: HTMLElement,
@@ -262,6 +262,7 @@ async function checkBarTargets(
 	const { top, bottom } = plot.getBoundingClientRect();
 
 	const expectedResult = {
+		barsPerYear: 3,
 		smallTargets: [],
 		targetsOutsidePlot: [],
 		invisibleBars: [],
@@ -269,6 +270,7 @@ async function checkBarTargets(
 	};
 
 	const result = {
+		barsPerYear: bars.length / within(plot).getAllByRole("listitem").length,
 		smallTargets: bars.filter((bar) => {
 			const { width, height } = bar.getBoundingClientRect();
 			return width < 24 || height < 24;

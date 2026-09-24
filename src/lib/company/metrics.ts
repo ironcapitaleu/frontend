@@ -1497,10 +1497,9 @@ function yearsBetween(since: Claim, end: IsoDate): Nullable<number> {
 /**
  * Returns the growth per year of `line` over its fiscal years, the CAGR: the
  * latest figure divided by the earliest, to the power of 1 ÷ the years between
- * them, minus 1. It reads the earliest and the latest year with a figure, in
- * any order of the points, so the phone's newest-first table gives the same
- * claim. Returns `null` when fewer than two years have a figure, or when
- * either figure is not above 0.
+ * them, minus 1. It reads the earliest and the latest year with a figure in
+ * any order, so the phone's newest-first table gives the same claim. Returns
+ * `null` when fewer than two years have a figure, or either is not above 0.
  */
 export function growthPerYear(line: Series): Figure {
 	const known = line.points
@@ -1531,6 +1530,15 @@ export function growthPerYear(line: Series): Figure {
 			inputs: [last.point, first.point],
 		},
 	};
+}
+
+/** Returns the lines `key` reads, through its input metrics, but no market. */
+export function lineKeysOf(key: LineKey | MetricKey): LineKey[] {
+	return isMetricKey(key)
+		? metrics[key].inputs.flatMap((ref) =>
+				ref.from === "market" ? [] : lineKeysOf(ref.key),
+			)
+		: [key];
 }
 
 /** Tells whether `key` names a metric rather than a statement line. */

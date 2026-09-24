@@ -15,6 +15,7 @@ import {
 	isValidFigureRef,
 	keyFigureKeys,
 	keyFigureOf,
+	lineKeysOf,
 	type MetricResult,
 	type Metric,
 	metricInputsOf,
@@ -1487,6 +1488,16 @@ describe("metricInputsOf", () => {
 		const result = metricInputsOf("enterpriseValueToEbit", sections).map(
 			(input) => input?.id ?? null,
 		);
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("lineKeysOf", () => {
+	it("should give the lines of its input metric when a metric reads another metric", () => {
+		const expectedResult = ["dilutedEps"];
+
+		const result = lineKeysOf("priceToEarningsMedian10y");
 
 		expect(result).toEqual(expectedResult);
 	});

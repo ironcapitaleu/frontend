@@ -1,10 +1,9 @@
 import { listedFundPositions } from "./holdings";
 import {
-	isMetricKey,
 	keyFigureKeys,
 	keyFigureOf,
+	lineKeysOf,
 	metricInputsOf,
-	metrics,
 	ownershipShares,
 } from "./metrics";
 import type {
@@ -35,9 +34,8 @@ export type BarKey = LineKey | MetricKey;
 
 /**
  * The bars each Financials chart draws, in this order (DESIGN.md §8
- * "Financials"). Free cash flow is a metric, and the income chart draws it
- * for each fiscal year. The chart blocks read the lines and the lines that
- * each metric reads, and nothing else.
+ * "Financials"). Free cash flow is a metric, drawn for each fiscal year. The
+ * chart blocks read the lines and the lines that each metric reads.
  */
 export const chartLines: Record<keyof FinancialsSection, readonly BarKey[]> = {
 	income: ["revenue", "netIncome", "freeCashFlow"],
@@ -495,22 +493,15 @@ function pointsOf(
 }
 
 /**
- * Returns the annual points that the chart of `statement` draws: those of its
- * lines, and those of the lines that each of its metrics reads. The block
- * lists the inputs of a metric and not its claim, so a filing stays in the
- * index when the metric has no value for a year.
+ * Returns the annual points that the chart of `statement` draws: its lines and
+ * the lines its metrics read, by {@link lineKeysOf}. So a filing stays in the
+ * index when a metric has no value for a year.
  */
 function chartPointsOf(
 	financials: FinancialsSection,
 	statement: keyof FinancialsSection,
 ): readonly Figure[] {
-	const keys = chartLines[statement].flatMap((key) =>
-		isMetricKey(key)
-			? metrics[key].inputs.flatMap((ref) =>
-					ref.from === "line" ? [ref.key] : [],
-				)
-			: [key],
-	);
+	const keys = chartLines[statement].flatMap(lineKeysOf);
 	const { income, balance, cashFlow } = financials;
 	return [income, balance, cashFlow].flatMap(({ annual }) =>
 		pointsOf(annual, keys),
