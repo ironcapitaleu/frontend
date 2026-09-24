@@ -671,7 +671,7 @@ tab ticket adds its own keys, such as `peRange` and `ceoPay`.
 | ---------- | ----------------- |
 | Overview   | `business`, `tenYears`, `keyFigures`, `financialPosition`, `checksByArea`, `ownership`, `profile`, and the print-only `printedShareholderReturns` |
 | Financials | `incomeChart`, `incomeTable`, `balanceChart`, `balanceTable`, `cashFlowChart`, `cashFlowTable` |
-| Valuation  | `valuationRatios`, `ratioFormulas`, so far |
+| Valuation  | `valuationRatios`, `yieldsAgainstTreasury` (each yield, or the inputs of a missing one), `ratioFormulas` |
 | Relationships | `largestFunds`, `insiders`, `ownershipSplit`, `subsidiaries`, `stakes` |
 | Management | `executivesAndBoard`, `payMix`, `insiderHoldings`, so far |
 

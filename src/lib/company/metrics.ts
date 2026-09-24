@@ -733,6 +733,33 @@ export const metrics: Record<MetricKey, Metric> = {
 		guards: [],
 		minPoints: 5,
 	},
+	earningsYield: ratio(
+		"point",
+		"earningsYield",
+		"Earnings yield",
+		"Diluted EPS, latest fiscal year ÷ price",
+		"percent",
+		line("dilutedEps", latestYear),
+		priceNow,
+	),
+	earningsYieldAtYearEnd: ratio(
+		"perPeriod",
+		"earningsYieldAtYearEnd",
+		"Earnings yield at fiscal year end",
+		"Diluted EPS ÷ price at fiscal year end",
+		"percent",
+		line("dilutedEps", samePeriod),
+		priceAtYearEnd,
+	),
+	freeCashFlowYieldAtYearEnd: ratio(
+		"perPeriod",
+		"freeCashFlowYieldAtYearEnd",
+		"Free cash flow yield at fiscal year end",
+		"Free cash flow ÷ market cap at fiscal year end",
+		"percent",
+		{ from: "metric", key: "freeCashFlow", at: samePeriod },
+		marketCapAtYearEndRef,
+	),
 };
 
 /** Returns the value of a single-period input. */
@@ -788,6 +815,9 @@ export const formulas: Record<MetricKey, Formula> = {
 	priceToBookMedian10y: ([window]) => median(window),
 	enterpriseValueToEbitAtYearEnd: divide,
 	enterpriseValueToEbitMedian10y: ([window]) => median(window),
+	earningsYield: divide,
+	earningsYieldAtYearEnd: divide,
+	freeCashFlowYieldAtYearEnd: divide,
 };
 
 /**
@@ -944,15 +974,43 @@ export function financialPositionInputs(sections: CompletedSections): Claim[] {
  * Returns the input claims of metric `key` in the order of `Metric.inputs`,
  * by the resolution of {@link resolve}. A missing input, an input metric with
  * no value and a window input each give `null`. A failed guard hides no
- * input, so card 3.3 shows the inputs of a ratio that has no value.
+ * input, so card 3.3 shows the inputs of a ratio that has no value. A
+ * per-period metric reads its inputs at `period`.
  */
 export function metricInputsOf(
 	key: MetricKey,
 	sections: CompletedSections,
+	period: Nullable<Period> = null,
 ): Figure[] {
 	return metrics[key].inputs.map((ref) => {
-		const result = resolve(ref, sections, null);
+		const result = resolve(ref, sections, period);
 		return !isWindow(result) && result.kind === "value" ? result.claim : null;
+	});
+}
+
+/**
+ * Returns the input claims of metric `key` at `period` like
+ * {@link metricInputsOf}, but an input metric with no value gives its own
+ * inputs in its place, at every depth. So a missing FCF yield keeps the
+ * operating cash flow of a year whose free cash flow is missing.
+ */
+export function nestedMetricInputsOf(
+	key: MetricKey,
+	sections: CompletedSections,
+	period: Nullable<Period> = null,
+): Figure[] {
+	return metrics[key].inputs.flatMap((ref) => {
+		const result = resolve(ref, sections, period);
+		if (!isWindow(result) && result.kind === "value") {
+			return [result.claim];
+		}
+		if (isWindow(result) || ref.from !== "metric") {
+			return [null];
+		}
+		const at = ref.at === null ? null : targetPeriod(ref.at, sections, period);
+		return ref.at !== null && at === null
+			? [null]
+			: nestedMetricInputsOf(ref.key, sections, at);
 	});
 }
 
