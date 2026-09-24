@@ -11,6 +11,7 @@ import {
 	flowLineKeys,
 	fundChange,
 	fundShare,
+	growthPerYear,
 	isValidFigureRef,
 	keyFigureKeys,
 	keyFigureOf,
@@ -36,6 +37,7 @@ import type {
 	MetricKey,
 	Period,
 	Statement,
+	StatementLine,
 	StatementTable,
 } from "./types";
 
@@ -1442,5 +1444,76 @@ describe("per-row derived figures", () => {
 		const result = stakePercent(section, 2);
 
 		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("growthPerYear", () => {
+	const revenue = income.annual.lines.find(
+		(line) => line.key === "revenue",
+	) as StatementLine;
+
+	/** Returns `revenue` with its points set by `change`. */
+	const revenueWith = (change: (point: Figure, index: number) => Figure) => ({
+		...revenue,
+		points: revenue.points.map(change),
+	});
+
+	it("should take the ninth root of the latest revenue over the earliest when ten years have figures", () => {
+		const [first, last] = [0, 9].map((at) => Number(revenue.points[at]?.value));
+
+		// FY2016 to FY2025 are nine years apart.
+		const expectedResult = (last / first) ** (1 / 9) - 1;
+
+		const result = growthPerYear(revenue)?.value;
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should name the two years and their span in the formula when it gives a growth rate", () => {
+		const line = revenue;
+
+		const expectedResult = "(Revenue, FY2025 ÷ Revenue, FY2016)^(1 ÷ 9) − 1";
+
+		const figure = growthPerYear(line);
+		const result =
+			figure?.source.kind === "derived" ? figure.source.formula : null;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should give the same claim when the points run newest first", () => {
+		const reversed = {
+			...revenue,
+			periods: [...revenue.periods].reverse(),
+			points: [...revenue.points].reverse(),
+		};
+
+		const expectedResult = growthPerYear(revenue);
+
+		const result = growthPerYear(reversed);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should return null when only one year has a figure", () => {
+		const line = revenueWith((point, index) => (index === 9 ? point : null));
+
+		const expectedResult = null;
+
+		const result = growthPerYear(line);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should return null when the earliest figure is not above 0", () => {
+		const line = revenueWith((point, index) =>
+			index === 0 && point !== null ? { ...point, value: -1 } : point,
+		);
+
+		const expectedResult = null;
+
+		const result = growthPerYear(line);
+
+		expect(result).toBe(expectedResult);
 	});
 });

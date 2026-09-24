@@ -1,5 +1,11 @@
 import { listedFundPositions } from "./holdings";
-import { keyFigureKeys, keyFigureOf, ownershipShares } from "./metrics";
+import {
+	isMetricKey,
+	keyFigureKeys,
+	keyFigureOf,
+	metrics,
+	ownershipShares,
+} from "./metrics";
 import type {
 	BlockKey,
 	Claim,
@@ -23,14 +29,17 @@ import type {
 } from "./types";
 import { ratioRanges } from "./valuationRatios";
 
+/** A bar of a Financials chart: a statement line or a per-period metric. */
+export type BarKey = LineKey | MetricKey;
+
 /**
- * The statement lines each Financials chart draws, as bars in this order
- * (DESIGN.md §8 "Financials"). The chart blocks read these lines only. Free
- * cash flow, which §8 also names for the income chart, is a metric, not a
- * statement line, and it joins the chart later.
+ * The bars each Financials chart draws, in this order (DESIGN.md §8
+ * "Financials"). Free cash flow is a metric, and the income chart draws it
+ * for each fiscal year. The chart blocks read the lines and the lines that
+ * each metric reads, and nothing else.
  */
-export const chartLines: Record<keyof FinancialsSection, readonly LineKey[]> = {
-	income: ["revenue", "netIncome"],
+export const chartLines: Record<keyof FinancialsSection, readonly BarKey[]> = {
+	income: ["revenue", "netIncome", "freeCashFlow"],
 	balance: ["totalAssets", "totalLiabilities", "shareholdersEquity"],
 	cashFlow: ["operatingCashFlow", "capitalExpenditure", "shareRepurchases"],
 };
@@ -305,12 +314,11 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 				shareholderReturns.latestDividendDeclared,
 			],
 	},
-	// Free cash flow joins the income chart with STA-229.
 	incomeChart: {
 		tab: "financials",
 		label: "Income statement chart",
 		company: ({ financials }) =>
-			financials && pointsOf(financials.income.annual, chartLines.income),
+			financials && chartPointsOf(financials, "income"),
 	},
 	incomeTable: {
 		tab: "financials",
@@ -325,7 +333,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		tab: "financials",
 		label: "Balance sheet chart",
 		company: ({ financials }) =>
-			financials && pointsOf(financials.balance.annual, chartLines.balance),
+			financials && chartPointsOf(financials, "balance"),
 	},
 	balanceTable: {
 		tab: "financials",
@@ -340,7 +348,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		tab: "financials",
 		label: "Cash flow chart",
 		company: ({ financials }) =>
-			financials && pointsOf(financials.cashFlow.annual, chartLines.cashFlow),
+			financials && chartPointsOf(financials, "cashFlow"),
 	},
 	cashFlowTable: {
 		tab: "financials",
@@ -457,6 +465,29 @@ function pointsOf(
 	return table.lines
 		.filter((line) => keys === undefined || keys.includes(line.key))
 		.flatMap((line) => line.points);
+}
+
+/**
+ * Returns the annual points that the chart of `statement` draws: those of its
+ * lines, and those of the lines that each of its metrics reads. The block
+ * lists the inputs of a metric and not its claim, so a filing stays in the
+ * index when the metric has no value for a year.
+ */
+function chartPointsOf(
+	financials: FinancialsSection,
+	statement: keyof FinancialsSection,
+): readonly Figure[] {
+	const keys = chartLines[statement].flatMap((key) =>
+		isMetricKey(key)
+			? metrics[key].inputs.flatMap((ref) =>
+					ref.from === "line" ? [ref.key] : [],
+				)
+			: [key],
+	);
+	const { income, balance, cashFlow } = financials;
+	return [income, balance, cashFlow].flatMap(({ annual }) =>
+		pointsOf(annual, keys),
+	);
 }
 
 /** Returns the latest point of the lines `keys` of `table`. */

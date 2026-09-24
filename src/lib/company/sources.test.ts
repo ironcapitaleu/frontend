@@ -196,9 +196,9 @@ describe("claimsOf", () => {
 	}[] = [
 		{
 			block: "incomeChart",
-			statement: "annual income",
-			tables: [statements.income.annual],
-			keys: ["revenue", "netIncome"],
+			statement: "annual income and cash flow",
+			tables: [statements.income.annual, statements.cashFlow.annual],
+			keys: ["revenue", "netIncome", "operatingCashFlow", "capitalExpenditure"],
 		},
 		{
 			block: "incomeTable",
@@ -239,6 +239,33 @@ describe("claimsOf", () => {
 			expect(result).toEqual(expectedResult);
 		},
 	);
+
+	it("should keep the operating cash flow of a year in the income chart block when that year has no free cash flow", () => {
+		const { cashFlow } = fakeCompanyReport.financials;
+		const lines = cashFlow.annual.lines.map((line) =>
+			line.key === "capitalExpenditure"
+				? { ...line, points: line.points.map(() => null) }
+				: line,
+		);
+		const noCapex = completeSections({
+			...fakeCompanyReport,
+			financials: {
+				...fakeCompanyReport.financials,
+				cashFlow: { ...cashFlow, annual: { ...cashFlow.annual, lines } },
+			},
+		});
+
+		const expectedResult = claimsIn(
+			[statements.cashFlow.annual],
+			["operatingCashFlow"],
+		);
+
+		const result = claimsOf("incomeChart", "company", noCapex).filter(
+			({ id }) => id.includes("operatingCashFlow"),
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
 
 	it("should return no claim when the section of the block has not loaded", () => {
 		const unloaded = completeSections({ ...fakeCompanyReport, overview: null });

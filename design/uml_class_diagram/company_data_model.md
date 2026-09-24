@@ -999,6 +999,7 @@ ownership shares, returns one `Figure` for each part. §3 gives the ids.
 | A fund's share of the company         | `fundShare`               | `FundHolding.shares`, `OwnershipSummary.sharesOutstanding`               |
 | A fund's change over a quarter        | `fundChange`              | `FundHolding.shares`, `FundHolding.sharesQuarterEarlier`                 |
 | Stake percentage                      | `stakePercent`            | `Stake.sharesHeld`, `Stake.sharesOutstanding`                            |
+| Growth per year over ten years (CAGR) | `growthPerYear`           | the earliest and the latest annual point of a `StatementLine`            |
 | Pay mix                               | `payMix`                  | `salary`, `bonus`, `stockAwards` and `other` of the latest `PayYear`     |
 | Tenure in years                       | `tenure`                  | `Person.since` or `Profile.chiefExecutiveSince`                          |
 | Net shares bought back, per year      | `netSharesBoughtBack`     | `sharesRepurchased` and `sharesIssuedToStaff` at the same fiscal year    |
