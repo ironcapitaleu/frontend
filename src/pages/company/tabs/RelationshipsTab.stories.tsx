@@ -30,15 +30,17 @@ const loadingGateway: CompanyGateway = {
 };
 
 /**
- * The Relationships tab of the company page for MRDN, from the sample
- * gateway. Card 5.1 lists the largest funds from 13F filings. The sources
- * index at the foot lists the filings behind the tab.
+ * The Relationships tab of the company page for MRDN, from the fake gateway
+ * of the test fixtures unless a story sets its own. Card 5.1 lists the largest
+ * funds from 13F filings. The sources index at the foot lists the filings
+ * behind the tab.
  */
 const meta: Meta<typeof RelationshipsTab> = {
 	title: "Pages/CompanyPage/RelationshipsTab",
 	component: RelationshipsTab,
 	tags: ["autodocs"],
 	args: { ticker: Ticker.parse("MRDN") },
+	parameters: { companyGateway: found },
 	decorators: [
 		(Story, { parameters }) => (
 			<CompanyGatewayProvider gateway={parameters.companyGateway}>
@@ -71,14 +73,18 @@ export const Loaded: Story = {
 export const Phone: Story = {
 	globals: { viewport: { value: "mobile1", isRotated: false } },
 	play: async ({ canvasElement }) => {
-		const canvas = within(canvasElement);
-		await canvas.findByRole("table");
+		const table = await within(canvasElement).findByRole("table");
+		const container = table.parentElement;
 
-		const expectedResult = true;
+		const expectedResult = { scrollsInsideCard: true, pageScrolls: false };
 
-		const result = document.documentElement.scrollWidth <= window.innerWidth;
+		const result = {
+			scrollsInsideCard:
+				container !== null && container.scrollWidth > container.clientWidth,
+			pageScrolls: document.documentElement.scrollWidth > window.innerWidth,
+		};
 
-		await expect(result).toBe(expectedResult);
+		await expect(result).toEqual(expectedResult);
 	},
 };
 

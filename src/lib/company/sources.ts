@@ -1,3 +1,4 @@
+import { listedFundPositions } from "./holdings";
 import type {
 	BlockKey,
 	Claim,
@@ -307,17 +308,18 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 				...pointsOf(financials.cashFlow.quarterly),
 			],
 	},
-	// The block reads the reported inputs of `fundShare` and `fundChange`.
+	// The block reads the reported inputs of `fundShare` and `fundChange` for
+	// the rows that card 5.1 lists, so the index names no other fund's 13F.
 	largestFunds: {
 		tab: "relationships",
 		label: "Owned By: Largest Funds",
 		company: ({ relationships }) =>
 			relationships && [
 				relationships.ownership.sharesOutstanding,
-				...relationships.funds.flatMap((row) => [
-					row.shares,
-					row.sharesQuarterEarlier,
-				]),
+				...listedFundPositions(relationships.funds).flatMap((position) => {
+					const row = relationships.funds[position];
+					return [row.shares, row.sharesQuarterEarlier];
+				}),
 			],
 	},
 };

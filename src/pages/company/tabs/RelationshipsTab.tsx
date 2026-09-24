@@ -1,3 +1,5 @@
+import * as React from "react";
+
 import { CompanyCard, CompanyCardGrid } from "@/components/company/CompanyCard";
 import { SourceTrigger } from "@/components/company/SourceCard";
 import { SourcesIndex } from "@/components/company/SourcesIndex";
@@ -19,15 +21,16 @@ import {
 import { Text } from "@/components/ui/text";
 import { useCompany } from "../../../hooks/useCompany";
 import { formatDate } from "../../../lib/company/dates";
+import { listedFundPositions } from "../../../lib/company/holdings";
 import { fundChange, fundShare } from "../../../lib/company/metrics";
 import { figureGroupsOf } from "../../../lib/company/sources";
-import type { Figure, RelationshipsSection } from "../../../lib/company/types";
+import type {
+	CompletedSections,
+	Figure,
+	RelationshipsSection,
+} from "../../../lib/company/types";
 import type { Ticker } from "../../../lib/domain/ticker";
-import {
-	formatShares,
-	largestFundPositions,
-	LISTED_FUNDS,
-} from "./relationships";
+import { formatShares } from "./relationships";
 
 /**
  * The Relationships tab of the company page (DESIGN.md §8 "Relationships").
@@ -55,16 +58,35 @@ export function RelationshipsTab({ ticker }: { ticker: Ticker }) {
 			);
 		case "loaded":
 			return (
-				<div className="flex flex-col gap-10">
-					<CompanyCardGrid>
-						<LargestFundsCard relationships={state.data} />
-					</CompanyCardGrid>
-					<SourcesIndex
-						groups={figureGroupsOf("relationships", state.sections)}
-					/>
-				</div>
+				<LoadedRelationships
+					relationships={state.data}
+					sections={state.sections}
+				/>
 			);
 	}
+}
+
+/** The cards of the loaded tab, then the sources index. */
+function LoadedRelationships({
+	relationships,
+	sections,
+}: {
+	relationships: RelationshipsSection;
+	sections: CompletedSections;
+}) {
+	// The same `groups` on each render lets `SourcesIndex` keep its memo.
+	const groups = React.useMemo(
+		() => figureGroupsOf("relationships", sections),
+		[sections],
+	);
+	return (
+		<div className="flex flex-col gap-10">
+			<CompanyCardGrid>
+				<LargestFundsCard relationships={relationships} />
+			</CompanyCardGrid>
+			<SourcesIndex groups={groups} />
+		</div>
+	);
 }
 
 /** Card 5.1: the largest 13F funds, with their shares, their share of the company and their change over a quarter. */
@@ -73,7 +95,7 @@ function LargestFundsCard({
 }: {
 	relationships: RelationshipsSection;
 }) {
-	const positions = largestFundPositions(relationships.funds, LISTED_FUNDS);
+	const positions = listedFundPositions(relationships.funds);
 	return (
 		<CompanyCard
 			tab="relationships"
