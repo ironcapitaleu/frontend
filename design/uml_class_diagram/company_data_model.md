@@ -359,9 +359,12 @@ functions in `src/lib/company/sources.ts`:
   from the same groups, so the list and the page cannot disagree. A block
   whose sections have not loaded gives no group. A block that draws
   `SectorBenchmark` figures next to the company's figures gives two groups:
-  one for the company's figures and one for the sector figures.
-- `isSectorBenchmark(ref: FigureGroupRef): boolean` is true for a group of
-  sector figures only.
+  one for the company's figures and one for the sector figures. The two
+  share `block` and `label` and differ by `figures`. No block in `DESIGN.md`
+  §8 draws sector figures alone.
+- `isSectorBenchmark(ref: FigureGroupRef): boolean` reads `ref.figures`. It
+  is true for a group of sector figures only, so no label decides it and a
+  card title is free to change.
 - `sourcesOf(claims: Claim[]): SourceSet` walks each tree down to its reported
   sources. It groups the reported claims by document, with one group per
   filing or dataset. It sorts filings newest first and puts market data last.
@@ -378,8 +381,8 @@ functions in `src/lib/company/sources.ts`:
   entry.
 
 The "Sources" chip of a chart or table shows `sourcesOf` over the claims of
-the block's groups in `figureGroupsOf(tab, sections)` that
-`isSectorBenchmark` rejects. A block has one chip, where `DESIGN.md` §8
+the groups in `figureGroupsOf(tab, sections)` whose `block` is this block and
+that `isSectorBenchmark` rejects. A block has one chip, where `DESIGN.md` §8
 places it. So a block that draws sector figures next to the company's
 figures shows the company's filings alone and names no peer filing. A reader
 reaches the peers through a sector figure's own source card, which lists the
@@ -631,8 +634,12 @@ types:
 | `Stake`            | `company: string`, `ticker: Nullable~Ticker~`, `sharesHeld: Figure`, `sharesOutstanding: Figure`           |
 | `Person`           | `name: string`, `role: string`, `isDirector: boolean`, `since: Figure`, `independence: Figure`            |
 | `PayYear`          | `fiscalYear: number`, `salary`, `bonus`, `stockAwards`, `other`, each a `Figure`                           |
-| `FigureGroupRef`   | `tab: TabKey`, `label: string`, for example Financials, "Income statement, ten years"                      |
+| `FigureGroupRef`   | `tab: TabKey`, `block: BlockKey`, `label: string`, `figures: "company" \| "sector"`, for example Financials, `incomeTable`, "Income statement, ten years", company |
 | `FigureGroup`      | `ref: FigureGroupRef`, `claims: Claim[]`, built by `figureGroupsOf` (§3), never stored in a section        |
+
+`BlockKey` names one chart, table or check card of a tab, such as
+`incomeTable` or `peRange`. It is a code key, so a card title is free to
+change. `label` is display copy only, and no function reads it to decide.
 
 **Share counts for buybacks.** `ShareholderReturnsSection.sharesRepurchased`
 and `sharesIssuedToStaff` hold the shares bought back and the shares issued
@@ -718,10 +725,10 @@ filings exist from `FilingsSection.filings`. `fiscalYear(0)`,
 `latestQuarter`, `lastFourQuarters` and `lastFiscalYears` all read from that
 window. So in the weeks between a fiscal year end and its 10-K,
 `fiscalYear(0)` is still the year before, and the checks read the same
-figures as the week before. A
-`null` point above is a position inside the window that no filing reports.
-It is never a whole period that no filing covers yet, and a port that
-returns one is an adapter defect. §7 works the case at 20 Feb 2026.
+figures as the week before. A `null` point above is a position inside the
+window that no filing reports. It is never a whole period that no filing
+covers yet, and a port that returns one is an adapter defect. §7 works the
+case at 20 Feb 2026.
 
 **Only a flow line has a derived quarter.** A subtraction or a sum of
 quarters is correct only for a figure that adds up over a fiscal year. The
@@ -1565,18 +1572,18 @@ others, to `feedsOf`:
 ```ts
 const groups: FigureGroup[] = [
 	{
-		ref: { tab: "overview", label: "Checks by Area" },
+		ref: { tab: "overview", block: "checksByArea", label: "Checks by Area", figures: "company" },
 		// check.V1 → metric.priceToEarnings → financials.dilutedEps.FY2026 (10-K)
 		//                                    → the price (NASDAQ close)
 		claims: claimsOf(checksByArea),
 	},
 	{
-		ref: { tab: "financials", label: "Income statement, ten years" },
+		ref: { tab: "financials", block: "incomeTable", label: "Income statement, ten years", figures: "company" },
 		// financials.revenue.FY2017 … financials.revenue.FY2026, one 10-K each
 		claims: claimsOf(incomeTable),
 	},
 	{
-		ref: { tab: "management", label: "CEO Pay by Year" },
+		ref: { tab: "management", block: "ceoPay", label: "CEO Pay by Year", figures: "company" },
 		// management.ceoPay.salary.FY2026 → DEF 14A filed 24 Apr 2026
 		claims: claimsOf(ceoPay),
 	},
@@ -1689,6 +1696,10 @@ once STA-224 writes the types:
   the §4 label rule names. §7 walks one type through.
 - "No section stores a source set": the same type test fails when a section
   type has a field of type `SourceSet` or `FigureGroupRef[]`.
+- "A block with sector figures gives one group of each": a unit test in
+  STA-226 checks that each such block of `figureGroupsOf` gives one group
+  with `figures: "company"` and one with `figures: "sector"`, with the same
+  `block`.
 
 The period and guard rules reach level 1 through tests. Each worked example
 in §7 becomes a unit test in STA-226, and CI runs the tests. A change that
