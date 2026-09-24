@@ -961,7 +961,8 @@ const INSIDERS: [string, string, number, string][] = [
 	["Ruth Okafor", "Director", 500_000, "2025-05-20"],
 ];
 
-function form4(filer: string, row: number, filedOn: string): Filing {
+/** The Form 4 that the insider in row `row` of {@link INSIDERS} filed on `filedOn`. */
+function form4(row: number, filedOn: string): Filing {
 	const [year, month, day] = filedOn.split("-").map((part) => part.slice(-2));
 	return {
 		...filing(
@@ -970,9 +971,47 @@ function form4(filer: string, row: number, filedOn: string): Filing {
 			filedOn,
 			filedOn,
 		),
-		filer,
+		filer: INSIDERS[row][0],
 	};
 }
+
+/** The latest Form 4 of each insider, in the order of {@link INSIDERS}. */
+const INSIDER_FORM_4S = INSIDERS.map(([, , , filedOn], row) =>
+	form4(row, filedOn),
+);
+
+/** The Form 4 behind each insider trade of FY2024 and FY2025, one for each trade. */
+const TRADE_FORM_4S = {
+	insiderSharesBought: [form4(1, "2024-06-02"), form4(2, "2025-03-04")],
+	insiderSharesSold: [form4(0, "2024-09-12"), form4(0, "2025-09-10")],
+} as const;
+
+/** The funds that hold Quillvane, with their shares at Q3 2025 and at Q2 2025. */
+const FUNDS: [string, number, number][] = [
+	["Harlow Index Trust", 14_200_000, 13_900_000],
+	["Pinecrest Advisors", 9_800_000, 10_400_000],
+];
+
+/** The two 13F-HRs of each fund, in the order of {@link FUNDS}. */
+const FUND_13FS = FUNDS.map(([name], row) => ({
+	now: {
+		...filing("13F-HR", `000555555${row}-25-000031`, "2025-11-14", "Q3 2025"),
+		filer: name,
+	},
+	quarterEarlier: {
+		...filing("13F-HR", `000555555${row}-25-000021`, "2025-08-14", "Q2 2025"),
+		filer: name,
+	},
+}));
+
+/** The companies that Quillvane holds a stake in, with the shares held and outstanding. */
+const STAKES: [string, Ticker | null, number, number][] = [
+	["Alder Controls", Ticker.parse("ALDR"), 2_400_000, 48_000_000],
+	["Brisk Metrology", null, 1_100_000, 30_000_000],
+];
+
+/** The 10-K of each stake's target company, in the order of {@link STAKES}. */
+const STAKE_TEN_KS = STAKES.map(([company], row) => peerTenK(company, row));
 
 /** The insider holdings under the ids of `section`. The Relationships and Management copies hold the same rows. */
 function insiderHoldings(
@@ -987,7 +1026,7 @@ function insiderHoldings(
 			shares,
 			"shares",
 			instant(2025, null, filedOn),
-			form4(name, row, filedOn),
+			INSIDER_FORM_4S[row],
 			"Table I › Amount beneficially owned following reported transactions",
 			null,
 		),
@@ -995,7 +1034,7 @@ function insiderHoldings(
 }
 
 function buildRelationships(): RelationshipsSection {
-	const fund = (name: string, row: number, now: number, before: number) => {
+	const fund = ([name, now, before]: [string, number, number], row: number) => {
 		const claim = (field: string, value: number, filed: Filing, at: Period) =>
 			reported(
 				`relationships.funds.${row}.${field}`,
@@ -1003,7 +1042,7 @@ function buildRelationships(): RelationshipsSection {
 				value,
 				"shares",
 				at,
-				{ ...filed, filer: name },
+				filed,
 				"Information table › Shares (sshPrnamt)",
 				null,
 			);
@@ -1012,13 +1051,13 @@ function buildRelationships(): RelationshipsSection {
 			shares: claim(
 				"shares",
 				now,
-				filing("13F-HR", `000555555${row}-25-000031`, "2025-11-14", "Q3 2025"),
+				FUND_13FS[row].now,
 				instant(2025, 3, "2025-09-30"),
 			),
 			sharesQuarterEarlier: claim(
 				"sharesQuarterEarlier",
 				before,
-				filing("13F-HR", `000555555${row}-25-000021`, "2025-08-14", "Q2 2025"),
+				FUND_13FS[row].quarterEarlier,
 				instant(2025, 2, "2025-06-30"),
 			),
 		};
@@ -1037,11 +1076,13 @@ function buildRelationships(): RelationshipsSection {
 		),
 	});
 	const stake = (
-		company: string,
-		ticker: Ticker | null,
+		[company, ticker, held, outstanding]: [
+			string,
+			Ticker | null,
+			number,
+			number,
+		],
 		row: number,
-		held: number,
-		outstanding: number,
 	) => ({
 		company,
 		ticker,
@@ -1061,26 +1102,20 @@ function buildRelationships(): RelationshipsSection {
 			outstanding,
 			"shares",
 			instant(2026, null, "2026-02-13"),
-			peerTenK(company, row),
+			STAKE_TEN_KS[row],
 			"Cover page › Shares outstanding",
 			"dei:EntityCommonStockSharesOutstanding",
 		),
 	});
 	return {
 		ownership: ownershipSummary("relationships"),
-		funds: [
-			fund("Harlow Index Trust", 0, 14_200_000, 13_900_000),
-			fund("Pinecrest Advisors", 1, 9_800_000, 10_400_000),
-		],
+		funds: FUNDS.map(fund),
 		insiders: insiderHoldings("relationships"),
 		subsidiaries: [
 			subsidiary("Quillvane Instruments GmbH", 0, "Germany"),
 			subsidiary("Quillvane Sensors Ltd.", 1, "United Kingdom"),
 		],
-		stakes: [
-			stake("Alder Controls", Ticker.parse("ALDR"), 0, 2_400_000, 48_000_000),
-			stake("Brisk Metrology", null, 1, 1_100_000, 30_000_000),
-		],
+		stakes: STAKES.map(stake),
 	};
 }
 
@@ -1134,7 +1169,11 @@ function buildManagement(): ManagementSection {
 		return { fiscalYear: year, salary, bonus, stockAwards, other };
 	};
 	// The shares that insiders bought or sold in each year, each the sum of one Form 4.
-	const trades = (key: string, label: string, values: [number, number]) => {
+	const trades = (
+		key: keyof typeof TRADE_FORM_4S,
+		label: string,
+		values: [number, number],
+	) => {
 		const periods = [fiscalYear(2024), fiscalYear(2025)];
 		return {
 			key,
@@ -1148,7 +1187,7 @@ function buildManagement(): ManagementSection {
 					values[position],
 					"shares",
 					period,
-					form4(INSIDERS[position][0], position, `${period.fiscalYear}-06-02`),
+					TRADE_FORM_4S[key][position],
 					"Table I › Amount of securities acquired or disposed of",
 					null,
 				);
@@ -1194,7 +1233,14 @@ function buildManagement(): ManagementSection {
 	};
 }
 
-/** The filings of Quillvane, oldest first: the 10-Ks, the 10-Qs, the proxy statements, one 8-K and its own 13F. */
+/**
+ * The filings that the page reads, oldest first: the 10-Ks, the 10-Qs, the
+ * proxy statements, one 8-K and the company's own 13F, then the filings of
+ * others that a company figure cites. Those are the Form 4s of the insiders,
+ * the 13F-HRs of the funds and the 10-Ks of the stake targets. The peer 10-Ks
+ * behind the sector benchmarks are not here, because the Filings walk skips
+ * the sector figures.
+ */
 function buildFilings(): FilingsSection {
 	const filings = [
 		...ANNUAL.documents,
@@ -1203,6 +1249,10 @@ function buildFilings(): FilingsSection {
 		proxy(2026),
 		DIVIDEND_8K,
 		THIRTEEN_F,
+		...INSIDER_FORM_4S,
+		...Object.values(TRADE_FORM_4S).flat(),
+		...FUND_13FS.flatMap(({ now, quarterEarlier }) => [now, quarterEarlier]),
+		...STAKE_TEN_KS,
 	];
 	return {
 		filings: filings.sort((first, second) =>
