@@ -347,11 +347,11 @@ Rules for the company page:
   or `Space` pins it, and `Escape` closes it.
 - **Charts and checks show sources at two levels.** Hovering, focusing, or
   tapping a point of a chart shows the sources of that point. A "Sources" chip
-  on the chart shows the grouped sources behind the whole chart. A check shows the sources of
-  every figure in its sentence.
+  on the chart shows the grouped sources behind the whole chart. A check shows
+  the sources of every figure in its sentence.
 - **Short or empty history shows as it is.** A company with fewer than ten
-  fiscal years shows the years it has. A growth rate or a 10-year range needs
-  at least two years, and otherwise shows a dimmed `—`. A card with no figures,
+  fiscal years shows the years it has. A growth rate or a 10-year range needs at
+  least two years, and otherwise shows a dimmed `—`. A card with no figures,
   such as dividends for a company that pays none, shows one line that says so.
 - **Every chart has a "Data" button.** The button shows the same figures as a
   table.
