@@ -390,6 +390,16 @@ function line(key: LineKey, at: PeriodChoice): FigureRef {
 }
 
 const marketCapRef: FigureRef = { from: "metric", key: "marketCap", at: null };
+const priceAtYearEnd: FigureRef = {
+	from: "market",
+	key: "priceAtFiscalYearEnd",
+	at: samePeriod,
+};
+const marketCapAtYearEndRef: FigureRef = {
+	from: "metric",
+	key: "marketCapAtYearEnd",
+	at: samePeriod,
+};
 const priceNow: FigureRef = {
 	from: "market",
 	key: "price",
@@ -524,7 +534,7 @@ export const metrics: Record<MetricKey, Metric> = {
 		"P/E at fiscal year end",
 		"Price at fiscal year end ÷ diluted EPS",
 		"ratio",
-		{ from: "market", key: "priceAtFiscalYearEnd", at: samePeriod },
+		priceAtYearEnd,
 		line("dilutedEps", samePeriod),
 	),
 	priceToEarningsMedian10y: {
@@ -602,6 +612,102 @@ export const metrics: Record<MetricKey, Metric> = {
 		{ from: "metric", key: "enterpriseValue", at: null },
 		line("operatingIncome", latestYear),
 	),
+	marketCapAtYearEnd: metric(
+		"perPeriod",
+		"marketCapAtYearEnd",
+		"Market cap at fiscal year end",
+		"Price at fiscal year end × diluted shares",
+		"usd",
+		[priceAtYearEnd, line("dilutedShares", samePeriod)],
+	),
+	enterpriseValueAtYearEnd: metric(
+		"perPeriod",
+		"enterpriseValueAtYearEnd",
+		"Enterprise value at fiscal year end",
+		"Market cap + short-term debt + long-term debt − cash and short-term investments, at fiscal year end",
+		"usd",
+		[
+			marketCapAtYearEndRef,
+			line("shortTermDebt", samePeriod),
+			line("longTermDebt", samePeriod),
+			line("cashAndShortTermInvestments", samePeriod),
+		],
+	),
+	priceToFreeCashFlowAtYearEnd: ratio(
+		"perPeriod",
+		"priceToFreeCashFlowAtYearEnd",
+		"P/FCF at fiscal year end",
+		"Market cap at fiscal year end ÷ free cash flow",
+		"ratio",
+		marketCapAtYearEndRef,
+		{ from: "metric", key: "freeCashFlow", at: samePeriod },
+	),
+	priceToFreeCashFlowMedian10y: {
+		kind: "point",
+		key: "priceToFreeCashFlowMedian10y",
+		name: "Median P/FCF, 10 years",
+		formula: "Median of the P/FCF at the last 10 fiscal year ends",
+		unit: "ratio",
+		inputs: [
+			{
+				from: "metric",
+				key: "priceToFreeCashFlowAtYearEnd",
+				at: { kind: "lastFiscalYears", count: 10 },
+			},
+		],
+		guards: [],
+		minPoints: 5,
+	},
+	priceToBookAtYearEnd: ratio(
+		"perPeriod",
+		"priceToBookAtYearEnd",
+		"P/B at fiscal year end",
+		"Market cap at fiscal year end ÷ shareholders' equity",
+		"ratio",
+		marketCapAtYearEndRef,
+		line("shareholdersEquity", samePeriod),
+	),
+	priceToBookMedian10y: {
+		kind: "point",
+		key: "priceToBookMedian10y",
+		name: "Median P/B, 10 years",
+		formula: "Median of the P/B at the last 10 fiscal year ends",
+		unit: "ratio",
+		inputs: [
+			{
+				from: "metric",
+				key: "priceToBookAtYearEnd",
+				at: { kind: "lastFiscalYears", count: 10 },
+			},
+		],
+		guards: [],
+		minPoints: 5,
+	},
+	enterpriseValueToEbitAtYearEnd: ratio(
+		"perPeriod",
+		"enterpriseValueToEbitAtYearEnd",
+		"EV/EBIT at fiscal year end",
+		"Enterprise value at fiscal year end ÷ operating income",
+		"ratio",
+		{ from: "metric", key: "enterpriseValueAtYearEnd", at: samePeriod },
+		line("operatingIncome", samePeriod),
+	),
+	enterpriseValueToEbitMedian10y: {
+		kind: "point",
+		key: "enterpriseValueToEbitMedian10y",
+		name: "Median EV/EBIT, 10 years",
+		formula: "Median of the EV/EBIT at the last 10 fiscal year ends",
+		unit: "ratio",
+		inputs: [
+			{
+				from: "metric",
+				key: "enterpriseValueToEbitAtYearEnd",
+				at: { kind: "lastFiscalYears", count: 10 },
+			},
+		],
+		guards: [],
+		minPoints: 5,
+	},
 };
 
 /** Returns the value of a single-period input. */
@@ -646,6 +752,15 @@ export const formulas: Record<MetricKey, Formula> = {
 	enterpriseValue: ([cap, debt, cash]) =>
 		amount(cap) + amount(debt) - amount(cash),
 	enterpriseValueToEbit: divide,
+	marketCapAtYearEnd: ([price, shares]) => amount(price) * amount(shares),
+	enterpriseValueAtYearEnd: ([cap, shortDebt, longDebt, cash]) =>
+		amount(cap) + amount(shortDebt) + amount(longDebt) - amount(cash),
+	priceToFreeCashFlowAtYearEnd: divide,
+	priceToFreeCashFlowMedian10y: ([window]) => median(window),
+	priceToBookAtYearEnd: divide,
+	priceToBookMedian10y: ([window]) => median(window),
+	enterpriseValueToEbitAtYearEnd: divide,
+	enterpriseValueToEbitMedian10y: ([window]) => median(window),
 };
 
 /**

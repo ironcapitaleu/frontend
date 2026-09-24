@@ -188,7 +188,15 @@ export type MetricKey =
 	| "priceToFreeCashFlow"
 	| "priceToBook"
 	| "enterpriseValue"
-	| "enterpriseValueToEbit";
+	| "enterpriseValueToEbit"
+	| "marketCapAtYearEnd"
+	| "enterpriseValueAtYearEnd"
+	| "priceToFreeCashFlowAtYearEnd"
+	| "priceToFreeCashFlowMedian10y"
+	| "priceToBookAtYearEnd"
+	| "priceToBookMedian10y"
+	| "enterpriseValueToEbitAtYearEnd"
+	| "enterpriseValueToEbitMedian10y";
 
 /** The quartiles of one metric over the company's peer group. */
 export interface SectorBenchmark {
