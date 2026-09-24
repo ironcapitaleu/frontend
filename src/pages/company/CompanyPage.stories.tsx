@@ -29,7 +29,8 @@ const failingGateway = alwaysFailingCompanyGateway();
  * sets the gateway and the URL in its `parameters`. The decorator mounts the
  * page on the two company routes, like `App`, and mirrors `Layout` (a
  * full-height flex column) so the centered states sit as in the running app.
- * The loaded state is a placeholder until the masthead and tab strip land.
+ * The loaded state shows the masthead, the tab strip and an empty panel for
+ * the active tab.
  */
 const meta: Meta<typeof CompanyPage> = {
 	title: "Pages/CompanyPage",
@@ -98,5 +99,11 @@ export const Failed: Story = {
 /** The missing state at a phone width. */
 export const MissingOnPhone: Story = {
 	parameters: { companyGateway: missingGateway },
+	globals: { viewport: { value: "mobile1", isRotated: false } },
+};
+
+/** The loaded page at a phone width. The tab strip scrolls sideways. */
+export const LoadedOnPhone: Story = {
+	parameters: { path: "/companies/MRDN/returns" },
 	globals: { viewport: { value: "mobile1", isRotated: false } },
 };

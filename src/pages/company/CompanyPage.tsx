@@ -1,12 +1,14 @@
 import type { ReactNode } from "react";
 import { Link, Navigate, useParams } from "react-router";
 
+import { CompanyMasthead } from "@/components/company/CompanyMasthead";
+import { CompanyTabs } from "@/components/company/CompanyTabs";
 import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
 import { Spinner } from "@/components/ui/spinner";
 import { Text } from "@/components/ui/text";
 import { useCompany } from "../../hooks/useCompany";
-import { type CompanyTab, findTab } from "../../lib/company/tabs";
+import { type CompanyTab, findTab, tabPath } from "../../lib/company/tabs";
 import { Ticker } from "../../lib/domain/ticker";
 
 /**
@@ -20,8 +22,9 @@ import { Ticker } from "../../lib/domain/ticker";
  * Otherwise the page loads the masthead through `useCompany` and shows the
  * loading, missing, failed or loaded state.
  *
- * The loaded state is a placeholder that names the company and the tab. The
- * masthead and the tab strip replace it in a later ticket.
+ * The loaded state shows the masthead, the tab strip and a panel for the
+ * active tab. The panel names the tab and stays empty until its tab ticket
+ * fills it.
  */
 function CompanyPage() {
 	const { symbol = "", tab: segment } = useParams();
@@ -34,8 +37,7 @@ function CompanyPage() {
 		return <MissingTabState symbol={symbol} />;
 	}
 	if ((segment ?? null) !== tab.segment) {
-		const tabPath = tab.segment === null ? "" : `/${tab.segment}`;
-		return <Navigate to={`/companies/${symbol}${tabPath}`} replace />;
+		return <Navigate to={tabPath(symbol, tab)} replace />;
 	}
 	return <CompanyContent ticker={Ticker.parse(symbol)} tab={tab} />;
 }
@@ -60,12 +62,15 @@ function CompanyContent({ ticker, tab }: { ticker: Ticker; tab: CompanyTab }) {
 			);
 		case "loaded":
 			return (
-				<section className="w-full max-w-6xl mx-auto px-4 py-10 flex flex-col gap-2">
-					<Heading level={1} variant="page">
-						{state.data.name}
-					</Heading>
-					<Text font="sans">{tab.label}</Text>
-				</section>
+				<div className="w-full max-w-6xl mx-auto px-4 py-10 flex flex-col">
+					<CompanyMasthead masthead={state.data} />
+					<CompanyTabs symbol={ticker.value} activeTab={tab.key} />
+					<section aria-label={tab.label} className="py-10">
+						<Text font="sans" size="lg" className="text-left">
+							The {tab.label} tab has no content yet.
+						</Text>
+					</section>
+				</div>
 			);
 	}
 }
