@@ -116,6 +116,7 @@ describe("completeQuarters", () => {
 		const statement: Statement = {
 			...income,
 			quarterly: fromPosition(income.quarterly, 3),
+			yearToDate: null,
 		};
 
 		const expectedResult = [null];
@@ -143,7 +144,7 @@ describe("completeQuarters", () => {
 	});
 
 	it("should derive the fourth quarter as the fiscal year minus the first three quarters when the line is an income flow line", () => {
-		const statement: Statement = income;
+		const statement: Statement = { ...income, yearToDate: null };
 
 		const expectedResult = [760, 790, 810, 840];
 
@@ -181,7 +182,7 @@ describe("completeQuarters", () => {
 	});
 
 	it("should give the derived quarter a claim with the formula and the reported inputs when it derives a fourth quarter", () => {
-		const statement: Statement = income;
+		const statement: Statement = { ...income, yearToDate: null };
 		const [fiscalYear] = pointsOf(income.annual, "revenue", [9]) as Claim[];
 		const quarters = pointsOf(income.quarterly, "revenue", [4, 5, 6]);
 
@@ -199,6 +200,20 @@ describe("completeQuarters", () => {
 		};
 
 		const [result] = pointsOf(completeQuarters(statement), "revenue", [7]);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should derive the income fourth quarter from the nine-month figure when the year-to-date table has it", () => {
+		const statement: Statement = income;
+
+		const expectedResult = ["FY2025 − 9 months to Q3 FY2025", 840_000_000];
+
+		const [point] = pointsOf(completeQuarters(statement), "revenue", [7]);
+		const result =
+			point?.source.kind === "derived"
+				? [point.source.formula, point.value]
+				: null;
 
 		expect(result).toEqual(expectedResult);
 	});
@@ -309,6 +324,7 @@ describe("completeQuarters", () => {
 				...firstQuarter,
 				period: null,
 			}),
+			yearToDate: null,
 		};
 
 		const expectedResult = [null];
