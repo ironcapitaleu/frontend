@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { findTab } from "./tabs";
+import { COMPANY_TABS, findTab } from "./tabs";
 
 describe("findTab", () => {
 	it("should return Overview when the URL has no tab segment", () => {
@@ -41,5 +41,26 @@ describe("findTab", () => {
 		const result = findTab("Financials")?.key;
 
 		expect(result).toBe(expectedResult);
+	});
+});
+
+describe("COMPANY_TABS", () => {
+	it("should list the seven tabs with their segments and keys when compared with the URL table of DESIGN.md section 8", () => {
+		const expectedResult = [
+			{ segment: null, key: "overview" },
+			{ segment: "financials", key: "financials" },
+			{ segment: "valuation", key: "valuation" },
+			{ segment: "returns", key: "shareholderReturns" },
+			{ segment: "relationships", key: "relationships" },
+			{ segment: "management", key: "management" },
+			{ segment: "filings", key: "filings" },
+		];
+
+		const result = COMPANY_TABS.map((tab) => ({
+			segment: tab.segment,
+			key: findTab(tab.segment ?? undefined)?.key,
+		}));
+
+		expect(result).toEqual(expectedResult);
 	});
 });
