@@ -7,6 +7,8 @@ import {
 	completeSections,
 	evaluate,
 	evaluateMetric,
+	financialPositionInputs,
+	financialPositionOf,
 	type FigureRef,
 	flowLineKeys,
 	fundChange,
@@ -1070,6 +1072,72 @@ describe("keyFigureOf", () => {
 		const expectedResult = null;
 
 		const result = keyFigureOf("marketCap", withoutMasthead);
+
+		expect(result).toBe(expectedResult);
+	});
+});
+
+/** The ids of the latest quarter points of the balance sheet lines `keys`. */
+function latestBalanceIds(keys: LineKey[]): (string | undefined)[] {
+	return keys.map((key) => pointsOf(balance.quarterly, key, [7])[0]?.id);
+}
+
+describe("financialPositionOf", () => {
+	it("should give the long-term assets as total assets minus current assets when the latest quarter reports both", () => {
+		const [total, current] = pointsOf(balance.quarterly, "totalAssets", [7])
+			.concat(pointsOf(balance.quarterly, "totalCurrentAssets", [7]))
+			.map((point) => Number(point?.value));
+
+		const expectedResult = total - current;
+
+		const result = financialPositionOf(completed)[1]?.assets?.value;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should give null long-term assets when the latest quarter lacks total assets", () => {
+		const sections = sectionsWith(
+			"balance",
+			"quarterly",
+			"totalAssets",
+			[7],
+			null,
+		);
+
+		const expectedResult = null;
+
+		const result = financialPositionOf(sections)[1]?.assets;
+
+		expect(result).toBe(expectedResult);
+	});
+});
+
+describe("financialPositionInputs", () => {
+	it("should list each reported line of the latest quarter once when every figure has a value", () => {
+		const expectedResult = latestBalanceIds([
+			"totalCurrentAssets",
+			"totalCurrentLiabilities",
+			"totalAssets",
+			"totalLiabilities",
+		]);
+
+		const result = financialPositionInputs(completed).map((claim) => claim?.id);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should still list total liabilities when long-term liabilities has no value because current liabilities is missing", () => {
+		const sections = sectionsWith(
+			"balance",
+			"quarterly",
+			"totalCurrentLiabilities",
+			[7],
+			null,
+		);
+
+		const expectedResult = latestBalanceIds(["totalLiabilities"])[0];
+
+		const result = financialPositionInputs(sections).at(-1)?.id;
 
 		expect(result).toBe(expectedResult);
 	});

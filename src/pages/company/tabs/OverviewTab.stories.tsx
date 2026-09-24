@@ -35,10 +35,29 @@ const financialsFailingGateway: CompanyGateway = {
 	getFinancials: failingGateway.getFinancials,
 };
 
+/** A gateway whose latest quarter lacks total assets, so the long-term assets are missing. */
+const missingTotalAssetsGateway: CompanyGateway = {
+	...sampleGateway,
+	getFinancials: async (ticker) => {
+		const financials = await sampleGateway.getFinancials(ticker);
+		const { balance } = financials;
+		const lines = balance.quarterly.lines.map((line) =>
+			line.key === "totalAssets"
+				? { ...line, points: [...line.points.slice(0, -1), null] }
+				: line,
+		);
+		return {
+			...financials,
+			balance: { ...balance, quarterly: { ...balance.quarterly, lines } },
+		};
+	},
+};
+
 /**
  * The Overview tab with the sample data of Meridian Semiconductor (MRDN).
  * It draws card 1.1 "The Business", card 1.2 "Ten Years at a Glance" and
- * card 1.3 "Key Figures", then the sources index.
+ * card 1.3 "Key Figures", card 1.4 "Financial Position", then the sources
+ * index.
  * A story sets its gateway in `parameters`. Without one, the tab reads the
  * default sample gateway.
  */
@@ -71,6 +90,7 @@ export const Loaded: Story = {
 			"1.1 The Business",
 			"1.2 Ten Years at a Glance",
 			"1.3 Key Figures",
+			"1.4 Financial Position",
 		];
 
 		const result = canvas
@@ -246,7 +266,7 @@ export const KeyFiguresNeedFinancials: Story = {
 export const Loading: Story = {
 	parameters: { companyGateway: neverAnsweringGateway },
 	play: async ({ canvasElement }) => {
-		const expectedResult = 3;
+		const expectedResult = 4;
 
 		const result = within(canvasElement).getAllByRole("status").length;
 
@@ -282,6 +302,68 @@ export const OneSectionFails: Story = {
 			segmentShare: (await canvas.findByRole("button", { name: "81.0%" }))
 				.textContent,
 			failure: (await canvas.findByText(failure)).textContent,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: when the latest quarter lacks total assets, the long-term assets show a dimmed dash. */
+export const FinancialPositionMissing: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	parameters: { companyGateway: missingTotalAssetsGateway },
+	play: async ({ canvasElement }) => {
+		const card = within(
+			await within(canvasElement).findByRole("region", {
+				name: "1.4 Financial Position",
+			}),
+		);
+		await card.findAllByRole("button", { name: /^Short term / });
+
+		const expectedResult = "Long term assets: —";
+
+		const result = card.getByText(/^Long term assets:/);
+
+		await expect(result).toHaveTextContent(expectedResult);
+	},
+};
+
+/**
+ * Play test: on a phone, card 1.4 stacks below card 1.3, and each of its
+ * bars is a target of at least 24 × 24 px inside its plot.
+ */
+export const FinancialPositionPhone: Story = {
+	globals: { viewport: { value: "mobile1", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const card = await canvas.findByRole("region", {
+			name: "1.4 Financial Position",
+		});
+		await within(card).findAllByRole("button", { name: /^Short term / });
+		const position = card.getBoundingClientRect();
+		const figures = canvas
+			.getByRole("region", { name: "1.3 Key Figures" })
+			.getBoundingClientRect();
+		const plots = [...card.querySelectorAll("[data-slot=position-plot] ul")];
+
+		const expectedResult = { stacked: true, targets: [true, true, true, true] };
+
+		const result = {
+			stacked: position.left === figures.left && position.top >= figures.bottom,
+			targets: plots.flatMap((plot) => {
+				const box = plot.getBoundingClientRect();
+				return [...plot.querySelectorAll("button")].map((button) => {
+					const { width, height, left, right, top, bottom } =
+						button.getBoundingClientRect();
+					return (
+						Math.min(width, height) >= 24 &&
+						left >= box.left &&
+						right <= box.right &&
+						top >= box.top &&
+						bottom <= box.bottom
+					);
+				});
+			}),
 		};
 
 		await expect(result).toEqual(expectedResult);

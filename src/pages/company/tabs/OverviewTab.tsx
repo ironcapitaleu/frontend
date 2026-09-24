@@ -17,7 +17,13 @@ import {
 } from "@/components/ui/table";
 import { Text } from "@/components/ui/text";
 import { type CompanyState, useCompany } from "@/hooks/useCompany";
-import { keyFigureKeys, keyFigureOf, metrics } from "@/lib/company/metrics";
+import {
+	financialPositionOf,
+	keyFigureKeys,
+	keyFigureOf,
+	metrics,
+	type PositionRow,
+} from "@/lib/company/metrics";
 import { figureGroupsOf, sectorMedianOf } from "@/lib/company/sources";
 import type { BlockKey, CompletedSections, Figure } from "@/lib/company/types";
 import type { Ticker } from "@/lib/domain/ticker";
@@ -39,28 +45,34 @@ const DRAWN_BLOCKS: ReadonlySet<BlockKey> = new Set([
 	"business",
 	"tenYears",
 	"keyFigures",
+	"financialPosition",
 ]);
 
 /**
  * The Overview tab of the company page (DESIGN.md §8 "Overview"). It draws
  * card 1.1 "The Business" from the Overview section, card 1.2 "Ten Years at
  * a Glance" from the Financials section and card 1.3 "Key Figures" from the
- * masthead, Overview, Financials and Valuation sections, then the sources
- * index. Each card shows the loading or failed state of its own section, so
- * a slow section never delays another card.
+ * masthead, Overview, Financials and Valuation sections, and card 1.4
+ * "Financial Position" from the Financials section, then the sources index.
+ * Each card shows the loading or failed state of its own section, so a slow
+ * section never delays another card.
  */
 export function OverviewTab({ ticker }: { ticker: Ticker }) {
 	const masthead = useCompany(ticker, "masthead");
 	const overview = useCompany(ticker, "overview");
 	const financials = useCompany(ticker, "financials");
 	const valuation = useCompany(ticker, "valuation");
-	// The same sections and groups on each render let `SourcesIndex` keep its memo.
+	// A pending load returns a fresh state object on each render, but its
+	// loaded sections keep their identity. Keying on them keeps the same
+	// sections and groups, so `SourcesIndex` keeps its memo.
+	const loaded = [masthead, overview, financials, valuation].map(
+		loadedSections,
+	);
+	const [mastheadPart, overviewPart, financialsPart, valuationPart] = loaded;
 	const sections = React.useMemo(
 		() =>
-			joinSections(
-				[masthead, overview, financials, valuation].map(loadedSections),
-			),
-		[masthead, overview, financials, valuation],
+			joinSections([mastheadPart, overviewPart, financialsPart, valuationPart]),
+		[mastheadPart, overviewPart, financialsPart, valuationPart],
 	);
 	const groups = React.useMemo(
 		() =>
@@ -134,6 +146,18 @@ export function OverviewTab({ ticker }: { ticker: Ticker }) {
 					{() => sections && <KeyFigures sections={sections} />}
 				</Loaded>
 			</CompanyCard>
+			<CompanyCard
+				tab="overview"
+				position={4}
+				title="Financial Position"
+				caption="Latest quarter end · USD · Form 10-Q or 10-K"
+			>
+				<Loaded state={financials} what="financial position">
+					{({ sections }) => (
+						<PositionBars rows={financialPositionOf(sections)} />
+					)}
+				</Loaded>
+			</CompanyCard>
 			<div className="lg:col-span-2">
 				<SourcesIndex groups={groups} />
 			</div>
@@ -175,6 +199,108 @@ function KeyFigures({ sections }: { sections: CompletedSections }) {
 	);
 }
 
+/** The two sides of each pair of bars in card 1.4, with the chart token of each. */
+const SIDES = [
+	{ key: "assets", label: "Assets", fill: "bg-chart-2" },
+	{ key: "liabilities", label: "Liabilities", fill: "bg-chart-3" },
+] as const;
+
+/** Returns the value of `figure` when it is a finite number, or `null`. */
+function amountOf(figure: Figure): number | null {
+	const value = figure?.value;
+	return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+/**
+ * The bars of card 1.4 "Financial Position", one plot for each term, with
+ * assets and liabilities side by side on one scale. Each bar is a button the height of its plot, so
+ * its target is at least 24 × 24 px however short the bar. A missing figure
+ * gets a dot on the baseline and no button, and its figure is a dimmed dash.
+ */
+function PositionBars({ rows }: { rows: readonly PositionRow[] }) {
+	const values = rows.flatMap((row) =>
+		SIDES.map(({ key }) => amountOf(row[key])),
+	);
+	const high = Math.max(0, ...values.filter((value) => value !== null));
+	return (
+		<div className="grid grid-cols-2 gap-6">
+			{rows.map((row) => (
+				<figure
+					key={row.term}
+					data-slot="position-plot"
+					className="flex flex-col gap-2"
+				>
+					<figcaption className="text-muted-foreground text-sm">
+						{row.term}
+					</figcaption>
+					<ul className="flex h-40 justify-center gap-4 border-muted-foreground/50 border-b">
+						{SIDES.map(({ key, label, fill }) => {
+							const figure = row[key];
+							const value = amountOf(figure);
+							const height =
+								value === null || high === 0
+									? 0
+									: (Math.max(value, 0) / high) * 100;
+							const text = `${row.term} ${label.toLowerCase()}: ${value === null ? MISSING : formatInUnit(value, "usd")}`;
+							return (
+								<li key={key} className="relative w-10">
+									{value === null || figure === null ? (
+										<span className="absolute bottom-0 left-1/2 size-1.5 -translate-x-1/2 translate-y-1/2 rounded-full bg-muted-foreground/60">
+											<span className="sr-only">{text}</span>
+										</span>
+									) : (
+										<SourceTrigger
+											claim={figure}
+											className="absolute inset-0 block"
+										>
+											<span className="sr-only">{text}</span>
+											<span
+												className={cn(
+													"absolute inset-x-0 bottom-0 rounded-t-sm",
+													fill,
+												)}
+												style={{ height: `${height}%` }}
+											/>
+										</SourceTrigger>
+									)}
+								</li>
+							);
+						})}
+					</ul>
+					<dl className="grid grid-cols-2 gap-x-4 text-sm">
+						{SIDES.map(({ key, label, fill }) => (
+							<div key={key} className="flex flex-col">
+								<dt className="flex items-center gap-1.5 text-muted-foreground">
+									<span
+										className={cn("size-2 rounded-full", fill)}
+										aria-hidden="true"
+									/>
+									{label}
+								</dt>
+								<dd className="font-monospace">
+									<FigureText figure={row[key]} />
+								</dd>
+							</div>
+						))}
+					</dl>
+				</figure>
+			))}
+		</div>
+	);
+}
+
+/** A mono figure that opens its sources, or the dimmed dash when it is missing. */
+function FigureText({ figure }: { figure: Figure }) {
+	const value = amountOf(figure);
+	return figure !== null && value !== null ? (
+		<SourceTrigger claim={figure}>
+			{formatInUnit(value, figure.unit)}
+		</SourceTrigger>
+	) : (
+		<span className={MISSING_INK}>{MISSING}</span>
+	);
+}
+
 /** A right-aligned mono figure that opens its sources, or the dimmed dash when it is missing. */
 function FigureCell({
 	figure,
@@ -185,13 +311,7 @@ function FigureCell({
 }) {
 	return (
 		<TableCell className={cn("text-right font-monospace", className)}>
-			{figure !== null && typeof figure.value === "number" ? (
-				<SourceTrigger claim={figure}>
-					{formatInUnit(figure.value, figure.unit)}
-				</SourceTrigger>
-			) : (
-				<span className={MISSING_INK}>{MISSING}</span>
-			)}
+			<FigureText figure={figure} />
 		</TableCell>
 	);
 }

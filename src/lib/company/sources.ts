@@ -1,5 +1,10 @@
 import { listedFundPositions } from "./holdings";
-import { keyFigureKeys, keyFigureOf, ownershipShares } from "./metrics";
+import {
+	financialPositionInputs,
+	keyFigureKeys,
+	keyFigureOf,
+	ownershipShares,
+} from "./metrics";
 import type {
 	BlockKey,
 	Claim,
@@ -240,14 +245,10 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	financialPosition: {
 		tab: "overview",
 		label: "Financial Position",
-		company: ({ financials }) =>
-			financials &&
-			latestOf(financials.balance.quarterly, [
-				"totalCurrentAssets",
-				"totalAssets",
-				"totalCurrentLiabilities",
-				"totalLiabilities",
-			]),
+		// The reported inputs, not the long-term figures, so a filing stays in
+		// the index when a long-term figure has no value.
+		company: (sections) =>
+			sections.financials && financialPositionInputs(sections),
 	},
 	checksByArea: {
 		tab: "overview",
@@ -436,13 +437,6 @@ function pointsOf(
 	return table.lines
 		.filter((line) => keys === undefined || keys.includes(line.key))
 		.flatMap((line) => line.points);
-}
-
-/** Returns the latest point of the lines `keys` of `table`. */
-function latestOf(table: StatementTable, keys: readonly LineKey[]): Figure[] {
-	return table.lines
-		.filter((line) => keys.includes(line.key))
-		.map((line) => line.points.at(-1) ?? null);
 }
 
 /** A claim that one document reports. */

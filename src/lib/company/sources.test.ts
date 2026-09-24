@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { fakeCompanyReport } from "../../test/fixtures/companies/fake-company-report";
 import { LISTED_FUNDS } from "./holdings";
-import { completeSections } from "./metrics";
+import { completeSections, financialPositionInputs } from "./metrics";
 import {
 	claimsOf,
 	feedsOf,
@@ -244,6 +244,16 @@ describe("claimsOf", () => {
 		const expectedResult: Claim[] = [];
 
 		const result = claimsOf("profile", "company", unloaded);
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("claimsOf financialPosition", () => {
+	it("should read the claims of financialPositionInputs when the company figures of Financial Position are read", () => {
+		const expectedResult = financialPositionInputs(sections);
+
+		const result = claimsOf("financialPosition", "company", sections);
 
 		expect(result).toEqual(expectedResult);
 	});
