@@ -496,8 +496,8 @@ The Overview tab reads Shareholder returns because of the print summary
 (`DESIGN.md` §8 "Print Summary"). The printed page holds a Shareholder returns
 block with the dividend per share and the latest dividend declared, and only
 `ShareholderReturnsSection` carries them. The screen shows no figure of that
-section. Until `getShareholderReturns` exists, the printed block shows a
-dimmed `—` for them.
+section. While `getShareholderReturns` has not resolved, the printed block
+shows a dimmed `—` for them.
 
 ```mermaid
 classDiagram
@@ -673,8 +673,10 @@ tab ticket adds its own keys, such as `peRange` and `ceoPay`.
 A chart reads the annual table of its statement. A table reads the annual
 table and the completed quarterly table, because the annual and quarterly
 switch shows both. §8 holds the open question of whether the switch also
-flips the chart. Until `ShareholderReturnsSection` exists, the
-`printedShareholderReturns` block gives no group. Until `evaluateMetric`
+flips the chart. The `printedShareholderReturns` block reads the latest
+point of `dividendPerShare` and `latestDividendDeclared` from
+`ShareholderReturnsSection`, and gives no group until that section loads.
+Until `evaluateMetric`
 (STA-229) exists, a block reads its reported figures only, and `checksByArea`
 and the company figures of `keyFigures` read no claim.
 

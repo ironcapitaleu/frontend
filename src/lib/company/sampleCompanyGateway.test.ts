@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { Ticker } from "../domain/ticker";
 import { MissingCompany } from "./errors";
+import { completeSections } from "./metrics";
 import { meridianFilingsSection } from "./sample/filings";
 import { meridianFinancials } from "./sample/financials";
 import { fiscalYearOf } from "./sample/calendar";
@@ -20,7 +21,7 @@ import {
 } from "./sample/sources";
 import { meridianValuation, treasuryYields } from "./sample/valuation";
 import { sampleCompanyGateway } from "./sampleCompanyGateway";
-import { sourcesOf } from "./sources";
+import { figureGroupsOf, sourcesOf } from "./sources";
 import type {
 	Claim,
 	LineKey,
@@ -1043,6 +1044,45 @@ describe("the MRDN shareholder returns sample data", () => {
 });
 
 /** Renames the section prefix of every claim id under `value`, to compare two copies of one value. */
+describe("the printed MRDN shareholder returns block", () => {
+	const sections = {
+		masthead: meridianMasthead,
+		overview: meridianOverview,
+		financials: meridianFinancials,
+		valuation: meridianValuation,
+		shareholderReturns: meridianShareholderReturns,
+		relationships: meridianRelationships,
+		management: meridianManagement,
+		filings: meridianFilingsSection,
+	};
+	const printedClaimsOf = (loaded: typeof sections | typeof unloaded) =>
+		figureGroupsOf("overview", completeSections(loaded))
+			.filter(({ ref }) => ref.block === "printedShareholderReturns")
+			.map(({ claims }) => claims.map((claim) => claim.id));
+	const unloaded = { ...sections, shareholderReturns: null };
+
+	it("should read the latest dividend per share and the latest dividend declared when the Overview groups are built", () => {
+		const { dividendPerShare, latestDividendDeclared } =
+			meridianShareholderReturns;
+
+		const expectedResult = [
+			[dividendPerShare.points.at(-1)?.id, latestDividendDeclared?.id],
+		];
+
+		const result = printedClaimsOf(sections);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give no printed group when the shareholder returns have not loaded", () => {
+		const expectedResult: string[][] = [];
+
+		const result = printedClaimsOf(unloaded);
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
 function asSection(value: unknown, from: string, to: string): unknown {
 	return JSON.parse(
 		JSON.stringify(value).replaceAll(`"id":"${from}.`, `"id":"${to}.`),

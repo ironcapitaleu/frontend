@@ -214,12 +214,16 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		label: "Profile",
 		company: ({ overview }) => overview && Object.values(overview.profile),
 	},
-	// The printed page only. Its figures live in `ShareholderReturnsSection`.
-	// A later part of the port expansion wires it, so the block gives no group yet.
+	// The printed page only. It shows the latest dividend per share and the
+	// latest dividend declared, from `ShareholderReturnsSection`.
 	printedShareholderReturns: {
 		tab: "overview",
 		label: "Shareholder returns, printed page",
-		company: () => null,
+		company: ({ shareholderReturns }) =>
+			shareholderReturns && [
+				shareholderReturns.dividendPerShare.points.at(-1) ?? null,
+				shareholderReturns.latestDividendDeclared,
+			],
 	},
 	// DESIGN.md §8 names the lines of the income chart only. The other two
 	// charts read every line of their annual table until the Financials tab

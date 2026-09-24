@@ -214,6 +214,7 @@ describe("figureGroupsOf", () => {
 			"checksByArea",
 			"ownership",
 			"profile",
+			"printedShareholderReturns",
 		];
 
 		const result = figureGroupsOf("overview", sections).map(
@@ -252,6 +253,7 @@ describe("figureGroupsOf", () => {
 			"keyFigures",
 			"ownership",
 			"profile",
+			"printedShareholderReturns",
 		];
 
 		const result = figureGroupsOf("overview", partial).map(
