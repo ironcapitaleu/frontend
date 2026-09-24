@@ -1,12 +1,13 @@
 import { SourceTrigger } from "@/components/company/SourceCard";
 import { MISSING, MISSING_INK } from "@/components/screener/format";
-import type { Claim, StatementTable } from "@/lib/company/types";
+import type { Claim } from "@/lib/company/types";
 import { cn } from "@/lib/utils";
 import {
 	type BarTable,
 	barScale,
 	formatStatementValue,
 	periodLabel,
+	type RowTable,
 	type Scale,
 } from "./financialsTable";
 
@@ -27,7 +28,7 @@ export function StatementChart({
 	table,
 	scale,
 }: {
-	table: StatementTable;
+	table: RowTable;
 	scale: Scale;
 }) {
 	const columns = table.periods.map((period) => ({
