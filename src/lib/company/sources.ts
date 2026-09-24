@@ -67,6 +67,16 @@ export function isSectorBenchmark(ref: FigureGroupRef): boolean {
 }
 
 /**
+ * Tells whether `ref` names a block that only the printed page draws. It reads
+ * the block's `printed` marker, so no label decides it. The on-screen sources
+ * index skips these groups, so it names no filing that no figure on the
+ * screen uses.
+ */
+export function isPrintedOnly(ref: FigureGroupRef): boolean {
+	return blocks[ref.block].printed === true;
+}
+
+/**
  * Returns the reported sources of `claims`, one group for each filing or
  * market dataset. The filings come first, newest first, and the market data
  * comes last. A claim that two trees share appears once.
@@ -121,6 +131,8 @@ interface Block {
 	readonly company: Reader;
 	/** Only a block that draws `SectorBenchmark` figures has this reader. */
 	readonly sector?: Reader;
+	/** Marks a block that only the printed page draws, never the screen. */
+	readonly printed?: true;
 }
 
 /** The blocks of every tab, in the order of the page. */
@@ -239,6 +251,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	printedShareholderReturns: {
 		tab: "overview",
 		label: "Shareholder returns, printed page",
+		printed: true,
 		company: ({ shareholderReturns }) =>
 			shareholderReturns && [
 				shareholderReturns.dividendPerShare.points.at(-1) ?? null,

@@ -6,6 +6,7 @@ import {
 	claimsOf,
 	feedsOf,
 	figureGroupsOf,
+	isPrintedOnly,
 	isSectorBenchmark,
 	sourcesOf,
 } from "./sources";
@@ -352,6 +353,26 @@ describe("isSectorBenchmark", () => {
 		const result = [
 			isSectorBenchmark(ref),
 			isSectorBenchmark({ ...ref, figures: "sector" }),
+		];
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("isPrintedOnly", () => {
+	it("should read the block and not the label when a ref names the printed shareholder returns", () => {
+		const ref: FigureGroupRef = {
+			tab: "overview",
+			block: "profile",
+			label: "Shareholder returns, printed page",
+			figures: "company",
+		};
+
+		const expectedResult = [false, true];
+
+		const result = [
+			isPrintedOnly(ref),
+			isPrintedOnly({ ...ref, block: "printedShareholderReturns" }),
 		];
 
 		expect(result).toEqual(expectedResult);
