@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { Ticker } from "../domain/ticker";
-import { FailedCompanyRequest, MissingCompany } from "./errors";
+import { MissingCompany } from "./errors";
+import { meridianFilingsSection } from "./sample/filings";
 import { meridianFinancials } from "./sample/financials";
 import { fiscalYearOf } from "./sample/calendar";
 import { meridianManagement } from "./sample/management";
@@ -9,8 +10,15 @@ import { meridianMasthead } from "./sample/masthead";
 import { meridianOverview } from "./sample/overview";
 import { meridianRelationships } from "./sample/relationships";
 import { meridianShareholderReturns } from "./sample/shareholderReturns";
-import { MERIDIAN, MissingSampleData, tenK } from "./sample/sources";
-import { meridianValuation } from "./sample/valuation";
+import {
+	MERIDIAN,
+	MissingSampleData,
+	meridianFilings,
+	nasdaqPrices,
+	proxy,
+	tenK,
+} from "./sample/sources";
+import { meridianValuation, treasuryYields } from "./sample/valuation";
 import { sampleCompanyGateway } from "./sampleCompanyGateway";
 import type {
 	Claim,
@@ -213,6 +221,26 @@ describe("sampleCompanyGateway", () => {
 		await expect(result).rejects.toEqual(expectedResult);
 	});
 
+	it("should resolve the MRDN filings when the ticker is MRDN", async () => {
+		const gateway = sampleCompanyGateway();
+
+		const expectedResult = meridianFilingsSection;
+
+		const result = await gateway.getFilings(MRDN);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should reject the filings with MissingCompany when the ticker is not MRDN", async () => {
+		const gateway = sampleCompanyGateway();
+
+		const expectedResult = new MissingCompany(AAPL);
+
+		const result = gateway.getFilings(AAPL);
+
+		await expect(result).rejects.toEqual(expectedResult);
+	});
+
 	it("should resolve the masthead when the ticker is a new MRDN value parsed from lower case", async () => {
 		const gateway = sampleCompanyGateway();
 
@@ -251,42 +279,6 @@ describe("sampleCompanyGateway", () => {
 		const result = gateway.getFinancials(AAPL);
 
 		await expect(result).rejects.toEqual(expectedResult);
-	});
-});
-
-describe("sampleCompanyGateway, sections with no sample data yet", () => {
-	const unserved = ["getFilings"] as const;
-
-	it("should reject each later tab section with FailedCompanyRequest when the ticker is MRDN", async () => {
-		const gateway = sampleCompanyGateway();
-
-		const expectedResult = unserved.map(() => true);
-
-		const settled = await Promise.allSettled(
-			unserved.map((method) => gateway[method](MRDN)),
-		);
-		const result = settled.map(
-			(outcome) =>
-				outcome.status === "rejected" &&
-				outcome.reason instanceof FailedCompanyRequest,
-		);
-
-		expect(result).toEqual(expectedResult);
-	});
-
-	it("should reject each later tab section with MissingCompany when the ticker is not MRDN", async () => {
-		const gateway = sampleCompanyGateway();
-
-		const expectedResult = unserved.map(() => new MissingCompany(AAPL));
-
-		const settled = await Promise.allSettled(
-			unserved.map((method) => gateway[method](AAPL)),
-		);
-		const result = settled.map((outcome) =>
-			outcome.status === "rejected" ? outcome.reason : outcome.value,
-		);
-
-		expect(result).toEqual(expectedResult);
 	});
 });
 
@@ -559,6 +551,14 @@ describe("the MRDN sample data", () => {
 		const expectedResult = new MissingSampleData("the 10-K of FY2010");
 
 		const result = () => tenK(2010);
+
+		expect(result).toThrow(expectedResult);
+	});
+
+	it("should throw MissingSampleData when the sample data has no proxy statement for the year", () => {
+		const expectedResult = new MissingSampleData("the DEF 14A of 2010");
+
+		const result = () => proxy(2010);
 
 		expect(result).toThrow(expectedResult);
 	});
@@ -1280,5 +1280,111 @@ describe("the MRDN management sample data", () => {
 		);
 
 		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("the MRDN filings sample data", () => {
+	const { filings } = meridianFilingsSection;
+
+	it("should list the filings about Meridian by form when counting the filings that the claims read", () => {
+		const expectedResult = {
+			"10-K": 10,
+			"10-Q": 7,
+			"8-K": 1,
+			"DEF 14A": 10,
+			"Form 4": 248,
+			"13F-HR": 76,
+		};
+
+		const result = Object.fromEntries(
+			Object.keys(expectedResult).map((form) => [
+				form,
+				filings.filter((filing) => filing.form === form).length,
+			]),
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should point every claim to a listed filing or a market dataset when the document is about Meridian", () => {
+		const datasets = new Set([nasdaqPrices, treasuryYields]);
+
+		const expectedResult: string[] = [];
+
+		const result = everyClaim()
+			.filter(({ source }) => {
+				if (source.kind === "derived") {
+					return false;
+				}
+				const { document } = source;
+				if (document.kind === "market") {
+					return !datasets.has(document);
+				}
+				const aboutAnotherCompany =
+					(document.form === "10-K" || document.form === "10-Q") &&
+					document.filer !== MERIDIAN;
+				return (
+					!aboutAnotherCompany &&
+					!filings.some(
+						(filing) => filing.accessionNumber === document.accessionNumber,
+					)
+				);
+			})
+			.map((claim) => claim.id);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should list the 10-K and 10-Q filings that set the statement windows when reading the Meridian reports", () => {
+		const expectedResult = [...meridianFilings]
+			.map((filing) => filing.accessionNumber)
+			.sort();
+
+		const result = filings
+			.filter((filing) => filing.form === "10-K" || filing.form === "10-Q")
+			.map((filing) => filing.accessionNumber)
+			.sort();
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should list the filings newest first when reading the list", () => {
+		const expectedResult = filings
+			.map((filing) => filing.filedOn)
+			.sort()
+			.reverse();
+
+		const result = filings.map((filing) => filing.filedOn);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give each distinct filing its own accession number when reading every reported source", () => {
+		const expectedResult: string[] = [];
+
+		const records = new Map<string, string>();
+		const result = everyClaim().flatMap(({ source }) => {
+			if (source.kind !== "reported" || source.document.kind !== "filing") {
+				return [];
+			}
+			const { accessionNumber, filer, form, filedOn } = source.document;
+			const record = `${form} ${filer} ${filedOn}`;
+			const seen = records.get(accessionNumber) ?? record;
+			records.set(accessionNumber, seen);
+			return seen === record
+				? []
+				: [`${accessionNumber}: ${seen} and ${record}`];
+		});
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should hold no filing twice when reading the accession numbers of the list", () => {
+		const expectedResult = filings.length;
+
+		const result = new Set(filings.map((filing) => filing.accessionNumber))
+			.size;
+
+		expect(result).toBe(expectedResult);
 	});
 });

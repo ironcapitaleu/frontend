@@ -1,6 +1,7 @@
 import type { Ticker } from "../domain/ticker";
-import { FailedCompanyRequest, MissingCompany } from "./errors";
+import { MissingCompany } from "./errors";
 import type { CompanyGateway } from "./gateway";
+import { meridianFilingsSection } from "./sample/filings";
 import { meridianFinancials } from "./sample/financials";
 import { meridianManagement } from "./sample/management";
 import { MERIDIAN_TICKER, meridianMasthead } from "./sample/masthead";
@@ -16,9 +17,7 @@ import { meridianValuation } from "./sample/valuation";
  * §8 plans.
  *
  * Each method resolves the MRDN section for `MRDN`. For any other ticker, it
- * rejects with {@link MissingCompany}. The data lives in `sample/`. The
- * Filings section has no sample data yet, so its method rejects with
- * {@link FailedCompanyRequest} for `MRDN`.
+ * rejects with {@link MissingCompany}. The data lives in `sample/`.
  */
 export function sampleCompanyGateway(): CompanyGateway {
 	const serve =
@@ -29,14 +28,6 @@ export function sampleCompanyGateway(): CompanyGateway {
 			}
 			return section;
 		};
-	const unserved =
-		(section: string) =>
-		async (ticker: Ticker): Promise<never> => {
-			if (!ticker.equals(MERIDIAN_TICKER)) {
-				throw new MissingCompany(ticker);
-			}
-			throw new FailedCompanyRequest(`The sample has no ${section} data yet`);
-		};
 	return {
 		getMasthead: serve(meridianMasthead),
 		getOverview: serve(meridianOverview),
@@ -45,6 +36,6 @@ export function sampleCompanyGateway(): CompanyGateway {
 		getShareholderReturns: serve(meridianShareholderReturns),
 		getRelationships: serve(meridianRelationships),
 		getManagement: serve(meridianManagement),
-		getFilings: unserved("filings"),
+		getFilings: serve(meridianFilingsSection),
 	};
 }
