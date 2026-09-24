@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { Ticker } from "../domain/ticker";
-import { FailedCompanyRequest, MissingCompany } from "./errors";
+import {
+	FailedCompanyRequest,
+	MissingCompany,
+	MissingGuardInput,
+} from "./errors";
 
 describe("MissingCompany", () => {
 	it("should name the ticker in an input tail when constructed with a ticker", () => {
@@ -76,6 +80,23 @@ describe("FailedCompanyRequest", () => {
 		const expectedResult = "FailedCompanyRequest";
 
 		const result = failure.name;
+
+		expect(result).toBe(expectedResult);
+	});
+});
+
+describe("MissingGuardInput", () => {
+	it("should name the metric and the guarded figure in a reason tail when constructed with a reference", () => {
+		const failure = new MissingGuardInput("currentRatio", {
+			from: "line",
+			key: "totalCurrentLiabilities",
+			at: { kind: "fiscalYear", yearsBack: 0 },
+		});
+
+		const expectedResult =
+			"[MissingGuardInput] A guard names a figure that is not an input of its metric, Reason: 'currentRatio guards line totalCurrentLiabilities @ fiscalYear(0)'";
+
+		const result = failure.message;
 
 		expect(result).toBe(expectedResult);
 	});

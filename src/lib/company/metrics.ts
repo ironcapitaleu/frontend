@@ -1,3 +1,4 @@
+import { MissingGuardInput } from "./errors";
 import type {
 	Claim,
 	CompanySections,
@@ -658,7 +659,23 @@ export function evaluateMetric(
 	sections: CompletedSections,
 	period: Nullable<Period> = null,
 ): MetricResult {
-	const metric = metrics[key];
+	return evaluate(metrics[key], sections, period);
+}
+
+/**
+ * Evaluates `metric` over `sections` by the rules of {@link evaluateMetric}.
+ * It is exported only for tests, so a test can evaluate a metric that is not
+ * in {@link metrics}. Call {@link evaluateMetric} everywhere else.
+ *
+ * Throws {@link MissingGuardInput} when a guard names a figure that is not
+ * one of the metric's inputs.
+ */
+export function evaluate(
+	metric: Metric,
+	sections: CompletedSections,
+	period: Nullable<Period>,
+): MetricResult {
+	const { key } = metric;
 	const resolved = metric.inputs.map((ref) => resolve(ref, sections, period));
 	const results = resolved.filter(
 		(input): input is MetricResult => !isWindow(input),
@@ -684,8 +701,7 @@ export function evaluateMetric(
 		return { kind: "shortHistory" };
 	}
 	for (const guard of metric.guards) {
-		const input =
-			inputs[metric.inputs.findIndex((ref) => sameRef(ref, guard.input))];
+		const input = guardInput(metric, inputs, guard);
 		if (
 			!isWindow(input) &&
 			!meets(amount(input), guard.comparison, guard.value)
@@ -729,8 +745,28 @@ function isWindow<T extends object>(
 	return Array.isArray(input);
 }
 
-/** Tells whether two references name the same figure at the same period. */
-function sameRef(a: FigureRef, b: FigureRef): boolean {
+/**
+ * Returns the resolved input that `guard` names, found by {@link sameRef}.
+ * Throws {@link MissingGuardInput} when no input of `metric` matches.
+ */
+function guardInput(
+	metric: Metric,
+	inputs: readonly ResolvedInput[],
+	guard: Guard,
+): ResolvedInput {
+	const input =
+		inputs[metric.inputs.findIndex((ref) => sameRef(ref, guard.input))];
+	if (input === undefined) {
+		throw new MissingGuardInput(metric.key, guard.input);
+	}
+	return input;
+}
+
+/**
+ * Tells whether two references name the same figure at the same period. A
+ * guard finds its input by this test.
+ */
+export function sameRef(a: FigureRef, b: FigureRef): boolean {
 	return (
 		a.from === b.from &&
 		a.key === b.key &&

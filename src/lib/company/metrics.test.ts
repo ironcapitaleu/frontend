@@ -1,15 +1,19 @@
 import { describe, expect, it } from "vitest";
 
 import { fakeCompanyReport } from "../../test/fixtures/companies/fake-company-report";
+import { MissingGuardInput } from "./errors";
 import {
 	completeQuarters,
 	completeSections,
+	evaluate,
 	evaluateMetric,
 	type FigureRef,
 	flowLineKeys,
 	isValidFigureRef,
 	type MetricResult,
+	type Metric,
 	metrics,
+	sameRef,
 } from "./metrics";
 import type {
 	Claim,
@@ -677,6 +681,26 @@ describe("evaluateMetric", () => {
 	});
 });
 
+describe("evaluate", () => {
+	it("should throw MissingGuardInput when a guard names a figure that is not an input of the metric", () => {
+		const guarded: FigureRef = {
+			from: "line",
+			key: "totalCurrentLiabilities",
+			at: { kind: "fiscalYear", yearsBack: 0 },
+		};
+		const metric: Metric = {
+			...metrics.currentRatio,
+			guards: [{ input: guarded, comparison: "above", value: 0 }],
+		};
+
+		const expectedResult = new MissingGuardInput("currentRatio", guarded);
+
+		const result = () => evaluate(metric, completed, null);
+
+		expect(result).toThrow(expectedResult);
+	});
+});
+
 describe("isValidFigureRef", () => {
 	it("should reject each reference that note §4 and §5 call a defect", () => {
 		const refs: FigureRef[] = [
@@ -730,9 +754,8 @@ describe("isValidFigureRef", () => {
 					!metric.inputs.every(isValidFigureRef) ||
 					!metric.guards.every(
 						({ input }) =>
-							metric.inputs.some(
-								(ref) => JSON.stringify(ref) === JSON.stringify(input),
-							) && input.at?.kind !== "lastFiscalYears",
+							metric.inputs.some((ref) => sameRef(ref, input)) &&
+							input.at?.kind !== "lastFiscalYears",
 					) ||
 					(windows.length === 0) !== (metric.minPoints === null)
 				);
