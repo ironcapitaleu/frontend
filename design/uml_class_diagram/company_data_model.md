@@ -108,8 +108,8 @@ Relationships tab matches a `Stake` with a company page only when
 
 **Why one method per section.** Each tab loads only the sections that its
 row in §4 names. A later milestone adds a method and leaves the existing
-methods unchanged. A named fake can fail one section and serve the others, so a test can draw a tab that
-fails while the masthead loads.
+methods unchanged. A named fake can fail one section and serve the others,
+so a test can draw a tab that fails while the masthead loads.
 
 **How a method reports an error.** A method rejects its promise with a
 `CompanyFailure`. It never returns a result object like `AuthOutcome`.
@@ -338,8 +338,8 @@ the figures that the filing feeds, over the whole page (`DESIGN.md` §8). So
 the Filings tab calls `getFilings` and every other tab method that exists,
 and calls `feedsOf` over the groups of all six other tabs. It draws its list
 as soon as `getFilings` resolves. Each row starts with the groups of the
-sections that have loaded, and it grows as the other sections load. A section that fails
-adds no groups, and the rows keep the groups they have.
+sections that have loaded, and it grows as the other sections load. A
+section that fails adds no groups, and the rows keep the groups they have.
 
 The note picks this over a static map in the repository, with a list of
 `FigureGroupRef` for each `FilingForm`. A static map is hand-maintained, like
