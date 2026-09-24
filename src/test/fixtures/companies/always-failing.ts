@@ -14,5 +14,10 @@ export function alwaysFailingCompanyGateway(): CompanyGateway {
 		getMasthead: reject,
 		getOverview: reject,
 		getFinancials: reject,
+		getValuation: reject,
+		getShareholderReturns: reject,
+		getRelationships: reject,
+		getManagement: reject,
+		getFilings: reject,
 	};
 }

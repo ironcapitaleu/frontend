@@ -13,5 +13,10 @@ export function alwaysFoundCompanyGateway(): CompanyGateway {
 		getMasthead: async (ticker) => fakeMasthead(ticker),
 		getOverview: async () => fakeCompanyReport.overview,
 		getFinancials: async () => fakeCompanyReport.financials,
+		getValuation: async () => fakeCompanyReport.valuation,
+		getShareholderReturns: async () => fakeCompanyReport.shareholderReturns,
+		getRelationships: async () => fakeCompanyReport.relationships,
+		getManagement: async () => fakeCompanyReport.management,
+		getFilings: async () => fakeCompanyReport.filings,
 	};
 }

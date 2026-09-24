@@ -14,6 +14,11 @@ const neverAnsweringGateway: CompanyGateway = {
 	getMasthead: pending,
 	getOverview: pending,
 	getFinancials: pending,
+	getValuation: pending,
+	getShareholderReturns: pending,
+	getRelationships: pending,
+	getManagement: pending,
+	getFilings: pending,
 };
 const foundGateway = alwaysFoundCompanyGateway();
 const missingGateway = alwaysMissingCompanyGateway();

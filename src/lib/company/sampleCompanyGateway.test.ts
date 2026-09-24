@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { Ticker } from "../domain/ticker";
-import { MissingCompany } from "./errors";
+import { FailedCompanyRequest, MissingCompany } from "./errors";
 import { meridianFinancials } from "./sample/financials";
 import { meridianMasthead } from "./sample/masthead";
 import { meridianOverview } from "./sample/overview";
@@ -158,6 +158,48 @@ describe("sampleCompanyGateway", () => {
 		const result = gateway.getFinancials(AAPL);
 
 		await expect(result).rejects.toEqual(expectedResult);
+	});
+});
+
+describe("sampleCompanyGateway, sections with no sample data yet", () => {
+	const unserved = [
+		"getValuation",
+		"getShareholderReturns",
+		"getRelationships",
+		"getManagement",
+		"getFilings",
+	] as const;
+
+	it("should reject each later tab section with FailedCompanyRequest when the ticker is MRDN", async () => {
+		const gateway = sampleCompanyGateway();
+
+		const expectedResult = unserved.map(() => true);
+
+		const settled = await Promise.allSettled(
+			unserved.map((method) => gateway[method](MRDN)),
+		);
+		const result = settled.map(
+			(outcome) =>
+				outcome.status === "rejected" &&
+				outcome.reason instanceof FailedCompanyRequest,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should reject each later tab section with MissingCompany when the ticker is not MRDN", async () => {
+		const gateway = sampleCompanyGateway();
+
+		const expectedResult = unserved.map(() => new MissingCompany(AAPL));
+
+		const settled = await Promise.allSettled(
+			unserved.map((method) => gateway[method](AAPL)),
+		);
+		const result = settled.map((outcome) =>
+			outcome.status === "rejected" ? outcome.reason : outcome.value,
+		);
+
+		expect(result).toEqual(expectedResult);
 	});
 });
 

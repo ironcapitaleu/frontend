@@ -115,7 +115,7 @@ describe("evaluateChecks", () => {
 			P1: "met", // stock pay 0.25 × 330M = 82.5M ÷ revenue 3,200M = 2.6% is below 5%
 			P2: "met", // net income 340M ÷ equity 0.55 × 3,900M = 2,145M = 15.9% is at least 15%
 			V1: "notMet", // P/E 84.2 ÷ 2.25 = 37.4 is not below the median (82.75 ÷ 2.25 + 45.3 ÷ 1.23) ÷ 2 = 36.8
-			V2: "notEnoughData/missingInput", // no Valuation section, so no Treasury yield
+			V2: "notEnoughData/missingInput", // the metrics do not read the Treasury yield yet
 			S1: "met", // 151.1M diluted shares in FY2025 are below 158.4M in FY2020
 			S2: "notMet", // dividends 66M ÷ market cap 84.2 × 151.1M = 12.7B = 0.5% is below 2%
 			S3: "met", // dividends 0.2 × 330M = 66M are at most free cash flow 480M − 132M = 348M
@@ -184,7 +184,7 @@ describe("checks", () => {
 });
 
 describe("evaluateCheck", () => {
-	it("should read not enough data with reason missingInput for V2 when no Valuation section gives the Treasury yield", () => {
+	it("should read not enough data with reason missingInput for V2 when the metrics do not read the Treasury yield yet", () => {
 		const sections = completed;
 
 		// The free cash flow yield has a value, 348M ÷ 12.7B, so only the Treasury yield is missing.
@@ -362,7 +362,7 @@ describe("evaluateCheck", () => {
 			threshold: { kind: "value", comparison: "above", value: 0.042 },
 		};
 
-		// A fixed yield of 4.2% stands in for the Treasury yield until a Valuation section gives it.
+		// A fixed yield of 4.2% stands in for the Treasury yield until the metrics read it from the Valuation section.
 		const expectedResult = { state: "notEnoughData", reason: "failedGuard" };
 
 		const outcome = check && evaluateCheck(check, sections);

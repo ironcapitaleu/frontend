@@ -430,7 +430,7 @@ function ratio(
 
 /**
  * The metrics of the page, by key. They cover the metrics that the checks
- * read and the four metrics of the Overview sector benchmarks.
+ * read and the metrics of the Overview and Valuation sector benchmarks.
  */
 export const metrics: Record<MetricKey, Metric> = {
 	operatingMargin: ratio(
@@ -561,6 +561,45 @@ export const metrics: Record<MetricKey, Metric> = {
 		{ from: "metric", key: "freeCashFlow", at: latestYear },
 		marketCapRef,
 	),
+	priceToFreeCashFlow: ratio(
+		"point",
+		"priceToFreeCashFlow",
+		"P/FCF",
+		"Market cap ÷ free cash flow, latest fiscal year",
+		"ratio",
+		marketCapRef,
+		{ from: "metric", key: "freeCashFlow", at: latestYear },
+	),
+	priceToBook: ratio(
+		"point",
+		"priceToBook",
+		"P/B",
+		"Market cap ÷ shareholders' equity, latest quarter end",
+		"ratio",
+		marketCapRef,
+		line("shareholdersEquity", latestQuarter),
+	),
+	enterpriseValue: metric(
+		"point",
+		"enterpriseValue",
+		"Enterprise value",
+		"Market cap + total debt − cash and short-term investments, latest quarter end",
+		"usd",
+		[
+			marketCapRef,
+			{ from: "metric", key: "totalDebt", at: null },
+			line("cashAndShortTermInvestments", latestQuarter),
+		],
+	),
+	enterpriseValueToEbit: ratio(
+		"point",
+		"enterpriseValueToEbit",
+		"EV/EBIT",
+		"Enterprise value ÷ operating income, latest fiscal year",
+		"ratio",
+		{ from: "metric", key: "enterpriseValue", at: null },
+		line("operatingIncome", latestYear),
+	),
 };
 
 /** Returns the value of a single-period input. */
@@ -600,6 +639,11 @@ export const formulas: Record<MetricKey, Formula> = {
 	priceToEarningsMedian10y: ([window]) => median(window),
 	freeCashFlow: ([operating, capital]) => amount(operating) - amount(capital),
 	freeCashFlowYield: divide,
+	priceToFreeCashFlow: divide,
+	priceToBook: divide,
+	enterpriseValue: ([cap, debt, cash]) =>
+		amount(cap) + amount(debt) - amount(cash),
+	enterpriseValueToEbit: divide,
 };
 
 /**

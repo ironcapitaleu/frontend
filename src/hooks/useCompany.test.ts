@@ -10,6 +10,7 @@ import { Ticker } from "../lib/domain/ticker";
 import { alwaysFailingCompanyGateway } from "../test/fixtures/companies/always-failing";
 import { alwaysFoundCompanyGateway } from "../test/fixtures/companies/always-found";
 import { alwaysMissingCompanyGateway } from "../test/fixtures/companies/always-missing";
+import { fakeCompanyReport } from "../test/fixtures/companies/fake-company-report";
 import { type CompanySectionKey, useCompany } from "./useCompany";
 
 interface Props<K extends CompanySectionKey> {
@@ -68,6 +69,32 @@ describe("useCompany", () => {
 			status: state.status,
 			ticker: state.status === "loaded" ? state.data.ticker.value : null,
 		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should load each tab section from its own gateway method when the section is one of the five later tabs", async () => {
+		const keys = [
+			"valuation",
+			"shareholderReturns",
+			"relationships",
+			"management",
+			"filings",
+		] as const;
+		const hooks = keys.map(
+			(section) =>
+				renderCompany(alwaysFoundCompanyGateway(), {
+					ticker: Ticker.parse("QVAN"),
+					section,
+				}).result,
+		);
+
+		const expectedResult = keys.map((key) => fakeCompanyReport[key]);
+
+		await Promise.all(hooks.map(settled));
+		const result = hooks.map((hook) =>
+			hook.current.status === "loaded" ? hook.current.data : hook.current,
+		);
 
 		expect(result).toEqual(expectedResult);
 	});
