@@ -3,11 +3,7 @@ import { describe, expect, it } from "vitest";
 import { completeSections } from "@/lib/company/metrics";
 import type { Claim, OverviewSection } from "@/lib/company/types";
 import { fakeCompanyReport } from "@/test/fixtures/companies/fake-company-report";
-import {
-	formatInUnit,
-	revenueParts,
-	tenYearsSeries,
-} from "./OverviewTab.logic";
+import { revenueParts, tenYearsSeries } from "./OverviewTab.logic";
 
 const { overview, financials } = fakeCompanyReport;
 const sections = completeSections(fakeCompanyReport);
@@ -131,20 +127,4 @@ describe("tenYearsSeries", () => {
 
 		expect(result).toBe(expectedResult);
 	});
-});
-
-describe("formatInUnit", () => {
-	it.each([
-		[212_000_000_000, "$212.0B", "usd"],
-		[-4_000_000_000, "−$4.0B", "usd"],
-		[24_500_000_000, "24.5B", "shares"],
-		[0.312, "31.2%", "percent"],
-	] as const)(
-		"should write %s as %s when the unit is %s",
-		(value, expectedResult, unit) => {
-			const result = formatInUnit(value, unit);
-
-			expect(result).toBe(expectedResult);
-		},
-	);
 });

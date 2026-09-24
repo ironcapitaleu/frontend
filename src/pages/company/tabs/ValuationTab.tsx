@@ -3,9 +3,9 @@ import * as React from "react";
 import { CompanyCard, CompanyCardGrid } from "@/components/company/CompanyCard";
 import { SourceTrigger } from "@/components/company/SourceCard";
 import { SourcesIndex } from "@/components/company/SourcesIndex";
+import { FIXED_COLUMN, formatInput } from "@/components/company/format";
 import {
 	formatNumber,
-	formatPrice,
 	MISSING,
 	MISSING_INK,
 } from "@/components/screener/format";
@@ -22,11 +22,10 @@ import {
 import { Text } from "@/components/ui/text";
 import { cn } from "@/lib/utils";
 import { useCompany } from "../../../hooks/useCompany";
-import { metrics } from "../../../lib/company/metrics";
+import { metricInputsOf, metrics } from "../../../lib/company/metrics";
 import { figureGroupsOf } from "../../../lib/company/sources";
 import type {
 	BlockKey,
-	Claim,
 	CompletedSections,
 	Figure,
 	MastheadSection,
@@ -39,16 +38,12 @@ import {
 	ratioScale,
 } from "../../../lib/company/valuationRatios";
 import type { Ticker } from "../../../lib/domain/ticker";
-import { formatInUnit } from "./OverviewTab.logic";
 
 /** The blocks this tab draws. The Sources index names only these. */
 const DRAWN_BLOCKS: ReadonlySet<BlockKey> = new Set([
 	"valuationRatios",
 	"ratioFormulas",
 ]);
-
-/** The fixed first column of a table below 1024 px, as on Financials. */
-const FIXED_COLUMN = "max-lg:sticky max-lg:left-0 max-lg:z-10 max-lg:bg-card";
 
 /**
  * The Valuation tab of the company page (DESIGN.md §8 "Valuation"). It loads
@@ -135,7 +130,10 @@ function LoadedValuation(props: {
 					title="How the Ratios Are Built"
 					caption="Each ratio now, with its formula and the figures it divides."
 				>
-					<Table aria-label="How the ratios are built" className="text-base">
+					<Table
+						aria-label="How the Ratios Are Built table"
+						className="text-base"
+					>
 						<TableHeader>
 							<TableRow>
 								<TableHead className={FIXED_COLUMN}>Ratio</TableHead>
@@ -152,7 +150,7 @@ function LoadedValuation(props: {
 									</TableHead>
 									<TableCell>{metrics[ratio].formula}</TableCell>
 									<TableCell>
-										<Inputs figure={now} />
+										<Inputs inputs={metricInputsOf(ratio, sections)} />
 									</TableCell>
 									<TableCell className="text-right">
 										<Value figure={now} />
@@ -276,28 +274,27 @@ function Value({ figure }: { figure: Figure }) {
 	);
 }
 
-/** The inputs of a derived ratio, each with its sources, or the dimmed dash. */
-function Inputs({ figure }: { figure: Figure }) {
-	if (figure === null || figure.source.kind !== "derived") {
-		return <Value figure={null} />;
-	}
+/**
+ * The inputs of a ratio, each with its sources. An input that is missing
+ * shows the dimmed dash. A ratio that fails its guard still shows its inputs.
+ */
+function Inputs({ inputs }: { inputs: readonly Figure[] }) {
 	return (
 		<ul className="flex flex-col gap-1">
-			{figure.source.inputs.map((input) => (
-				<li key={input.id}>
-					<span className="text-muted-foreground">{input.label} </span>
-					<SourceTrigger claim={input} className="font-monospace">
-						{formatInput(input)}
-					</SourceTrigger>
+			{inputs.map((input, index) => (
+				<li key={input?.id ?? index}>
+					{input === null ? (
+						<Value figure={null} />
+					) : (
+						<>
+							<span className="text-muted-foreground">{input.label} </span>
+							<SourceTrigger claim={input} className="font-monospace">
+								{formatInput(input)}
+							</SourceTrigger>
+						</>
+					)}
 				</li>
 			))}
 		</ul>
 	);
-}
-
-/** Writes an input of a ratio in its unit, such as `$82.75` or `$212.0B`. */
-function formatInput({ value, unit }: Claim): string {
-	return unit === "usdPerShare"
-		? formatPrice(Number(value))
-		: formatInUnit(Number(value), unit);
 }

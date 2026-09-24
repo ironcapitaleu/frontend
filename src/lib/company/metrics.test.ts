@@ -14,6 +14,7 @@ import {
 	isValidFigureRef,
 	type MetricResult,
 	type Metric,
+	metricInputsOf,
 	metrics,
 	otherRevenueShare,
 	ownershipShares,
@@ -1406,6 +1407,49 @@ describe("per-row derived figures", () => {
 		const expectedResult = null;
 
 		const result = stakePercent(section, 2);
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("metricInputsOf", () => {
+	it("should give each input of EV/EBIT when operating income fails the guard", () => {
+		const sections = sectionsWith(
+			"income",
+			"annual",
+			"operatingIncome",
+			[9],
+			-50_000_000,
+		);
+		const [operatingIncome] = pointsOf(
+			income.annual,
+			"operatingIncome",
+			[9],
+		) as Claim[];
+
+		const expectedResult = ["metric.enterpriseValue", operatingIncome?.id];
+
+		const result = metricInputsOf("enterpriseValueToEbit", sections).map(
+			(input) => input?.id ?? null,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give null for an input when it is missing", () => {
+		const sections = sectionsWith(
+			"income",
+			"annual",
+			"operatingIncome",
+			[9],
+			null,
+		);
+
+		const expectedResult = ["metric.enterpriseValue", null];
+
+		const result = metricInputsOf("enterpriseValueToEbit", sections).map(
+			(input) => input?.id ?? null,
+		);
 
 		expect(result).toEqual(expectedResult);
 	});

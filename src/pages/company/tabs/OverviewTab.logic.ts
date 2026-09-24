@@ -1,5 +1,4 @@
 import type { SharePart } from "@/components/company/ShareBar";
-import { formatMarketCap, formatPercent } from "@/components/screener/format";
 import {
 	evaluateMetric,
 	otherRevenueShare,
@@ -77,16 +76,4 @@ export function tenYearsSeries(sections: CompletedSections): Series[] {
 		});
 		return { key: source.metric, label, unit, periods, points };
 	});
-}
-
-/**
- * Writes a value of a series in its unit: `$212.0B` for dollars, `24.5B` for
- * a share count and `31.2%` for a percent, which the series holds as a
- * fraction. A loss takes a true minus, such as `−$4.0B`.
- */
-export function formatInUnit(value: number, unit: Unit): string {
-	if (unit === "percent") return formatPercent(value * 100);
-	const sign = value < 0 ? "−" : "";
-	const amount = formatMarketCap(Math.abs(value));
-	return `${sign}${unit === "usd" ? amount : amount.slice(1)}`;
 }
