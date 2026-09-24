@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { completeSections } from "@/lib/company/metrics";
+import { completeSections, type PositionRow } from "@/lib/company/metrics";
 import type { Claim, OverviewSection } from "@/lib/company/types";
 import { fakeCompanyReport } from "@/test/fixtures/companies/fake-company-report";
 import type { CompanySectionKey, CompanyState } from "@/hooks/useCompany";
@@ -9,6 +9,7 @@ import { Ticker } from "@/lib/domain/ticker";
 import {
 	heldBack,
 	joinSections,
+	positionBars,
 	revenueParts,
 	tenYearsSeries,
 } from "./OverviewTab.logic";
@@ -201,6 +202,48 @@ describe("heldBack", () => {
 		const expectedResult = lead;
 
 		const result = heldBack(lead, [loaded]);
+
+		expect(result).toBe(expectedResult);
+	});
+});
+
+describe("positionBars", () => {
+	const claim = financials.balance.quarterly.lines[0]?.points.at(-1) as Claim;
+	/** The rows of card 1.4 with these short-term and then long-term assets and liabilities. */
+	const rowsOf = (values: number[], unit = claim.unit): PositionRow[] =>
+		(["Short term", "Long term"] as const).map((term, row) => ({
+			term,
+			assets: { ...claim, unit, value: values[row * 2] as number },
+			liabilities: { ...claim, unit, value: values[row * 2 + 1] as number },
+		}));
+
+	it("should give a small figure the least height when it is under 1% of the highest", () => {
+		const expectedResult = 2;
+
+		const result = positionBars(rowsOf([1000, 1, 500, 500])).plots[0]?.[1]
+			?.height;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should draw the bar down from the zero line when a long-term figure is negative", () => {
+		const expectedResult = { zero: 75, top: 75, height: 25 };
+
+		const { plots, zero } = positionBars(rowsOf([3, 1, -1, 2]));
+		const result = {
+			zero,
+			top: plots[1]?.[0]?.top,
+			height: plots[1]?.[0]?.height,
+		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should speak the value in the figure's unit when the unit is not dollars", () => {
+		const expectedResult = "Short term assets: 5.0B";
+
+		const result = positionBars(rowsOf([5e9, 1, 1, 1], "shares")).plots[0]?.[0]
+			?.text;
 
 		expect(result).toBe(expectedResult);
 	});

@@ -45,10 +45,43 @@ interface MiniBars {
 	readonly zero: number;
 }
 
+/** Where one bar draws, in percent of the plot height. */
+interface BarBox {
+	/** The top edge of the bar, from 0 to 100 percent of the plot height. */
+	readonly top: number;
+	/** The height of the bar, from 0 to 100 percent. `0` for a missing or zero value. */
+	readonly height: number;
+}
+
 /**
- * Returns how the last ten years of `series` draw. One scale spans the
- * lowest and the highest value and always holds zero, so a negative value
- * draws below the zero line. A missing or non-finite point gets no bar.
+ * Returns where each of `values` draws. One scale spans the lowest and the
+ * highest value and always holds zero, so a negative value draws below the
+ * zero line. A known non-zero value is at least {@link MIN_HEIGHT} tall. A
+ * `null` or zero value gets no height.
+ */
+function barBoxes(values: readonly (number | null)[]): {
+	boxes: BarBox[];
+	zero: number;
+} {
+	const known = values.filter((value) => value !== null);
+	const high = Math.max(0, ...known);
+	const low = Math.min(0, ...known);
+	const span = high - low;
+	const zero = span === 0 ? 100 : (high / span) * 100;
+	const boxes = values.map((value) => {
+		const room = value !== null && value > 0 ? zero : 100 - zero;
+		const height =
+			value === null || value === 0 || span === 0
+				? 0
+				: Math.min(Math.max((Math.abs(value) / span) * 100, MIN_HEIGHT), room);
+		return { top: value !== null && value > 0 ? zero - height : zero, height };
+	});
+	return { boxes, zero };
+}
+
+/**
+ * Returns how the last ten years of `series` draw, on the scale of
+ * {@link barBoxes}. A missing or non-finite point gets no bar.
  */
 function miniBars(series: Series): MiniBars {
 	const years = series.periods.slice(-MAX_YEARS);
@@ -57,25 +90,14 @@ function miniBars(series: Series): MiniBars {
 		const value = series.points[offset + index]?.value;
 		return typeof value === "number" && Number.isFinite(value) ? value : null;
 	});
-	const known = values.filter((value) => value !== null);
-	const high = Math.max(0, ...known);
-	const low = Math.min(0, ...known);
-	const span = high - low;
-	const zero = span === 0 ? 100 : (high / span) * 100;
+	const { boxes, zero } = barBoxes(values);
 	const bars = years.map((period, index) => {
-		const value = values[index] ?? null;
-		const room = value !== null && value > 0 ? zero : 100 - zero;
-		const height =
-			value === null || value === 0 || span === 0
-				? 0
-				: Math.min(Math.max((Math.abs(value) / span) * 100, MIN_HEIGHT), room);
 		const year = `FY${period.fiscalYear}`;
 		return {
 			key: `${index}-${year}`,
 			year,
-			value,
-			top: value !== null && value > 0 ? zero - height : zero,
-			height,
+			value: values[index] ?? null,
+			...(boxes[index] as BarBox),
 		};
 	});
 	return { bars, zero };
@@ -198,6 +220,8 @@ function MiniBarChart({
 }
 
 export {
+	type BarBox,
+	barBoxes,
 	type MiniBar,
 	MiniBarChart,
 	type MiniBarChartProps,

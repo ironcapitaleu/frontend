@@ -53,6 +53,28 @@ const missingTotalAssetsGateway: CompanyGateway = {
 	},
 };
 
+/** A gateway whose latest current liabilities are $1, well under 1% of the highest figure. */
+const tinyLiabilitiesGateway: CompanyGateway = {
+	...sampleGateway,
+	getFinancials: async (ticker) => {
+		const financials = await sampleGateway.getFinancials(ticker);
+		const { balance } = financials;
+		const lines = balance.quarterly.lines.map((line) => {
+			const last = line.points.at(-1);
+			return line.key === "totalCurrentLiabilities" && last
+				? {
+						...line,
+						points: [...line.points.slice(0, -1), { ...last, value: 1 }],
+					}
+				: line;
+		});
+		return {
+			...financials,
+			balance: { ...balance, quarterly: { ...balance.quarterly, lines } },
+		};
+	},
+};
+
 /**
  * The Overview tab with the sample data of Meridian Semiconductor (MRDN).
  * It draws card 1.1 "The Business", card 1.2 "Ten Years at a Glance" and
@@ -381,5 +403,41 @@ export const FinancialPositionPhone: Story = {
 		};
 
 		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: the "Data" button of card 1.4 swaps the bars for a table of the four figures. */
+export const FinancialPositionData: Story = {
+	play: async ({ canvasElement }) => {
+		const card = await within(canvasElement).findByRole("region", {
+			name: "1.4 Financial Position",
+		});
+		await userEvent.click(within(card).getByRole("button", { name: "Data" }));
+		const table = within(card).getByRole("table", {
+			name: "Financial Position table",
+		});
+
+		const expectedResult = 4;
+
+		const result = within(table).getAllByRole("cell").length;
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/** Play test: a figure under 1% of the highest in card 1.4 still draws a visible bar. */
+export const FinancialPositionTinyFigure: Story = {
+	parameters: { companyGateway: tinyLiabilitiesGateway },
+	play: async ({ canvasElement }) => {
+		const button = await within(canvasElement).findByRole("button", {
+			name: /^Short term liabilities/,
+		});
+		const bar = button.querySelector("[data-slot=position-bar]");
+
+		const expectedResult = true;
+
+		const result = (bar?.getBoundingClientRect().height ?? 0) >= 3;
+
+		await expect(result).toBe(expectedResult);
 	},
 };

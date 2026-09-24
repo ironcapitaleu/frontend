@@ -1,11 +1,13 @@
 import * as React from "react";
 
 import { CompanyCard, CompanyCardGrid } from "@/components/company/CompanyCard";
-import { formatInUnit } from "@/components/company/format";
+import { FIXED_COLUMN, formatInUnit } from "@/components/company/format";
 import { MiniBarChart } from "@/components/company/MiniBarChart";
 import { ShareBar } from "@/components/company/ShareBar";
 import { SourceTrigger } from "@/components/company/SourceCard";
+import { SourcesChip } from "@/components/company/SourcesChip";
 import { SourcesIndex } from "@/components/company/SourcesIndex";
+import { Button } from "@/components/ui/button";
 import { MISSING, MISSING_INK } from "@/components/screener/format";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -26,14 +28,17 @@ import {
 	type PositionRow,
 } from "@/lib/company/metrics";
 import { figureGroupsOf, sectorMedianOf } from "@/lib/company/sources";
-import type { BlockKey, CompletedSections, Figure } from "@/lib/company/types";
+import type { BlockKey, Claim, CompletedSections } from "@/lib/company/types";
 import type { Ticker } from "@/lib/domain/ticker";
 import { cn } from "@/lib/utils";
+import { FigureCell, FigureText } from "./FigureCell";
 import {
 	heldBack,
 	joinSections,
 	loadedSections,
+	positionBars,
 	revenueParts,
+	SIDES,
 	tenYearsSeries,
 } from "./OverviewTab.logic";
 
@@ -83,6 +88,7 @@ export function OverviewTab({ ticker }: { ticker: Ticker }) {
 				: [],
 		[sections],
 	);
+	const [positionData, setPositionData] = React.useState(false);
 
 	return (
 		<CompanyCardGrid>
@@ -151,17 +157,60 @@ export function OverviewTab({ ticker }: { ticker: Ticker }) {
 				position={4}
 				title="Financial Position"
 				caption="Latest quarter end · USD · Form 10-Q or 10-K"
+				className="min-w-0"
+				actions={
+					<ChartActions
+						data={positionData}
+						onData={setPositionData}
+						claims={
+							groups.find(({ ref }) => ref.block === "financialPosition")
+								?.claims ?? []
+						}
+					/>
+				}
 			>
 				<Loaded state={financials} what="financial position">
-					{({ sections }) => (
-						<PositionBars rows={financialPositionOf(sections)} />
-					)}
+					{({ sections }) =>
+						positionData ? (
+							<PositionTable rows={financialPositionOf(sections)} />
+						) : (
+							<PositionBars rows={financialPositionOf(sections)} />
+						)
+					}
 				</Loaded>
 			</CompanyCard>
 			<div className="lg:col-span-2">
 				<SourcesIndex groups={groups} />
 			</div>
 		</CompanyCardGrid>
+	);
+}
+
+/**
+ * The "Data" button and the "Sources" chip of a chart card, as the Financials
+ * chart card draws them. The button swaps the chart for a table.
+ */
+function ChartActions({
+	data,
+	onData,
+	claims,
+}: {
+	data: boolean;
+	onData: (data: boolean) => void;
+	claims: readonly Claim[];
+}) {
+	return (
+		<>
+			<Button
+				variant="outline"
+				size="sm"
+				aria-pressed={data}
+				onClick={() => onData(!data)}
+			>
+				Data
+			</Button>
+			<SourcesChip claims={claims} />
+		</>
 	);
 }
 
@@ -199,32 +248,20 @@ function KeyFigures({ sections }: { sections: CompletedSections }) {
 	);
 }
 
-/** The two sides of each pair of bars in card 1.4, with the chart token of each. */
-const SIDES = [
-	{ key: "assets", label: "Assets", fill: "bg-chart-2" },
-	{ key: "liabilities", label: "Liabilities", fill: "bg-chart-3" },
-] as const;
-
-/** Returns the value of `figure` when it is a finite number, or `null`. */
-function amountOf(figure: Figure): number | null {
-	const value = figure?.value;
-	return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
 /**
  * The bars of card 1.4 "Financial Position", one plot for each term, with
- * assets and liabilities side by side on one scale. Each bar is a button the height of its plot, so
- * its target is at least 24 × 24 px however short the bar. A missing figure
- * gets a dot on the baseline and no button, and its figure is a dimmed dash.
+ * assets and liabilities side by side on one scale that holds zero. A
+ * negative figure draws below the zero line, as its legend prints it. A
+ * reported zero draws a 2 px mark on the zero line. Each bar is a button the
+ * height of its plot, so its target is at least 24 × 24 px however short the
+ * bar. A missing figure gets a dot on the zero line and no button, and its
+ * figure is a dimmed dash.
  */
 function PositionBars({ rows }: { rows: readonly PositionRow[] }) {
-	const values = rows.flatMap((row) =>
-		SIDES.map(({ key }) => amountOf(row[key])),
-	);
-	const high = Math.max(0, ...values.filter((value) => value !== null));
+	const { plots, zero } = positionBars(rows);
 	return (
 		<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-			{rows.map((row) => (
+			{rows.map((row, index) => (
 				<figure
 					key={row.term}
 					data-slot="position-plot"
@@ -233,40 +270,50 @@ function PositionBars({ rows }: { rows: readonly PositionRow[] }) {
 					<figcaption className="text-muted-foreground text-sm">
 						{row.term}
 					</figcaption>
-					<ul className="flex h-40 justify-center gap-4 border-muted-foreground/50 border-b">
-						{SIDES.map(({ key, label, fill }) => {
-							const figure = row[key];
-							const value = amountOf(figure);
-							const height =
-								value === null || high === 0
-									? 0
-									: (Math.max(value, 0) / high) * 100;
-							const text = `${row.term} ${label.toLowerCase()}: ${value === null ? MISSING : formatInUnit(value, "usd")}`;
-							return (
-								<li key={key} className="relative w-10">
-									{value === null || figure === null ? (
-										<span className="absolute bottom-0 left-1/2 size-1.5 -translate-x-1/2 translate-y-1/2 rounded-full bg-muted-foreground/60">
-											<span className="sr-only">{text}</span>
-										</span>
-									) : (
-										<SourceTrigger
-											claim={figure}
-											className="absolute inset-0 block"
-										>
-											<span className="sr-only">{text}</span>
+					<div className="relative h-40">
+						<ul className="flex h-full justify-center gap-4">
+							{plots[index]?.map(
+								({ side, figure, value, top, height, text }) =>
+									value === null || figure === null ? (
+										<li key={side.key} className="relative w-10">
 											<span
-												className={cn(
-													"absolute inset-x-0 bottom-0 rounded-t-sm",
-													fill,
-												)}
-												style={{ height: `${height}%` }}
-											/>
-										</SourceTrigger>
-									)}
-								</li>
-							);
-						})}
-					</ul>
+												className="absolute left-1/2 size-1.5 -translate-1/2 rounded-full bg-muted-foreground/60"
+												style={{ top: `${zero}%` }}
+											>
+												<span className="sr-only">{text}</span>
+											</span>
+										</li>
+									) : (
+										<li key={side.key} className="relative w-10">
+											<SourceTrigger
+												claim={figure}
+												className="absolute inset-0 block"
+											>
+												<span className="sr-only">{text}</span>
+												<span
+													data-slot="position-bar"
+													className={cn(
+														"absolute inset-x-0",
+														value < 0 ? "rounded-b-sm" : "rounded-t-sm",
+														side.fill,
+													)}
+													style={
+														height === 0
+															? { top: `calc(${top}% - 2px)`, height: "2px" }
+															: { top: `${top}%`, height: `${height}%` }
+													}
+												/>
+											</SourceTrigger>
+										</li>
+									),
+							)}
+						</ul>
+						<div
+							className="pointer-events-none absolute inset-x-0 h-px bg-muted-foreground/50"
+							style={{ top: `${zero}%` }}
+							aria-hidden="true"
+						/>
+					</div>
 					<dl className="grid grid-cols-2 gap-x-4 text-sm">
 						{SIDES.map(({ key, label, fill }) => (
 							<div key={key} className="flex flex-col">
@@ -289,30 +336,33 @@ function PositionBars({ rows }: { rows: readonly PositionRow[] }) {
 	);
 }
 
-/** A mono figure that opens its sources, or the dimmed dash when it is missing. */
-function FigureText({ figure }: { figure: Figure }) {
-	const value = amountOf(figure);
-	return figure !== null && value !== null ? (
-		<SourceTrigger claim={figure}>
-			{formatInUnit(value, figure.unit)}
-		</SourceTrigger>
-	) : (
-		<span className={MISSING_INK}>{MISSING}</span>
-	);
-}
-
-/** A right-aligned mono figure that opens its sources, or the dimmed dash when it is missing. */
-function FigureCell({
-	figure,
-	className,
-}: {
-	figure: Figure;
-	className?: string;
-}) {
+/** The table behind the Data button of card 1.4: each term's assets and liabilities. */
+function PositionTable({ rows }: { rows: readonly PositionRow[] }) {
 	return (
-		<TableCell className={cn("text-right font-monospace", className)}>
-			<FigureText figure={figure} />
-		</TableCell>
+		<Table aria-label="Financial Position table">
+			<TableHeader>
+				<TableRow>
+					<TableHead className={FIXED_COLUMN}>Term</TableHead>
+					{SIDES.map(({ key, label }) => (
+						<TableHead key={key} className="text-right">
+							{label}
+						</TableHead>
+					))}
+				</TableRow>
+			</TableHeader>
+			<TableBody>
+				{rows.map((row) => (
+					<TableRow key={row.term}>
+						<TableHead scope="row" className={FIXED_COLUMN}>
+							{row.term}
+						</TableHead>
+						{SIDES.map(({ key }) => (
+							<FigureCell key={key} figure={row[key]} />
+						))}
+					</TableRow>
+				))}
+			</TableBody>
+		</Table>
 	);
 }
 
