@@ -164,9 +164,9 @@ export interface MastheadSection {
 }
 
 /**
- * Names one metric. This list holds the metrics that the Overview sector
- * benchmarks name and the metrics that the checks read. Later tickets add
- * the rest as they add metrics.
+ * Names one metric. This list holds the metrics that the sector benchmarks
+ * name and the metrics that the checks read. Later tickets add the rest as
+ * they add metrics.
  */
 export type MetricKey =
 	| "operatingMargin"
@@ -181,7 +181,11 @@ export type MetricKey =
 	| "priceToEarningsAtYearEnd"
 	| "priceToEarningsMedian10y"
 	| "freeCashFlow"
-	| "freeCashFlowYield";
+	| "freeCashFlowYield"
+	| "priceToFreeCashFlow"
+	| "priceToBook"
+	| "enterpriseValue"
+	| "enterpriseValueToEbit";
 
 /** The quartiles of one metric over the company's peer group. */
 export interface SectorBenchmark {
@@ -291,11 +295,120 @@ export interface FinancialsSection {
 	readonly cashFlow: Statement;
 }
 
+/** The data of the Valuation tab. */
+export interface ValuationSection {
+	/** The 10-year Treasury yield at each fiscal year end of the annual tables. */
+	readonly treasuryYieldAtFiscalYearEnds: Series;
+	/** The latest daily 10-year Treasury yield. */
+	readonly treasuryYieldNow: Figure;
+	/** Disjoint by `metric` from the benchmarks of the Overview section. */
+	readonly sectorBenchmarks: readonly SectorBenchmark[];
+}
+
+/** The data of the Shareholder returns tab. */
+export interface ShareholderReturnsSection {
+	/** The dividend per share declared for each fiscal year. */
+	readonly dividendPerShare: Series;
+	readonly latestDividendDeclared: Figure;
+	/** The shares bought back in each fiscal year, from the statement of shareholders' equity. */
+	readonly sharesRepurchased: Series;
+	/** The shares issued under staff plans in each fiscal year, from the statement of shareholders' equity. */
+	readonly sharesIssuedToStaff: Series;
+}
+
+/** One fund that holds the company, from the 13F filings of two quarters. */
+export interface FundHolding {
+	readonly fund: string;
+	readonly shares: Figure;
+	readonly sharesQuarterEarlier: Figure;
+}
+
+/** The shares that one officer or director holds, from their latest Form 4. */
+export interface InsiderHolding {
+	readonly name: string;
+	readonly role: string;
+	readonly shares: Figure;
+}
+
+/** One subsidiary from 10-K Exhibit 21. */
+export interface Subsidiary {
+	readonly name: string;
+	/** A text claim. */
+	readonly jurisdiction: Figure;
+}
+
+/**
+ * A stake in another listed company, from the company's own 13F information
+ * table. `sharesOutstanding` comes from a filing of the target company.
+ */
+export interface Stake {
+	readonly company: string;
+	/** `null` when the target company has no page. Compare it with `equals`. */
+	readonly ticker: Nullable<Ticker>;
+	readonly sharesHeld: Figure;
+	readonly sharesOutstanding: Figure;
+}
+
+/** The data of the Relationships tab. */
+export interface RelationshipsSection {
+	/** The same figures as `OverviewSection.ownership`, under this section's ids. */
+	readonly ownership: OwnershipSummary;
+	readonly funds: readonly FundHolding[];
+	/** The same rows as `ManagementSection.insiders`, in the same order. */
+	readonly insiders: readonly InsiderHolding[];
+	readonly subsidiaries: readonly Subsidiary[];
+	readonly stakes: readonly Stake[];
+}
+
+/** One executive or director, from the proxy statement. */
+export interface Person {
+	readonly name: string;
+	readonly role: string;
+	/** A row key. */
+	readonly isDirector: boolean;
+	readonly since: Figure;
+	/** A text claim. */
+	readonly independence: Figure;
+}
+
+/** The pay of the chief executive in one fiscal year, from the summary compensation table. */
+export interface PayYear {
+	/** A row key. The pay claims carry the sources. */
+	readonly fiscalYear: number;
+	readonly salary: Figure;
+	readonly bonus: Figure;
+	readonly stockAwards: Figure;
+	readonly other: Figure;
+}
+
+/** The data of the Management tab. */
+export interface ManagementSection {
+	readonly people: readonly Person[];
+	/** One row for each fiscal year, oldest first. */
+	readonly ceoPay: readonly PayYear[];
+	/** The same rows as `RelationshipsSection.insiders`, in the same order. */
+	readonly insiders: readonly InsiderHolding[];
+	/** The shares that officers and directors bought in each fiscal year, from Form 4. */
+	readonly insiderSharesBought: Series;
+	/** The shares that officers and directors sold in each fiscal year, from Form 4. */
+	readonly insiderSharesSold: Series;
+}
+
+/** The data of the Filings tab: the filings that the page reads. */
+export interface FilingsSection {
+	readonly filings: readonly Filing[];
+}
+
 /** The sections of one company as the port returns them. `null` marks a section that has not loaded. */
 export interface CompanySections {
 	readonly masthead: Nullable<MastheadSection>;
 	readonly overview: Nullable<OverviewSection>;
 	readonly financials: Nullable<FinancialsSection>;
+	readonly valuation: Nullable<ValuationSection>;
+	readonly shareholderReturns: Nullable<ShareholderReturnsSection>;
+	readonly relationships: Nullable<RelationshipsSection>;
+	readonly management: Nullable<ManagementSection>;
+	readonly filings: Nullable<FilingsSection>;
 }
 
 /**

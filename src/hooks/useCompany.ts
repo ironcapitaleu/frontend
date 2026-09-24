@@ -37,12 +37,23 @@ const loaders: {
 	masthead: (gateway, ticker) => gateway.getMasthead(ticker),
 	overview: (gateway, ticker) => gateway.getOverview(ticker),
 	financials: (gateway, ticker) => gateway.getFinancials(ticker),
+	valuation: (gateway, ticker) => gateway.getValuation(ticker),
+	shareholderReturns: (gateway, ticker) =>
+		gateway.getShareholderReturns(ticker),
+	relationships: (gateway, ticker) => gateway.getRelationships(ticker),
+	management: (gateway, ticker) => gateway.getManagement(ticker),
+	filings: (gateway, ticker) => gateway.getFilings(ticker),
 };
 
 const noSections: CompanySections = {
 	masthead: null,
 	overview: null,
 	financials: null,
+	valuation: null,
+	shareholderReturns: null,
+	relationships: null,
+	management: null,
+	filings: null,
 };
 
 /** A finished load, with the gateway, symbol and section that started it. */

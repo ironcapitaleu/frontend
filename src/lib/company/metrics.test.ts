@@ -26,6 +26,7 @@ import type {
 	Figure,
 	IsoDate,
 	LineKey,
+	MetricKey,
 	Period,
 	Statement,
 	StatementTable,
@@ -503,6 +504,56 @@ describe("evaluateMetric", () => {
 		};
 
 		const result = evaluateMetric("marketCap", sections);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give the Valuation benchmark ratios worked out by hand when it evaluates them over the fixture", () => {
+		const sections = completed;
+		const marketCap = 84.2 * 151_100_000;
+
+		// Free cash flow 480M − 132M, equity 0.55 × 3,900M, operating income 450M,
+		// debt 67.5M + 585M and cash 540M.
+		const expectedResult = {
+			priceToFreeCashFlow: marketCap / 348_000_000,
+			priceToBook: marketCap / 2_145_000_000,
+			enterpriseValue: marketCap + 652_500_000 - 540_000_000,
+			enterpriseValueToEbit:
+				(marketCap + 652_500_000 - 540_000_000) / 450_000_000,
+		};
+
+		const result = Object.fromEntries(
+			Object.keys(expectedResult).map((key) => {
+				const evaluated = evaluateMetric(key as MetricKey, sections);
+				return [
+					key,
+					evaluated.kind === "value" ? evaluated.claim.value : evaluated.kind,
+				];
+			}),
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should fail the guard of P/B when the latest shareholders' equity is below 0", () => {
+		const sections = sectionsWith(
+			"balance",
+			"quarterly",
+			"shareholdersEquity",
+			[7],
+			-2_000_000_000,
+		);
+
+		const expectedResult = {
+			kind: "failedGuard",
+			input: "financials.shareholdersEquity.Q4-2025-12-31",
+		};
+
+		const evaluated = evaluateMetric("priceToBook", sections);
+		const result =
+			evaluated.kind === "failedGuard"
+				? { kind: evaluated.kind, input: evaluated.input.id }
+				: evaluated;
 
 		expect(result).toEqual(expectedResult);
 	});

@@ -214,8 +214,8 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		label: "Profile",
 		company: ({ overview }) => overview && Object.values(overview.profile),
 	},
-	// The printed page only. Its figures live in `ShareholderReturnsSection`,
-	// which the port does not return yet, so the block gives no group.
+	// The printed page only. Its figures live in `ShareholderReturnsSection`.
+	// A later part of the port expansion wires it, so the block gives no group yet.
 	printedShareholderReturns: {
 		tab: "overview",
 		label: "Shareholder returns, printed page",

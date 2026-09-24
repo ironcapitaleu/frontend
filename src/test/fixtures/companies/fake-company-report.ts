@@ -3,20 +3,28 @@ import type {
 	Claim,
 	ClaimValue,
 	Filing,
+	FilingsSection,
 	FinancialsSection,
+	InsiderHolding,
 	IsoDate,
 	LineKey,
+	ManagementSection,
 	MarketDataset,
 	MastheadSection,
 	MetricKey,
 	OverviewSection,
+	OwnershipSummary,
 	Period,
+	RelationshipsSection,
 	SectorBenchmark,
+	Series,
+	ShareholderReturnsSection,
 	SourceDocument,
 	Statement,
 	StatementLine,
 	StatementTable,
 	Unit,
+	ValuationSection,
 } from "../../../lib/company/types";
 
 // The SEC EDGAR folder of the made-up filer.
@@ -33,6 +41,11 @@ function buildReport() {
 		masthead: fakeMasthead(Ticker.parse("QVAN")),
 		overview: buildOverview(),
 		financials: buildFinancials(),
+		valuation: buildValuation(),
+		shareholderReturns: buildShareholderReturns(),
+		relationships: buildRelationships(),
+		management: buildManagement(),
+		filings: buildFilings(),
 	};
 }
 
@@ -267,16 +280,18 @@ function peerTenK(filer: string, row: number): Filing {
 function benchmark(
 	metric: MetricKey,
 	quartiles: [number, number, number],
+	section: "overview" | "valuation" = "overview",
+	unit: Unit = "percent",
 ): SectorBenchmark {
 	const names = ["lowerQuartile", "median", "upperQuartile"] as const;
 	const peers = ["Alder Controls", "Brisk Metrology"];
 	const [lowerQuartile, median, upperQuartile] = names.map((name, position) => {
 		const inputs = peers.map((peer, row) =>
 			reported(
-				`overview.sectorBenchmarks.${metric}.${name}.peer${row}`,
+				`${section}.sectorBenchmarks.${metric}.${name}.peer${row}`,
 				peer,
 				quartiles[position],
-				"percent",
+				unit,
 				fiscalYear(2025),
 				peerTenK(peer, row),
 				`Peer figure › ${metric}`,
@@ -284,10 +299,10 @@ function benchmark(
 			),
 		);
 		return {
-			id: `overview.sectorBenchmarks.${metric}.${name}`,
+			id: `${section}.sectorBenchmarks.${metric}.${name}`,
 			label: `Sector ${name}`,
 			value: quartiles[position],
-			unit: "percent" as const,
+			unit,
 			period: fiscalYear(2025),
 			source: {
 				kind: "derived" as const,
@@ -306,6 +321,61 @@ function benchmark(
 	};
 }
 
+/**
+ * The share counts behind the ownership bar, under the ids of `section`. The
+ * Overview and Relationships copies hold the same figures.
+ */
+function ownershipSummary(
+	section: "overview" | "relationships",
+): OwnershipSummary {
+	const quarterEnd = instant(2025, 3, "2025-09-30");
+	const ownershipClaim = (
+		id: string,
+		label: string,
+		value: number,
+		document: Filing,
+		line: string,
+		xbrlTag: string | null,
+	) =>
+		reported(
+			`${section}.ownership.${id}`,
+			label,
+			value,
+			"shares",
+			quarterEnd,
+			document,
+			line,
+			xbrlTag,
+		);
+	return {
+		asOf: quarterEnd.endsOn,
+		sharesOutstanding: ownershipClaim(
+			"sharesOutstanding",
+			"Shares outstanding",
+			150_000_000,
+			TEN_Q3_2025,
+			"Cover page › Shares outstanding",
+			"dei:EntityCommonStockSharesOutstanding",
+		),
+		institutionShares: ownershipClaim(
+			"institutionShares",
+			"Shares held by institutions",
+			108_000_000,
+			THIRTEEN_F,
+			"Information table › Shares (sshPrnamt)",
+			null,
+		),
+		insiderShares: ownershipClaim(
+			"insiderShares",
+			"Shares held by insiders",
+			4_500_000,
+			TEN_Q3_2025,
+			"Security ownership › Directors and officers",
+			null,
+		),
+	};
+}
+
 function buildOverview(): OverviewSection {
 	const revenuePart = (list: string, name: string, value: number) => ({
 		name,
@@ -318,25 +388,6 @@ function buildOverview(): OverviewSection {
 			"us-gaap:Revenues",
 		),
 	});
-	const quarterEnd = instant(2025, 3, "2025-09-30");
-	const ownershipClaim = (
-		id: string,
-		label: string,
-		value: number,
-		document: Filing,
-		line: string,
-		xbrlTag: string | null,
-	) =>
-		reported(
-			`overview.ownership.${id}`,
-			label,
-			value,
-			"shares",
-			quarterEnd,
-			document,
-			line,
-			xbrlTag,
-		);
 	return {
 		business: tenKClaim(
 			"business",
@@ -360,33 +411,7 @@ function buildOverview(): OverviewSection {
 			benchmark("dividendYield", [0.005, 0.012, 0.021]),
 			benchmark("buybackYield", [0, 0.01, 0.025]),
 		],
-		ownership: {
-			asOf: quarterEnd.endsOn,
-			sharesOutstanding: ownershipClaim(
-				"sharesOutstanding",
-				"Shares outstanding",
-				150_000_000,
-				TEN_Q3_2025,
-				"Cover page › Shares outstanding",
-				"dei:EntityCommonStockSharesOutstanding",
-			),
-			institutionShares: ownershipClaim(
-				"institutionShares",
-				"Shares held by institutions",
-				108_000_000,
-				THIRTEEN_F,
-				"Information table › Shares (sshPrnamt)",
-				null,
-			),
-			insiderShares: ownershipClaim(
-				"insiderShares",
-				"Shares held by insiders",
-				4_500_000,
-				TEN_Q3_2025,
-				"Security ownership › Directors and officers",
-				null,
-			),
-		},
+		ownership: ownershipSummary("overview"),
 		profile: {
 			founded: tenKClaim(
 				"profile.founded",
@@ -770,6 +795,422 @@ function buildFinancials(): FinancialsSection {
 	};
 }
 
+/** The proxy statement filed in April of `year`, which reports the pay of the fiscal year before. */
+function proxy(year: number): Filing {
+	return filing(
+		"DEF 14A",
+		`0001999999-${String(year).slice(2)}-000014`,
+		`${year}-04-10`,
+		`${year} annual meeting`,
+	);
+}
+
+const PROXY_2025 = proxy(2025);
+const DIVIDEND_8K = filing(
+	"8-K",
+	"0001999999-26-000002",
+	"2026-02-12",
+	"12 Feb 2026",
+);
+
+/** A series of one figure for each fiscal year in `years`, each point from the 10-K of its year. */
+function annualSeries(
+	id: string,
+	label: string,
+	unit: Unit,
+	values: readonly number[],
+	line: string,
+	xbrlTag: string,
+	years: readonly number[] = YEARS,
+): Series {
+	const periods = years.map(fiscalYear);
+	return {
+		key: id.split(".")[1],
+		label,
+		unit,
+		periods,
+		points: periods.map((period, position) =>
+			reported(
+				`${id}.${periodId(period)}`,
+				label,
+				values[position],
+				unit,
+				period,
+				tenK(period.fiscalYear),
+				line,
+				xbrlTag,
+			),
+		),
+	};
+}
+
+/** The 10-year Treasury yield at each fiscal year end, FY2016 to FY2025. */
+const TREASURY_AT_YEAR_ENDS = [
+	0.0245, 0.024, 0.0269, 0.0192, 0.0093, 0.0152, 0.0388, 0.0388, 0.0458, 0.0457,
+];
+
+function buildValuation(): ValuationSection {
+	const rates: MarketDataset = {
+		kind: "market",
+		name: "10-year Treasury yield, daily",
+		asOf: date("2026-03-20"),
+		url: "https://rates.example/DGS10",
+	};
+	const treasury = (key: string, value: number, period: Period) =>
+		reported(
+			`valuation.${key}.${periodId(period)}`,
+			"10-year Treasury yield",
+			value,
+			"percent",
+			period,
+			rates,
+			"Market yield, 10-year constant maturity",
+			null,
+		);
+	const yearEnds = YEARS.map(yearEnd);
+	return {
+		treasuryYieldAtFiscalYearEnds: {
+			key: "treasuryYieldAtFiscalYearEnds",
+			label: "10-year Treasury yield at fiscal year end",
+			unit: "percent",
+			periods: yearEnds,
+			points: yearEnds.map((period, position) =>
+				treasury(
+					"treasuryYieldAtFiscalYearEnds",
+					TREASURY_AT_YEAR_ENDS[position],
+					period,
+				),
+			),
+		},
+		treasuryYieldNow: treasury(
+			"treasuryYieldNow",
+			0.0425,
+			instant(2026, null, "2026-03-20"),
+		),
+		sectorBenchmarks: [
+			benchmark("priceToEarnings", [24, 31, 40], "valuation", "ratio"),
+			benchmark("priceToFreeCashFlow", [22, 30, 41], "valuation", "ratio"),
+			benchmark("priceToBook", [3.1, 4.6, 7.2], "valuation", "ratio"),
+			benchmark("enterpriseValueToEbit", [18, 25, 33], "valuation", "ratio"),
+		],
+	};
+}
+
+/**
+ * The dividend per share and the shares bought back and issued to staff,
+ * FY2016 to FY2025. Each follows the cash flow lines of its year: dividends
+ * paid over diluted shares, repurchases over the year-end price, and stock
+ * plan proceeds over 60% of the year-end price.
+ */
+function buildShareholderReturns(): ShareholderReturnsSection {
+	const base = [180, 188, 195, 205, 170, 215, 245, 275, 300, 330];
+	const shares = [
+		162, 161.2, 160.1, 159, 158.4, 157.3, 156, 154.2, 152.6, 151.1,
+	];
+	const equity = "Consolidated statements of shareholders' equity";
+	const perYear = (share: number, divisor: (position: number) => number) =>
+		base.map(
+			(value, position) =>
+				Math.round((value * share * 1_000) / divisor(position)) * 1_000,
+		);
+	return {
+		dividendPerShare: annualSeries(
+			"shareholderReturns.dividendPerShare",
+			"Dividend per share declared",
+			"usdPerShare",
+			base.map(
+				(value, position) =>
+					Math.round(((value * 0.2) / shares[position]) * 100) / 100,
+			),
+			`${equity} › Dividends declared per share`,
+			"us-gaap:CommonStockDividendsPerShareDeclared",
+		),
+		latestDividendDeclared: reported(
+			"shareholderReturns.latestDividendDeclared.2026-02-12",
+			"Latest dividend declared",
+			0.12,
+			"usdPerShare",
+			instant(2026, null, "2026-02-12"),
+			DIVIDEND_8K,
+			"Item 8.01 › Quarterly dividend per share",
+			null,
+		),
+		sharesRepurchased: annualSeries(
+			"shareholderReturns.sharesRepurchased",
+			"Shares bought back",
+			"shares",
+			perYear(0.3, (position) => PRICE_AT_YEAR_ENDS[position]),
+			`${equity} › Repurchases of common stock, shares`,
+			"us-gaap:StockRepurchasedDuringPeriodShares",
+		),
+		sharesIssuedToStaff: annualSeries(
+			"shareholderReturns.sharesIssuedToStaff",
+			"Shares issued to staff",
+			"shares",
+			perYear(0.05, (position) => PRICE_AT_YEAR_ENDS[position] * 0.6),
+			`${equity} › Shares issued under stock plans`,
+			"us-gaap:StockIssuedDuringPeriodSharesShareBasedCompensation",
+		),
+	};
+}
+
+/** The officers and directors with their shares and the date of their latest Form 4. They hold the 4.5M insider shares. */
+const INSIDERS: [string, string, number, string][] = [
+	["Dana Whitcombe", "Chief executive", 3_100_000, "2025-11-03"],
+	["Ellis Marrow", "Chief financial officer", 900_000, "2025-08-15"],
+	["Ruth Okafor", "Director", 500_000, "2025-05-20"],
+];
+
+function form4(filer: string, row: number, filedOn: string): Filing {
+	const [, year, month, day] = filedOn.split("-").map((part) => part.slice(-2));
+	return {
+		...filing(
+			"Form 4",
+			`000666666${row}-${year}-00${month}${day}`,
+			filedOn,
+			filedOn,
+		),
+		filer,
+	};
+}
+
+/** The insider holdings under the ids of `section`. The Relationships and Management copies hold the same rows. */
+function insiderHoldings(
+	section: "relationships" | "management",
+): InsiderHolding[] {
+	return INSIDERS.map(([name, role, shares, filedOn], row) => ({
+		name,
+		role,
+		shares: reported(
+			`${section}.insiders.${row}.shares`,
+			`Shares held by ${name}`,
+			shares,
+			"shares",
+			instant(2025, null, filedOn),
+			form4(name, row, filedOn),
+			"Table I › Amount beneficially owned following reported transactions",
+			null,
+		),
+	}));
+}
+
+function buildRelationships(): RelationshipsSection {
+	const fund = (name: string, row: number, now: number, before: number) => {
+		const claim = (field: string, value: number, filed: Filing, at: Period) =>
+			reported(
+				`relationships.funds.${row}.${field}`,
+				`Shares held by ${name}`,
+				value,
+				"shares",
+				at,
+				{ ...filed, filer: name },
+				"Information table › Shares (sshPrnamt)",
+				null,
+			);
+		return {
+			fund: name,
+			shares: claim(
+				"shares",
+				now,
+				filing("13F-HR", `000555555${row}-25-000031`, "2025-11-14", "Q3 2025"),
+				instant(2025, 3, "2025-09-30"),
+			),
+			sharesQuarterEarlier: claim(
+				"sharesQuarterEarlier",
+				before,
+				filing("13F-HR", `000555555${row}-25-000021`, "2025-08-14", "Q2 2025"),
+				instant(2025, 2, "2025-06-30"),
+			),
+		};
+	};
+	const subsidiary = (name: string, row: number, jurisdiction: string) => ({
+		name,
+		jurisdiction: reported(
+			`relationships.subsidiaries.${row}.jurisdiction`,
+			`Jurisdiction of ${name}`,
+			jurisdiction,
+			"text",
+			null,
+			TEN_K_2025,
+			`Exhibit 21 › ${name} › Jurisdiction`,
+			null,
+		),
+	});
+	const stake = (
+		company: string,
+		ticker: Ticker | null,
+		row: number,
+		held: number,
+		outstanding: number,
+	) => ({
+		company,
+		ticker,
+		sharesHeld: reported(
+			`relationships.stakes.${row}.sharesHeld`,
+			`Shares of ${company} held`,
+			held,
+			"shares",
+			instant(2025, 3, "2025-09-30"),
+			THIRTEEN_F,
+			"Information table › Shares (sshPrnamt)",
+			null,
+		),
+		sharesOutstanding: reported(
+			`relationships.stakes.${row}.sharesOutstanding`,
+			`Shares outstanding of ${company}`,
+			outstanding,
+			"shares",
+			instant(2026, null, "2026-02-13"),
+			peerTenK(company, row),
+			"Cover page › Shares outstanding",
+			"dei:EntityCommonStockSharesOutstanding",
+		),
+	});
+	return {
+		ownership: ownershipSummary("relationships"),
+		funds: [
+			fund("Harlow Index Trust", 0, 14_200_000, 13_900_000),
+			fund("Pinecrest Advisors", 1, 9_800_000, 10_400_000),
+		],
+		insiders: insiderHoldings("relationships"),
+		subsidiaries: [
+			subsidiary("Quillvane Instruments GmbH", 0, "Germany"),
+			subsidiary("Quillvane Sensors Ltd.", 1, "United Kingdom"),
+		],
+		stakes: [
+			stake("Alder Controls", Ticker.parse("ALDR"), 0, 2_400_000, 48_000_000),
+			stake("Brisk Metrology", null, 1, 1_100_000, 30_000_000),
+		],
+	};
+}
+
+function buildManagement(): ManagementSection {
+	const person = (
+		name: string,
+		role: string,
+		row: number,
+		isDirector: boolean,
+		since: string,
+		independence: string,
+	) => ({
+		name,
+		role,
+		isDirector,
+		since: reported(
+			`management.people.${row}.since`,
+			`${name}, in the role since`,
+			date(since),
+			"date",
+			null,
+			PROXY_2025,
+			`Directors and executive officers › ${name}`,
+			null,
+		),
+		independence: reported(
+			`management.people.${row}.independence`,
+			`Independence of ${name}`,
+			independence,
+			"text",
+			null,
+			PROXY_2025,
+			"Corporate governance › Director independence",
+			null,
+		),
+	});
+	const pay = (year: number, amounts: [number, number, number, number]) => {
+		const fields = ["salary", "bonus", "stockAwards", "other"] as const;
+		const [salary, bonus, stockAwards, other] = fields.map((field, position) =>
+			reported(
+				`management.ceoPay.${field}.FY${year}`,
+				`Chief executive pay, ${field}`,
+				amounts[position],
+				"usd",
+				fiscalYear(year),
+				proxy(year + 1),
+				`Summary compensation table › ${field}`,
+				null,
+			),
+		);
+		return { fiscalYear: year, salary, bonus, stockAwards, other };
+	};
+	// The shares that insiders bought or sold in each year, each the sum of one Form 4.
+	const trades = (key: string, label: string, values: [number, number]) => {
+		const periods = [fiscalYear(2024), fiscalYear(2025)];
+		return {
+			key,
+			label,
+			unit: "shares" as const,
+			periods,
+			points: periods.map((period, position) => {
+				const input = reported(
+					`management.${key}.${periodId(period)}.forms.0`,
+					label,
+					values[position],
+					"shares",
+					period,
+					form4(INSIDERS[position][0], position, `${period.fiscalYear}-06-02`),
+					"Table I › Amount of securities acquired or disposed of",
+					null,
+				);
+				return {
+					...input,
+					id: `management.${key}.${periodId(period)}`,
+					source: {
+						kind: "derived" as const,
+						formula: `Sum of the shares in the Form 4 filings of FY${period.fiscalYear}`,
+						inputs: [input] as [Claim],
+					},
+				};
+			}),
+		};
+	};
+	return {
+		people: [
+			person(
+				"Dana Whitcombe",
+				"Chief executive",
+				0,
+				true,
+				"2019-04-01",
+				"Not independent",
+			),
+			person("Ruth Okafor", "Director", 1, true, "2016-05-12", "Independent"),
+		],
+		ceoPay: [
+			pay(2024, [950_000, 1_200_000, 6_500_000, 200_000]),
+			pay(2025, [1_000_000, 1_400_000, 7_200_000, 250_000]),
+		],
+		insiders: insiderHoldings("management"),
+		insiderSharesBought: trades(
+			"insiderSharesBought",
+			"Shares bought by insiders",
+			[120_000, 60_000],
+		),
+		insiderSharesSold: trades(
+			"insiderSharesSold",
+			"Shares sold by insiders",
+			[400_000, 250_000],
+		),
+	};
+}
+
+/** The filings of Quillvane, oldest first: the 10-Ks, the 10-Qs, the proxy statements, one 8-K and its own 13F. */
+function buildFilings(): FilingsSection {
+	const filings = [
+		...ANNUAL.documents,
+		...QUARTERLY.documents.filter((document) => document.form === "10-Q"),
+		proxy(2025),
+		proxy(2026),
+		DIVIDEND_8K,
+		THIRTEEN_F,
+	];
+	return {
+		filings: filings.sort((first, second) =>
+			first.filedOn.localeCompare(second.filedOn),
+		),
+	};
+}
+
 /**
  * The sections of Quillvane Instruments (QVAN), a made-up company for tests.
  * Its fiscal year ends on 31 December. The window matches the port contract:
@@ -791,7 +1232,13 @@ function buildFinancials(): FinancialsSection {
  * - for each flow line, the first three quarters and the derived fourth
  *   quarter add up to the fiscal year, in both fiscal years;
  * - each sector quartile is a derived claim over two peer claims;
- * - `profile.website` has no period.
+ * - `profile.website` has no period;
+ * - the Overview and Relationships ownership copies, and the Relationships
+ *   and Management insider copies, hold the same figures under their own ids;
+ * - the Valuation section holds a Treasury yield at each fiscal year end and
+ *   one at the price date, 20 Mar 2026;
+ * - one stake has no ticker, and its shares outstanding come from a filing of
+ *   the target company.
  *
  * It uses its own company instead of MRDN, so a change to the sample data of
  * the app breaks no test that uses it.
@@ -800,4 +1247,9 @@ export const fakeCompanyReport: {
 	readonly masthead: MastheadSection;
 	readonly overview: OverviewSection;
 	readonly financials: FinancialsSection;
+	readonly valuation: ValuationSection;
+	readonly shareholderReturns: ShareholderReturnsSection;
+	readonly relationships: RelationshipsSection;
+	readonly management: ManagementSection;
+	readonly filings: FilingsSection;
 } = buildReport();
