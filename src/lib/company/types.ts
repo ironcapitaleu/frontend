@@ -103,7 +103,11 @@ export interface ReportedSource {
 export interface DerivedSource {
 	readonly kind: "derived";
 	readonly formula: string;
-	/** One input claim for each term of the formula. */
+	/**
+	 * The claims the formula reads. A formula can name one claim more than
+	 * once, as `(Price − Price a month earlier) ÷ Price a month earlier` names
+	 * the price a month earlier twice, and that claim is still one input.
+	 */
 	readonly inputs: readonly [Claim, ...Claim[]];
 }
 
