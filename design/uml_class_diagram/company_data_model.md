@@ -352,8 +352,8 @@ that reads it, so no claim can reach itself.
 **How a chart or table collects its sources.** STA-226 writes these pure
 functions in `src/lib/company/sources.ts`:
 
-- `claimsOf(block, figures)` returns the claims that a chart, table or check
-  draws, of one kind. With `"sector"`, it returns the claims that the block
+- `claimsOf(block: BlockKey, figures: "company" | "sector"): Claim[]`
+  returns the claims that a chart, table or check draws, of one kind. With `"sector"`, it returns the claims that the block
   reads from a `SectorBenchmark` field. With `"company"`, it returns every
   other claim of the block. So the two kinds never share a claim, and
   together they hold every claim that the block draws.
@@ -399,8 +399,9 @@ over the same groups. A peer's filing is not a filing behind this company's
 figures, so the index names none. A sector quartile still shows its peers on
 its own source card (§8). No section stores a source
 set or a list of what a filing feeds, so neither can disagree with the claims.
-The sources footer of the print summary is `sourcesOf` over every claim on
-the printed page.
+The sources footer of the print summary is `sourcesOf` over the claims of
+the printed page's groups that `isSectorBenchmark` rejects, as the per-tab
+index is. The printed page names this company's filings alone.
 
 **The masthead gives no figure group.** `figureGroupsOf` takes a `TabKey`,
 and `masthead` is not one. The masthead has no chart, no table and no check,
@@ -1703,9 +1704,9 @@ once STA-224 writes the types:
 - "A block with sector figures gives one group of each": a unit test in
   STA-226 checks that each such block of `figureGroupsOf` gives one group
   with `figures: "company"` and one with `figures: "sector"`, with the same
-  `block`. It also checks that the company group of `peRange` holds no claim
-  read from a `SectorBenchmark` field, and that the sector group holds only
-  such claims.
+  `block`, and that no `ClaimId` appears in both. It also checks that the
+  company group of `peRange` holds no claim read from a `SectorBenchmark`
+  field, and that the sector group holds only such claims.
 
 The period and guard rules reach level 1 through tests. Each worked example
 in §7 becomes a unit test in STA-226, and CI runs the tests. A change that
