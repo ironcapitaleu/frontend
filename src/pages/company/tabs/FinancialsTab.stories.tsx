@@ -8,12 +8,14 @@ import { Ticker } from "../../../lib/domain/ticker";
 import { alwaysFailingCompanyGateway } from "../../../test/fixtures/companies/always-failing";
 import { alwaysFoundCompanyGateway } from "../../../test/fixtures/companies/always-found";
 import { fakeCompanyReport } from "../../../test/fixtures/companies/fake-company-report";
+import { sampleCompanyGateway } from "../../../lib/company/sampleCompanyGateway";
 import { FinancialsTab } from "./FinancialsTab";
 
 const desktop = { viewport: { value: "desktop", isRotated: false } };
 const phone = { viewport: { value: "mobile1", isRotated: false } };
 
 const pending = (): Promise<never> => new Promise(() => {});
+const sampleGateway = sampleCompanyGateway();
 
 /** A gateway whose Financials section never answers, so the tab stays loading. */
 const neverAnsweringGateway: CompanyGateway = {
@@ -240,6 +242,48 @@ export const EmptyChart: Story = {
 };
 
 /**
+ * Opens the cash flow chart and checks every bar: its trigger is at least
+ * 24 px wide and tall and inside the plot, the bar draws, and the page does
+ * not scroll sideways.
+ */
+async function checkBarTargets(canvasElement: HTMLElement) {
+	const canvas = within(canvasElement);
+	const body = within(canvasElement.ownerDocument.body);
+	await userEvent.click(
+		await canvas.findByRole("combobox", { name: "Statement" }),
+	);
+	await userEvent.click(await body.findByRole("option", { name: "Cash flow" }));
+	const plot = await canvas.findByRole("list", { name: "Fiscal years" });
+	const bars = within(plot).getAllByRole("button");
+	const page = canvasElement.ownerDocument.documentElement;
+	const { top, bottom } = plot.getBoundingClientRect();
+
+	const expectedResult = {
+		smallTargets: [],
+		targetsOutsidePlot: [],
+		invisibleBars: [],
+		pageScrollsSideways: false,
+	};
+
+	const result = {
+		smallTargets: bars.filter((bar) => {
+			const { width, height } = bar.getBoundingClientRect();
+			return width < 24 || height < 24;
+		}),
+		targetsOutsidePlot: bars.filter((bar) => {
+			const rect = bar.getBoundingClientRect();
+			return rect.top < top - 0.5 || rect.bottom > bottom + 0.5;
+		}),
+		invisibleBars: bars.filter(
+			(bar) => bar.parentElement?.getBoundingClientRect().height === 0,
+		),
+		pageScrollsSideways: page.scrollWidth > page.clientWidth,
+	};
+
+	await expect(result).toEqual(expectedResult);
+}
+
+/**
  * Play test: every bar of the cash flow chart can be tapped on a phone. Each
  * bar's trigger is at least 24 px wide and 24 px tall, even when the bar is
  * drawn smaller, and it stays inside the plot. Every bar draws, including the
@@ -248,44 +292,46 @@ export const EmptyChart: Story = {
  */
 export const BarTargets: Story = {
 	globals: phone,
-	play: async ({ canvasElement }) => {
-		const canvas = within(canvasElement);
-		const body = within(canvasElement.ownerDocument.body);
-		await userEvent.click(
-			await canvas.findByRole("combobox", { name: "Statement" }),
+	play: ({ canvasElement }) => checkBarTargets(canvasElement),
+};
+
+/**
+ * A gateway whose cash flow statement reports capital expenditure as a small
+ * negative number, so the zero line sits near the foot of the chart.
+ */
+const negativeCapexGateway: CompanyGateway = {
+	...sampleGateway,
+	getFinancials: async () => {
+		const financials = await sampleGateway.getFinancials(Ticker.parse("MRDN"));
+		const { annual } = financials.cashFlow;
+		const lines = annual.lines.map((line) =>
+			line.key === "capitalExpenditure"
+				? {
+						...line,
+						points: line.points.map((point) =>
+							point !== null && typeof point.value === "number"
+								? { ...point, value: -point.value / 20 }
+								: point,
+						),
+					}
+				: line,
 		);
-		await userEvent.click(
-			await body.findByRole("option", { name: "Cash flow" }),
-		);
-		const plot = await canvas.findByRole("list", { name: "Fiscal years" });
-		const bars = within(plot).getAllByRole("button");
-		const page = canvasElement.ownerDocument.documentElement;
-		const { top, bottom } = plot.getBoundingClientRect();
-
-		const expectedResult = {
-			smallTargets: [],
-			targetsOutsidePlot: [],
-			invisibleBars: [],
-			pageScrollsSideways: false,
+		return {
+			...financials,
+			cashFlow: { ...financials.cashFlow, annual: { ...annual, lines } },
 		};
-
-		const result = {
-			smallTargets: bars.filter((bar) => {
-				const { width, height } = bar.getBoundingClientRect();
-				return width < 24 || height < 24;
-			}),
-			targetsOutsidePlot: bars.filter((bar) => {
-				const rect = bar.getBoundingClientRect();
-				return rect.top < top - 0.5 || rect.bottom > bottom + 0.5;
-			}),
-			invisibleBars: bars.filter(
-				(bar) => bar.parentElement?.getBoundingClientRect().height === 0,
-			),
-			pageScrollsSideways: page.scrollWidth > page.clientWidth,
-		};
-
-		await expect(result).toEqual(expectedResult);
 	},
+};
+
+/**
+ * Play test: with a small negative capital expenditure the zero line sits
+ * near the foot of the plot, so a capex bar has less than 24 px below it.
+ * Its trigger grows up across the zero line and stays inside the plot.
+ */
+export const BarTargetsNearTheEdge: Story = {
+	globals: phone,
+	parameters: { companyGateway: negativeCapexGateway },
+	play: ({ canvasElement }) => checkBarTargets(canvasElement),
 };
 
 /**

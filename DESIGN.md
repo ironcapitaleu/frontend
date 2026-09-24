@@ -544,11 +544,11 @@ Financials has these cards, from top to bottom:
    The lines use `chart-1`, `chart-3` and `chart-5`. A reported zero draws
    a thin mark on the zero line, so it never reads as a missing year. Each
    bar's tap target is at least 24 × 24 px. This is an exception to the
-   44 × 44 px rule in AGENTS.md "Responsive Design": three 44 px bars for
-   each of ten years would make every chart scroll sideways on a desktop,
-   so a bar keeps the 24 × 24 px minimum of WCAG 2.5.8 instead. Below
-   1024 px, a chart that does not fit its card scrolls sideways, and the
-   year labels scroll with their groups.
+   44 × 44 px rule in AGENTS.md "Navigation — Mobile Patterns": three
+   44 px bars for each of ten years would make every chart scroll sideways
+   on a desktop, so a bar keeps the 24 × 24 px minimum of WCAG 2.5.8
+   instead. Below 1024 px, a chart that does not fit its card scrolls
+   sideways, and the year labels scroll with their groups.
 2. **Statement table.** The 10-year table of the selected statement, one
    column per fiscal year, and a last column for growth per year over ten
    years (CAGR). Margins sit as muted rows under the line they divide.

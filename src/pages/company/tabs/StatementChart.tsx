@@ -15,6 +15,12 @@ import {
  */
 const INKS = ["bg-chart-1", "bg-chart-3", "bg-chart-5"];
 
+/** The height of the plot in px. It matches the `h-56` class of the plot. */
+const PLOT_HEIGHT = 224;
+
+/** The least tap target of a bar in px, the `min-h-6` of its trigger. */
+const MIN_TARGET = 24;
+
 /**
  * The bar chart of Financials card 2.1 (DESIGN.md §8 "Financials"): one group
  * of bars per fiscal year and one bar per line of `table`, oldest year first.
@@ -23,7 +29,13 @@ const INKS = ["bg-chart-1", "bg-chart-3", "bg-chart-5"];
  * legend names the lines. The year labels are short, such as `FY26`, so ten
  * of them fit at 390 px. Each group names its full year to a screen reader.
  * A bar keeps its drawn height, but its trigger is at least 24 px tall, and
- * every bar is 24 px wide, so a small bar can still be tapped. Below 1024 px,
+ * every bar is 24 px wide, so a small bar can still be tapped. The trigger
+ * grows away from the zero line when that side has room, and across it
+ * otherwise, so it stays inside the plot. The 24 × 24 px target departs
+ * from the 44 × 44 px rule in AGENTS.md "Navigation — Mobile Patterns":
+ * three 44 px bars for each of ten years would make every chart scroll on a
+ * desktop, so a bar keeps the 24 × 24 px minimum of WCAG 2.5.8 (DESIGN.md §8
+ * "Financials"). Below 1024 px,
  * a chart that does not fit its card scrolls sideways (DESIGN.md §8 "Shared
  * Layout"), and the year labels scroll with their groups. A table with no
  * fiscal year or no line draws one line that says so.
@@ -94,6 +106,11 @@ export function StatementChart({
 										}
 										const { top, height } = place(point.value);
 										const negative = point.value < 0;
+										// The trigger grows away from the zero line when that side
+										// of the plot has room for it, and across the line otherwise.
+										const room =
+											((negative ? 100 - zero : zero) / 100) * PLOT_HEIGHT;
+										const growsDown = negative === room >= MIN_TARGET;
 										// A reported zero draws a 2 px mark above the zero line,
 										// so it never reads as a missing year.
 										const zeroMark = point.value === 0;
@@ -118,7 +135,7 @@ export function StatementChart({
 														claim={point}
 														className={cn(
 															"absolute inset-x-0 block h-full min-h-6 rounded-none",
-															negative ? "top-0" : "bottom-0",
+															growsDown ? "top-0" : "bottom-0",
 														)}
 													>
 														<span className="sr-only">
