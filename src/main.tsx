@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router";
 
 import App from "./App.tsx";
 import { AuthProvider } from "./contexts/AuthContext";
+import { CompanyGatewayProvider } from "./contexts/CompanyGatewayContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import "./index.css";
 
@@ -15,9 +16,11 @@ createRoot(rootElement).render(
 	<StrictMode>
 		<ThemeProvider>
 			<AuthProvider>
-				<BrowserRouter>
-					<App />
-				</BrowserRouter>
+				<CompanyGatewayProvider>
+					<BrowserRouter>
+						<App />
+					</BrowserRouter>
+				</CompanyGatewayProvider>
 			</AuthProvider>
 		</ThemeProvider>
 	</StrictMode>,
