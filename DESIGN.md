@@ -293,9 +293,9 @@ Rules for the screener:
 ## 8. The Company Page
 
 > **Target state.** This section records the decided rules for the company
-> page (Linear epic P-STA-10 "Company Page"). Nothing here is built yet. The
-> app has no `/companies` route, so the screener's "Open company page" link
-> reaches the not-found page today. Audit the live page against this section
+> page (Linear epic P-STA-10 "Company Page"). The routes and the page states
+> are built. The loaded page shows a placeholder until the masthead and the
+> tab strip land. Audit the live page against this section
 > once the epic's Page Shell milestone lands. The layout below records
 > Version 5 of the
 > [company page design canvas](https://claude.ai/artifact/CwP59tuPZtXasw8dg7vpco),

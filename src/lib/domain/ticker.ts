@@ -4,9 +4,9 @@
  * A validated ticker, the short code under which an exchange lists a company,
  * for example `MRDN`. The company page parses the `:symbol` part of its URL
  * into a `Ticker` once, where the URL enters the app, so the rest of the app
- * holds a checked type instead of raw URL text. No caller does this yet. The
- * company page shell adds the first one. Follows the "parse, don't validate"
- * rule of AGENTS.md "Value Objects (Newtypes)", like `Email` in `email.ts`.
+ * holds a checked type instead of raw URL text. `CompanyPage` is that caller.
+ * Follows the "parse, don't validate" rule of AGENTS.md "Value Objects
+ * (Newtypes)", like `Email` in `email.ts`.
  *
  * The inner value is private and normalised (trimmed and upper-cased). A
  * `Ticker` is only obtainable through {@link Ticker.parse}, which throws

@@ -401,7 +401,9 @@ add an entry to `SITEMAP_MEMBERS`, and add its URL to `public/sitemap.xml`.
 **For a page that must NOT appear in the sitemap** (an auth-only page, or the
 catch-all 404): put it in `src/pages/internal/`. Discovery is scoped to
 `src/pages/public/`, so a sibling folder like `internal/` sits outside it and
-stays off the sitemap.
+stays off the sitemap. A page served at many URLs through a route parameter,
+such as the company page at `/companies/:symbol`, gets its own folder, for example
+`src/pages/company/`. The sitemap lists fixed URLs only.
 
 The sitemap-consistency gate is a unit test (`src/pages/public/sitemap.test.ts`,
 run by `npm run test:ci`), so it needs no separate CI step. `discoverPageModules()`
