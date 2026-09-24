@@ -14,10 +14,10 @@ serves.
 | [1. Terms](#1-terms)                      | The words the note uses                                            | every ticket     |
 | [2. The port](#2-the-companygateway-port) | `CompanyGateway`, `Ticker`, the errors and the page states         | STA-224          |
 | [3. Claims](#3-claims-periods-and-source-references) | `Claim`, `Period`, source references, `sourcesOf`, `feedsOf`, figure groups | every ticket |
-| [4. Sections](#4-sections)                | The eight section types, the line keys and what the port returns   | STA-224, STA-227 |
+| [4. Sections](#4-sections)                | The eight section types, the line keys, the kinds of line, completed sections and what the port returns | STA-224, STA-227 |
 | [5. Metrics and checks](#5-metrics-checks-and-results) | Figure references, market keys, per-row derived figures, guards, thresholds, check results | STA-226 |
 | [6. The first check set](#6-the-first-check-set) | The 11 checks and the metrics they read                     | STA-226, STA-227 |
-| [7. Worked examples](#7-worked-examples)  | S1, C1, V1, three loss-making cases and one Filings row, in the types | STA-224, STA-226 |
+| [7. Worked examples](#7-worked-examples)  | S1, C1, V1, three loss-making cases, the months after a 10-K, a fiscal year end, the ownership copies and one Filings row, in the types | STA-224, STA-226, STA-227 |
 | [8. Open questions](#8-open-questions-from-the-epic-fog-log) | The three fog questions from the epic             | every ticket     |
 | [9. Enforcement](#9-enforcement-levels)   | Which rules a script can check                                     | STA-224, STA-226 |
 
@@ -230,17 +230,26 @@ The value types:
 - `ClaimValue` is `number | string`. A text claim, such as a subsidiary's
   jurisdiction or a board member's independence, uses the unit `text`.
 - `Unit` is one of `usd`, `usdPerShare`, `shares`, `percent`, `ratio`,
-  `count`, `year`, `date` or `text`. A value is in whole units, for example
-  `212000000000` for $212.0B. A `percent` value is a fraction, for example
-  `0.15` for 15%. A `date` value is an `IsoDate`. The page formats it.
+  `count`, `year`, `date` or `text`. A `usd` or `shares` value is in whole
+  units, not in thousands or millions, for example `212000000000` for
+  $212.0B. A `usdPerShare` value keeps its cents, for example `5.51`. A
+  `percent` value is a fraction, for example `0.15` for 15%. A `date` value
+  is an `IsoDate`. The page formats it.
 - `PeriodKind` is one of `fiscalYear` (FY2026), `fiscalQuarter` (Q2 FY2027,
   three months), `yearToDate` (six months to Q2 FY2027), `lastFourQuarters`
   or `instant` (a date, for a balance sheet or a price).
 - `Period.fiscalYear` is the fiscal year that the period falls in.
-  `Period.fiscalQuarter` is `1` to `4` for a quarter, a year to date or a
-  quarter end. It is `null` for a fiscal year, for the last four quarters and
-  for an instant at a fiscal year end. `Period.endsOn` is the last day of the
-  period, or the date of an instant.
+  `Period.fiscalQuarter` is `1` to `4` for a quarter or a year to date. It is
+  `null` for a fiscal year and for the last four quarters. `Period.endsOn` is
+  the last day of the period, or the date of an instant.
+- The end of a fourth quarter is also the end of a fiscal year, so the table
+  that holds an instant decides its `fiscalQuarter`. In an annual table and
+  in a series of fiscal year ends, an instant has `fiscalQuarter: null`. In a
+  quarterly table, an instant has `fiscalQuarter` `1` to `4`, and the fourth
+  quarter end has `4`. Each date therefore has one encoding in each table.
+  For example, MRDN's FY2026 ends on 25 Jan 2026. The annual balance sheet
+  holds that instant with `fiscalQuarter: null`, and the quarterly balance
+  sheet holds it with `fiscalQuarter: 4`.
 - `Claim.period` is `null` in two cases. A reported fact with no stated
   period, such as `Profile.website`, has no period. A derived claim whose
   inputs do not share one period has no period either. For example, the P/E
@@ -251,14 +260,21 @@ The value types:
 - Two periods are the **same period** when their `kind`, `fiscalYear` and
   `fiscalQuarter` match. The one exception pairs a fiscal year with the
   instant at its end, because a year-end price and a year's EPS belong
-  together. §5 uses this rule to pair the inputs of a per-period metric.
+  together. The pair reads the annual encoding of the instant, with
+  `fiscalQuarter: null`. §5 uses this rule to pair the inputs of a
+  per-period metric.
 - `ClaimId` is a string that is unique on the page. Hover, pin and chart
   highlight use it. Three owners mint ids, each under its own prefix:
   - The port mints `{section}.{key}.{period}`, such as
     `financials.revenue.FY2026`.
   - `metrics.ts` mints `metric.{key}.{period}`, such as
     `metric.freeCashFlow.FY2026`, or `metric.{key}` for a metric with no single
-    period, such as `metric.priceToEarningsMedian10y`.
+    period, such as `metric.priceToEarningsMedian10y`. It also derives points
+    of statement lines: the fourth quarters and three-month figures of §4 and
+    the sums over the last four quarters. For these, `{key}` is the
+    `LineKey`, such as `metric.revenue.Q4-FY2026`. So one row of a completed
+    quarterly table holds ids under two prefixes. No `MetricKey` equals a
+    `LineKey`, so the two kinds of key never mint one id.
   - `checks.ts` mints `check.{checkId}.{part}`, such as `check.C1.count`.
 
   The `{period}` part renders the `Period` from its `kind`. The rendering
@@ -270,8 +286,12 @@ The value types:
   | `fiscalQuarter`    | `Q{q}-FY{year}`     | `financials.revenue.Q2-FY2027`              |
   | `yearToDate`       | `YTD-Q{q}-FY{year}` | `financials.operatingCashFlow.YTD-Q2-FY2027` |
   | `lastFourQuarters` | `L4Q-{endsOn}`      | `metric.revenue.L4Q-2026-07-26`             |
-  | `instant`          | `{endsOn}`          | `financials.shareholdersEquity.2026-07-26`  |
+  | `instant`, annual  | `{endsOn}`          | `financials.shareholdersEquity.2026-01-25`  |
+  | `instant`, quarter | `Q{q}-{endsOn}`     | `financials.shareholdersEquity.Q4-2026-01-25` |
 
+  An instant with `fiscalQuarter: null` renders as `{endsOn}`, and an instant
+  with a quarter renders with the `Q{q}-` marker. So the annual column and
+  the quarterly column at one fiscal year end get two ids.
   A claim with no period drops the part, such as `overview.profile.website`.
   A figure in a list row puts the list name and the row position before the
   field, such as `relationships.stakes.2.sharesHeld`. A list whose rows are
@@ -346,22 +366,30 @@ functions in `src/lib/company/sources.ts`:
   filing or dataset. It sorts filings newest first and puts market data last.
   It visits each `ClaimId` once, so a claim that two trees share appears once.
   The visited set also ends the walk if a defect ever builds a cycle.
-- `feedsOf(groups: FigureGroup[]): Map<accessionNumber, FigureGroupRef[]>`
-  walks the same trees the other way. It reads the tab and the label from each
-  group and never from a claim. For each filing, it lists the groups that have
-  at least one claim whose tree reaches that filing. Each group appears once
-  for each filing, in the order of `groups`. A claim reaches a filing when a
-  reported source in its tree has that filing as its `document`. An exhibit
-  or an information table belongs to its filing, so its claims reach that
-  filing too. A `MarketDataset` is not a filing, so it gets no entry.
+- `feedsOf(groups: FigureGroup[]): Map<string, FigureGroupRef[]>` walks the same
+  trees the other way. The map key is `Filing.accessionNumber`. It reads the tab
+  and the label from each group and never from a claim. For each filing, it
+  lists the groups that have at least one claim whose tree reaches that filing.
+  Each group appears once for each filing, in the order of `groups`. A claim
+  reaches a filing when a reported source in its tree has that filing as its
+  `document`. An exhibit or an information table belongs to its filing, so its
+  claims reach that filing too. A `MarketDataset` is not a filing, so it gets no
+  entry.
 
 The "Sources" chip of a chart or table shows `sourcesOf(claimsOf(block))`.
-The per-tab sources index is `sourcesOf` over every claim on the tab, and the
-figures that each filing feeds on one tab are
-`feedsOf(figureGroupsOf(tab, sections))`. No section stores a source set or a
-list of what a filing feeds, so neither can disagree with the claims. The
-sources footer of the print summary is `sourcesOf` over every claim on the
-printed page.
+The per-tab sources index is `sourcesOf` over the claims of
+`figureGroupsOf(tab, sections)`, and the figures that each filing feeds on one
+tab are `feedsOf(figureGroupsOf(tab, sections))`. No section stores a source
+set or a list of what a filing feeds, so neither can disagree with the claims.
+The sources footer of the print summary is `sourcesOf` over every claim on
+the printed page.
+
+**The masthead gives no figure group.** `figureGroupsOf` takes a `TabKey`,
+and `masthead` is not one. The masthead has no chart, no table and no check,
+so it has no "Sources" chip either. Each masthead figure shows its own source
+card. Every masthead figure is market data or a figure derived from market
+data, so no masthead tree reaches a filing, and `feedsOf` loses nothing. A
+later masthead figure that reads a filing first needs a figure group.
 
 **The Filings tab loads every section.** Each row of "Filings We Read" shows
 the figures that the filing feeds, over the whole page (`DESIGN.md` §8). So
@@ -398,7 +426,9 @@ tab. §7 works one row through.
 A sector quartile has one input claim for each peer, so one tab can hold tens
 of thousands of claims. `claimsOf`, `figureGroupsOf`, `sourcesOf` and
 `feedsOf` are pure, so each tab memoises their results on the identity of its
-sections. A tab never walks the trees again while its sections stay the same.
+completed sections (§4). `completeSections` runs once each time a section
+loads, so that identity changes only when a section loads. A tab never
+walks the trees again while its sections stay the same.
 
 ## 4. Sections
 
@@ -505,7 +535,6 @@ classDiagram
         +funds: FundHolding[]
         +insiders: InsiderHolding[]
         +subsidiaries: Subsidiary[]
-        +subsidiaryCount: Figure
         +stakes: Stake[]
     }
     class ManagementSection {
@@ -599,6 +628,15 @@ Shareholder returns card 2, "Buybacks Net of Shares Issued to Staff". They
 are series and not statement lines, because the three statements of §4 do not
 hold them.
 
+**The share count of a stake.** `Stake.sharesHeld` comes from the company's
+own 13F information table. The 13F does not report the shares outstanding of
+the target company. So `Stake.sharesOutstanding` is a reported claim from the
+target company's latest 10-Q or 10-K, with the cover-page tag
+`dei:EntityCommonStockSharesOutstanding`. Its `document` is a `Filing` whose
+`filer` is the target company. `sourcesOf` groups it under that filing, and
+the Filings tab of this company never lists it. `feedsOf` gives that filing
+an entry that no row of "Filings We Read" reads.
+
 `FilingsSection` lists plain `Filing` values. The Filings tab gets "what this
 filing feeds" from `feedsOf` (§3), not from the port.
 
@@ -616,6 +654,18 @@ gives it no `OverviewSection`. So the four ratios sit in `ValuationSection`, and
 Overview reads three of them from there. A `MetricKey` in both lists is an
 adapter defect. If one appears twice, the page reads the Valuation entry.
 
+**One value in two sections.** `OwnershipSummary` sits on `OverviewSection`
+and on `RelationshipsSection`. `InsiderHolding[]` sits on
+`RelationshipsSection` and on `ManagementSection`. Each tab draws the whole
+value and reads no other section (the table at the top of §4), so each
+section carries its own copy. The benchmark split does not fit here, because
+no part of the value belongs to one tab only. The copies hold the same
+figures, from the same filings, with the same `asOf`. Each tab reads the copy
+of its own section, and the print summary reads the Overview copy. A
+difference between two copies is an adapter defect. A test in STA-227
+compares the two copies of the sample adapter field by field, and ignores the
+section prefix of the claim ids only.
+
 **The annual and quarterly tables.** The three statements each hold an annual
 table of ten fiscal years and a quarterly table of the last eight fiscal
 quarters. A 10-Q reports no fourth quarter, and a cash flow statement in a
@@ -625,13 +675,44 @@ and `metrics.ts` completes it:
 - The port returns every one of the eight quarters in `quarterly.periods`.
 - At a position that no filing reports, the port returns a `null` point. For
   the income statement, this is each fourth quarter. For the cash flow
-  statement, this is each second, third and fourth quarter.
+  statement, this is each second, third and fourth quarter. A 10-K reports the
+  balance sheet at the fourth quarter end, so the balance sheet has no `null`
+  point of this kind.
 - The cash flow statement also has a `yearToDate` table with the reported
   six-month and nine-month figures. The other two statements have
   `yearToDate: null`.
 - `metrics.ts` returns a new, complete `StatementTable` from
   `completeQuarters(statement)`. It never writes to a section. Every section
   that the port returns stays unchanged.
+
+**Only a flow line has a derived quarter.** A subtraction or a sum of
+quarters is correct only for a figure that adds up over a fiscal year. The
+statement lines fall into four kinds:
+
+| Kind                   | Lines                                                    | Derived fourth quarter | Sum over the last four quarters |
+| ---------------------- | -------------------------------------------------------- | ---------------------- | ------------------------------- |
+| Flow                   | `revenue`, `operatingIncome`, `netIncome`, every cash flow line | yes              | yes                             |
+| Share count, averaged  | `dilutedShares`                                          | no, stays `null`       | no                              |
+| Per-share figure       | `dilutedEps`                                             | no, stays `null`       | no                              |
+| Stock, at an instant   | every balance sheet line                                 | no, the 10-K reports it | no                             |
+
+`dilutedShares` is a weighted average over its period and `dilutedEps` is a
+ratio, so neither adds up. `completeQuarters` derives the missing points of
+the flow lines only. The fourth quarter of `dilutedShares` and `dilutedEps`
+stays `null`, and the quarterly chart draws it as a dimmed `—`. A
+`latestQuarter` or `lastFourQuarters` reference to either line is a defect,
+because the first is `null` for one quarter in four and the second does not
+exist. A test in STA-226 rejects both. A metric that needs a share count
+reads `dilutedShares @ fiscalYear(0)`, which a 10-K always reports.
+
+**The tab reads completed sections.** `metrics.ts` exports
+`completeSections(sections): CompletedSections`. It returns a new object with
+the same sections, except that `financials` holds the three statements with
+their quarterly tables completed by `completeQuarters`. `useCompany` calls it
+once each time a section loads, and hands the result to the tab.
+`evaluateMetric`, `evaluateChecks`, `claimsOf` and `figureGroupsOf` take
+`CompletedSections` and never the sections of the port. STA-224 brands the
+type, so the compiler rejects a call with the sections of the port.
 
 **What the port returns and what `metrics.ts` derives.** The port returns
 every reported figure. It also returns the derived figures whose inputs are in
@@ -641,8 +722,8 @@ sections.
 | The port returns                                                                                                                         | `metrics.ts` derives                                                                                                                                                                                         |
 | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Statement lines, prices, Treasury yields, dividends per share, share counts bought back and issued to staff, holdings, pay, people, subsidiaries, filings | Margins, free cash flow, growth a year, growth per year over ten years (CAGR), long-term assets and liabilities, market cap, enterprise value, P/E, P/FCF, P/B, EV/EBIT, earnings, FCF, dividend and buyback yields, payout, net buybacks, total shareholder yield, ranges and medians over ten years |
-| Sector quartiles and medians (inputs: each peer's figure)                                                                               | Fourth-quarter and three-month cash flow figures, sums over the last four quarters                                                                                                                           |
-| Institution totals over all 13F filers, insider shares bought and sold per year (inputs: each 13F or Form 4 figure)                      | Per-row and section-field figures (§5): price change over one month, segment and region shares of revenue, ownership shares, a fund's share of the company and its change over a quarter, stake percentages, pay mix, tenure, net shares bought back, net insider shares |
+| Sector quartiles and medians (inputs: each peer's figure)                                                                               | Fourth-quarter and three-month figures of the flow lines, sums of the flow lines over the last four quarters                                                                                                 |
+| Institution totals over all 13F filers, insider shares bought and sold per year (inputs: each 13F or Form 4 figure)                      | Per-row and section-field figures (§5): price change over one month, segment and region shares of revenue, ownership shares, a fund's share of the company and its change over a quarter, stake percentages, pay mix, tenure, net shares bought back, net insider shares, subsidiary count |
 
 No section type holds news, forecasts, analyst ratings, price targets, a fair
 value or community content. Every field is a past fact from a filing or a
@@ -712,7 +793,7 @@ The variants of `PeriodChoice`:
 | -------------------------- | ------------------------------------------------------------------------------ | ----------- |
 | `fiscalYear`, `yearsBack`  | The fiscal year `yearsBack` years before the latest one. `0` is the latest.   | one value   |
 | `latestQuarter`            | The latest column of the quarterly table: three months, or a quarter end       | one value   |
-| `lastFourQuarters`         | The sum over the last four quarters that `metrics.ts` derives                  | one value   |
+| `lastFourQuarters`         | The sum of a flow line over the last four quarters that `metrics.ts` derives   | one value   |
 | `latestClose`              | The latest daily value of a market figure: a closing price or a daily yield   | one value   |
 | `samePeriod`               | The period that a per-period metric is evaluated for                           | one value   |
 | `lastFiscalYears`, `count` | The last `count` fiscal years, oldest first                                    | `count` values |
@@ -732,12 +813,13 @@ with three years of filings gives seven `null` figures in a 10-year window.
 `samePeriod` at a fiscal year read the annual table of the line's statement
 (§4). `latestQuarter` reads the quarterly table. For a balance sheet line,
 that column is the latest quarter end. `lastFourQuarters` reads the sum that
-`metrics.ts` derives, which exists for the income and cash flow statements
-only. A balance sheet line with `lastFourQuarters` is a defect, and a test in
-STA-226 rejects it. Resolution runs after `completeQuarters` (§4), so it
-reads the completed quarterly table and never the table from the port. For
-the income statement, the latest quarterly column can be a derived fourth
-quarter.
+`metrics.ts` derives, which exists for the flow lines only (§4). A balance
+sheet line, `dilutedShares` or `dilutedEps` with `lastFourQuarters` is a
+defect, and so is `dilutedShares` or `dilutedEps` with `latestQuarter`. A
+test in STA-226 rejects each of them. Resolution reads `CompletedSections`
+(§4), so it reads the completed quarterly table and never the table from the
+port. For a flow line of the income statement, the latest quarterly column
+can be a derived fourth quarter.
 
 **Which field a market figure reads.** `MarketKey` is one of `price`,
 `priceAtFiscalYearEnd` and `treasuryYield10y`. Each pair of key and period
@@ -778,9 +860,20 @@ ownership shares, returns one `Figure` for each part. §3 gives the ids.
 | A fund's change over a quarter        | `fundChange`              | `FundHolding.shares`, `FundHolding.sharesQuarterEarlier`                 |
 | Stake percentage                      | `stakePercent`            | `Stake.sharesHeld`, `Stake.sharesOutstanding`                            |
 | Pay mix                               | `payMix`                  | `salary`, `bonus`, `stockAwards` and `other` of the latest `PayYear`     |
-| Tenure in years                       | `tenure`                  | `Person.since` or `Profile.chiefExecutiveSince`, and the `filedOn` of the filing that reports it |
+| Tenure in years                       | `tenure`                  | `Person.since` or `Profile.chiefExecutiveSince`                          |
 | Net shares bought back, per year      | `netSharesBoughtBack`     | `sharesRepurchased` and `sharesIssuedToStaff` at the same fiscal year    |
 | Net insider shares, per year          | `netInsiderShares`        | `insiderSharesBought` and `insiderSharesSold` at the same fiscal year    |
+| Subsidiary count                      | `subsidiaryCount`         | the `Subsidiary.jurisdiction` of every row                               |
+
+`tenure` measures to the `filedOn` date of the filing that reports `since`.
+That date is a field of a `Filing`, not a claim, so it is not an input. The
+formula text names it, such as "Years from the start date to 24 Apr 2026, the
+filing date of the DEF 14A". `subsidiaryCount` counts the rows of the Exhibit
+21 list that `RelationshipsSection.subsidiaries` carries, so no section field
+holds the count. A row exists even when its jurisdiction is `null`, so the
+count includes that row. This is the one exception to the `null` rule above:
+the rule covers a function that does arithmetic on its input values, and a
+count reads only the number of rows. An empty list gives a count of 0.
 
 These functions have no `MetricKey`, no `FigureRef` and no guard, and no
 check reads them. A check that needs one of these figures first needs a
@@ -846,6 +939,7 @@ the arithmetic:
   `MetricKey`. A `Formula` is `(inputs: ResolvedInput[]) => number`. It gets
   the inputs in the order of `Metric.inputs` and does the arithmetic only.
 - `evaluateMetric(metric, sections, period)` returns a `MetricResult`.
+  `sections` is `CompletedSections` (§4).
   `period` is the period of a per-period metric, and `null` for a point
   metric. The function resolves each input, then applies the rules below in
   order, then calls the formula and builds the claim.
@@ -1042,7 +1136,8 @@ classDiagram
   quiet source line under the sentence is `sourcesOf(claims)`. The list can
   be empty. Step 1 resolves nothing, and a sentence whose figures are all
   `null` has no claim.
-- `evaluateChecks(sections)` in `src/lib/company/checks.ts` returns one
+- `evaluateChecks(sections: CompletedSections)` in
+  `src/lib/company/checks.ts` returns one
   `AreaSummary` for each area, in the order of `CheckArea`.
 - No type has an overall score. The page never adds the met counts together.
 
@@ -1095,7 +1190,7 @@ The metrics that the checks read:
 | `currentRatio`             | point      | `totalCurrentAssets @ latestQuarter` ÷ `totalCurrentLiabilities @ latestQuarter`                         | `totalCurrentLiabilities @ latestQuarter` above 0 | ratio   |
 | `stockPayToRevenue`        | point      | `shareBasedCompensation @ fiscalYear(0)` ÷ `revenue @ fiscalYear(0)`                                     | `revenue @ fiscalYear(0)` above 0 | percent |
 | `returnOnEquity`           | point      | `netIncome @ fiscalYear(0)` ÷ `shareholdersEquity @ latestQuarter`                                       | `shareholdersEquity @ latestQuarter` above 0 | percent |
-| `marketCap`                | point      | `price @ latestClose` × `dilutedShares @ latestQuarter`                                                  | none                              | usd     |
+| `marketCap`                | point      | `price @ latestClose` × `dilutedShares @ fiscalYear(0)`                                                  | none                              | usd     |
 | `priceToEarnings`          | point      | `price @ latestClose` ÷ `dilutedEps @ fiscalYear(0)`                                                     | `dilutedEps @ fiscalYear(0)` above 0 | ratio   |
 | `priceToEarningsAtYearEnd` | per period | `priceAtFiscalYearEnd @ samePeriod` ÷ `dilutedEps @ samePeriod`                                          | `dilutedEps @ samePeriod` above 0 | ratio   |
 | `priceToEarningsMedian10y` | point      | Median of `priceToEarningsAtYearEnd @ lastFiscalYears(10)`, over the points that are not missing        | none, `minPoints` 5               | ratio   |
@@ -1108,6 +1203,10 @@ Every metric in the table has `minPoints: null` except
 `minPoints: 5` (§5). If fewer than 5 of the 10 years have a P/E, the median
 result is `shortHistory`, and V1 reads "not enough data", reason
 `shortHistory`. C1 gives the same reason for the same company.
+
+`marketCap` reads the share count of the latest fiscal year, like the P/E,
+which reads `dilutedEps @ fiscalYear(0)`. The quarterly share count has no
+fourth quarter (§4), so it is not an input of a point metric.
 
 `treasuryYield10y` and `price` are market figures, not metrics.
 `cashAndShortTermInvestments`, `dilutedShares`, `dividendsPaid` and
@@ -1127,8 +1226,10 @@ The three guards that matter most for a loss-making company:
 These examples use made-up figures. Each one shows a case where the types
 have to do real work: a check that needs more than one period, a false result
 that a guard prevents, or a list that reads the whole page. STA-226 turns each
-check example into a unit test of `evaluateChecks`, and the Filings example
-into a unit test of `feedsOf`.
+check example into a unit test of `evaluateChecks`, the fiscal year end
+example into a unit test of the pairing and the ids, and the Filings example
+into a unit test of `feedsOf`. STA-224 turns the ownership example into its type
+test, and STA-227 into its test of the two copies.
 
 ### S1: the same line at two periods
 
@@ -1274,6 +1375,100 @@ Each sentence holds the input claim, so its source line still leads to the
 filing. MRDN is profitable, so the sample adapter never reaches these cases.
 STA-226 builds this company in a test fixture instead.
 
+### S2 and V2 in the months after a 10-K
+
+This example is the regression case for the quarterly rule of §4. MRDN's
+FY2026 ends on 25 Jan 2026, and the 10-K is filed on 12 Mar 2026. On 20 Mar
+2026 the Q1 FY2027 10-Q is not filed yet, so the latest quarterly column is
+Q4 FY2026. The price is $210.60.
+
+```ts
+const marketCap: PointMetric = {
+	kind: "point",
+	key: "marketCap",
+	name: "Market cap",
+	formula: "Price × diluted shares, latest fiscal year",
+	unit: "usd",
+	inputs: [
+		{ from: "market", key: "price", at: { kind: "latestClose" } },
+		{ from: "line", key: "dilutedShares", at: { kind: "fiscalYear", yearsBack: 0 } },
+	],
+	guards: [],
+	minPoints: null,
+}
+```
+
+The 10-Qs report about 2.47B diluted shares in each of Q1 to Q3, and the
+10-K reports 2.46B for the year. A subtraction gives a fourth quarter of
+2.46B − 7.41B = −4.95B shares, and a market cap of $210.60 × −4.95B ≈
+−$1.04T. The `marketCap` guards of `dividendYield` and `freeCashFlowYield`
+then fail, and S2 and V2 read "not enough data", reason `failedGuard`.
+
+The types prevent each step:
+
+| Step                                         | Result                                                        |
+| -------------------------------------------- | ------------------------------------------------------------- |
+| `completeQuarters` on `dilutedShares`, Q4    | `null`, because a share count is not a flow                   |
+| `marketCap`                                  | $210.60 × 2.46B = $518.1B, from `dilutedShares @ fiscalYear(0)` |
+| A metric with `dilutedShares @ latestQuarter` | rejected by the STA-226 test                                 |
+
+S2 reads `dividendsPaid @ lastFourQuarters`. The port returns the Q1
+dividends of $0.60B and `null` at Q2, Q3 and Q4. The `yearToDate` table holds
+$1.21B for six months and $1.83B for nine months, and the 10-K holds $2.46B
+for the year. `completeSections` derives Q2 = $0.61B, Q3 = $0.62B and Q4 =
+$0.63B. The sum over the last four quarters is $2.46B, with the four
+quarterly claims as inputs. The dividend yield is $2.46B ÷ $518.1B = 0.47%,
+so S2 is not met: "Dividend yield (0.47%) is not at least 2%". If a test
+passes the sections of the port instead, the compiler rejects the call. At
+run time the same input gives three `null` points and `missingInput`.
+
+A sample adapter pinned to September never reaches this window. STA-226
+builds the fixture at 20 Mar 2026 for this reason.
+
+### P/B: one date in two tables
+
+MRDN reports shareholders' equity of $150.0B at 25 Jan 2026. That date ends
+FY2026 and also ends Q4 FY2026, so the date sits in two tables:
+
+| Table                       | `Period`                                                 | `ClaimId`                                       |
+| --------------------------- | -------------------------------------------------------- | ----------------------------------------------- |
+| Annual balance sheet        | `instant`, `fiscalYear: 2026`, `fiscalQuarter: null`     | `financials.shareholdersEquity.2026-01-25`      |
+| Quarterly balance sheet     | `instant`, `fiscalYear: 2026`, `fiscalQuarter: 4`        | `financials.shareholdersEquity.Q4-2026-01-25`   |
+
+A per-period P/B at FY2026 reads `shareholdersEquity @ samePeriod` from the
+annual table. The annual instant has `fiscalQuarter: null`, so it pairs with
+the fiscal year FY2026 by the "same period" rule of §3. The quarterly instant
+has `fiscalQuarter: 4` and never pairs with a fiscal year.
+
+On 20 Mar 2026 the latest quarter end is also the end of FY2026. So the
+annual view of the balance sheet adds no column for the latest quarter end,
+and each id appears once on the page. On 23 Sep 2026 the latest quarter end
+is 26 Jul 2026, and the annual view adds the column
+`financials.shareholdersEquity.Q2-2026-07-26`.
+
+### Ownership: two copies and the type test
+
+The sample adapter fills `OverviewSection.ownership` and
+`RelationshipsSection.ownership` from the same 13F totals, at the quarter end
+30 Jun 2026. Institutions hold 1.68B of 2.46B shares, so both bars show
+68.2%. A faulty adapter fills the Relationships copy from the 13F totals at
+31 Mar 2026 instead, with 1.66B shares, so the bar shows 67.5%. Both copies
+carry valid sources. The STA-227 test compares the copies field by field and
+fails on `asOf` first: `2026-06-30` against `2026-03-31`.
+
+The type test of §9 walks `OwnershipSummary` like this:
+
+| Field               | Type      | Walk                                               |
+| ------------------- | --------- | -------------------------------------------------- |
+| `asOf`              | `IsoDate` | passes, a row key of the §4 label rule            |
+| `sharesOutstanding` | `Figure`  | stops at `Claim`, so `Claim.value` is not reached |
+| `institutionShares` | `Figure`  | stops at `Claim`                                   |
+| `insiderShares`     | `Figure`  | stops at `Claim`                                   |
+
+A section type that adds `institutionPercent: number` next to these fields
+fails the test. A share of the company is a derived figure, so
+`ownershipShares` in `metrics.ts` gives it (§5).
+
 ### Filings: the FY2026 10-K row from figure groups
 
 MRDN filed its FY2026 10-K on 12 Mar 2026, with the made-up accession number
@@ -1344,16 +1539,22 @@ does the page label them?** Settled:
 
 - All three statements have annual and quarterly tables. §4 fixes which
   quarterly points the port returns as `null`.
-- Income statement: a 10-Q reports three months for Q1 to Q3. `metrics.ts`
-  derives Q4 as the fiscal year minus Q1 to Q3.
+- Income statement: a 10-Q reports three months for Q1 to Q3. For
+  `revenue`, `operatingIncome` and `netIncome`, `metrics.ts` derives Q4 as
+  the fiscal year minus Q1 to Q3. `dilutedShares` and `dilutedEps` do not add
+  up over a year, so their Q4 stays `null` (§4).
 - Cash flow statement: a 10-Q reports year to date. `metrics.ts` derives each
   quarter as the difference of two year-to-date figures, and Q4 as the fiscal
   year minus the nine-month figure.
 - Balance sheet: each figure is at a quarter end. It has no sum over four
   quarters. The annual view adds a column for the latest quarter end, such as
-  "26 Jul 2026".
-- The income and cash flow statements have a sum over the last four quarters.
-  `metrics.ts` derives it with the four quarterly claims as inputs. The page
+  "26 Jul 2026", when that date is not the end of the latest fiscal year. At a
+  fiscal year end the annual column already shows the date, so the view adds
+  no column.
+- The flow lines of the income and cash flow statements have a sum over the
+  last four quarters. `metrics.ts` derives it with the four quarterly claims
+  as inputs. `dilutedShares`, `dilutedEps` and the balance sheet lines have
+  no such sum. The page
   labels the column "Last 4 quarters" with the end date under it, such as
   "to 26 Jul 2026". The page does not print the abbreviation "TTM".
 
@@ -1364,9 +1565,14 @@ note is level 3, because it has no code. Two of its rules can reach level 1
 once STA-224 writes the types:
 
 - "Every figure is a `Figure`": a type test in STA-224 fails when a section
-  type has a `number` or an `IsoDate` field. The only exceptions are the row
-  keys, the column keys and the source documents that the §4 label rule
-  names.
+  type has a `number` or an `IsoDate` field. The test walks each section type
+  and each type that the section holds, such as `Statement`, `StatementLine`,
+  `PayYear` and `OwnershipSummary`. The walk stops at three types and does
+  not enter them: `Claim` (so `Figure`), `Period` and `Filing`. A claim is the
+  figure itself, a `Period` holds the column keys, and a `Filing` is a source
+  document. `Claim.value` and a `MarketDataset` sit inside a claim, so the
+  walk never reaches them. The only other exceptions are the row keys that
+  the §4 label rule names. §7 walks one type through.
 - "No section stores a source set": the same type test fails when a section
   type has a field of type `SourceSet` or `FigureGroupRef[]`.
 
