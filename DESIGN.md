@@ -340,11 +340,16 @@ Rules for the company page:
   filing type, filing date, line label, and XBRL tag, and links to the filing.
   A derived figure, such as a margin or a growth rate, shows its formula and
   the source of each input. A reader can trace any figure back to reported
-  filing lines.
-- **Charts and checks show sources at two levels.** Hovering a point of a
-  chart shows the sources of that point. A "Sources" chip on the chart shows
+  filing lines. With a keyboard, focus on a figure previews its card, `Enter`
+  or `Space` pins it, and `Escape` closes it.
+- **Charts and checks show sources at two levels.** Hovering, focusing, or
+  tapping a point of a chart shows the sources of that point. A "Sources" chip on the chart shows
   the grouped sources behind the whole chart. A check shows the sources of
   every figure in its sentence.
+- **Short or empty history shows as it is.** A company with fewer than ten
+  fiscal years shows the years it has. A growth rate or a 10-year range needs
+  at least two years, and otherwise shows a dimmed `—`. A card with no figures,
+  such as dividends for a company that pays none, shows one line that says so.
 - **Every chart has a "Data" button.** The button shows the same figures as a
   table.
 - **Charts draw yearly data as bars or steps, never as smoothed curves.** Chart
@@ -397,7 +402,10 @@ flowchart TD
 ### Shared Layout
 
 The layout changes at two widths, the same widths as the screener in §7. A
-desktop is 1024 px and wider. A phone is narrower than 768 px.
+desktop is 1024 px and wider. A phone is narrower than 768 px. Between the
+two widths, the cards stack in one column and the rest of the desktop layout
+holds. The approved mockup draws a 1440 px and a 390 px board only, so this
+middle width follows the screener, not a drawing.
 
 Every tab shares these regions, from top to bottom:
 
@@ -408,9 +416,12 @@ Every tab shares these regions, from top to bottom:
 2. **Tab strip.** The seven tabs sit in one row directly below the masthead,
    above a hairline.
 3. **Cards.** Each tab shows its content in cards. Each card title is in
-   `font-serif` and carries a number, such as "4.1 Buybacks Net of Shares
+   `font-serif` and carries a number, such as "4.3 Buybacks Net of Shares
    Issued to Staff". The first number is the tab's row in the URL table. The
-   second number is the card's position in the tab, from top to bottom. A muted
+   second number is the card's position in the tab, read top to bottom and then
+   left to right, so two cards side by side take consecutive numbers. A tab can
+   carry controls above its cards, such as the switches on Financials. Controls
+   are not a card and carry no number. A muted
    caption under the title names the period, the unit, and the filing. On a
    desktop, the cards fill a grid of two equal columns. A card takes one column
    or both.
@@ -418,7 +429,12 @@ Every tab shares these regions, from top to bottom:
    these numbers come from". It lists the filings behind the tab, with the
    date, the figures each filing feeds, and a link to the filing. It is an
    index, not the main place to find sources, because every figure shows its
-   own.
+   own. The Filings tab has no separate index, because its one card is the
+   full list.
+
+The tab order and the card numbers are documentation only for now. The Page
+Shell milestone of the epic adds a test that the tab strip follows the URL
+table.
 
 Rules for the shared layout:
 
@@ -437,7 +453,6 @@ On a phone:
 - The masthead shows the first listing with a count of the others, such as
   "+2 listings", and drops the fiscal year end. The Export button shows its
   icon only.
-- The tab strip scrolls sideways.
 - The cards stack in one column. The "Data" button sits above the "Sources"
   chip.
 - A wide table scrolls sideways, and its first column stays fixed.
@@ -472,15 +487,16 @@ four.
 
 ### Financials
 
-Financials has these regions, from top to bottom:
+Financials has a row of controls above its cards. The statement switch (Income
+statement, Balance sheet, Cash flow) and the annual and quarterly switch sit
+on the left. The unit and the "Download CSV" button sit on the right.
 
-1. **Controls.** The statement switch (Income statement, Balance sheet, Cash
-   flow) and the annual and quarterly switch on the left. The unit and the
-   "Download CSV" button on the right.
-2. **Chart.** One bar chart per statement, with one group of bars per fiscal
+Financials has these cards, from top to bottom:
+
+1. **Chart.** One bar chart per statement, with one group of bars per fiscal
    year. For the income statement, it draws revenue, net income and free cash
    flow.
-3. **Statement table.** The 10-year table of the selected statement, one
+2. **Statement table.** The 10-year table of the selected statement, one
    column per fiscal year, and a last column for growth per year over ten
    years (CAGR). Margins sit as muted rows under the line they divide.
 
@@ -504,13 +520,13 @@ Valuation has these cards, from top to bottom:
 On a phone, the range bars stack under the ratio name, and the legend uses
 shorter labels. The table scrolls sideways, and its first column stays fixed.
 
-### Shareholder Returns
+### Shareholder returns
 
 "Shareholder returns" on the company page covers dividends, buybacks and share
 count history. That scope is wider than the screener's "Shareholder yield"
 column group in §7, so the different name is on purpose.
 
-Shareholder Returns has these cards, from top to bottom:
+Shareholder returns has these cards, from top to bottom:
 
 1. **Dividend per Share** and **Dividends Paid Against Free Cash Flow**, side
    by side on a desktop. The first draws the dividend per share declared for
@@ -576,14 +592,17 @@ On a phone, the table scrolls sideways, and its first column stays fixed.
 
 ### Print Summary
 
-The print stylesheet turns Overview into one page. The printed page has these
-regions, from top to bottom:
+The print stylesheet turns Overview into one page. The printed page holds more
+than Overview shows on screen: the ten-year table and the shareholder-returns
+block. So the Overview route also loads the income, cash flow and
+shareholder-returns figures that the printed page needs. The printed page has
+these regions, from top to bottom:
 
 1. **Masthead.** The Iron Capital wordmark, the company name, the listings,
    sector, country and currency. On the right sit the price, the 52-week range,
    and the date of the closing price.
-2. **Key figures.** One strip of the eight key figures, each with its sector
-   median.
+2. **Key figures.** One strip of the eight key figures. Each figure except
+   market cap shows its sector median.
 3. **The business** and **Checks by area**, side by side. The business holds
    the company summary, the revenue split by segment, and a bar chart of
    revenue and free cash flow by fiscal year. Checks by area lists the five
