@@ -163,13 +163,47 @@ describe("StockScreener", () => {
 		expect(result).toBe(expectedResult);
 	});
 
+	it("should show the company page as unavailable when the reader opens a sample stock without a page", async () => {
+		const user = userEvent.setup();
+		render(<StockScreener />);
+
+		const expectedResult = {
+			link: null,
+			disabled: true,
+			description: "Company page coming soon",
+		};
+
+		await user.click(
+			within(screen.getByRole("table")).getByRole("button", {
+				name: /^AAPL/,
+			}),
+		);
+		const button = await screen.findByRole("button", {
+			name: "Open company page",
+		});
+		const result = {
+			link: screen.queryByRole("link", { name: "Open company page" }),
+			disabled: button.hasAttribute("disabled"),
+			description: document.getElementById(
+				button.getAttribute("aria-describedby") ?? "",
+			)?.textContent,
+		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should navigate to the company page when the preview link is followed", async () => {
 		const user = userEvent.setup();
 		render(
 			<Routes>
 				<Route
 					path="/"
-					element={<StockScreener stocks={fakeStockScreenerResults} />}
+					element={
+						<StockScreener
+							stocks={fakeStockScreenerResults}
+							hasCompanyPage={() => true}
+						/>
+					}
 				/>
 				<Route
 					path="/companies/:symbol"

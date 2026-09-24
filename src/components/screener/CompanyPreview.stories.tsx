@@ -13,7 +13,9 @@ const beta = fakeStockScreenerResults[1];
  * The company preview opens as a right `Sheet` when the reader selects a
  * result. The company name is the sheet's serif title. The "Why it matched"
  * list pairs each active filter with the company's own value, and the key
- * figures sit in a two-column grid. The footer links to the company page.
+ * figures sit in a two-column grid. The footer links to the company page. A
+ * company without a page shows the button disabled, with "Company page coming
+ * soon" below it.
  *
  * Each story renders the sheet open. A router backs the footer link.
  */
@@ -39,6 +41,7 @@ const meta: Meta<typeof CompanyPreview> = {
 	args: {
 		stock: beta,
 		filters: STRATEGY_PRESETS[1].filters,
+		hasCompanyPage: true,
 		open: true,
 		onOpenChange: fn(),
 	},
@@ -54,6 +57,44 @@ type Story = StoryObj<typeof meta>;
 
 /** BETA under the "Income at a fair price" preset. */
 export const Open: Story = {};
+
+/** A company with a page. The footer link opens `/companies/BETA`. */
+export const WithCompanyPage: Story = {
+	args: { filters: EMPTY_FILTERS },
+	play: async ({ canvasElement }) => {
+		const page = within(canvasElement.ownerDocument.body);
+
+		const expectedResult = "/companies/BETA";
+
+		const link = await page.findByRole("link", { name: "Open company page" });
+		const result = link.getAttribute("href");
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/**
+ * A company without a page. The button is disabled and the note says the page
+ * is coming, so the preview never leads to the missing state.
+ */
+export const WithoutCompanyPage: Story = {
+	args: { hasCompanyPage: false },
+	play: async ({ canvasElement }) => {
+		const page = within(canvasElement.ownerDocument.body);
+
+		const expectedResult = { link: null, disabled: true };
+
+		const button = await page.findByRole("button", {
+			name: "Open company page",
+		});
+		const result = {
+			link: page.queryByRole("link", { name: "Open company page" }),
+			disabled: button.hasAttribute("disabled"),
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
 
 /** No filter is active, so the list says every company matches. */
 export const WithoutFilters: Story = {
