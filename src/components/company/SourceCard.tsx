@@ -8,7 +8,8 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@/components/ui/sheet";
-import type { Claim, ClaimId, IsoDate } from "@/lib/company/types";
+import { formatDate } from "@/lib/company/dates";
+import type { Claim, ClaimId } from "@/lib/company/types";
 import { cn } from "@/lib/utils";
 
 /**
@@ -129,16 +130,6 @@ function SourceOf({
 	);
 }
 
-/** Writes `date` as the page prints it, such as `12 Mar 2026`. */
-function formatDate(date: IsoDate): string {
-	return new Date(`${date}T00:00:00Z`).toLocaleDateString("en-GB", {
-		day: "numeric",
-		month: "short",
-		year: "numeric",
-		timeZone: "UTC",
-	});
-}
-
 /** Props for {@link SourceTrigger}. */
 interface SourceTriggerProps {
 	claim: Claim;
@@ -250,7 +241,6 @@ function subscribeToPhone(onChange: () => void): () => void {
 }
 
 export {
-	formatDate,
 	SourceCard,
 	type SourceCardProps,
 	SourceTrigger,

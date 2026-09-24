@@ -24,8 +24,8 @@ import { TAB_PANELS } from "./tabs";
  * loading, missing, failed or loaded state.
  *
  * The loaded state shows the masthead, the tab strip and the panel of the
- * active tab from `TAB_PANELS`. Each panel stays empty until its tab ticket
- * fills it.
+ * active tab from `TAB_PANELS`. Relationships shows its cards. The other
+ * panels stay empty until their tab tickets fill them.
  */
 function CompanyPage() {
 	const { symbol = "", tab: segment } = useParams();

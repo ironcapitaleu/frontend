@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import { fakeCompanyReport } from "../../test/fixtures/companies/fake-company-report";
+import { LISTED_FUNDS } from "./holdings";
 import { completeSections } from "./metrics";
 import {
 	claimsOf,
 	feedsOf,
 	figureGroupsOf,
+	isPrintedOnly,
 	isSectorBenchmark,
 	sourcesOf,
 } from "./sources";
@@ -260,6 +262,40 @@ describe("figureGroupsOf", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should read the shares outstanding and each fund's two 13F counts when the Largest Funds group is built", () => {
+		const expectedResult = [
+			"relationships.ownership.sharesOutstanding",
+			"relationships.funds.0.shares",
+			"relationships.funds.0.sharesQuarterEarlier",
+			"relationships.funds.1.shares",
+			"relationships.funds.1.sharesQuarterEarlier",
+		];
+
+		const result = claimsOf("largestFunds", "company", sections).map(
+			({ id }) => id,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should read the counts of the listed funds only when there are more funds than LISTED_FUNDS", () => {
+		const { relationships } = fakeCompanyReport;
+		const [harlow] = relationships.funds;
+		const manyFunds = completeSections({
+			...fakeCompanyReport,
+			relationships: {
+				...relationships,
+				funds: Array.from({ length: LISTED_FUNDS + 5 }, () => harlow),
+			},
+		});
+
+		const expectedResult = 1 + 2 * LISTED_FUNDS;
+
+		const result = claimsOf("largestFunds", "company", manyFunds).length;
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should drop the blocks that read the financials when Overview loads without them", () => {
 		const partial = completeSections({
 			...fakeCompanyReport,
@@ -336,6 +372,26 @@ describe("isSectorBenchmark", () => {
 		const result = [
 			isSectorBenchmark(ref),
 			isSectorBenchmark({ ...ref, figures: "sector" }),
+		];
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("isPrintedOnly", () => {
+	it("should read the block and not the label when a ref names the printed shareholder returns", () => {
+		const ref: FigureGroupRef = {
+			tab: "overview",
+			block: "profile",
+			label: "Shareholder returns, printed page",
+			figures: "company",
+		};
+
+		const expectedResult = [false, true];
+
+		const result = [
+			isPrintedOnly(ref),
+			isPrintedOnly({ ...ref, block: "printedShareholderReturns" }),
 		];
 
 		expect(result).toEqual(expectedResult);

@@ -37,6 +37,7 @@ function reported(id: string, document: Filing): Claim {
 const annual = reported("test.annual", filing("10-K", "1", "2026-02-20"));
 const quarterly = reported("test.quarterly", filing("10-Q", "2", "2026-05-08"));
 const peer = reported("test.peer", filing("10-K", "3", "2026-03-01"));
+const printedOnly = reported("test.printed", filing("10-Q", "4", "2026-08-07"));
 
 /** Two company groups and one sector group, whose peer filing the index skips. */
 const groups: FigureGroup[] = [
@@ -127,5 +128,51 @@ describe("SourcesIndex", () => {
 		const result = items.map((item) => item.children[2].textContent);
 
 		expect(result).toEqual(expectedResult);
+	});
+
+	it("should name no filing and no figures of the printed page when a group is printed only", async () => {
+		render(
+			<SourcesIndex
+				groups={[
+					...groups,
+					{
+						ref: {
+							tab: "overview",
+							block: "printedShareholderReturns",
+							label: "Shareholder returns, printed page",
+							figures: "company",
+						},
+						claims: [printedOnly],
+					},
+				]}
+			/>,
+		);
+		await userEvent.click(
+			screen.getByRole("button", { name: /Where these numbers come from/ }),
+		);
+
+		const expectedResult = [
+			"Feeds Ten Years at a Glance, Financial Position",
+			"Feeds Ten Years at a Glance",
+		];
+
+		const result = screen
+			.getAllByRole("listitem")
+			.map((item) => item.children[2]?.textContent);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it.each([
+		["there are no groups", []],
+		["the only group is a sector group", groups.slice(2)],
+	])("should render nothing when %s", (_, only) => {
+		const { container } = render(<SourcesIndex groups={only} />);
+
+		const expectedResult = "";
+
+		const result = container.innerHTML;
+
+		expect(result).toBe(expectedResult);
 	});
 });

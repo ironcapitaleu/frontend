@@ -9,6 +9,8 @@ import {
 	evaluateMetric,
 	type FigureRef,
 	flowLineKeys,
+	fundChange,
+	fundShare,
 	isValidFigureRef,
 	type MetricResult,
 	type Metric,
@@ -1177,6 +1179,60 @@ describe("per-row derived figures", () => {
 		const expectedResult = null;
 
 		const result = ownershipShares(section).public;
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should divide the shares of the fund by the shares outstanding when it gives a fund's share", () => {
+		const section = fakeCompanyReport.relationships;
+
+		// Harlow Index Trust 14.2M ÷ 150M.
+		const expectedResult = {
+			id: "metric.fundShare.funds.0",
+			value: 14_200_000 / 150_000_000,
+		};
+
+		const share = fundShare(section, 0);
+		const result = { id: share?.id, value: share?.value };
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give a fall as a negative fraction when the fund held more shares a quarter earlier", () => {
+		const section = fakeCompanyReport.relationships;
+
+		// Pinecrest Advisors (9.8M − 10.4M) ÷ 10.4M.
+		const expectedResult = (9_800_000 - 10_400_000) / 10_400_000;
+
+		const result = figureValue(fundChange(section, 1));
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should return null when the fund filed no 13F a quarter earlier", () => {
+		const { relationships } = fakeCompanyReport;
+		const [first, ...rest] = relationships.funds;
+		const section = {
+			...relationships,
+			funds: [{ ...first, sharesQuarterEarlier: null }, ...rest],
+		};
+
+		const expectedResult = null;
+
+		const result = fundChange(section, 0);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should return null when the funds list has no row at the position", () => {
+		const section = fakeCompanyReport.relationships;
+
+		const expectedResult = { share: null, change: null };
+
+		const result = {
+			share: fundShare(section, 2),
+			change: fundChange(section, 2),
+		};
 
 		expect(result).toEqual(expectedResult);
 	});

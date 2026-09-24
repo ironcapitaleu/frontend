@@ -2,6 +2,8 @@ import type { ComponentType } from "react";
 
 import type { TabKey } from "../../../lib/company/types";
 import type { Ticker } from "../../../lib/domain/ticker";
+// The panels are imported in the order of the tab strip, not alphabetically,
+// so the list reads like the page.
 import { OverviewTab } from "./OverviewTab";
 import { FinancialsTab } from "./FinancialsTab";
 import { ValuationTab } from "./ValuationTab";

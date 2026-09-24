@@ -11,6 +11,7 @@ import type {
 	Nullable,
 	OverviewSection,
 	Period,
+	RelationshipsSection,
 	Series,
 	Statement,
 	StatementLine,
@@ -1176,6 +1177,51 @@ export function ownershipShares(overview: OverviewSection): OwnershipShares {
 			),
 		),
 	};
+}
+
+/**
+ * Returns the share of the company that the fund at `position` of
+ * `relationships.funds` holds: its shares divided by the shares outstanding.
+ * Returns `null` when the list has no row at `position`.
+ */
+export function fundShare(
+	relationships: RelationshipsSection,
+	position: number,
+): Figure {
+	const row = relationships.funds[position];
+	if (row === undefined) {
+		return null;
+	}
+	return share(
+		`metric.fundShare.funds.${position}`,
+		`${row.fund} share of the company`,
+		`Shares held by ${row.fund} ÷ Shares outstanding`,
+		[row.shares, relationships.ownership.sharesOutstanding],
+		([shares, outstanding]) => [shares, outstanding],
+	);
+}
+
+/**
+ * Returns the change of the shares of the fund at `position` of
+ * `relationships.funds` against the quarter before, as a fraction of the
+ * shares a quarter earlier. Returns `null` when the list has no row at
+ * `position`.
+ */
+export function fundChange(
+	relationships: RelationshipsSection,
+	position: number,
+): Figure {
+	const row = relationships.funds[position];
+	if (row === undefined) {
+		return null;
+	}
+	return share(
+		`metric.fundChange.funds.${position}`,
+		`Change of the shares held by ${row.fund} over a quarter`,
+		"(Shares held − Shares held a quarter earlier) ÷ Shares held a quarter earlier",
+		[row.shares, row.sharesQuarterEarlier],
+		([now, before]) => [now - before, before],
+	);
 }
 
 /**
