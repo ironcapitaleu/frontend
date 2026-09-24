@@ -693,7 +693,16 @@ function buildFinancials(): FinancialsSection {
 				withoutFourthQuarters([153.2, 152.9, 152.6], [151.6, 151.2, 150.8]),
 			),
 		),
-		yearToDate: null,
+		yearToDate: table(
+			income,
+			YEAR_TO_DATE,
+			incomeRows(
+				millions(1400, 2130, 1550, 2360),
+				millions(180, 276, 214, 329),
+				millions(137, 210, 162, 249),
+				millions(153.05, 152.9, 151.4, 151.2),
+			),
+		),
 	};
 	const balanceSheet: Statement = {
 		annual: table(
@@ -762,8 +771,9 @@ function buildFinancials(): FinancialsSection {
  * each kind of figure:
  *
  * - the income statement has a `null` point at each fourth quarter, because no 10-Q reports it;
- * - the cash flow statement has `null` points at each second to fourth quarter,
- *   and a year-to-date table with the six-month and nine-month figures;
+ * - the cash flow statement has `null` points at each second to fourth quarter;
+ * - the income statement and the cash flow statement have a year-to-date
+ *   table with the six-month and nine-month figures;
  * - the balance sheet has no `null` point, and holds each fiscal year end of
  *   FY2024 and FY2025 in both tables, with two encodings;
  * - for each flow line, the first three quarters and the derived fourth
