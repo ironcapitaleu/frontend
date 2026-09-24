@@ -699,6 +699,14 @@ describe("isValidFigureRef", () => {
 				key: "priceAtFiscalYearEnd",
 				at: { kind: "latestClose" },
 			},
+			{ from: "metric", key: "freeCashFlow", at: null },
+			{ from: "metric", key: "freeCashFlow", at: { kind: "latestQuarter" } },
+			{
+				from: "metric",
+				key: "freeCashFlow",
+				at: { kind: "lastFourQuarters" },
+			},
+			{ from: "metric", key: "marketCap", at: { kind: "latestClose" } },
 		];
 
 		const expectedResult = refs.map(() => false);

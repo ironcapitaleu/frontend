@@ -603,7 +603,10 @@ export const formulas: Record<MetricKey, Formula> = {
  * Tells whether `ref` names a figure that exists. A share count, a per-share
  * figure or a balance sheet line has no sum over the last four quarters. A
  * share count and a per-share figure have no fourth quarter, so they have no
- * latest quarter either. Each market figure has its own period choices.
+ * latest quarter either. Each market figure has its own period choices. A
+ * metric has no period only when it is a point metric, and otherwise reads a
+ * fiscal year or the same period, because no other choice resolves to a
+ * period that a metric can be evaluated for.
  */
 export function isValidFigureRef(ref: FigureRef): boolean {
 	const at = ref.at?.kind ?? null;
@@ -624,7 +627,11 @@ export function isValidFigureRef(ref: FigureRef): boolean {
 							at === "samePeriod" ||
 							at === "lastFiscalYears");
 		case "metric":
-			return true;
+			return ref.at === null
+				? metrics[ref.key].kind === "point"
+				: at === "samePeriod" ||
+						at === "fiscalYear" ||
+						at === "lastFiscalYears";
 	}
 }
 
