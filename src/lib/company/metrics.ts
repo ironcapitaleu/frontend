@@ -505,6 +505,28 @@ export const metrics: Record<MetricKey, Metric> = {
 		line("totalCurrentAssets", latestQuarter),
 		line("totalCurrentLiabilities", latestQuarter),
 	),
+	longTermAssets: metric(
+		"point",
+		"longTermAssets",
+		"Long-term assets",
+		"Total assets − total current assets, latest quarter end",
+		"usd",
+		[
+			line("totalAssets", latestQuarter),
+			line("totalCurrentAssets", latestQuarter),
+		],
+	),
+	longTermLiabilities: metric(
+		"point",
+		"longTermLiabilities",
+		"Long-term liabilities",
+		"Total liabilities − total current liabilities, latest quarter end",
+		"usd",
+		[
+			line("totalLiabilities", latestQuarter),
+			line("totalCurrentLiabilities", latestQuarter),
+		],
+	),
 	stockPayToRevenue: ratio(
 		"point",
 		"stockPayToRevenue",
@@ -743,6 +765,8 @@ export const formulas: Record<MetricKey, Formula> = {
 		(amount(bought) - amount(issued)) / amount(cap),
 	totalDebt: ([short, long]) => amount(short) + amount(long),
 	currentRatio: divide,
+	longTermAssets: ([total, current]) => amount(total) - amount(current),
+	longTermLiabilities: ([total, current]) => amount(total) - amount(current),
 	stockPayToRevenue: divide,
 	marketCap: ([price, shares]) => amount(price) * amount(shares),
 	priceToEarnings: divide,
@@ -850,8 +874,70 @@ export function keyFigureOf(
 	sections: CompletedSections,
 ): Figure {
 	const at = metrics[key].kind === "perPeriod" ? latestYear : null;
-	const result = resolve({ from: "metric", key, at }, sections, null);
+	return claimAt({ from: "metric", key, at }, sections);
+}
+
+/** Returns the claim that `ref` resolves to, or `null` when it has no value. */
+function claimAt(ref: FigureRef, sections: CompletedSections): Figure {
+	const result = resolve(ref, sections, null);
 	return !isWindow(result) && result.kind === "value" ? result.claim : null;
+}
+
+/** One pair of bars of Overview card 1.4 "Financial Position". */
+export interface PositionRow {
+	readonly term: "Short term" | "Long term";
+	readonly assets: Figure;
+	readonly liabilities: Figure;
+}
+
+/** The figures of card 1.4, at the latest quarter end, in the order of DESIGN.md §8. */
+const positionRefs = [
+	{
+		term: "Short term",
+		assets: line("totalCurrentAssets", latestQuarter),
+		liabilities: line("totalCurrentLiabilities", latestQuarter),
+	},
+	{
+		term: "Long term",
+		assets: { from: "metric", key: "longTermAssets", at: null },
+		liabilities: { from: "metric", key: "longTermLiabilities", at: null },
+	},
+] as const satisfies readonly {
+	term: PositionRow["term"];
+	assets: FigureRef;
+	liabilities: FigureRef;
+}[];
+
+/**
+ * Returns the assets and the liabilities of card 1.4, short term and then
+ * long term. A figure with no value is `null`.
+ */
+export function financialPositionOf(
+	sections: CompletedSections,
+): PositionRow[] {
+	return positionRefs.map(({ term, assets, liabilities }) => ({
+		term,
+		assets: claimAt(assets, sections),
+		liabilities: claimAt(liabilities, sections),
+	}));
+}
+
+/**
+ * Returns the reported claims behind card 1.4: each short-term figure, and
+ * the inputs of each long-term figure. A long-term figure with no value
+ * still names its inputs, so its filing stays in the sources index. Each
+ * claim appears once, by its id, and a missing input is left out.
+ */
+export function financialPositionInputs(sections: CompletedSections): Claim[] {
+	const claims = positionRefs
+		.flatMap(({ assets, liabilities }) => [assets, liabilities])
+		.flatMap((ref) => (ref.from === "metric" ? metrics[ref.key].inputs : [ref]))
+		.map((ref) => claimAt(ref, sections))
+		.filter((claim) => claim !== null);
+	// The current lines feed both terms, so keep the first claim of each id.
+	return claims.filter(
+		(claim, index) => claims.findIndex(({ id }) => id === claim.id) === index,
+	);
 }
 
 /**

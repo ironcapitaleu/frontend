@@ -609,7 +609,9 @@ These keys cover every statement figure that `DESIGN.md` §8 names for the
 Overview, Valuation and Shareholder returns tabs, the Financials chart and the
 print summary. `operatingIncome` feeds the operating margin and EV/EBIT.
 `totalAssets` and `totalLiabilities` give the long-term parts of Financial
-Position, as the total minus the current part. `shareRepurchases` and
+Position, as the total minus the current part. The point metrics
+`longTermAssets` and `longTermLiabilities` compute them at the latest
+quarter end. `shareRepurchases` and
 `shareIssuanceProceeds` give the net buybacks in dollars. The Financials
 statement table draws more lines than these, such as gross profit. The
 Financials Tab ticket adds their keys to this table. §5 says which table of the
