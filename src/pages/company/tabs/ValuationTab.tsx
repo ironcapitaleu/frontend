@@ -2,6 +2,7 @@ import * as React from "react";
 
 import { CompanyCard, CompanyCardGrid } from "@/components/company/CompanyCard";
 import { SourceTrigger } from "@/components/company/SourceCard";
+import { SourcesChip } from "@/components/company/SourcesChip";
 import { SourcesIndex } from "@/components/company/SourcesIndex";
 import { FIXED_COLUMN, formatInput } from "@/components/company/format";
 import {
@@ -37,18 +38,21 @@ import {
 	ratioRanges,
 	ratioScale,
 } from "../../../lib/company/valuationRatios";
+import { yieldTable } from "../../../lib/company/valuationYields";
 import type { Ticker } from "../../../lib/domain/ticker";
+import { BarChart } from "./StatementChart";
 
 /** The blocks this tab draws. The Sources index names only these. */
 const DRAWN_BLOCKS: ReadonlySet<BlockKey> = new Set([
 	"valuationRatios",
+	"yieldsAgainstTreasury",
 	"ratioFormulas",
 ]);
 
 /**
  * The Valuation tab of the company page (DESIGN.md §8 "Valuation"). It loads
  * the masthead, the financials and the valuation section, and shows cards
- * 3.1 and 3.3, then the sources index.
+ * 3.1, 3.2 and 3.3, then the sources index.
  */
 export function ValuationTab({ ticker }: { ticker: Ticker }) {
 	const masthead = useCompany(ticker, "masthead");
@@ -86,7 +90,7 @@ export function ValuationTab({ ticker }: { ticker: Ticker }) {
 	);
 }
 
-/** Cards 3.1 and 3.3 of the loaded tab, then the sources index. */
+/** Cards 3.1, 3.2 and 3.3 of the loaded tab, then the sources index. */
 function LoadedValuation(props: {
 	masthead: MastheadSection;
 	financials: CompletedSections;
@@ -99,6 +103,7 @@ function LoadedValuation(props: {
 		[masthead, financials, valuation],
 	);
 	const ranges = React.useMemo(() => ratioRanges(sections), [sections]);
+	const yields = React.useMemo(() => yieldTable(sections), [sections]);
 	const groups = React.useMemo(
 		() =>
 			figureGroupsOf("valuation", sections).filter(({ ref }) =>
@@ -121,6 +126,24 @@ function LoadedValuation(props: {
 							<RatioRow key={range.ratio} range={range} />
 						))}
 					</ul>
+				</CompanyCard>
+				<CompanyCard
+					tab="valuation"
+					position={2}
+					span={2}
+					className="min-w-0"
+					title="Earnings Yield and FCF Yield Next to the 10-Year Treasury"
+					caption="Each fiscal year end and now. Percent, from 10-K filings, daily prices and Treasury par yields."
+					actions={
+						<SourcesChip
+							claims={
+								groups.find(({ ref }) => ref.block === "yieldsAgainstTreasury")
+									?.claims ?? []
+							}
+						/>
+					}
+				>
+					<BarChart table={yields} format={formatInput} />
 				</CompanyCard>
 				<CompanyCard
 					tab="valuation"

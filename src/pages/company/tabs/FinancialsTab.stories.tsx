@@ -9,6 +9,7 @@ import { alwaysFailingCompanyGateway } from "../../../test/fixtures/companies/al
 import { alwaysFoundCompanyGateway } from "../../../test/fixtures/companies/always-found";
 import { fakeCompanyReport } from "../../../test/fixtures/companies/fake-company-report";
 import { sampleCompanyGateway } from "../../../lib/company/sampleCompanyGateway";
+import { BAR_TARGETS_OK, barTargetsOf } from "../../../test/barTargets";
 import { FinancialsTab } from "./FinancialsTab";
 
 const desktop = { viewport: { value: "desktop", isRotated: false } };
@@ -242,42 +243,29 @@ export const EmptyChart: Story = {
 };
 
 /**
- * Opens the cash flow chart and checks every bar: its trigger is at least
- * 24 px wide and tall and inside the plot, the bar draws, and the page does
- * not scroll sideways.
+ * Opens the chart of `statement` and checks every bar: each year draws three,
+ * a trigger is at least 24 px wide and tall and inside the plot, the bar
+ * draws, and the page does not scroll sideways.
  */
-async function checkBarTargets(canvasElement: HTMLElement) {
+async function checkBarTargets(
+	canvasElement: HTMLElement,
+	statement = "Cash flow",
+) {
 	const canvas = within(canvasElement);
 	const body = within(canvasElement.ownerDocument.body);
 	await userEvent.click(
 		await canvas.findByRole("combobox", { name: "Statement" }),
 	);
-	await userEvent.click(await body.findByRole("option", { name: "Cash flow" }));
+	await userEvent.click(await body.findByRole("option", { name: statement }));
 	const plot = await canvas.findByRole("list", { name: "Fiscal years" });
-	const bars = within(plot).getAllByRole("button");
-	const page = canvasElement.ownerDocument.documentElement;
-	const { top, bottom } = plot.getBoundingClientRect();
 
-	const expectedResult = {
-		smallTargets: [],
-		targetsOutsidePlot: [],
-		invisibleBars: [],
-		pageScrollsSideways: false,
-	};
+	const expectedResult = { ...BAR_TARGETS_OK, barsPerYear: 3 };
 
 	const result = {
-		smallTargets: bars.filter((bar) => {
-			const { width, height } = bar.getBoundingClientRect();
-			return width < 24 || height < 24;
-		}),
-		targetsOutsidePlot: bars.filter((bar) => {
-			const rect = bar.getBoundingClientRect();
-			return rect.top < top - 0.5 || rect.bottom > bottom + 0.5;
-		}),
-		invisibleBars: bars.filter(
-			(bar) => bar.parentElement?.getBoundingClientRect().height === 0,
-		),
-		pageScrollsSideways: page.scrollWidth > page.clientWidth,
+		...barTargetsOf(plot),
+		barsPerYear:
+			within(plot).getAllByRole("button").length /
+			within(plot).getAllByRole("listitem").length,
 	};
 
 	await expect(result).toEqual(expectedResult);
@@ -293,6 +281,16 @@ async function checkBarTargets(canvasElement: HTMLElement) {
 export const BarTargets: Story = {
 	globals: phone,
 	play: ({ canvasElement }) => checkBarTargets(canvasElement),
+};
+
+/**
+ * Play test: every bar of the income chart can be tapped on a phone,
+ * including the free cash flow bars, the third line of the chart.
+ */
+export const IncomeBarTargets: Story = {
+	globals: phone,
+	play: ({ canvasElement }) =>
+		checkBarTargets(canvasElement, "Income statement"),
 };
 
 /**
@@ -456,6 +454,70 @@ export const PhoneNewestFirst: Story = {
 		};
 
 		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Returns the cells of the row of `line` in the table of `statement`. */
+async function cellsOf(
+	canvasElement: HTMLElement,
+	line: string,
+	statement = "Income statement",
+) {
+	const canvas = within(canvasElement);
+	const table = await canvas.findByRole("table", {
+		name: `${statement} table`,
+	});
+	const row = within(table).getByRole("rowheader", { name: line });
+	return within(row.closest("tr") as HTMLElement).getAllByRole("cell");
+}
+
+/**
+ * Play test: the last column of the annual table is the growth per year
+ * over ten years (CAGR), and a click on it opens the sources of the growth
+ * rate.
+ */
+export const GrowthColumn: Story = {
+	globals: desktop,
+	play: async ({ canvasElement }) => {
+		const cells = await cellsOf(canvasElement, "Revenue");
+		const growth = within(cells.at(-1) as HTMLElement).getByRole("button");
+
+		const expectedResult = "Sources of Revenue growth per year";
+
+		await userEvent.click(growth);
+		const result = await within(canvasElement.ownerDocument.body).findByRole(
+			"dialog",
+		);
+
+		await expect(result).toHaveAccessibleName(expectedResult);
+	},
+};
+
+/**
+ * Play test: a growth rate needs figures above zero in two years. The capital
+ * expenditure of this gateway is negative, so its CAGR cell shows the dimmed
+ * dash.
+ */
+export const MissingGrowth: Story = {
+	globals: desktop,
+	parameters: { companyGateway: negativeCapexGateway },
+	play: async ({ canvasElement }) => {
+		const statement = "Cash flow";
+		await userEvent.click(
+			await within(canvasElement).findByRole("button", { name: statement }),
+		);
+		const cells = await cellsOf(
+			canvasElement,
+			"Capital expenditure",
+			statement,
+		);
+		const cell = cells.at(-1);
+
+		const expectedResult = MISSING_INK;
+
+		const result = cell?.querySelector("span")?.className;
+
+		await expect(result).toBe(expectedResult);
 	},
 };
 
