@@ -1327,10 +1327,9 @@ classDiagram
 details:
 
 - `Check.sections` lists keys of `CompanySections`, so a check can name only
-  a section that exists. V2 lists the masthead and the Financials sections
-  until the Valuation section exists. Its Treasury yield resolves to `null`,
-  so V2 reads "not enough data", reason `missingInput`. The ticket that adds
-  `getValuation` adds `valuation` to V2.
+  a section that exists. V2 lists the masthead, the Financials and the
+  Valuation sections. Until the Valuation section loads, V2 reads "not
+  enough data", reason `missingSection`.
 - `Check.rule`, `CheckResult.sentence` and the count claim
   `check.{id}.count` wait for the ticket that draws the check card.
 - `CheckResult.claims` holds the claims that decide the state: the subject and
@@ -1377,11 +1376,10 @@ ratio `dividendsToFreeCashFlow`. The direct comparison is sound for every
 sign. A company that pays $1.0B in dividends with free cash flow of −$2.0B
 gets "not met", because $1.0B is not at most −$2.0B.
 
-**Checks that wait for a later milestone.** STA-224 writes the masthead, the
+**Checks that read a later section.** STA-224 writes the masthead, the
 Overview and the Financials sections. V2 reads `treasuryYield10y` from the
-Valuation section. Until the "Valuation and Shareholder Returns Tabs"
-milestone adds `getValuation`, the result of V2 is "not enough data". Every
-other check has its inputs after the Financials Tab milestone.
+Valuation section, which `getValuation` serves. Every other check has its
+inputs after the Financials Tab milestone.
 
 The metrics that the checks read:
 
