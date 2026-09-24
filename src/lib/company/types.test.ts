@@ -4,16 +4,22 @@ import type {
 	Claim,
 	CompanySections,
 	FigureGroupRef,
+	FilingsSection,
 	FinancialsSection,
 	Filing,
 	IsoDate,
+	ManagementSection,
 	MastheadSection,
 	OverviewSection,
 	OwnershipSummary,
+	PayYear,
 	Period,
+	RelationshipsSection,
 	SectorBenchmark,
+	ShareholderReturnsSection,
 	SourceSet,
 	StatementLine,
+	ValuationSection,
 } from "./types";
 
 /** The walk stops at these types. A claim is the figure itself, a period holds column keys and a filing is a source document. */
@@ -23,7 +29,8 @@ type WalkStop = Claim | Period | Filing;
 type RowKey =
 	| [SectorBenchmark, "peerCount"]
 	| [StatementLine, "level"]
-	| [OwnershipSummary, "asOf"];
+	| [OwnershipSummary, "asOf"]
+	| [PayYear, "fiscalYear"];
 
 /**
  * The paths of the fields of `T` that hold a bare `number` or `IsoDate`
@@ -87,6 +94,46 @@ describe("section types", () => {
 		type ExpectedResult = never;
 
 		type Result = BareFigureFields<FinancialsSection>;
+
+		expectTypeOf<Result>().toEqualTypeOf<ExpectedResult>();
+	});
+
+	it("should find no bare number or date when the walk visits ValuationSection", () => {
+		type ExpectedResult = never;
+
+		type Result = BareFigureFields<ValuationSection>;
+
+		expectTypeOf<Result>().toEqualTypeOf<ExpectedResult>();
+	});
+
+	it("should find no bare number or date when the walk visits ShareholderReturnsSection", () => {
+		type ExpectedResult = never;
+
+		type Result = BareFigureFields<ShareholderReturnsSection>;
+
+		expectTypeOf<Result>().toEqualTypeOf<ExpectedResult>();
+	});
+
+	it("should find no bare number or date when the walk visits RelationshipsSection", () => {
+		type ExpectedResult = never;
+
+		type Result = BareFigureFields<RelationshipsSection>;
+
+		expectTypeOf<Result>().toEqualTypeOf<ExpectedResult>();
+	});
+
+	it("should find no bare number or date when the walk visits ManagementSection", () => {
+		type ExpectedResult = never;
+
+		type Result = BareFigureFields<ManagementSection>;
+
+		expectTypeOf<Result>().toEqualTypeOf<ExpectedResult>();
+	});
+
+	it("should find no bare number or date when the walk visits FilingsSection", () => {
+		type ExpectedResult = never;
+
+		type Result = BareFigureFields<FilingsSection>;
 
 		expectTypeOf<Result>().toEqualTypeOf<ExpectedResult>();
 	});

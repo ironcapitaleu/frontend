@@ -1,9 +1,14 @@
 import type { Ticker } from "../domain/ticker";
 import type { FailedCompanyRequest, MissingCompany } from "./errors";
 import type {
+	FilingsSection,
 	FinancialsSection,
+	ManagementSection,
 	MastheadSection,
 	OverviewSection,
+	RelationshipsSection,
+	ShareholderReturnsSection,
+	ValuationSection,
 } from "./types";
 
 /**
@@ -42,4 +47,39 @@ export interface CompanyGateway {
 	 * @throws FailedCompanyRequest when the load did not complete.
 	 */
 	getFinancials(ticker: Ticker): Promise<FinancialsSection>;
+	/**
+	 * Resolves the Treasury yields and the sector benchmarks of the Valuation tab.
+	 *
+	 * @throws MissingCompany when the adapter knows no company for the ticker.
+	 * @throws FailedCompanyRequest when the load did not complete.
+	 */
+	getValuation(ticker: Ticker): Promise<ValuationSection>;
+	/**
+	 * Resolves the dividends and share counts of the Shareholder returns tab.
+	 *
+	 * @throws MissingCompany when the adapter knows no company for the ticker.
+	 * @throws FailedCompanyRequest when the load did not complete.
+	 */
+	getShareholderReturns(ticker: Ticker): Promise<ShareholderReturnsSection>;
+	/**
+	 * Resolves the holders, subsidiaries and stakes of the Relationships tab.
+	 *
+	 * @throws MissingCompany when the adapter knows no company for the ticker.
+	 * @throws FailedCompanyRequest when the load did not complete.
+	 */
+	getRelationships(ticker: Ticker): Promise<RelationshipsSection>;
+	/**
+	 * Resolves the people, pay and insider trades of the Management tab.
+	 *
+	 * @throws MissingCompany when the adapter knows no company for the ticker.
+	 * @throws FailedCompanyRequest when the load did not complete.
+	 */
+	getManagement(ticker: Ticker): Promise<ManagementSection>;
+	/**
+	 * Resolves the filings that the page reads, for the Filings tab.
+	 *
+	 * @throws MissingCompany when the adapter knows no company for the ticker.
+	 * @throws FailedCompanyRequest when the load did not complete.
+	 */
+	getFilings(ticker: Ticker): Promise<FilingsSection>;
 }

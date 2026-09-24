@@ -691,11 +691,13 @@ own 13F information table. The 13F does not report the shares outstanding of
 the target company. So `Stake.sharesOutstanding` is a reported claim from the
 target company's latest 10-Q or 10-K, with the cover-page tag
 `dei:EntityCommonStockSharesOutstanding`. Its `document` is a `Filing` whose
-`filer` is the target company. `sourcesOf` groups it under that filing, and
-the Filings tab of this company never lists it. `feedsOf` gives that filing
-an entry that no row of "Filings We Read" reads. The Relationships sources
-index lists that filing under the name of its `filer`, so the reader sees that
-another company filed it.
+`filer` is the target company. `sourcesOf` groups it under that filing.
+`FilingsSection` lists every filing that a company figure cites, so it lists
+this 10-K too, as it lists the Form 4s of the insiders and the 13F-HRs of the
+funds. The row names its `filer`, and the Relationships sources index does
+too, so the reader sees that another company filed it. The peer 10-Ks behind
+a sector benchmark are the one exception: the Filings walk skips the sector
+figures, so `FilingsSection` does not list them.
 
 `FilingsSection` lists plain `Filing` values. The Filings tab gets "what this
 filing feeds" from `feedsOf` (§3), not from the port.
@@ -826,8 +828,9 @@ type, so the compiler rejects a call with the sections of the port.
 
 **The types in code.** STA-224 writes the types of §3 and §4 in
 `src/lib/company/types.ts`, for the masthead, the Overview tab and the
-Financials tab only. The later milestones add the types of the other five tabs.
-The code differs from the diagrams in four details:
+Financials tab. The port expansion adds the section types and the port methods
+of the other five tabs, so the tab tickets can run in parallel. The code
+differs from the diagrams in four details:
 
 - Every field is `readonly`, and every list is a `readonly` array
   (`AGENTS.md` "TypeScript-Specific Guidelines").
@@ -837,8 +840,9 @@ The code differs from the diagrams in four details:
   one field for each section that the port returns, and `null` marks a section
   that has not loaded.
 - `MetricKey` sits in `types.ts`, because `SectorBenchmark` reads it. It lists
-  the four metrics of the Overview benchmarks. The tickets that add metrics add
-  their keys.
+  the metrics of the Overview and Valuation benchmarks, the metrics that the
+  checks read, and `enterpriseValue`, which EV/EBIT reads. The tickets that add
+  metrics add their keys.
 
 **What the port returns and what `metrics.ts` derives.** The port returns
 every reported figure. It also returns the derived figures whose inputs are in
@@ -1238,7 +1242,26 @@ classDiagram
   `revenue @ samePeriod` above 0. `buybackYield` is a point metric,
   (`shareRepurchases @ lastFourQuarters` − `shareIssuanceProceeds @
   lastFourQuarters`) ÷ `marketCap`, with the guard `marketCap` above 0. The
-  tab tickets add the rest.
+  port expansion defines the three Valuation benchmark metrics that
+  `ValuationSection` names, and `enterpriseValue`. Each is a point metric that
+  reads the latest fiscal year and the latest quarter end, as the P/E and
+  return on equity do:
+  - `priceToFreeCashFlow` is `marketCap` ÷ `freeCashFlow @ fiscalYear(0)`,
+    with the guard `freeCashFlow @ fiscalYear(0)` above 0.
+  - `priceToBook` is `marketCap` ÷ `shareholdersEquity @ latestQuarter`, with
+    the guard `shareholdersEquity @ latestQuarter` above 0.
+  - `enterpriseValue` is `marketCap` + `totalDebt` −
+    `cashAndShortTermInvestments @ latestQuarter`, with no guard. When the
+    latest quarter has no `shortTermDebt` or no `longTermDebt` line,
+    `totalDebt` is `missingInput`, so `enterpriseValue` and
+    `enterpriseValueToEbit` are `missingInput` too. This is deliberate. A
+    missing line is not zero debt, and the page does not invent a figure. A
+    filer with no debt shows an enterprise value only when the adapter
+    reports a debt line of 0.
+  - `enterpriseValueToEbit` is `enterpriseValue` ÷ `operatingIncome @
+    fiscalYear(0)`, with the guard `operatingIncome @ fiscalYear(0)` above 0.
+
+  The tab tickets add the rest.
 - `Comparison` is one of `above`, `atLeast`, `below` or `atMost`.
 - `Check.subject` is the figure that the check tests.
 - A `Threshold` is one of three kinds:
