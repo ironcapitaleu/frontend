@@ -346,6 +346,7 @@ export const FinancialPositionPhone: Story = {
 			.getByRole("region", { name: "1.3 Key Figures" })
 			.getBoundingClientRect();
 		const plots = [...card.querySelectorAll("[data-slot=position-plot] ul")];
+		const parts = [card, ...card.querySelectorAll("figure, dt, dd")];
 
 		const expectedResult = {
 			stacked: true,
@@ -355,20 +356,14 @@ export const FinancialPositionPhone: Story = {
 
 		const result = {
 			stacked: position.left === figures.left && position.top >= figures.bottom,
-			fits:
-				card.scrollWidth <= card.clientWidth &&
-				[
-					...card.querySelectorAll(
-						"[data-slot=position-plot], [data-slot=position-plot] :is(dt, dd)",
-					),
-				].every((part) => {
-					const { left, right } = part.getBoundingClientRect();
-					return (
-						part.scrollWidth <= part.clientWidth &&
-						left >= position.left &&
-						right <= position.right
-					);
-				}),
+			fits: parts.every((part) => {
+				const { left, right } = part.getBoundingClientRect();
+				return (
+					part.scrollWidth <= part.clientWidth &&
+					left >= position.left &&
+					right <= position.right
+				);
+			}),
 			targets: plots.flatMap((plot) => {
 				const box = plot.getBoundingClientRect();
 				return [...plot.querySelectorAll("button")].map((button) => {

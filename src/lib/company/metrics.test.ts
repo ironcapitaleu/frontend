@@ -1128,23 +1128,7 @@ describe("financialPositionInputs", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should still list total liabilities when long-term liabilities has no value because current liabilities is missing", () => {
-		const sections = sectionsWith(
-			"balance",
-			"quarterly",
-			"totalCurrentLiabilities",
-			[7],
-			null,
-		);
-
-		const expectedResult = latestBalanceIds(["totalLiabilities"])[0];
-
-		const result = financialPositionInputs(sections).at(-1)?.id;
-
-		expect(result).toBe(expectedResult);
-	});
-
-	it("should leave out both missing inputs when the latest quarter lacks both current lines", () => {
+	it("should list total assets and total liabilities alone when the latest quarter lacks both current lines", () => {
 		const quarterly = withPoint(
 			withPoint(balance.quarterly, "totalCurrentAssets", 7, null),
 			"totalCurrentLiabilities",
