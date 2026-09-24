@@ -708,6 +708,33 @@ export const metrics: Record<MetricKey, Metric> = {
 		guards: [],
 		minPoints: 5,
 	},
+	earningsYield: ratio(
+		"point",
+		"earningsYield",
+		"Earnings yield",
+		"Diluted EPS, latest fiscal year ÷ price",
+		"percent",
+		line("dilutedEps", latestYear),
+		priceNow,
+	),
+	earningsYieldAtYearEnd: ratio(
+		"perPeriod",
+		"earningsYieldAtYearEnd",
+		"Earnings yield at fiscal year end",
+		"Diluted EPS ÷ price at fiscal year end",
+		"percent",
+		line("dilutedEps", samePeriod),
+		priceAtYearEnd,
+	),
+	freeCashFlowYieldAtYearEnd: ratio(
+		"perPeriod",
+		"freeCashFlowYieldAtYearEnd",
+		"Free cash flow yield at fiscal year end",
+		"Free cash flow ÷ market cap at fiscal year end",
+		"percent",
+		{ from: "metric", key: "freeCashFlow", at: samePeriod },
+		marketCapAtYearEndRef,
+	),
 };
 
 /** Returns the value of a single-period input. */
@@ -761,6 +788,9 @@ export const formulas: Record<MetricKey, Formula> = {
 	priceToBookMedian10y: ([window]) => median(window),
 	enterpriseValueToEbitAtYearEnd: divide,
 	enterpriseValueToEbitMedian10y: ([window]) => median(window),
+	earningsYield: divide,
+	earningsYieldAtYearEnd: divide,
+	freeCashFlowYieldAtYearEnd: divide,
 };
 
 /**
@@ -855,14 +885,16 @@ export function keyFigureOf(
  * Returns the input claims of metric `key` in the order of `Metric.inputs`,
  * by the resolution of {@link resolve}. A missing input, an input metric with
  * no value and a window input each give `null`. A failed guard hides no
- * input, so card 3.3 shows the inputs of a ratio that has no value.
+ * input, so card 3.3 shows the inputs of a ratio that has no value. A
+ * per-period metric reads its inputs at `period`.
  */
 export function metricInputsOf(
 	key: MetricKey,
 	sections: CompletedSections,
+	period: Nullable<Period> = null,
 ): Figure[] {
 	return metrics[key].inputs.map((ref) => {
-		const result = resolve(ref, sections, null);
+		const result = resolve(ref, sections, period);
 		return !isWindow(result) && result.kind === "value" ? result.claim : null;
 	});
 }

@@ -407,10 +407,36 @@ describe("figureGroupsOf", () => {
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should give the groups of cards 3.1 and 3.3 in order when the Valuation tab is read", () => {
+	it("should keep the EPS of a year in the group of card 3.2 when its year-end price is missing", () => {
+		const prices = masthead.priceAtFiscalYearEnds;
+		const noPrice = completeSections({
+			...fakeCompanyReport,
+			masthead: {
+				...masthead,
+				priceAtFiscalYearEnds: {
+					...prices,
+					points: prices.points.map((point, index) =>
+						index === 4 ? null : point,
+					),
+				},
+			},
+		});
+		const eps = financials.income.annual.lines[3]?.points[4];
+
+		const expectedResult = true;
+
+		const result = claimsOf("yieldsAgainstTreasury", "company", noPrice).some(
+			({ id }) => id === eps?.id,
+		);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should give the groups of cards 3.1, 3.2 and 3.3 in order when the Valuation tab is read", () => {
 		const expectedResult = [
 			"valuationRatios.company",
 			"valuationRatios.sector",
+			"yieldsAgainstTreasury.company",
 			"ratioFormulas.company",
 		];
 

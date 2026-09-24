@@ -196,7 +196,10 @@ export type MetricKey =
 	| "priceToBookAtYearEnd"
 	| "priceToBookMedian10y"
 	| "enterpriseValueToEbitAtYearEnd"
-	| "enterpriseValueToEbitMedian10y";
+	| "enterpriseValueToEbitMedian10y"
+	| "earningsYield"
+	| "earningsYieldAtYearEnd"
+	| "freeCashFlowYieldAtYearEnd";
 
 /** The quartiles of one metric over the company's peer group. */
 export interface SectorBenchmark {
@@ -468,6 +471,7 @@ export type BlockKey =
 	| "cashFlowChart"
 	| "cashFlowTable"
 	| "valuationRatios"
+	| "yieldsAgainstTreasury"
 	| "ratioFormulas"
 	| "largestFunds"
 	| "insiders"

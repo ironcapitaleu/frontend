@@ -1,8 +1,9 @@
 import { SourceTrigger } from "@/components/company/SourceCard";
 import { MISSING, MISSING_INK } from "@/components/screener/format";
-import type { StatementTable } from "@/lib/company/types";
+import type { Claim, StatementTable } from "@/lib/company/types";
 import { cn } from "@/lib/utils";
 import {
+	type BarTable,
 	barScale,
 	formatStatementValue,
 	periodLabel,
@@ -21,9 +22,30 @@ const PLOT_HEIGHT = 224;
 /** The least tap target of a bar in px, the `min-h-6` of its trigger. */
 const MIN_TARGET = 24;
 
+/** The {@link BarChart} of Financials card 2.1 (DESIGN.md §8 "Financials"). */
+export function StatementChart({
+	table,
+	scale,
+}: {
+	table: StatementTable;
+	scale: Scale;
+}) {
+	const columns = table.periods.map((period) => ({
+		key: period.endsOn,
+		label: periodLabel(period),
+		short: `FY${String(period.fiscalYear).slice(-2)}`,
+	}));
+	return (
+		<BarChart
+			table={{ columns, lines: table.lines }}
+			format={(claim) => formatStatementValue(claim, scale)}
+		/>
+	);
+}
+
 /**
- * The bar chart of Financials card 2.1 (DESIGN.md §8 "Financials"): one group
- * of bars per fiscal year and one bar per line of `table`, oldest year first.
+ * The grouped bar chart of the company page: one group of bars per column of
+ * `table`, such as a fiscal year, and one bar per line, oldest column first.
  * Every bar is a figure: hover or focus previews its sources, and a click or
  * a tap pins them. A missing point draws a dimmed dash on the zero line. A
  * legend names the lines. The year labels are short, such as `FY26`, so ten
@@ -38,19 +60,19 @@ const MIN_TARGET = 24;
  * "Financials"). Below 1024 px,
  * a chart that does not fit its card scrolls sideways (DESIGN.md §8 "Shared
  * Layout"), and the year labels scroll with their groups. A table with no
- * fiscal year or no line draws one line that says so.
+ * column or no line draws one line that says so. `format` writes a figure.
  */
-export function StatementChart({
+export function BarChart({
 	table,
-	scale,
+	format,
 }: {
-	table: StatementTable;
-	scale: Scale;
+	table: BarTable;
+	format: (claim: Claim) => string;
 }) {
 	const { zero, place } = barScale(table);
 	// A group and its year label take the same width, so the two rows line up.
 	const groupWidth = `calc(${table.lines.length} * 1.5rem + ${table.lines.length - 1}px)`;
-	if (table.periods.length === 0 || table.lines.length === 0) {
+	if (table.columns.length === 0 || table.lines.length === 0) {
 		return (
 			<p className="text-base text-muted-foreground">
 				No fiscal years to chart.
@@ -77,13 +99,13 @@ export function StatementChart({
 				<div className="flex min-w-max flex-col gap-3">
 					<div className="relative">
 						<ul aria-label="Fiscal years" className="flex h-56 gap-1 md:gap-3">
-							{table.periods.map((period, column) => (
+							{table.columns.map((group, column) => (
 								<li
-									key={period.endsOn}
+									key={group.key}
 									className="flex flex-1 justify-center gap-px"
 									style={{ minWidth: groupWidth }}
 								>
-									<span className="sr-only">{periodLabel(period)}</span>
+									<span className="sr-only">{group.label}</span>
 									{table.lines.map((line, index) => {
 										const point = line.points[column] ?? null;
 										if (
@@ -139,7 +161,7 @@ export function StatementChart({
 														)}
 													>
 														<span className="sr-only">
-															{`${line.label}: ${formatStatementValue(point, scale)}`}
+															{`${line.label}: ${format(point)}`}
 														</span>
 													</SourceTrigger>
 												</div>
@@ -159,13 +181,13 @@ export function StatementChart({
 						aria-hidden="true"
 						className="flex gap-1 font-monospace text-xs text-muted-foreground md:gap-3"
 					>
-						{table.periods.map((period) => (
+						{table.columns.map((group) => (
 							<span
-								key={period.endsOn}
+								key={group.key}
 								className="flex-1 text-center"
 								style={{ minWidth: groupWidth }}
 							>
-								{`FY${String(period.fiscalYear).slice(-2)}`}
+								{group.short}
 							</span>
 						))}
 					</div>

@@ -779,6 +779,34 @@ describe("evaluateMetric", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should divide the FY2025 EPS by the FY2025 year-end price when it evaluates the year-end earnings yield", () => {
+		const sections = completed;
+
+		const expectedResult =
+			valueFY2025(income.annual, "dilutedEps") / PRICE_FY2025;
+
+		const result = numberOf(
+			evaluateMetric("earningsYieldAtYearEnd", sections, YEAR_FY2025),
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should divide the FY2025 free cash flow by the FY2025 year-end market cap when it evaluates the year-end FCF yield", () => {
+		const sections = completed;
+		const cap = PRICE_FY2025 * valueFY2025(income.annual, "dilutedShares");
+		const cash = valueFY2025(cashFlow.annual, "operatingCashFlow");
+		const capital = valueFY2025(cashFlow.annual, "capitalExpenditure");
+
+		const expectedResult = (cash - capital) / cap;
+
+		const result = numberOf(
+			evaluateMetric("freeCashFlowYieldAtYearEnd", sections, YEAR_FY2025),
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should divide the FY2025 year-end market cap by the equity at the FY2025 year end when it evaluates the year-end P/B", () => {
 		const sections = completed;
 		const cap = PRICE_FY2025 * valueFY2025(income.annual, "dilutedShares");

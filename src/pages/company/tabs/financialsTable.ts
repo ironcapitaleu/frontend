@@ -1,6 +1,7 @@
 import { toFixedWithMinus } from "@/components/screener/format";
 import type {
 	Claim,
+	Figure,
 	FinancialsSection,
 	LineKey,
 	Period,
@@ -123,6 +124,16 @@ export function chartTable(
 	};
 }
 
+/** The bars of a `BarChart`. A column has a full `label` and a `short` axis label. */
+export interface BarTable {
+	readonly columns: readonly { key: string; label: string; short: string }[];
+	readonly lines: readonly {
+		key: string;
+		label: string;
+		points: readonly Figure[];
+	}[];
+}
+
 /**
  * The least height of a known non-zero bar, in percent of the plot. It keeps
  * a small value visible, so it never reads as a missing year. `MiniBarChart`
@@ -144,7 +155,7 @@ export interface BarBox {
  * {@link MIN_BAR_HEIGHT} tall, within the room on its side of the zero line.
  * A text value is not on the scale.
  */
-export function barScale(table: StatementTable): {
+export function barScale(table: BarTable | StatementTable): {
 	zero: number;
 	place: (value: number) => BarBox;
 } {

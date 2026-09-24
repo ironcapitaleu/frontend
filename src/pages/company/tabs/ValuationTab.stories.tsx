@@ -7,6 +7,7 @@ import { Ticker } from "../../../lib/domain/ticker";
 import { alwaysFailingCompanyGateway } from "../../../test/fixtures/companies/always-failing";
 import { alwaysFoundCompanyGateway } from "../../../test/fixtures/companies/always-found";
 import { fakeCompanyReport } from "../../../test/fixtures/companies/fake-company-report";
+import { BAR_TARGETS_OK, barTargetsOf } from "../../../test/barTargets";
 import { ValuationTab } from "./ValuationTab";
 
 const failingGateway = alwaysFailingCompanyGateway();
@@ -45,10 +46,25 @@ const operatingLossGateway: CompanyGateway = {
 	},
 };
 
+/** A gateway with no FY2020 year-end price, so two yields of FY2020 are missing. */
+const missingPriceGateway: CompanyGateway = {
+	...alwaysFoundCompanyGateway(),
+	getMasthead: async () => {
+		const { masthead } = fakeCompanyReport;
+		const prices = masthead.priceAtFiscalYearEnds;
+		const points = prices.points.map((point, index) =>
+			index === 4 ? null : point,
+		);
+		return { ...masthead, priceAtFiscalYearEnds: { ...prices, points } };
+	},
+};
+
 /**
  * The Valuation tab for MRDN, from the fake gateway of the test fixtures
  * unless a story sets its own (DESIGN.md §8 "Valuation"). Card 3.1 draws each
  * ratio now on a bar of its own ten years and a bar of the sector quartiles.
+ * Card 3.2 draws the earnings yield, the FCF yield and the 10-year Treasury
+ * yield at each fiscal year end and now.
  * Card 3.3 lists each ratio with its formula, its inputs and its figure now.
  * The sources index at the foot lists the filings behind the tab.
  */
@@ -77,6 +93,7 @@ export const Loaded: Story = {
 
 		const expectedResult = [
 			"3.1 Ratios Against Their Own Ten Years and the Sector",
+			"3.2 Earnings Yield and FCF Yield Next to the 10-Year Treasury",
 			"3.3 How the Ratios Are Built",
 		];
 
@@ -91,8 +108,8 @@ export const Loaded: Story = {
 
 /**
  * Play test: every filing in the sources index feeds card 3.1, and no line
- * names a card the tab does not draw. The claims of card 3.3 are a subset of
- * those of card 3.1, so every line names card 3.1.
+ * names a card the tab does not draw. The filings of cards 3.2 and 3.3 are a
+ * subset of those of card 3.1, so every line names card 3.1.
  */
 export const Sources: Story = {
 	play: async ({ canvasElement }) => {
@@ -105,6 +122,7 @@ export const Sources: Story = {
 		const feeds = await canvas.findAllByText(/^Feeds /);
 		const drawn = [
 			"Ratios Against Their Own Ten Years and the Sector",
+			"Earnings Yield and FCF Yield Next to the 10-Year Treasury",
 			"How the Ratios Are Built",
 		];
 
@@ -187,6 +205,70 @@ export const LoadedOnPhone: Story = {
 
 		await expect(result).toBe(expectedResult);
 	},
+};
+
+/** Returns the number of bars in each group of card 3.2. */
+async function yieldBars(canvasElement: HTMLElement): Promise<number[]> {
+	const plot = await within(canvasElement).findByRole("list", {
+		name: "Fiscal years",
+	});
+	return within(plot)
+		.getAllByRole("listitem")
+		.map((group) => within(group).queryAllByRole("button").length);
+}
+
+/**
+ * Play test: card 3.2 draws one group of three bars for each of the ten
+ * fiscal year ends and one for now.
+ */
+export const Yields: Story = {
+	play: async ({ canvasElement }) => {
+		const expectedResult = Array(11).fill(3);
+
+		const result = await yieldBars(canvasElement);
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: with no FY2020 year-end price, the earnings yield and the FCF
+ * yield of FY2020 leave a gap, and the Treasury bar stays.
+ */
+export const YieldMissing: Story = {
+	parameters: { companyGateway: missingPriceGateway },
+	play: async ({ canvasElement }) => {
+		const expectedResult = 1;
+
+		const result = (await yieldBars(canvasElement))[4];
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/**
+ * Play test: on a phone, every bar of card 3.2 has a tap target at least
+ * 24 px wide and tall inside the plot, every bar draws, and the chart
+ * scrolls inside its card, so the page does not scroll sideways.
+ */
+export const YieldsOnPhone: Story = {
+	globals: { viewport: { value: "mobile1", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const plot = await within(canvasElement).findByRole("list", {
+			name: "Fiscal years",
+		});
+
+		const expectedResult = BAR_TARGETS_OK;
+
+		const result = barTargetsOf(plot);
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** The dark theme. The yield inks `chart-1`, `-3` and `-5` reach 3:1 there. */
+export const LoadedDark: Story = {
+	globals: { theme: "dark" },
 };
 
 /** The sections are still loading. */
