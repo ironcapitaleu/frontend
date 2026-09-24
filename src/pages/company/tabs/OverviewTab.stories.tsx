@@ -10,7 +10,7 @@ import { alwaysFailingCompanyGateway } from "../../../test/fixtures/companies/al
 import { OverviewTab } from "./OverviewTab";
 
 const failingGateway = alwaysFailingCompanyGateway();
-/** A gateway whose two Overview loads never answer, so both cards stay loading. */
+/** A gateway whose Overview and Financials loads never answer, so the three cards stay loading. */
 const pending = (): Promise<never> => new Promise(() => {});
 const neverAnsweringGateway: CompanyGateway = {
 	...failingGateway,
@@ -18,13 +18,18 @@ const neverAnsweringGateway: CompanyGateway = {
 	getFinancials: pending,
 };
 
-/** A gateway whose Overview section loads and whose Financials section fails. */
 const sampleGateway = sampleCompanyGateway();
 /** A gateway whose Valuation section fails, so the P/E, P/FCF and P/B medians are missing. */
 const valuationFailingGateway: CompanyGateway = {
 	...sampleGateway,
 	getValuation: failingGateway.getValuation,
 };
+/** A gateway whose Overview section fails and whose other sections load. */
+const overviewFailingGateway: CompanyGateway = {
+	...sampleGateway,
+	getOverview: failingGateway.getOverview,
+};
+/** A gateway whose Overview section loads and whose Financials section fails. */
 const financialsFailingGateway: CompanyGateway = {
 	...sampleGateway,
 	getFinancials: failingGateway.getFinancials,
@@ -178,6 +183,29 @@ export const KeyFigureSource: Story = {
 		);
 
 		await expect(result).toHaveTextContent(expectedResult);
+	},
+};
+
+/**
+ * Play test: the key figures read the masthead and Financials, not Overview.
+ * So when Overview fails, card 1.3 still shows each figure, and only the
+ * medians that Overview holds are dimmed dashes.
+ */
+export const KeyFiguresWithoutOverview: Story = {
+	parameters: { companyGateway: overviewFailingGateway },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const row = await canvas.findByRole("row", { name: /^Operating margin / });
+
+		const expectedResult = { figureMissing: false, median: "—" };
+
+		const cells = within(row).getAllByRole("cell");
+		const result = {
+			figureMissing: cells[0]?.textContent === "—",
+			median: cells.at(-1)?.textContent,
+		};
+
+		await expect(result).toEqual(expectedResult);
 	},
 };
 

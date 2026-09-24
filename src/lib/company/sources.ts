@@ -228,17 +228,14 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		tab: "overview",
 		label: "Key Figures",
 		company: (sections) =>
-			sections.overview &&
-			keyFigureKeys.map((key) => keyFigureOf(key, sections)),
-		sector: ({ overview, valuation }) =>
-			overview && [
-				...overview.sectorBenchmarks
-					.filter(({ metric }) => !valuationKeyFigures.has(metric))
-					.map((row) => row.median),
-				...(valuation?.sectorBenchmarks ?? [])
-					.filter(({ metric }) => valuationKeyFigures.has(metric))
-					.map((row) => row.median),
-			],
+			sections.masthead && sections.financials
+				? keyFigureKeys.map((key) => keyFigureOf(key, sections))
+				: null,
+		// The medians the card draws: every key figure but market cap.
+		sector: (sections) =>
+			keyFigureKeys
+				.filter((key) => key !== "marketCap")
+				.map((key) => sectorMedianOf(key, sections)),
 	},
 	financialPosition: {
 		tab: "overview",

@@ -1,4 +1,5 @@
 import type { SharePart } from "@/components/company/ShareBar";
+import type { CompanySectionKey, CompanyState } from "@/hooks/useCompany";
 import {
 	formatMarketCap,
 	formatNumber,
@@ -113,4 +114,36 @@ export function joinSections(
 		Object.entries(sections).filter(([, part]) => part !== null),
 	);
 	return { ...first, ...Object.fromEntries(parts) };
+}
+
+/**
+ * Returns the state of the `lead` load, held back until each load of
+ * `others` has loaded too. It is loading while one of them loads, and failed
+ * when one of them is missing or fails. Card 1.3 leads with Financials and
+ * waits for the masthead, the two sections its figures read, so no figure
+ * shows a dash while it loads. The sector medians read Overview and
+ * Valuation, and a median whose section has not loaded shows the dash, as
+ * the data-model note says.
+ */
+export function heldBack<K extends CompanySectionKey>(
+	lead: CompanyState<K>,
+	others: readonly CompanyState<CompanySectionKey>[],
+): CompanyState<K> {
+	if (lead.status !== "loaded") return lead;
+	if (others.some(({ status }) => status === "loading")) {
+		return { status: "loading" };
+	}
+	for (const other of others) {
+		if (other.status === "missing" || other.status === "failed") {
+			return { status: "failed", error: other.error };
+		}
+	}
+	return lead;
+}
+
+/** Returns the sections of a load, or `null` until it loads. */
+export function loadedSections<K extends CompanySectionKey>(
+	state: CompanyState<K>,
+): Nullable<CompletedSections> {
+	return state.status === "loaded" ? state.sections : null;
 }

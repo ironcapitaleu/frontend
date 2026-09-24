@@ -16,24 +16,17 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { Text } from "@/components/ui/text";
-import {
-	type CompanySectionKey,
-	type CompanyState,
-	useCompany,
-} from "@/hooks/useCompany";
+import { type CompanyState, useCompany } from "@/hooks/useCompany";
 import { keyFigureKeys, keyFigureOf, metrics } from "@/lib/company/metrics";
 import { figureGroupsOf, sectorMedianOf } from "@/lib/company/sources";
-import type {
-	BlockKey,
-	CompletedSections,
-	Figure,
-	Unit,
-} from "@/lib/company/types";
+import type { BlockKey, CompletedSections, Figure } from "@/lib/company/types";
 import type { Ticker } from "@/lib/domain/ticker";
 import { cn } from "@/lib/utils";
 import {
 	formatInUnit,
+	heldBack,
 	joinSections,
+	loadedSections,
 	revenueParts,
 	tenYearsSeries,
 } from "./OverviewTab.logic";
@@ -61,13 +54,13 @@ export function OverviewTab({ ticker }: { ticker: Ticker }) {
 	const overview = useCompany(ticker, "overview");
 	const financials = useCompany(ticker, "financials");
 	const valuation = useCompany(ticker, "valuation");
-	const [m, o, f, v] = [masthead, overview, financials, valuation].map(
-		loadedSections,
-	);
 	// The same sections and groups on each render let `SourcesIndex` keep its memo.
 	const sections = React.useMemo(
-		() => joinSections([m, o, f, v]),
-		[m, o, f, v],
+		() =>
+			joinSections(
+				[masthead, overview, financials, valuation].map(loadedSections),
+			),
+		[masthead, overview, financials, valuation],
 	);
 	const groups = React.useMemo(
 		() =>
@@ -137,10 +130,7 @@ export function OverviewTab({ ticker }: { ticker: Ticker }) {
 				title="Key Figures"
 				caption="Latest price, fiscal year and quarter · Sector median of the peer group · Form 10-K and 10-Q"
 			>
-				<Loaded
-					state={heldBack(overview, [masthead, financials])}
-					what="key figures"
-				>
+				<Loaded state={heldBack(financials, [masthead])} what="key figures">
 					{() => sections && <KeyFigures sections={sections} />}
 				</Loaded>
 			</CompanyCard>
@@ -149,33 +139,6 @@ export function OverviewTab({ ticker }: { ticker: Ticker }) {
 			</div>
 		</CompanyCardGrid>
 	);
-}
-
-/**
- * Returns the state of the Overview load, held back until each load of
- * `others` has loaded too. It is loading while one of them loads, and failed
- * when one of them fails. Card 1.3 needs the masthead and Financials for its
- * figures, so it never shows a dash for a figure that is still loading.
- */
-function heldBack(
-	overview: CompanyState<"overview">,
-	others: readonly CompanyState<CompanySectionKey>[],
-): CompanyState<"overview"> {
-	if (overview.status !== "loaded") return overview;
-	if (others.some(({ status }) => status === "loading")) {
-		return { status: "loading" };
-	}
-	for (const other of others) {
-		if (other.status === "missing" || other.status === "failed") {
-			return { status: "failed", error: other.error };
-		}
-	}
-	return overview;
-}
-
-/** The sections of a load, or `null` until it loads. */
-function loadedSections<K extends CompanySectionKey>(state: CompanyState<K>) {
-	return state.status === "loaded" ? state.sections : null;
 }
 
 /**
@@ -196,16 +159,12 @@ function KeyFigures({ sections }: { sections: CompletedSections }) {
 				{keyFigureKeys.map((key) => (
 					<TableRow key={key}>
 						<TableHead scope="row">{metrics[key].name}</TableHead>
-						<FigureCell
-							figure={keyFigureOf(key, sections)}
-							unit={metrics[key].unit}
-						/>
+						<FigureCell figure={keyFigureOf(key, sections)} />
 						{key === "marketCap" ? (
 							<TableCell />
 						) : (
 							<FigureCell
 								figure={sectorMedianOf(key, sections)}
-								unit={metrics[key].unit}
 								className="text-muted-foreground"
 							/>
 						)}
@@ -219,18 +178,16 @@ function KeyFigures({ sections }: { sections: CompletedSections }) {
 /** A right-aligned mono figure that opens its sources, or the dimmed dash when it is missing. */
 function FigureCell({
 	figure,
-	unit,
 	className,
 }: {
 	figure: Figure;
-	unit: Unit;
 	className?: string;
 }) {
 	return (
 		<TableCell className={cn("text-right font-monospace", className)}>
 			{figure !== null && typeof figure.value === "number" ? (
 				<SourceTrigger claim={figure}>
-					{formatInUnit(figure.value, unit)}
+					{formatInUnit(figure.value, figure.unit)}
 				</SourceTrigger>
 			) : (
 				<span className={MISSING_INK}>{MISSING}</span>

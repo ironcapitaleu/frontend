@@ -113,18 +113,44 @@ describe("claimsOf", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should hold the Overview medians and the P/E, P/FCF and P/B medians of Valuation when the sector figures of Key Figures are read", () => {
+	it("should hold the Overview medians and the P/E, P/FCF and P/B medians of Valuation in card order when the sector figures of Key Figures are read", () => {
 		// EV/EBIT is not a key figure, so its median stays out.
+		const rows = [...overview.sectorBenchmarks, ...valuation.sectorBenchmarks];
 		const expectedResult = [
-			...overview.sectorBenchmarks,
-			...valuation.sectorBenchmarks.filter(
-				({ metric }) => metric !== "enterpriseValueToEbit",
-			),
-		].map(({ median }) => claim(median));
+			"priceToEarnings",
+			"priceToFreeCashFlow",
+			"priceToBook",
+			"operatingMargin",
+			"returnOnEquity",
+			"dividendYield",
+			"buybackYield",
+		].map((metric) =>
+			claim(rows.find((row) => row.metric === metric)?.median ?? null),
+		);
 
 		const result = claimsOf("keyFigures", "sector", sections);
 
 		expect(result).toEqual(expectedResult);
+	});
+
+	it("should leave out a benchmark the card does not draw when Overview lists one", () => {
+		const [first] = overview.sectorBenchmarks;
+		const extra = completeSections({
+			...fakeCompanyReport,
+			overview: {
+				...overview,
+				sectorBenchmarks: [
+					...overview.sectorBenchmarks,
+					{ ...first, metric: "enterpriseValueToEbit" },
+				],
+			},
+		});
+
+		const expectedResult = claimsOf("keyFigures", "sector", sections).length;
+
+		const result = claimsOf("keyFigures", "sector", extra).length;
+
+		expect(result).toBe(expectedResult);
 	});
 
 	it("should hold only the Overview medians when the sector figures of Key Figures are read and the Valuation section has not loaded", () => {
@@ -452,9 +478,9 @@ describe("figureGroupsOf", () => {
 			financials: null,
 		});
 
+		// Key Figures keeps only its sector group: its company figures read Financials.
 		const expectedResult = [
 			"business",
-			"keyFigures",
 			"keyFigures",
 			"ownership",
 			"profile",
