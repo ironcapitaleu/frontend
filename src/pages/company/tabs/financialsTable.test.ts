@@ -8,6 +8,8 @@ import type {
 	Unit,
 } from "@/lib/company/types";
 import {
+	barScale,
+	chartTable,
 	formatStatementValue,
 	lineUnitNote,
 	newestFirst,
@@ -222,6 +224,52 @@ describe("formatStatementValue", () => {
 		const expectedResult = "n/a";
 
 		const result = formatStatementValue(claim("n/a", "text"), "billions");
+
+		expect(result).toBe(expectedResult);
+	});
+});
+
+describe("chartTable", () => {
+	it("should keep the chart lines in their chart order when the table lists them in another", () => {
+		const periods = [period(2026, null)];
+		const netIncome = {
+			...line("usd", periods, [1]),
+			key: "netIncome" as const,
+		};
+		const table = { periods, lines: [netIncome, line("usd", periods, [2])] };
+
+		const expectedResult = ["revenue", "netIncome"];
+
+		const result = chartTable(table, ["revenue", "netIncome"]).lines.map(
+			({ key }) => key,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("barScale", () => {
+	const periods = [period(2025, null), period(2026, null)];
+
+	it("should draw a negative value below the zero line when a line holds one", () => {
+		const { place } = barScale({
+			periods,
+			lines: [line("usd", periods, [3, -1])],
+		});
+
+		const expectedResult = { top: 75, height: 25 };
+
+		const result = place(-1);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should put the zero line at the foot of the plot when every value is zero", () => {
+		const table = { periods, lines: [line("usd", periods, [0, 0])] };
+
+		const expectedResult = 100;
+
+		const result = barScale(table).zero;
 
 		expect(result).toBe(expectedResult);
 	});

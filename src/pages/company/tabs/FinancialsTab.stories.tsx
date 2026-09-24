@@ -68,20 +68,22 @@ export default meta;
 type Story = StoryObj<typeof FinancialsTab>;
 
 /**
- * Play test: the card title follows the statement switch and carries the
- * number 2.2, the second card of the Financials row (DESIGN.md §8).
+ * Play test: the card titles follow the statement switch. The chart is card
+ * 2.1 and the statement table card 2.2 (DESIGN.md §8).
  */
 export const Default: Story = {
 	globals: desktop,
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		const title = async () =>
-			(await canvas.findByRole("heading", { name: /^2\.2 / })).textContent;
+			(await canvas.findAllByRole("heading", { name: /^2\.\d / }))
+				.map(({ textContent }) => textContent)
+				.join(", ");
 
 		const expectedResult = [
-			"2.2 Income Statement",
-			"2.2 Balance Sheet",
-			"2.2 Cash Flow",
+			"2.1 Income Statement Chart, 2.2 Income Statement",
+			"2.1 Balance Sheet Chart, 2.2 Balance Sheet",
+			"2.1 Cash Flow Chart, 2.2 Cash Flow",
 		];
 
 		const result = [await title()];
@@ -220,10 +222,38 @@ export const MissingFigure: Story = {
 };
 
 /**
- * Play test: the Sources index names the statement tables and no chart, since
- * the chart cards are not on the page yet.
+ * Play test: a click on a bar pins its sources, and the "Data" button swaps
+ * the chart for a table of the same figures.
  */
-export const SourcesNameNoChart: Story = {
+export const ChartSourcesAndData: Story = {
+	globals: desktop,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const body = within(canvasElement.ownerDocument.body);
+
+		const expectedResult = { sources: "Sources of Revenue", table: true };
+
+		const bars = await canvas.findAllByRole("button", { name: /^Revenue: / });
+		await userEvent.click(bars[0] as HTMLElement);
+		const sources = (await body.findByRole("dialog")).getAttribute(
+			"aria-label",
+		);
+		await userEvent.keyboard("{Escape}");
+		await userEvent.click(canvas.getByRole("button", { name: "Data" }));
+		const result = {
+			sources,
+			table:
+				canvas.queryByRole("table", {
+					name: "Income statement chart table",
+				}) !== null,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: the Sources index names the statement tables and the charts. */
+export const SourcesNameCharts: Story = {
 	globals: desktop,
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
@@ -236,11 +266,11 @@ export const SourcesNameNoChart: Story = {
 			.map((line) => line.textContent)
 			.join(" ");
 
-		const expectedResult = { namesTable: true, namesChart: false };
+		const expectedResult = { namesTable: true, namesChart: true };
 
 		const result = {
 			namesTable: feeds.includes("Income statement table"),
-			namesChart: /chart/i.test(feeds),
+			namesChart: feeds.includes("Income statement chart"),
 		};
 
 		await expect(result).toEqual(expectedResult);
@@ -301,7 +331,7 @@ export const PhoneNewestFirst: Story = {
 				.getAllByRole("columnheader")
 				.slice(1, 3)
 				.map((header) => header.textContent),
-			caption: canvas.queryByText(/^FY2017–FY2026 · /) !== null,
+			caption: canvas.queryAllByText(/^FY2017–FY2026 · /).length === 2,
 		};
 
 		await expect(result).toEqual(expectedResult);

@@ -8,6 +8,7 @@ import type {
 	FigureGroup,
 	FigureGroupRef,
 	FigureKind,
+	FinancialsSection,
 	LineKey,
 	MetricKey,
 	Nullable,
@@ -18,6 +19,16 @@ import type {
 	StatementTable,
 	TabKey,
 } from "./types";
+
+/**
+ * The lines each Financials chart draws, as bars in this order (DESIGN.md §8
+ * "Financials"). The chart blocks read these lines only.
+ */
+export const chartLines: Record<keyof FinancialsSection, readonly LineKey[]> = {
+	income: ["revenue", "netIncome"],
+	balance: ["totalAssets", "totalLiabilities", "shareholdersEquity"],
+	cashFlow: ["operatingCashFlow", "capitalExpenditure", "shareRepurchases"],
+};
 
 /**
  * Returns the claims of one kind that `block` draws. The `sector` claims are
@@ -259,15 +270,12 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 				shareholderReturns.latestDividendDeclared,
 			],
 	},
-	// DESIGN.md §8 names the lines of the income chart only. The other two
-	// charts read every line of their annual table until the Financials tab
-	// ticket names them. Free cash flow waits for STA-229.
+	// Free cash flow joins the income chart with STA-229.
 	incomeChart: {
 		tab: "financials",
 		label: "Income statement chart",
 		company: ({ financials }) =>
-			financials &&
-			pointsOf(financials.income.annual, ["revenue", "netIncome"]),
+			financials && pointsOf(financials.income.annual, chartLines.income),
 	},
 	incomeTable: {
 		tab: "financials",
@@ -282,7 +290,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		tab: "financials",
 		label: "Balance sheet chart",
 		company: ({ financials }) =>
-			financials && pointsOf(financials.balance.annual),
+			financials && pointsOf(financials.balance.annual, chartLines.balance),
 	},
 	balanceTable: {
 		tab: "financials",
@@ -297,7 +305,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		tab: "financials",
 		label: "Cash flow chart",
 		company: ({ financials }) =>
-			financials && pointsOf(financials.cashFlow.annual),
+			financials && pointsOf(financials.cashFlow.annual, chartLines.cashFlow),
 	},
 	cashFlowTable: {
 		tab: "financials",
