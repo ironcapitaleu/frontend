@@ -8,6 +8,12 @@ import { MISSING, MISSING_INK } from "../screener/format";
 /** The chart draws at most this many years, the latest ones. */
 const MAX_YEARS = 10;
 
+/**
+ * The least height of a known non-zero bar, in percent of the plot. About one
+ * pixel of the 64 px plot, so a small value never reads as a missing year.
+ */
+const MIN_HEIGHT = 2;
+
 /** Props for {@link MiniBarChart}. */
 interface MiniBarChartProps
 	extends Omit<React.ComponentProps<"figure">, "children"> {
@@ -19,6 +25,8 @@ interface MiniBarChartProps
 
 /** How one year draws. */
 interface MiniBar {
+	/** A React key built from the index and the year, since a year can repeat. */
+	readonly key: string;
 	/** The year as the page prints it, such as `FY2026`. */
 	readonly year: string;
 	/** `null` when the point is missing or its value is not a finite number. */
@@ -55,10 +63,15 @@ function miniBars(series: Series): MiniBars {
 	const zero = span === 0 ? 100 : (high / span) * 100;
 	const bars = years.map((period, index) => {
 		const value = values[index] ?? null;
+		const room = value !== null && value > 0 ? zero : 100 - zero;
 		const height =
-			value === null || span === 0 ? 0 : (Math.abs(value) / span) * 100;
+			value === null || value === 0 || span === 0
+				? 0
+				: Math.min(Math.max((Math.abs(value) / span) * 100, MIN_HEIGHT), room);
+		const year = `FY${period.fiscalYear}`;
 		return {
-			year: `FY${period.fiscalYear}`,
+			key: `${index}-${year}`,
+			year,
 			value,
 			top: value !== null && value > 0 ? zero - height : zero,
 			height,
@@ -112,7 +125,7 @@ function MiniBarChart({
 			</figcaption>
 			<div className="relative h-16 flex gap-0.5" aria-hidden="true">
 				{bars.map((bar, index) => (
-					<div key={bar.year} className="relative flex-1">
+					<div key={bar.key} className="relative flex-1">
 						{bar.value === null ? (
 							<span
 								data-slot="mini-bar-chart-gap"
@@ -146,7 +159,7 @@ function MiniBarChart({
 			</div>
 			<ul className="sr-only">
 				{bars.map((bar) => (
-					<li key={bar.year}>{`${bar.year}: ${format(bar.value)}`}</li>
+					<li key={bar.key}>{`${bar.year}: ${format(bar.value)}`}</li>
 				))}
 			</ul>
 		</figure>

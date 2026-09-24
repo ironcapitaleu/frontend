@@ -63,7 +63,9 @@ describe("miniBars", () => {
 	});
 
 	it("should draw one full bar when the series has a single year", () => {
-		const expectedResult = [{ year: "FY2026", value: 5, top: 0, height: 100 }];
+		const expectedResult = [
+			{ key: "0-FY2026", year: "FY2026", value: 5, top: 0, height: 100 },
+		];
 
 		const result = miniBars(seriesOf(5)).bars;
 
@@ -77,6 +79,25 @@ describe("miniBars", () => {
 		const result = { zero, heights: bars.map((bar) => bar.height) };
 
 		expect(result).toEqual(expectedResult);
+	});
+
+	it("should draw a small known value at the least height when it is far below the largest", () => {
+		const expectedResult = [100, 2];
+
+		const result = heights(seriesOf(1000, 1));
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give each bar its own key when two periods share a fiscal year", () => {
+		const expectedResult = 2;
+
+		const quarterly = seriesOf(1, 2);
+		const period = quarterly.periods[0] as Series["periods"][number];
+		const { bars } = miniBars({ ...quarterly, periods: [period, period] });
+		const result = new Set(bars.map((bar) => bar.key)).size;
+
+		expect(result).toBe(expectedResult);
 	});
 
 	it("should keep only the last ten years when the series has more", () => {
