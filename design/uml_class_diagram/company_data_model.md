@@ -781,9 +781,10 @@ figure up to a fourth quarter is the fiscal year of the annual table, and the
 figure up to a second or third quarter is the six-month or nine-month figure
 of the `yearToDate` table. The figure up to the quarter before is the first
 quarter or the year-to-date figure when a table reports it, and the reported
-quarters of the fiscal year otherwise. So the income statement gets
-Q4 = FY − Q1 − Q2 − Q3, and the cash flow statement gets Q2 = six months − Q1,
-Q3 = nine months − six months and Q4 = FY − nine months. A first quarter is
+quarters of the fiscal year otherwise. So a fourth quarter is FY − nine
+months when the `yearToDate` table reports the nine months, and
+FY − Q1 − Q2 − Q3 otherwise. The cash flow statement gets Q2 = six months − Q1
+and Q3 = nine months − six months. A first quarter is
 never derived. A missing input, a text value or an input with no period keeps
 the point `null`. When the quarterly window starts after the first quarter of
 a fiscal year, the earlier quarters of that year are outside the table. So the

@@ -144,7 +144,7 @@ describe("completeQuarters", () => {
 	});
 
 	it("should derive the fourth quarter as the fiscal year minus the first three quarters when the line is an income flow line", () => {
-		const statement: Statement = income;
+		const statement: Statement = { ...income, yearToDate: null };
 
 		const expectedResult = [760, 790, 810, 840];
 
