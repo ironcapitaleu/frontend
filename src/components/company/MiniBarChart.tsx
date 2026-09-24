@@ -3,7 +3,7 @@ import { useId } from "react";
 
 import type { Series } from "@/lib/company/types";
 import { cn } from "@/lib/utils";
-import { MISSING } from "../screener/format";
+import { MISSING, MISSING_INK } from "../screener/format";
 
 /** The chart draws at most this many years, the latest ones. */
 const MAX_YEARS = 10;
@@ -104,7 +104,7 @@ function MiniBarChart({
 				<span
 					className={cn(
 						"font-monospace text-lg",
-						latest?.value == null && "text-muted-foreground/60",
+						latest?.value == null && MISSING_INK,
 					)}
 				>
 					{format(latest?.value ?? null)}
