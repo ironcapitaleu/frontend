@@ -9,6 +9,7 @@ import {
 	figureGroupsOf,
 	isPrintedOnly,
 	isSectorBenchmark,
+	sectorMedianOf,
 	sourcesOf,
 } from "./sources";
 import type {
@@ -90,9 +91,14 @@ function documentIds(claims: Claim[]): string[] {
 }
 
 describe("claimsOf", () => {
-	// TODO(STA-229): the company claims of Key Figures stay empty until
-	// `evaluateMetric` exists, so this test cannot fail before then. The next
-	// test pins the sector side exactly, so it binds today.
+	it("should read the eight key figures when the company figures of Key Figures are read", () => {
+		const expectedResult = 8;
+
+		const result = claimsOf("keyFigures", "company", sections).length;
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should share no ClaimId when the two kinds of Key Figures are read", () => {
 		const sector = new Set(
 			claimsOf("keyFigures", "sector", sections).map(({ id }) => id),
@@ -107,18 +113,44 @@ describe("claimsOf", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should hold the Overview medians and the P/E, P/FCF and P/B medians of Valuation when the sector figures of Key Figures are read", () => {
+	it("should hold the Overview medians and the P/E, P/FCF and P/B medians of Valuation in card order when the sector figures of Key Figures are read", () => {
 		// EV/EBIT is not a key figure, so its median stays out.
+		const rows = [...overview.sectorBenchmarks, ...valuation.sectorBenchmarks];
 		const expectedResult = [
-			...overview.sectorBenchmarks,
-			...valuation.sectorBenchmarks.filter(
-				({ metric }) => metric !== "enterpriseValueToEbit",
-			),
-		].map(({ median }) => claim(median));
+			"priceToEarnings",
+			"priceToFreeCashFlow",
+			"priceToBook",
+			"operatingMargin",
+			"returnOnEquity",
+			"dividendYield",
+			"buybackYield",
+		].map((metric) =>
+			claim(rows.find((row) => row.metric === metric)?.median ?? null),
+		);
 
 		const result = claimsOf("keyFigures", "sector", sections);
 
 		expect(result).toEqual(expectedResult);
+	});
+
+	it("should leave out a benchmark the card does not draw when Overview lists one", () => {
+		const [first] = overview.sectorBenchmarks;
+		const extra = completeSections({
+			...fakeCompanyReport,
+			overview: {
+				...overview,
+				sectorBenchmarks: [
+					...overview.sectorBenchmarks,
+					{ ...first, metric: "enterpriseValueToEbit" },
+				],
+			},
+		});
+
+		const expectedResult = claimsOf("keyFigures", "sector", sections).length;
+
+		const result = claimsOf("keyFigures", "sector", extra).length;
+
+		expect(result).toBe(expectedResult);
 	});
 
 	it("should hold only the Overview medians when the sector figures of Key Figures are read and the Valuation section has not loaded", () => {
@@ -135,6 +167,18 @@ describe("claimsOf", () => {
 
 		expect(result).toEqual(expectedResult);
 	});
+
+	it.each([
+		["priceToEarnings", "valuation.sectorBenchmarks.priceToEarnings.median"],
+		["returnOnEquity", "overview.sectorBenchmarks.returnOnEquity.median"],
+	] as const)(
+		"should read the median of %s from its section when sectorMedianOf is called",
+		(metric, expectedResult) => {
+			const result = sectorMedianOf(metric, sections)?.id;
+
+			expect(result).toBe(expectedResult);
+		},
+	);
 
 	it("should return no claim when a block with no sector reader is read for sector figures", () => {
 		const expectedResult: Claim[] = [];
@@ -434,9 +478,9 @@ describe("figureGroupsOf", () => {
 			financials: null,
 		});
 
+		// Key Figures keeps only its sector group: its company figures read Financials.
 		const expectedResult = [
 			"business",
-			"keyFigures",
 			"keyFigures",
 			"ownership",
 			"profile",

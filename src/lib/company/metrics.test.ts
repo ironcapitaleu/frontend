@@ -12,6 +12,8 @@ import {
 	fundChange,
 	fundShare,
 	isValidFigureRef,
+	keyFigureKeys,
+	keyFigureOf,
 	type MetricResult,
 	type Metric,
 	metrics,
@@ -1038,6 +1040,38 @@ describe("resolve", () => {
 		const result = resolve(ref, sections, null);
 
 		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("keyFigureOf", () => {
+	it("should give each key figure the claim of evaluateMetric, the operating margin at the latest fiscal year, when every section has loaded", () => {
+		const expectedResult = [
+			"metric.marketCap",
+			"metric.priceToEarnings",
+			"metric.priceToFreeCashFlow",
+			"metric.priceToBook",
+			"metric.operatingMargin.FY2025",
+			"metric.returnOnEquity",
+			"metric.dividendYield",
+			"metric.buybackYield",
+		];
+
+		const result = keyFigureKeys.map((key) => keyFigureOf(key, completed)?.id);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give null when the masthead has not loaded, so market cap has no price", () => {
+		const withoutMasthead = completeSections({
+			...fakeCompanyReport,
+			masthead: null,
+		});
+
+		const expectedResult = null;
+
+		const result = keyFigureOf("marketCap", withoutMasthead);
+
+		expect(result).toBe(expectedResult);
 	});
 });
 
