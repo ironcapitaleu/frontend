@@ -58,7 +58,7 @@ export const Loaded: Story = {
 
 		const expectedResult = ["5.1 Owned By: Largest Funds"];
 
-		const headings = await canvas.findAllByRole("heading", { level: 3 });
+		const headings = await canvas.findAllByRole("heading", { level: 2 });
 		const result = headings
 			.map((heading) => heading.textContent)
 			.filter((title) => /^\d+\.\d+ /.test(title ?? ""));

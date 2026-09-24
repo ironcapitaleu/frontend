@@ -1,5 +1,5 @@
 import { CompanyCard, CompanyCardGrid } from "@/components/company/CompanyCard";
-import { formatDate, SourceTrigger } from "@/components/company/SourceCard";
+import { SourceTrigger } from "@/components/company/SourceCard";
 import { SourcesIndex } from "@/components/company/SourcesIndex";
 import {
 	formatPercent,
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Text } from "@/components/ui/text";
 import { useCompany } from "../../../hooks/useCompany";
+import { formatDate } from "../../../lib/company/dates";
 import { fundChange, fundShare } from "../../../lib/company/metrics";
 import { figureGroupsOf } from "../../../lib/company/sources";
 import type { Figure, RelationshipsSection } from "../../../lib/company/types";
