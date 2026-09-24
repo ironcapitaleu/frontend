@@ -20,6 +20,7 @@ import {
 } from "./sample/sources";
 import { meridianValuation, treasuryYields } from "./sample/valuation";
 import { sampleCompanyGateway } from "./sampleCompanyGateway";
+import { sourcesOf } from "./sources";
 import type {
 	Claim,
 	LineKey,
@@ -68,6 +69,31 @@ function everyClaim(): Claim[] {
 			typeof value === "object" && value !== null && isClaim(value),
 	);
 	return [...new Set(claims)];
+}
+
+/** Returns every accession number that `value` names, in order. */
+function accessionNumbersOf(value: unknown): string[] {
+	const text = JSON.stringify(value);
+	return [...text.matchAll(/"accessionNumber":"([^"]*)"/g)].map(
+		([, accessionNumber]) => accessionNumber,
+	);
+}
+
+/**
+ * Returns the company claims under `value`. It stops at each claim, and it
+ * skips the `sectorBenchmarks` lists, because the Filings walk skips the
+ * sector figures (`isSectorBenchmark`).
+ */
+function companyClaimsOf(value: unknown): Claim[] {
+	if (value === null || typeof value !== "object") {
+		return [];
+	}
+	if (isClaim(value)) {
+		return [value];
+	}
+	return Object.entries(value).flatMap(([key, child]) =>
+		key === "sectorBenchmarks" ? [] : companyClaimsOf(child),
+	);
 }
 
 function label(period: Period): string {
@@ -1286,10 +1312,52 @@ describe("the MRDN management sample data", () => {
 describe("the MRDN filings sample data", () => {
 	const { filings } = meridianFilingsSection;
 
-	it("should list the filings about Meridian by form when counting the filings that the claims read", () => {
+	it("should give every filing an accession number in the SEC form when reading every section", () => {
+		const expectedResult: string[] = [];
+
+		const result = accessionNumbersOf([
+			...SECTIONS,
+			meridianFilingsSection,
+		]).filter(
+			(accessionNumber) => !/^\d{10}-\d{2}-\d{6}$/.test(accessionNumber),
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should list every filing that a company claim cites when the Filings section is built", () => {
+		const listed = filings.map((filing) => filing.accessionNumber);
+
+		const expectedResult: string[] = [];
+
+		const result = sourcesOf(companyClaimsOf(SECTIONS))
+			.groups.map(({ document }) => document)
+			.filter((document) => document.kind === "filing")
+			.map((document) => document.accessionNumber)
+			.filter((accessionNumber) => !listed.includes(accessionNumber));
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should list no filing behind a sector benchmark when the Filings section is built", () => {
+		const benchmarkFilings = accessionNumbersOf([
+			meridianOverview.sectorBenchmarks,
+			meridianValuation.sectorBenchmarks,
+		]);
+
+		const expectedResult: string[] = [];
+
+		const result = filings
+			.map((filing) => filing.accessionNumber)
+			.filter((accessionNumber) => benchmarkFilings.includes(accessionNumber));
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should list the cited filings by form when counting the filings that the company claims read", () => {
 		const expectedResult = {
 			"10-K": 10,
-			"10-Q": 7,
+			"10-Q": 13,
 			"8-K": 1,
 			"DEF 14A": 10,
 			"Form 4": 248,
@@ -1306,30 +1374,18 @@ describe("the MRDN filings sample data", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should point every claim to a listed filing or a market dataset when the document is about Meridian", () => {
+	it("should read every market figure from the Nasdaq prices or the Treasury yields when reading every claim", () => {
 		const datasets = new Set([nasdaqPrices, treasuryYields]);
 
 		const expectedResult: string[] = [];
 
 		const result = everyClaim()
-			.filter(({ source }) => {
-				if (source.kind === "derived") {
-					return false;
-				}
-				const { document } = source;
-				if (document.kind === "market") {
-					return !datasets.has(document);
-				}
-				const aboutAnotherCompany =
-					(document.form === "10-K" || document.form === "10-Q") &&
-					document.filer !== MERIDIAN;
-				return (
-					!aboutAnotherCompany &&
-					!filings.some(
-						(filing) => filing.accessionNumber === document.accessionNumber,
-					)
-				);
-			})
+			.filter(
+				({ source }) =>
+					source.kind === "reported" &&
+					source.document.kind === "market" &&
+					!datasets.has(source.document),
+			)
 			.map((claim) => claim.id);
 
 		expect(result).toEqual(expectedResult);
@@ -1341,7 +1397,11 @@ describe("the MRDN filings sample data", () => {
 			.sort();
 
 		const result = filings
-			.filter((filing) => filing.form === "10-K" || filing.form === "10-Q")
+			.filter(
+				(filing) =>
+					(filing.form === "10-K" || filing.form === "10-Q") &&
+					filing.filer === MERIDIAN,
+			)
 			.map((filing) => filing.accessionNumber)
 			.sort();
 
