@@ -302,7 +302,9 @@ Rules for the screener:
 > which the user approved on 2026-09-24. The made-up figures for Meridian
 > Semiconductor (MRDN) stay on the canvas. The epic covers US companies that
 > file with the SEC. Pages for companies that report elsewhere are a later
-> decision.
+> decision. Whether the six printed regions fit both A4 and Letter is open.
+> The Export milestone of the epic owns the print tickets and records the
+> answer here.
 
 The company page is part of the product machinery, so the modern pole leads.
 The company name in the masthead is in `font-classic`, like the name in the
@@ -410,6 +412,9 @@ two widths, the cards stack in one column and the rest of the desktop layout
 holds. The approved mockup draws a 1440 px and a 390 px board only, so this
 middle width follows the screener, not a drawing.
 
+Below 1024 px, every table that does not fit its card scrolls sideways, and its
+first column stays fixed. This rule holds on every tab and covers every table.
+
 Every tab shares these regions, from top to bottom:
 
 1. **Masthead.** The company name in `font-classic`, then the listings, sector,
@@ -441,8 +446,6 @@ Shell milestone of the epic adds a test that the tab strip follows the URL
 table. Each tab ticket adds a story test that checks its card titles against
 this section.
 
-Below 1024 px, a wide table scrolls sideways, and its first column stays fixed.
-This rule holds on every tab.
 
 Rules for the shared layout:
 
@@ -589,11 +592,12 @@ On a phone, the cards stack in the order above.
 Filings has one card:
 
 1. **Filings We Read.** A row of filter chips by filing type, each with its
-   count, above the list of filings, newest first. Each row shows the type,
-   the period, the filing date, the figures the filing feeds, and a link to
-   SEC EDGAR.
+   count, above the list of filings, newest first. On a phone, the chips
+   scroll sideways in one row. Each row of the list shows the type, the
+   period, the filing date, the figures the filing feeds, and a link to SEC
+   EDGAR.
 
-The Filings table follows the wide-table rule of the shared layout.
+
 
 ### Print Summary
 
