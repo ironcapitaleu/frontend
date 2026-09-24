@@ -8,16 +8,10 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@/components/ui/sheet";
+import { usePhone } from "@/hooks/usePhone";
 import { formatDate } from "@/lib/company/dates";
 import type { Claim, ClaimId } from "@/lib/company/types";
 import { cn } from "@/lib/utils";
-
-/**
- * The width below which the page is a phone (DESIGN.md §8 "Shared Layout").
- * It stops just short of Tailwind's `md` at 768 px, so a fractional width
- * such as 767.5 px is a phone too.
- */
-const PHONE_QUERY = "(max-width: 767.98px)";
 
 /** How many inputs of a derived claim the card lists. It counts the rest. */
 const LISTED_INPUTS = 10;
@@ -149,7 +143,7 @@ type CardState = "closed" | "preview" | "pinned";
  * tap opens the card as a bottom sheet with a close button.
  */
 function SourceTrigger({ claim, children, className }: SourceTriggerProps) {
-	const phone = React.useSyncExternalStore(subscribeToPhone, isPhone);
+	const phone = usePhone();
 	const [state, setState] = React.useState<CardState>("closed");
 	// A change of layout closes the card, so a card pinned on a desktop does
 	// not reopen by itself after a trip through the phone layout.
@@ -228,16 +222,6 @@ function SourceTrigger({ claim, children, className }: SourceTriggerProps) {
 			</Popover.Portal>
 		</Popover.Root>
 	);
-}
-
-function isPhone(): boolean {
-	return window.matchMedia(PHONE_QUERY).matches;
-}
-
-function subscribeToPhone(onChange: () => void): () => void {
-	const query = window.matchMedia(PHONE_QUERY);
-	query.addEventListener("change", onChange);
-	return () => query.removeEventListener("change", onChange);
 }
 
 export {
