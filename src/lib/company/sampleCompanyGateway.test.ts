@@ -5,6 +5,7 @@ import { FailedCompanyRequest, MissingCompany } from "./errors";
 import { meridianFinancials } from "./sample/financials";
 import { meridianMasthead } from "./sample/masthead";
 import { meridianOverview } from "./sample/overview";
+import { meridianShareholderReturns } from "./sample/shareholderReturns";
 import { MERIDIAN, MissingSampleData, tenK } from "./sample/sources";
 import { meridianValuation } from "./sample/valuation";
 import { sampleCompanyGateway } from "./sampleCompanyGateway";
@@ -23,6 +24,7 @@ const SECTIONS = [
 	meridianOverview,
 	meridianFinancials,
 	meridianValuation,
+	meridianShareholderReturns,
 ];
 const STATEMENTS = {
 	income: meridianFinancials.income,
@@ -146,6 +148,26 @@ describe("sampleCompanyGateway", () => {
 		await expect(result).rejects.toEqual(expectedResult);
 	});
 
+	it("should resolve the MRDN shareholder returns when the ticker is MRDN", async () => {
+		const gateway = sampleCompanyGateway();
+
+		const expectedResult = meridianShareholderReturns;
+
+		const result = await gateway.getShareholderReturns(MRDN);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should reject the shareholder returns with MissingCompany when the ticker is not MRDN", async () => {
+		const gateway = sampleCompanyGateway();
+
+		const expectedResult = new MissingCompany(AAPL);
+
+		const result = gateway.getShareholderReturns(AAPL);
+
+		await expect(result).rejects.toEqual(expectedResult);
+	});
+
 	it("should resolve the masthead when the ticker is a new MRDN value parsed from lower case", async () => {
 		const gateway = sampleCompanyGateway();
 
@@ -188,12 +210,7 @@ describe("sampleCompanyGateway", () => {
 });
 
 describe("sampleCompanyGateway, sections with no sample data yet", () => {
-	const unserved = [
-		"getShareholderReturns",
-		"getRelationships",
-		"getManagement",
-		"getFilings",
-	] as const;
+	const unserved = ["getRelationships", "getManagement", "getFilings"] as const;
 
 	it("should reject each later tab section with FailedCompanyRequest when the ticker is MRDN", async () => {
 		const gateway = sampleCompanyGateway();
@@ -844,5 +861,110 @@ describe("the MRDN valuation sample data", () => {
 		const result = accessions(meridianValuation.sectorBenchmarks[0].median);
 
 		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("the MRDN shareholder returns sample data", () => {
+	const { annual } = meridianFinancials.cashFlow;
+	const years = annual.periods.map((period) => label(period));
+	const pointValue = (
+		series: { points: readonly (Claim | null)[] },
+		row: number,
+	) => Number(series.points[row]?.value);
+
+	it("should cover the fiscal years of the annual tables when reading each series", () => {
+		const { dividendPerShare, sharesRepurchased, sharesIssuedToStaff } =
+			meridianShareholderReturns;
+
+		const expectedResult = [years, years, years];
+
+		const result = [
+			dividendPerShare,
+			sharesRepurchased,
+			sharesIssuedToStaff,
+		].map((series) => series.periods.map((period) => label(period)));
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep dividends paid within 1% of the dividend per share times the diluted shares when reading every fiscal year", () => {
+		const { dividendPerShare } = meridianShareholderReturns;
+
+		const expectedResult: string[] = [];
+
+		const result = years.filter((year, row) => {
+			const paid = valueAt(annual, "dividendsPaid", year);
+			const declared =
+				pointValue(dividendPerShare, row) *
+				valueAt(meridianFinancials.income.annual, "dilutedShares", year);
+			return Math.abs(paid - declared) > paid * 0.01;
+		});
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should buy back shares worth the cash flow repurchases within 1% when pricing them at the mean of the year-end prices around the year", () => {
+		const { sharesRepurchased } = meridianShareholderReturns;
+		const prices = meridianMasthead.priceAtFiscalYearEnds.points.map((point) =>
+			Number(point?.value),
+		);
+
+		const expectedResult: string[] = [];
+
+		const result = years.filter((year, row) => {
+			const paid = valueAt(annual, "shareRepurchases", year);
+			const around = prices.slice(Math.max(row - 1, 0), row + 1);
+			const averagePrice =
+				around.reduce((total, price) => total + price, 0) / around.length;
+			const bought = pointValue(sharesRepurchased, row) * averagePrice;
+			return Math.abs(paid - bought) > paid * 0.01;
+		});
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should buy back no shares when the cash flow statement reports no repurchases", () => {
+		const { sharesRepurchased } = meridianShareholderReturns;
+
+		const expectedResult = ["FY2018", "FY2021", "FY2022"];
+
+		const result = years.filter(
+			(_, row) => pointValue(sharesRepurchased, row) === 0,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should equal the fall in diluted shares when netting the shares issued against the shares bought back from FY2018 to FY2026", () => {
+		const { sharesRepurchased, sharesIssuedToStaff } =
+			meridianShareholderReturns;
+		const { income } = meridianFinancials;
+
+		const expectedResult =
+			valueAt(income.annual, "dilutedShares", "FY2026") -
+			valueAt(income.annual, "dilutedShares", "FY2017");
+
+		const result = years
+			.slice(1)
+			.reduce(
+				(total, _, row) =>
+					total +
+					pointValue(sharesIssuedToStaff, row + 1) -
+					pointValue(sharesRepurchased, row + 1),
+				0,
+			);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should declare a quarter of the FY2026 dividend per share when reading the latest dividend declared", () => {
+		const { dividendPerShare, latestDividendDeclared } =
+			meridianShareholderReturns;
+
+		const expectedResult = pointValue(dividendPerShare, 9) / 4;
+
+		const result = Number(latestDividendDeclared?.value);
+
+		expect(result).toBeCloseTo(expectedResult, 6);
 	});
 });

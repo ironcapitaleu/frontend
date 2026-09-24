@@ -4,6 +4,7 @@ import type { CompanyGateway } from "./gateway";
 import { meridianFinancials } from "./sample/financials";
 import { MERIDIAN_TICKER, meridianMasthead } from "./sample/masthead";
 import { meridianOverview } from "./sample/overview";
+import { meridianShareholderReturns } from "./sample/shareholderReturns";
 import { meridianValuation } from "./sample/valuation";
 
 /**
@@ -14,9 +15,8 @@ import { meridianValuation } from "./sample/valuation";
  *
  * Each method resolves the MRDN section for `MRDN`. For any other ticker, it
  * rejects with {@link MissingCompany}. The data lives in `sample/`. The
- * Shareholder returns, Relationships, Management and Filings sections have no
- * sample data yet, so their methods reject with {@link FailedCompanyRequest}
- * for `MRDN`.
+ * Relationships, Management and Filings sections have no sample data yet, so
+ * their methods reject with {@link FailedCompanyRequest} for `MRDN`.
  */
 export function sampleCompanyGateway(): CompanyGateway {
 	const serve =
@@ -40,7 +40,7 @@ export function sampleCompanyGateway(): CompanyGateway {
 		getOverview: serve(meridianOverview),
 		getFinancials: serve(meridianFinancials),
 		getValuation: serve(meridianValuation),
-		getShareholderReturns: unserved("shareholder returns"),
+		getShareholderReturns: serve(meridianShareholderReturns),
 		getRelationships: unserved("relationships"),
 		getManagement: unserved("management"),
 		getFilings: unserved("filings"),
