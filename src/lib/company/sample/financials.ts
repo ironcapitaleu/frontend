@@ -19,12 +19,26 @@ import {
 	yearToDatePeriod,
 } from "./calendar";
 import { type StatementKey, statementLines } from "./lines";
-import { meridianFilings, reported, tenK, tenQ } from "./sources";
+import {
+	MissingSampleData,
+	meridianFilings,
+	reported,
+	tenK,
+	tenQ,
+} from "./sources";
 
 // ---- The windows: the latest period that a filing covers ----
 
 function latest(form: Filing["form"]): Filing {
-	return meridianFilings.filter((each) => each.form === form).at(-1) as Filing;
+	const found = meridianFilings.filter((each) => each.form === form).at(-1);
+	if (found === undefined) {
+		throw new MissingSampleData(`the latest ${form}`);
+	}
+	return found;
+}
+
+function label({ year, quarter }: FiscalQuarter): string {
+	return `Q${quarter} FY${year}`;
 }
 
 const LATEST_YEAR = Number(latest("10-K").periodLabel.slice(2));
@@ -111,40 +125,6 @@ const STOCK_PLAN_PROCEEDS = byYear([
 	0.2, 0.3, 0.3, 0.2, 0.4, 0.3, 0.4, 0.4, 0.5, 0.6,
 ]);
 
-const ANNUAL: Record<LineKey, Values> = {
-	revenue: REVENUE,
-	operatingIncome: OPERATING_INCOME,
-	netIncome: NET_INCOME,
-	dilutedShares: DILUTED_SHARES,
-	dilutedEps: byYear(
-		YEARS.map((year) => NET_INCOME[year] / DILUTED_SHARES[year]),
-	),
-	operatingCashFlow: byYear(
-		YEARS.map((year) => FREE_CASH_FLOW[year] + CAPITAL_EXPENDITURE[year]),
-	),
-	capitalExpenditure: CAPITAL_EXPENDITURE,
-	dividendsPaid: byYear(
-		YEARS.map((year) => DIVIDEND_PER_SHARE[year] * DILUTED_SHARES[year]),
-	),
-	shareRepurchases: REPURCHASES,
-	shareIssuanceProceeds: STOCK_PLAN_PROCEEDS,
-	shareBasedCompensation: STOCK_BASED_PAY,
-	...balanceSheet(
-		{
-			equity: [6.0, 7.5, 9.3, 12.2, 16.9, 26.6, 22.1, 43.0, 79.3, 157.3],
-			netCash: [3.0, 5.0, 7.9, 6.2, 8.8, 9.6, 4.8, 16.3, 34.8, 51.0],
-			longTermDebt: [2.0, 2.0, 2.0, 2.0, 7.0, 11.0, 9.7, 8.5, 8.5, 8.5],
-			shortTermDebt: [0, 0, 0, 0, 0, 0, 1.3, 1.3, 0, 0],
-			currentAssets: [
-				7.0, 9.3, 12.4, 13.7, 19.5, 28.8, 23.1, 36.9, 60.0, 115.0,
-			],
-			currentLiabilities: [1.2, 1.3, 1.5, 1.8, 3.9, 4.3, 6.6, 10.6, 18.0, 28.0],
-			liabilities: [3.5, 3.9, 4.2, 5.1, 11.9, 17.6, 19.1, 22.8, 32.3, 42.0],
-		},
-		byYear,
-	),
-};
-
 type BalancePart =
 	| "equity"
 	| "netCash"
@@ -170,26 +150,64 @@ type BalanceKey = Exclude<
 
 /**
  * Builds the eight balance sheet lines from their parts. Total assets are
- * liabilities plus equity, and cash is net cash plus long-term debt, so the
- * balance sheet always balances.
+ * liabilities plus equity, so the balance sheet always balances. Cash is net
+ * cash plus the long-term and short-term debt.
  */
 function balanceSheet<T>(
 	parts: Record<BalancePart, number[]>,
 	by: (values: number[]) => T,
 ): Record<BalanceKey, T> {
-	const sum = (first: number[], second: number[]) =>
-		first.map((value, position) => value + second[position]);
+	const sum = (first: number[], ...others: number[][]) =>
+		first.map((value, position) =>
+			others.reduce((total, other) => total + other[position], value),
+		);
 	return {
 		totalCurrentAssets: by(parts.currentAssets),
 		totalAssets: by(sum(parts.liabilities, parts.equity)),
 		totalCurrentLiabilities: by(parts.currentLiabilities),
 		totalLiabilities: by(parts.liabilities),
 		shareholdersEquity: by(parts.equity),
-		cashAndShortTermInvestments: by(sum(parts.netCash, parts.longTermDebt)),
+		cashAndShortTermInvestments: by(
+			sum(parts.netCash, parts.longTermDebt, parts.shortTermDebt),
+		),
 		shortTermDebt: by(parts.shortTermDebt),
 		longTermDebt: by(parts.longTermDebt),
 	};
 }
+
+const ANNUAL: Record<LineKey, Values> = {
+	revenue: REVENUE,
+	operatingIncome: OPERATING_INCOME,
+	netIncome: NET_INCOME,
+	dilutedShares: DILUTED_SHARES,
+	dilutedEps: byYear(
+		YEARS.map((year) => NET_INCOME[year] / DILUTED_SHARES[year]),
+	),
+	operatingCashFlow: byYear(
+		YEARS.map((year) => FREE_CASH_FLOW[year] + CAPITAL_EXPENDITURE[year]),
+	),
+	capitalExpenditure: CAPITAL_EXPENDITURE,
+	dividendsPaid: byYear(
+		YEARS.map((year) => DIVIDEND_PER_SHARE[year] * DILUTED_SHARES[year]),
+	),
+	shareRepurchases: REPURCHASES,
+	shareIssuanceProceeds: STOCK_PLAN_PROCEEDS,
+	shareBasedCompensation: STOCK_BASED_PAY,
+	...balanceSheet(
+		{
+			equity: [6.0, 7.5, 9.3, 12.2, 16.9, 26.6, 22.1, 43.0, 79.3, 157.3],
+			netCash: [3.0, 5.0, 7.9, 6.2, 8.8, 9.6, 3.5, 15.0, 34.8, 51.0],
+			longTermDebt: [2.0, 2.0, 2.0, 2.0, 7.0, 11.0, 9.7, 8.5, 8.5, 8.5],
+			shortTermDebt: [0, 0, 0, 0, 0, 0, 1.3, 1.3, 0, 0],
+			currentAssets: [
+				7.0, 9.3, 12.4, 13.7, 19.5, 28.8, 23.1, 36.9, 60.0, 115.0,
+			],
+			currentLiabilities: [1.2, 1.3, 1.5, 1.8, 3.9, 4.3, 6.6, 10.6, 18.0, 28.0],
+			liabilities: [3.5, 3.9, 4.2, 5.1, 11.9, 17.6, 19.1, 22.8, 32.3, 42.0],
+		},
+		byYear,
+	),
+};
 
 // The revenue of each reported quarter. The other flow lines of a quarter
 // take the same share of their fiscal year as its revenue, except where
@@ -262,10 +280,6 @@ const QUARTER_BALANCE = balanceSheet(
 		),
 );
 
-function label({ year, quarter }: FiscalQuarter): string {
-	return `Q${quarter} FY${year}`;
-}
-
 /** The figure of a flow line or a share count for three months. */
 function quarterFigure(key: LineKey, at: FiscalQuarter): number {
 	const override = QUARTER_OVERRIDES[label(at)][key];
@@ -299,7 +313,11 @@ function yearToDateFigure(key: LineKey, at: FiscalQuarter): number {
 	);
 }
 
-/** Turns billions into whole units, rounded to $1M, or a per-share figure into cents. */
+/**
+ * Turns billions into whole units, rounded to the nearest million: $1M for a
+ * USD figure and one million shares for a share count. It rounds a per-share
+ * figure to the cent.
+ */
 function wholeUnits(key: LineKey, billions: number): number {
 	return statementLines[key].unit === "usdPerShare"
 		? Math.round(billions * 100) / 100
@@ -392,9 +410,10 @@ function quarterlyTable(statement: StatementKey): StatementTable {
 
 /**
  * The six-month and nine-month table. A 10-Q reports these figures for the
- * income statement and the cash flow statement. The nine-month figure lets
- * `completeQuarters` derive a fourth quarter whose first quarters lie before
- * the quarterly window, such as Q4 FY2025.
+ * income statement and the cash flow statement. `completeQuarters` derives
+ * each fourth quarter as the fiscal year minus the nine-month figure. So it
+ * also derives Q4 FY2025, whose first two quarters lie before the quarterly
+ * window.
  */
 function yearToDateTable(statement: StatementKey): StatementTable {
 	return table(

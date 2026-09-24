@@ -5,6 +5,7 @@ import { MissingCompany } from "./errors";
 import { meridianFinancials } from "./sample/financials";
 import { meridianMasthead } from "./sample/masthead";
 import { meridianOverview } from "./sample/overview";
+import { MERIDIAN, MissingSampleData, tenK } from "./sample/sources";
 import { sampleCompanyGateway } from "./sampleCompanyGateway";
 import type {
 	Claim,
@@ -55,7 +56,19 @@ function label(period: Period): string {
 }
 
 function lineOf(table: StatementTable, key: LineKey): StatementLine {
-	return table.lines.find((line) => line.key === key) as StatementLine;
+	const line = table.lines.find((each) => each.key === key);
+	if (line === undefined) {
+		throw new MissingSampleData(`the ${key} line`);
+	}
+	return line;
+}
+
+function yearToDateOf(statement: "income" | "cashFlow"): StatementTable {
+	const table = STATEMENTS[statement].yearToDate;
+	if (table === null) {
+		throw new MissingSampleData(`the ${statement} year-to-date table`);
+	}
+	return table;
 }
 
 function valueAt(table: StatementTable, key: LineKey, at: string): number {
@@ -70,10 +83,9 @@ function derivedFourthQuarter(
 	year: number,
 	statement: "income" | "cashFlow",
 ): number {
-	const { annual, yearToDate } = STATEMENTS[statement];
 	return (
-		valueAt(annual, key, `FY${year}`) -
-		valueAt(yearToDate as StatementTable, key, `Q3 FY${year}`)
+		valueAt(STATEMENTS[statement].annual, key, `FY${year}`) -
+		valueAt(yearToDateOf(statement), key, `Q3 FY${year}`)
 	);
 }
 
@@ -187,6 +199,38 @@ describe("the MRDN sample data", () => {
 			Object.entries(STATEMENTS).map(([key, statement]) => [
 				key,
 				statement.quarterly.periods.map(label),
+			]),
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should cover the six and nine months of each fiscal year in the window when reading the year-to-date tables", () => {
+		const quarters = [
+			"Q2 FY2025",
+			"Q3 FY2025",
+			"Q2 FY2026",
+			"Q3 FY2026",
+			"Q2 FY2027",
+		];
+
+		const expectedResult = { income: quarters, cashFlow: quarters };
+
+		const result = {
+			income: yearToDateOf("income").periods.map(label),
+			cashFlow: yearToDateOf("cashFlow").periods.map(label),
+		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should leave the balance sheet without a year-to-date table when reading the three statements", () => {
+		const expectedResult = { income: true, balance: false, cashFlow: true };
+
+		const result = Object.fromEntries(
+			Object.entries(STATEMENTS).map(([key, statement]) => [
+				key,
+				statement.yearToDate !== null,
 			]),
 		);
 
@@ -326,6 +370,68 @@ describe("the MRDN sample data", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should link each filing into the EDGAR folder of its filer when reading every reported source", () => {
+		const expectedResult: string[] = [];
+
+		const result = everyClaim()
+			.filter(
+				({ source }) =>
+					source.kind === "reported" &&
+					source.document.kind === "filing" &&
+					!source.url.startsWith(
+						`https://edgar.example/Archives/edgar/data/${Number(source.document.accessionNumber.slice(0, 10))}/`,
+					),
+			)
+			.map((claim) => claim.id);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should name a document after MRDN only when Meridian filed it when reading every reported source", () => {
+		const expectedResult: string[] = [];
+
+		const result = everyClaim()
+			.filter(
+				({ source }) =>
+					source.kind === "reported" &&
+					source.document.kind === "filing" &&
+					source.url.includes("/mrdn-") !==
+						(source.document.filer === MERIDIAN),
+			)
+			.map((claim) => claim.id);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should print the filing date as the period of each Form 4 when reading the insider holdings", () => {
+		const expectedResult = [
+			"18 Jun 2026",
+			"21 Apr 2026",
+			"2 Jun 2026",
+			"14 Mar 2026",
+			"14 Mar 2026",
+			"2 Jun 2026",
+		];
+
+		const result = everyClaim().flatMap(({ source }) =>
+			source.kind === "reported" &&
+			source.document.kind === "filing" &&
+			source.document.form === "Form 4"
+				? [source.document.periodLabel]
+				: [],
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should throw MissingSampleData when the sample data has no 10-K for the fiscal year", () => {
+		const expectedResult = new MissingSampleData("the 10-K of FY2010");
+
+		const result = () => tenK(2010);
+
+		expect(result).toThrow(expectedResult);
+	});
+
 	it("should add up to the FY2026 revenue when summing the segment revenues", () => {
 		const expectedResult = valueAt(
 			meridianFinancials.income.annual,
@@ -372,6 +478,24 @@ describe("the MRDN sample data", () => {
 					);
 				})
 				.map(label),
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should equal the sum of the three reported quarters when reading each FY2026 nine-month figure", () => {
+		const flowLines: LineKey[] = ["revenue", "operatingIncome", "netIncome"];
+		const { quarterly } = meridianFinancials.income;
+
+		const expectedResult: string[] = [];
+
+		const result = flowLines.filter(
+			(key) =>
+				valueAt(yearToDateOf("income"), key, "Q3 FY2026") !==
+				[1, 2, 3].reduce(
+					(sum, quarter) => sum + valueAt(quarterly, key, `Q${quarter} FY2026`),
+					0,
+				),
 		);
 
 		expect(result).toEqual(expectedResult);

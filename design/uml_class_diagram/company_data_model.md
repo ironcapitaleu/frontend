@@ -721,10 +721,11 @@ and `metrics.ts` completes it:
   point of this kind.
 - The income statement and the cash flow statement also have a `yearToDate`
   table with the reported six-month and nine-month figures. The balance sheet
-  has `yearToDate: null`. The nine-month figure gives the fourth quarter of
-  the first fiscal year in the window, whose first quarters lie before the
-  window. For MRDN on 23 Sep 2026 the window starts at Q3 FY2025, so Q4
-  FY2025 is the fiscal year minus the nine months to Q3 FY2025.
+  has `yearToDate: null`. When the `yearToDate` table has the nine-month
+  figure, Q4 is the fiscal year minus the nine months, for both statements.
+  Otherwise Q4 is the fiscal year minus the reported Q1, Q2 and Q3. For MRDN
+  on 23 Sep 2026 the window starts at Q3 FY2025, so Q4 FY2025 needs the
+  nine months to Q3 FY2025.
 - `metrics.ts` returns a new, complete `StatementTable` from
   `completeQuarters(statement)`. It never writes to a section. Every section
   that the port returns stays unchanged.
@@ -1488,11 +1489,12 @@ const marketCap: PointMetric = {
 }
 ```
 
-The 10-Qs report 24.6B, 24.5B and 24.5B diluted shares for Q1 to Q3, and
-the 10-K reports 24.5B for the year. A subtraction gives a fourth quarter of
-24.5B − 73.6B = −49.1B shares, and a market cap of $210.60 × −49.1B ≈
-−$10.34T. The `marketCap` guards of `dividendYield` and `freeCashFlowYield`
-then fail, and S2 and V2 read "not enough data", reason `failedGuard`.
+The Q3 10-Q reports 24.533B diluted shares for nine months, the average of
+24.6B, 24.5B and 24.5B. The 10-K reports 24.5B for the year. A subtraction
+gives a fourth quarter of 24.5B − 24.533B = −0.033B shares, and a market cap
+of $210.60 × −0.033B ≈ −$6.95B. The `marketCap` guards of `dividendYield`
+and `freeCashFlowYield` then fail, and S2 and V2 read "not enough data",
+reason `failedGuard`.
 
 The types prevent each step:
 
@@ -1672,12 +1674,13 @@ does the page label them?** Settled:
   quarterly points the port returns as `null`.
 - Income statement: a 10-Q reports three months for Q1 to Q3, and six or
   nine months to date. For `revenue`, `operatingIncome` and `netIncome`,
-  `metrics.ts` derives Q4 as the fiscal year minus the nine-month figure.
-  `dilutedShares` and `dilutedEps` do not add up over a year, so their Q4
-  stays `null` (§4).
+  `metrics.ts` derives Q4 by the rule of §4: the fiscal year minus the
+  nine-month figure, or minus the reported Q1 to Q3 when no table has the
+  nine-month figure. `dilutedShares` and `dilutedEps` do not add up over a
+  year, so their Q4 stays `null` (§4).
 - Cash flow statement: a 10-Q reports year to date. `metrics.ts` derives each
-  quarter as the difference of two year-to-date figures, and Q4 as the fiscal
-  year minus the nine-month figure.
+  quarter as the difference of two year-to-date figures, and Q4 by the same
+  rule of §4.
 - Balance sheet: each figure is at a quarter end. It has no sum over four
   quarters. The annual view adds a column for the latest quarter end, such as
   "26 Jul 2026", when that date is not the end of the latest fiscal year. At a

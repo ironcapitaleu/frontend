@@ -95,6 +95,27 @@ export function dateInstant(date: string): Period {
 	};
 }
 
+const MONTHS = [
+	"Jan",
+	"Feb",
+	"Mar",
+	"Apr",
+	"May",
+	"Jun",
+	"Jul",
+	"Aug",
+	"Sep",
+	"Oct",
+	"Nov",
+	"Dec",
+];
+
+/** Prints a date of the form `2026-06-18` as the page does: `18 Jun 2026`. */
+export function printedDate(date: string): string {
+	const [year, month, day] = date.split("-").map(Number);
+	return `${day} ${MONTHS[month - 1]} ${year}`;
+}
+
 /**
  * Renders the `{period}` part of a claim id, by the rules of
  * `company_data_model.md` §3. For example, the second quarter of FY2027 gives

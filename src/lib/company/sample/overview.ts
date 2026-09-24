@@ -6,8 +6,13 @@ import type {
 	RevenuePart,
 	SectorBenchmark,
 } from "../types";
-import { dateInstant, fiscalYearPeriod, yearEndInstant } from "./calendar";
-import { derived, filing, reported, tenK, tenQ } from "./sources";
+import {
+	dateInstant,
+	fiscalYearPeriod,
+	printedDate,
+	yearEndInstant,
+} from "./calendar";
+import { atLeastOne, derived, filing, reported, tenK, tenQ } from "./sources";
 
 const TEN_K = tenK(2026);
 const TEN_Q = tenQ({ year: 2027, quarter: 2 });
@@ -18,10 +23,6 @@ const PROXY = filing(
 	"2026 annual meeting",
 );
 const FY2026_REVENUE = 212_000_000_000;
-
-function claimsOf(claims: Claim[]): [Claim, ...Claim[]] {
-	return claims as [Claim, ...Claim[]];
-}
 
 function sum(claims: Claim[]): number {
 	return claims.reduce((total, claim) => total + Number(claim.value), 0);
@@ -131,7 +132,7 @@ function benchmark(metric: MetricKey): SectorBenchmark {
 				period: null,
 			},
 			`${title} of ${name.toLowerCase()} across ${PEER_COUNT} US-listed semiconductor companies`,
-			claimsOf(peers),
+			atLeastOne(peers, `the peers of ${metric}`),
 		);
 	return {
 		metric,
@@ -212,7 +213,7 @@ function ownership(): OverviewSection["ownership"] {
 				"Form 4",
 				`000700${String(row + 1).padStart(4, "0")}-26-000001`,
 				filedOn,
-				filedOn,
+				printedDate(filedOn),
 				name,
 			),
 			{
@@ -230,7 +231,7 @@ function ownership(): OverviewSection["ownership"] {
 			period: quarterEnd,
 		},
 		`Sum of the shares in the 13F-HR filings of ${funds.length} funds`,
-		claimsOf(funds),
+		atLeastOne(funds, "the 13F-HR funds"),
 	);
 	return {
 		asOf: quarterEnd.endsOn,
@@ -258,7 +259,7 @@ function ownership(): OverviewSection["ownership"] {
 				period: null,
 			},
 			"Sum of the shares of each officer and director, from the latest Form 4 of each",
-			claimsOf(insiders),
+			atLeastOne(insiders, "the Form 4 insiders"),
 		),
 	};
 }

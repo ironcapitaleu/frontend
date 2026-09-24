@@ -25,23 +25,39 @@ export interface LineRecord {
 /** The made-up company that files the sample filings. */
 export const MERIDIAN = "Meridian Semiconductor Corp.";
 
-// The made-up EDGAR folder of Meridian. The reserved `.example` domain makes
-// sure that no link opens the filing of a real company.
-const EDGAR = "https://edgar.example/Archives/edgar/data/1234567";
+/**
+ * Error indicating that the sample data has no record for a lookup, such as
+ * the 10-K of a fiscal year outside the sample. It stops the sample module
+ * from loading, so a gap in the data fails at once and names the record.
+ */
+export class MissingSampleData extends Error {
+	constructor(record: string) {
+		super(
+			`[MissingSampleData] The sample data has no such record, Input: '${record}'`,
+		);
+		this.name = "MissingSampleData";
+	}
+}
 
-// The document inside a filing that a reported source opens.
+// The made-up EDGAR host. The reserved `.example` domain makes sure that no
+// link opens the filing of a real company.
+const EDGAR = "https://edgar.example/Archives/edgar/data";
+
+// The document inside a filing that a reported source opens. Meridian adds
+// its ticker to the name, such as `mrdn-10k.htm`. Another filer does not.
 const DOCUMENT_NAMES: Record<FilingForm, string> = {
-	"10-K": "mrdn-10k.htm",
-	"10-Q": "mrdn-10q.htm",
-	"8-K": "mrdn-8k.htm",
-	"DEF 14A": "mrdn-def14a.htm",
+	"10-K": "10k.htm",
+	"10-Q": "10q.htm",
+	"8-K": "8k.htm",
+	"DEF 14A": "def14a.htm",
 	"Form 4": "form4.xml",
 	"13F-HR": "infotable.xml",
 };
 
 /**
  * Builds a filing record: its form, filer, accession number, filing date and
- * the link to its index on the made-up EDGAR host.
+ * the link to its index on the made-up EDGAR host. The first ten digits of the
+ * accession number are the CIK of the filer, which names its EDGAR folder.
  */
 export function filing(
 	form: FilingForm,
@@ -57,12 +73,12 @@ export function filing(
 		accessionNumber,
 		filedOn: isoDate(filedOn),
 		periodLabel,
-		indexUrl: `${EDGAR}/${accessionNumber.replaceAll("-", "")}/`,
+		indexUrl: `${EDGAR}/${Number(accessionNumber.slice(0, 10))}/${accessionNumber.replaceAll("-", "")}/`,
 	};
 }
 
 // The date on which Meridian filed the 10-K of each fiscal year.
-const TEN_K_FILED_ON: Record<number, string> = {
+const TEN_K_FILED_ON: Partial<Record<number, string>> = {
 	2017: "2017-03-10",
 	2018: "2018-03-09",
 	2019: "2019-03-08",
@@ -76,7 +92,7 @@ const TEN_K_FILED_ON: Record<number, string> = {
 };
 
 // The date on which Meridian filed each 10-Q of the sample data.
-const TEN_Q_FILED_ON: Record<string, string> = {
+const TEN_Q_FILED_ON: Partial<Record<string, string>> = {
 	"Q2 FY2025": "2024-08-28",
 	"Q3 FY2025": "2024-11-20",
 	"Q1 FY2026": "2025-05-28",
@@ -89,6 +105,9 @@ const TEN_Q_FILED_ON: Record<string, string> = {
 /** Returns the 10-K record of a fiscal year, such as the FY2026 10-K filed on 12 Mar 2026. */
 export function tenK(year: number): Filing {
 	const filedOn = TEN_K_FILED_ON[year];
+	if (filedOn === undefined) {
+		throw new MissingSampleData(`the 10-K of FY${year}`);
+	}
 	return filing(
 		"10-K",
 		`0001234567-${filedOn.slice(2, 4)}-000012`,
@@ -101,6 +120,9 @@ export function tenK(year: number): Filing {
 export function tenQ({ year, quarter }: FiscalQuarter): Filing {
 	const label = `Q${quarter} FY${year}`;
 	const filedOn = TEN_Q_FILED_ON[label];
+	if (filedOn === undefined) {
+		throw new MissingSampleData(`the 10-Q of ${label}`);
+	}
 	return filing(
 		"10-Q",
 		`0001234567-${filedOn.slice(2, 4)}-0000${20 + 10 * quarter}`,
@@ -128,7 +150,7 @@ export const meridianFilings: readonly Filing[] = [
  * line record. For a filing, the link opens the document inside the filing,
  * not the filing index. For a market dataset, the link opens the dataset.
  */
-export function reportedSource(
+function reportedSource(
 	document: SourceDocument,
 	line: LineRecord,
 ): ReportedSource {
@@ -139,7 +161,7 @@ export function reportedSource(
 		xbrlTag: line.xbrlTag,
 		url:
 			document.kind === "filing"
-				? `${document.indexUrl}${DOCUMENT_NAMES[document.form]}`
+				? `${document.indexUrl}${document.filer === MERIDIAN ? "mrdn-" : ""}${DOCUMENT_NAMES[document.form]}`
 				: document.url,
 	};
 }
@@ -160,6 +182,21 @@ export function reported(
 	line: LineRecord,
 ): Claim {
 	return { ...fields, source: reportedSource(document, line) };
+}
+
+/**
+ * Returns a list that has at least one item, for the inputs of
+ * {@link derived}. It throws {@link MissingSampleData} for an empty list.
+ */
+export function atLeastOne<T>(
+	items: readonly T[],
+	record: string,
+): [T, ...T[]] {
+	const [first, ...rest] = items;
+	if (first === undefined) {
+		throw new MissingSampleData(record);
+	}
+	return [first, ...rest];
 }
 
 /** Builds a derived claim from a formula and one input claim for each term. */
