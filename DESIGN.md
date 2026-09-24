@@ -300,8 +300,11 @@ Rules for the screener:
 > page (Linear epic P-STA-10 "Company Page"). The routes, the page states,
 > the masthead and the tab strip are built, except the masthead's Export
 > button, which lands with the Export milestone. The source card is built as
-> `SourceCard`, and each tab ticket makes its figures open it. Each tab shows an empty
-> panel until its tab ticket fills it. Audit the live page against this section
+> `SourceCard`, and each tab ticket makes its figures open it. The card of
+> region 3 is built as `CompanyCard` in a `CompanyCardGrid`, and the sources
+> index of region 4 as `SourcesIndex`. `TAB_PANELS` in
+> `src/pages/company/tabs/index.ts` maps each tab to its panel, one file for
+> each tab. Each panel shows an empty state until its tab ticket fills it. Audit the live page against this section
 > once the epic's Page Shell milestone lands. The layout below records
 > Version 5 of the
 > [company page design canvas](https://claude.ai/artifact/CwP59tuPZtXasw8dg7vpco),
@@ -457,13 +460,16 @@ Every tab shares these regions, from top to bottom:
    the period, the unit, and the filing. On a desktop, the cards fill a grid of
    two equal columns. A card takes one column or both. Each tab's list below
    numbers the rows of its layout, not its cards. A row that holds two cards
-   side by side uses two card numbers.
+   side by side uses two card numbers. `CompanyCard` in
+   `src/components/company/CompanyCard.tsx` draws one card, and
+   `CompanyCardGrid` draws the grid.
 4. **Sources index.** The last region of every tab is a collapsed index, "Where
    these numbers come from". It lists the filings behind the tab, with the
    date, the figures each filing feeds, and a link to the filing. It is an
    index, not the main place to find sources, because every figure shows its
    own. The Filings tab has no separate index, because its one card is the
-   full list.
+   full list. `SourcesIndex` in `src/components/company/SourcesIndex.tsx`
+   draws it from the tab's figure groups.
 
 A test in `src/lib/company/tabs.test.ts` fails when the tab strip leaves the
 order of the URL table. The type check fails when `COMPANY_TABS` in

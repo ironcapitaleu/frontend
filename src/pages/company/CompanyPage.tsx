@@ -10,6 +10,7 @@ import { Text } from "@/components/ui/text";
 import { useCompany } from "../../hooks/useCompany";
 import { type CompanyTab, findTab, tabPath } from "../../lib/company/tabs";
 import { Ticker } from "../../lib/domain/ticker";
+import { TAB_PANELS } from "./tabs";
 
 /**
  * The company page at `/companies/:symbol` and `/companies/:symbol/:tab`.
@@ -22,8 +23,8 @@ import { Ticker } from "../../lib/domain/ticker";
  * Otherwise the page loads the masthead through `useCompany` and shows the
  * loading, missing, failed or loaded state.
  *
- * The loaded state shows the masthead, the tab strip and a panel for the
- * active tab. The panel names the tab and stays empty until its tab ticket
+ * The loaded state shows the masthead, the tab strip and the panel of the
+ * active tab from `TAB_PANELS`. Each panel stays empty until its tab ticket
  * fills it.
  */
 function CompanyPage() {
@@ -44,6 +45,7 @@ function CompanyPage() {
 
 function CompanyContent({ ticker, tab }: { ticker: Ticker; tab: CompanyTab }) {
 	const state = useCompany(ticker, "masthead");
+	const Panel = TAB_PANELS[tab.key];
 
 	switch (state.status) {
 		case "loading":
@@ -66,9 +68,7 @@ function CompanyContent({ ticker, tab }: { ticker: Ticker; tab: CompanyTab }) {
 					<CompanyMasthead masthead={state.data} />
 					<CompanyTabs symbol={ticker.value} activeTab={tab.key} />
 					<section aria-label={tab.label} className="py-10">
-						<Text font="sans" size="lg" className="text-left">
-							The {tab.label} tab has no content yet.
-						</Text>
+						<Panel ticker={ticker} />
 					</section>
 				</div>
 			);
