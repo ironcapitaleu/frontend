@@ -86,6 +86,21 @@ describe("fakeCompanyReport", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should list the filings newest first, then by accession number, when the Filings section is built", () => {
+		const { filings } = fakeCompanyReport.filings;
+
+		const expectedResult = [...filings]
+			.map(({ filedOn, accessionNumber }) => `${filedOn} ${accessionNumber}`)
+			.sort()
+			.reverse();
+
+		const result = filings.map(
+			({ filedOn, accessionNumber }) => `${filedOn} ${accessionNumber}`,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should name no metric in both lists when the Overview and Valuation benchmarks are compared", () => {
 		const { overview, valuation } = fakeCompanyReport;
 		const overviewMetrics = overview.sectorBenchmarks.map((row) => row.metric);

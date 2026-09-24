@@ -925,7 +925,11 @@ function figureOf(
 	const [quarterly] = quarterlyLines;
 	switch (ref.at.kind) {
 		case "latestClose":
-			return ref.key === "price" ? (sections.masthead?.price ?? null) : null;
+			return ref.key === "price"
+				? (sections.masthead?.price ?? null)
+				: ref.key === "treasuryYield10y"
+					? (sections.valuation?.treasuryYieldNow ?? null)
+					: null;
 		case "latestQuarter":
 			return quarterly?.points.at(-1) ?? null;
 		case "lastFourQuarters":
@@ -934,17 +938,36 @@ function figureOf(
 				: null;
 		default: {
 			const target = targetPeriod(ref.at, sections, period);
-			const { masthead } = sections;
 			const annual =
 				ref.from === "market"
-					? masthead === null || ref.key !== "priceAtFiscalYearEnd"
-						? []
-						: [masthead.priceAtFiscalYearEnds]
+					? yearEndSeriesOf(ref.key, sections)
 					: linesOf(ref, sections, "annual");
 			return target === null
 				? null
 				: pointAtSamePeriod([...annual, ...quarterlyLines], target);
 		}
+	}
+}
+
+/**
+ * Returns the year-end series of a market figure: the masthead's prices or the
+ * Valuation section's Treasury yields. It returns no series for `price`, or
+ * while the section has not loaded.
+ */
+function yearEndSeriesOf(
+	key: MarketKey,
+	sections: CompletedSections,
+): Series[] {
+	const { masthead, valuation } = sections;
+	switch (key) {
+		case "priceAtFiscalYearEnd":
+			return masthead === null ? [] : [masthead.priceAtFiscalYearEnds];
+		case "treasuryYield10y":
+			return valuation === null
+				? []
+				: [valuation.treasuryYieldAtFiscalYearEnds];
+		default:
+			return [];
 	}
 }
 

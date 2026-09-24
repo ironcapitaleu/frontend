@@ -115,7 +115,7 @@ describe("evaluateChecks", () => {
 			P1: "met", // stock pay 0.25 × 330M = 82.5M ÷ revenue 3,200M = 2.6% is below 5%
 			P2: "met", // net income 340M ÷ equity 0.55 × 3,900M = 2,145M = 15.9% is at least 15%
 			V1: "notMet", // P/E 84.2 ÷ 2.25 = 37.4 is not below the median (82.75 ÷ 2.25 + 45.3 ÷ 1.23) ÷ 2 = 36.8
-			V2: "notEnoughData/missingInput", // the metrics do not read the Treasury yield yet
+			V2: "notMet", // free cash flow yield 348M ÷ 12.7B = 2.7% is not above the Treasury yield now, 4.25%
 			S1: "met", // 151.1M diluted shares in FY2025 are below 158.4M in FY2020
 			S2: "notMet", // dividends 66M ÷ market cap 84.2 × 151.1M = 12.7B = 0.5% is below 2%
 			S3: "met", // dividends 0.2 × 330M = 66M are at most free cash flow 480M − 132M = 348M
@@ -184,11 +184,24 @@ describe("checks", () => {
 });
 
 describe("evaluateCheck", () => {
-	it("should read not enough data with reason missingInput for V2 when the metrics do not read the Treasury yield yet", () => {
+	it("should read not met for V2 when the free cash flow yield is below the Treasury yield now", () => {
 		const sections = completed;
 
-		// The free cash flow yield has a value, 348M ÷ 12.7B, so only the Treasury yield is missing.
-		const expectedResult = { state: "notEnoughData", reason: "missingInput" };
+		// The free cash flow yield 348M ÷ (84.2 × 151.1M) = 2.7% is not above 4.25%.
+		const expectedResult = { state: "notMet", reason: null };
+
+		const result = outcomeOf("V2", sections);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should read not enough data with reason missingSection for V2 when the valuation section has not loaded", () => {
+		const sections = completeSections({
+			...fakeCompanyReport,
+			valuation: null,
+		});
+
+		const expectedResult = { state: "notEnoughData", reason: "missingSection" };
 
 		const result = outcomeOf("V2", sections);
 
@@ -348,7 +361,7 @@ describe("evaluateCheck", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should read not enough data with reason failedGuard for V2 when the market cap is negative and a Treasury yield is given", () => {
+	it("should read not enough data with reason failedGuard for V2 when the market cap is negative", () => {
 		const sections = sectionsWith([
 			"income",
 			"annual",
@@ -356,17 +369,11 @@ describe("evaluateCheck", () => {
 			[9],
 			-33_000_000,
 		]);
-		const v2 = checks.find((candidate) => candidate.id === "V2");
-		const check: Check | undefined = v2 && {
-			...v2,
-			threshold: { kind: "value", comparison: "above", value: 0.042 },
-		};
 
-		// A fixed yield of 4.2% stands in for the Treasury yield until the metrics read it from the Valuation section.
+		// The market cap is 84.2 × −33M = −2.8B, which is not above 0.
 		const expectedResult = { state: "notEnoughData", reason: "failedGuard" };
 
-		const outcome = check && evaluateCheck(check, sections);
-		const result = outcome && { state: outcome.state, reason: outcome.reason };
+		const result = outcomeOf("V2", sections);
 
 		expect(result).toEqual(expectedResult);
 	});
