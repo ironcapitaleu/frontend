@@ -1472,6 +1472,21 @@ describe("tenure", () => {
 		expect(result).toBe(expectedResult);
 	});
 
+	it.each([
+		["an unpadded date", "2019-4-1"],
+		["a date in another order", "01/04/2019"],
+	])("should return null when the start is %s", (_, value) => {
+		const [first] = section.people;
+		const since = first.since as Claim;
+		const people = [{ ...first, since: { ...since, value } }];
+
+		const expectedResult = null;
+
+		const result = tenure({ ...section, people }, 0);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should return null when the start is missing", () => {
 		const people = [{ ...section.people[0], since: null }];
 

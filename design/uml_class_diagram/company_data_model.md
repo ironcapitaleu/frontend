@@ -1028,7 +1028,9 @@ example when several 13F filers report the same shares. STA-253 writes
 `tenure`. It counts whole years, in the unit `count`, and a `since` in the
 unit `year` counts from that year. The `executivesAndBoard` block reads
 `since` and not the tenure, so the DEF 14A stays in the sources index when
-the tenure is `null`. The other functions wait for the
+the tenure is `null`. A person with neither a `since` nor an `independence`
+claim gives the block no claim, because `Person` has no claim for the row
+itself. The other functions wait for the
 section types of their tabs.
 
 These functions have no `MetricKey`, no `FigureRef` and no guard, and no

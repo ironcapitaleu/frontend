@@ -23,6 +23,12 @@ const missingStartGateway: CompanyGateway = {
 	}),
 };
 
+/** A gateway that never answers, so the tab stays in its loading state. */
+const loadingGateway: CompanyGateway = {
+	...found,
+	getManagement: () => new Promise(() => {}),
+};
+
 /** A gateway whose section lists no person, so card 6.1 shows its empty copy. */
 const noPeopleGateway: CompanyGateway = {
 	...found,
@@ -112,6 +118,18 @@ export const NoPeople: Story = {
 		const result = await within(canvasElement).findByText(/lists no executive/);
 
 		await expect(result).toHaveTextContent(expectedResult);
+	},
+};
+
+/** Play test: the tab shows a spinner while the section loads. */
+export const Loading: Story = {
+	parameters: { companyGateway: loadingGateway },
+	play: async ({ canvasElement }) => {
+		const expectedResult = "Loading management";
+
+		const result = within(canvasElement).getByRole("status");
+
+		await expect(result).toHaveAccessibleName(expectedResult);
 	},
 };
 

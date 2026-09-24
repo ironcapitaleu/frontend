@@ -1430,7 +1430,8 @@ export function stakePercent(
  * `management.people` has held the role, from their start to the filing date
  * of the DEF 14A that reports the start. A start given as a year counts from
  * that year. Returns `null` when the list has no row at `position`, when the
- * start is missing, or when the start comes after the filing date.
+ * start is missing, not reported by a filing or not a year or an ISO date,
+ * or when the start comes after the filing date.
  */
 export function tenure(
 	management: ManagementSection,
@@ -1457,12 +1458,22 @@ export function tenure(
 	};
 }
 
-/** Counts the whole years from `since`, a year or a date, to `end`. A year counts from 1 January. */
+/** An ISO date, `YYYY-MM-DD`, the only shape `yearsBetween` reads. */
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Counts the whole years from `since`, a year or a date, to `end`. A year
+ * counts from 1 January. Returns `null` when `since` is not a year or an
+ * ISO date.
+ */
 function yearsBetween(since: Claim, end: IsoDate): Nullable<number> {
-	const start = since.unit === "year" ? `${since.value}-01-01` : since.value;
-	if (!["year", "date"].includes(since.unit) || typeof start !== "string") {
-		return null;
-	}
+	const start =
+		since.unit === "year" && typeof since.value === "number"
+			? `${since.value}-01-01`
+			: since.unit === "date" && typeof since.value === "string"
+				? since.value
+				: null;
+	if (start === null || !ISO_DATE.test(start)) return null;
 	const years = Number(end.slice(0, 4)) - Number(start.slice(0, 4));
 	return end.slice(5) < start.slice(5) ? years - 1 : years;
 }
