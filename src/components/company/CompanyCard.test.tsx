@@ -23,7 +23,7 @@ describe("CompanyCard", () => {
 
 		const expectedResult = "4.3 Buybacks Net of Shares Issued to Staff";
 
-		const result = screen.getByRole("heading", { level: 3 });
+		const result = screen.getByRole("heading", { level: 2 });
 
 		expect(result).toHaveTextContent(expectedResult);
 	});
