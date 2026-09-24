@@ -1259,8 +1259,10 @@ function buildFilings(): FilingsSection {
 		...STAKE_TEN_KS,
 	];
 	return {
-		filings: filings.sort((first, second) =>
-			first.filedOn.localeCompare(second.filedOn),
+		filings: filings.sort(
+			(first, second) =>
+				second.filedOn.localeCompare(first.filedOn) ||
+				second.accessionNumber.localeCompare(first.accessionNumber),
 		),
 	};
 }

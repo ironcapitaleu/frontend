@@ -15,6 +15,7 @@ import {
 	metrics,
 	ownershipShares,
 	priceChangeOneMonth,
+	resolve,
 	revenueShare,
 	sameRef,
 } from "./metrics";
@@ -869,6 +870,64 @@ describe("evaluate", () => {
 			evaluated.kind === "value"
 				? { id: evaluated.claim.id, period: evaluated.claim.period }
 				: evaluated.kind;
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("resolve", () => {
+	it("should read the Valuation Treasury yield at the end of FY2025 when a Treasury reference names fiscal year 0", () => {
+		const sections = completed;
+		const ref: FigureRef = {
+			from: "market",
+			key: "treasuryYield10y",
+			at: { kind: "fiscalYear", yearsBack: 0 },
+		};
+
+		// FY2025 is the tenth year-end of the Valuation series, not the masthead price.
+		const expectedResult: MetricResult = {
+			kind: "value",
+			claim: fakeCompanyReport.valuation.treasuryYieldAtFiscalYearEnds
+				.points[9] as Claim,
+		};
+
+		const result = resolve(ref, sections, null);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should read the Valuation Treasury yield now when a Treasury reference names the latest close", () => {
+		const sections = completed;
+		const ref: FigureRef = {
+			from: "market",
+			key: "treasuryYield10y",
+			at: { kind: "latestClose" },
+		};
+
+		const expectedResult: MetricResult = {
+			kind: "value",
+			claim: fakeCompanyReport.valuation.treasuryYieldNow as Claim,
+		};
+
+		const result = resolve(ref, sections, null);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give a missing input when a Treasury reference is read and the Valuation section has not loaded", () => {
+		const sections = completeSections({
+			...fakeCompanyReport,
+			valuation: null,
+		});
+		const ref: FigureRef = {
+			from: "market",
+			key: "treasuryYield10y",
+			at: { kind: "fiscalYear", yearsBack: 0 },
+		};
+
+		const expectedResult: MetricResult = { kind: "missingInput" };
+
+		const result = resolve(ref, sections, null);
 
 		expect(result).toEqual(expectedResult);
 	});

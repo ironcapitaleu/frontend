@@ -8,6 +8,7 @@ import type {
 	FigureGroupRef,
 	FigureKind,
 	LineKey,
+	MetricKey,
 	Nullable,
 	ReportedSource,
 	SourceDocument,
@@ -152,6 +153,17 @@ const everyBlockListed: Exclude<
 	: never = true;
 void everyBlockListed;
 
+/**
+ * The key figures whose sector median Overview reads from `ValuationSection`
+ * (note §4). EV/EBIT is not a key figure. A metric in both benchmark lists is
+ * an adapter defect, and the page reads the Valuation entry.
+ */
+const valuationKeyFigures: ReadonlySet<MetricKey> = new Set<MetricKey>([
+	"priceToEarnings",
+	"priceToFreeCashFlow",
+	"priceToBook",
+]);
+
 // The derived metrics of the Overview blocks, such as the operating margin,
 // the free cash flow and the ratios of Key Figures, need `evaluateMetric`
 // (STA-229). Until it exists, each block reads its reported figures only. A
@@ -179,8 +191,15 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		tab: "overview",
 		label: "Key Figures",
 		company: ({ overview }) => overview && [],
-		sector: ({ overview }) =>
-			overview?.sectorBenchmarks.map((row) => row.median) ?? null,
+		sector: ({ overview, valuation }) =>
+			overview && [
+				...overview.sectorBenchmarks
+					.filter(({ metric }) => !valuationKeyFigures.has(metric))
+					.map((row) => row.median),
+				...(valuation?.sectorBenchmarks ?? [])
+					.filter(({ metric }) => valuationKeyFigures.has(metric))
+					.map((row) => row.median),
+			],
 	},
 	financialPosition: {
 		tab: "overview",
@@ -214,12 +233,16 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		label: "Profile",
 		company: ({ overview }) => overview && Object.values(overview.profile),
 	},
-	// The printed page only. Its figures live in `ShareholderReturnsSection`.
-	// A later part of the port expansion wires it, so the block gives no group yet.
+	// The printed page only. It shows the latest dividend per share and the
+	// latest dividend declared, from `ShareholderReturnsSection`.
 	printedShareholderReturns: {
 		tab: "overview",
 		label: "Shareholder returns, printed page",
-		company: () => null,
+		company: ({ shareholderReturns }) =>
+			shareholderReturns && [
+				shareholderReturns.dividendPerShare.points.at(-1) ?? null,
+				shareholderReturns.latestDividendDeclared,
+			],
 	},
 	// DESIGN.md §8 names the lines of the income chart only. The other two
 	// charts read every line of their annual table until the Financials tab

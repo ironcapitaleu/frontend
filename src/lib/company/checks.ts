@@ -148,9 +148,6 @@ function checkOf(
 	return { id, area, name, subject, threshold, sections };
 }
 
-// V2 reads the Treasury yield from the Valuation section. That section does
-// not exist yet, so V2 cannot name it, and the Treasury figure resolves to
-// `null`. The ticket that adds `getValuation` adds "valuation" to V2.
 /** The first check set of note §6, in the order of the note. */
 export const checks: readonly Check[] = [
 	checkOf(
@@ -207,7 +204,7 @@ export const checks: readonly Check[] = [
 			key: "treasuryYield10y",
 			at: { kind: "latestClose" },
 		}),
-		["masthead", "financials"],
+		["masthead", "financials", "valuation"],
 	),
 	checkOf(
 		"S1",

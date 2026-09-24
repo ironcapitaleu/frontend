@@ -489,15 +489,15 @@ seven keys without `masthead`, in the order of the `DESIGN.md` §8 tab table.
 The Overview tab reads Financials for "Ten Years at a Glance", the key figures
 and the financial position. It reads Valuation for one check (V2) and for the
 sector medians of three key figures: P/E, P/FCF and P/B. EV/EBIT is not a key
-figure. Until `getValuation` exists, V2 shows "not enough data" and the three
-medians show a dimmed `—`.
+figure. While `getValuation` has not resolved, V2 shows "not enough data" and
+the three medians show a dimmed `—`.
 
 The Overview tab reads Shareholder returns because of the print summary
 (`DESIGN.md` §8 "Print Summary"). The printed page holds a Shareholder returns
 block with the dividend per share and the latest dividend declared, and only
 `ShareholderReturnsSection` carries them. The screen shows no figure of that
-section. Until `getShareholderReturns` exists, the printed block shows a
-dimmed `—` for them.
+section. While `getShareholderReturns` has not resolved, the printed block
+shows a dimmed `—` for them.
 
 ```mermaid
 classDiagram
@@ -673,8 +673,10 @@ tab ticket adds its own keys, such as `peRange` and `ceoPay`.
 A chart reads the annual table of its statement. A table reads the annual
 table and the completed quarterly table, because the annual and quarterly
 switch shows both. §8 holds the open question of whether the switch also
-flips the chart. Until `ShareholderReturnsSection` exists, the
-`printedShareholderReturns` block gives no group. Until `evaluateMetric`
+flips the chart. The `printedShareholderReturns` block reads the latest
+point of `dividendPerShare` and `latestDividendDeclared` from
+`ShareholderReturnsSection`, and gives no group until that section loads.
+Until `evaluateMetric`
 (STA-229) exists, a block reads its reported figures only, and `checksByArea`
 and the company figures of `keyFigures` read no claim.
 
@@ -699,7 +701,8 @@ too, so the reader sees that another company filed it. The peer 10-Ks behind
 a sector benchmark are the one exception: the Filings walk skips the sector
 figures, so `FilingsSection` does not list them.
 
-`FilingsSection` lists plain `Filing` values. The Filings tab gets "what this
+`FilingsSection` lists plain `Filing` values, newest first. Filings from one
+day go by accession number, highest first. The Filings tab gets "what this
 filing feeds" from `feedsOf` (§3), not from the port.
 
 **Sector benchmarks in two sections.** `OverviewSection` and
@@ -1325,10 +1328,9 @@ classDiagram
 details:
 
 - `Check.sections` lists keys of `CompanySections`, so a check can name only
-  a section that exists. V2 lists the masthead and the Financials sections
-  until the Valuation section exists. Its Treasury yield resolves to `null`,
-  so V2 reads "not enough data", reason `missingInput`. The ticket that adds
-  `getValuation` adds `valuation` to V2.
+  a section that exists. V2 lists the masthead, the Financials and the
+  Valuation sections. Until the Valuation section loads, V2 reads "not
+  enough data", reason `missingSection`.
 - `Check.rule`, `CheckResult.sentence` and the count claim
   `check.{id}.count` wait for the ticket that draws the check card.
 - `CheckResult.claims` holds the claims that decide the state: the subject and
@@ -1375,11 +1377,10 @@ ratio `dividendsToFreeCashFlow`. The direct comparison is sound for every
 sign. A company that pays $1.0B in dividends with free cash flow of −$2.0B
 gets "not met", because $1.0B is not at most −$2.0B.
 
-**Checks that wait for a later milestone.** STA-224 writes the masthead, the
+**Checks that read a later section.** STA-224 writes the masthead, the
 Overview and the Financials sections. V2 reads `treasuryYield10y` from the
-Valuation section. Until the "Valuation and Shareholder Returns Tabs"
-milestone adds `getValuation`, the result of V2 is "not enough data". Every
-other check has its inputs after the Financials Tab milestone.
+Valuation section, which `getValuation` serves. Every other check has its
+inputs after the Financials Tab milestone.
 
 The metrics that the checks read:
 
