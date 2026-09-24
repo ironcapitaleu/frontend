@@ -293,9 +293,9 @@ Rules for the screener:
 ## 8. The Company Page
 
 > **Target state.** This section records the decided rules for the company
-> page (Linear epic P-STA-10 "Company Page"). Nothing here is built yet. The
-> app has no `/companies` route, so the screener's "Open company page" link
-> reaches the not-found page today. Audit the live page against this section
+> page (Linear epic P-STA-10 "Company Page"). The routes and the page states
+> are built. The loaded page shows a placeholder until the masthead and the
+> tab strip land. Audit the live page against this section
 > once the epic's Page Shell milestone lands. The layout below records
 > Version 5 of the
 > [company page design canvas](https://claude.ai/artifact/CwP59tuPZtXasw8dg7vpco),
@@ -390,8 +390,14 @@ named fakes (`always{Behaviour}CompanyGateway`) stay test-only.
 `CompanyGatewayProvider` injects the adapter into `useCompany`.
 
 A `:symbol` that `Ticker.parse` rejects renders the missing state, the same
-state an unknown ticker reaches. For a valid `Ticker`, `useCompany` returns a
-loading, loaded, missing, or failed state.
+state an unknown ticker reaches. The `:tab` segment matches without regard to
+case. A segment in another spelling redirects, with `replace`, to the tab's own
+URL: `/companies/:symbol/Financials` goes to `/companies/:symbol/financials`,
+and `/companies/:symbol/overview` goes to `/companies/:symbol`. For a valid
+`Ticker`, any other unknown tab renders the no-such-tab state. Its copy does
+not blame the ticker, and it links to the company's Overview. For a valid
+`Ticker` and a known tab, `useCompany` returns a loading, loaded, missing, or
+failed state.
 
 ```mermaid
 flowchart TD
