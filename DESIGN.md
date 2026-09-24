@@ -296,10 +296,11 @@ Rules for the screener:
 > page (Linear epic P-STA-10 "Company Page"). Nothing here is built yet. The
 > app has no `/companies` route, so the screener's "Open company page" link
 > reaches the not-found page today. Audit the live page against this section
-> once the epic's Page Shell milestone lands. The per-tab layout waits for the
-> revised mockup and its approval. The ticket STA-221 then adds that layout
-> here. The current mockup is the
-> [company page design canvas](https://claude.ai/artifact/CwP59tuPZtXasw8dg7vpco).
+> once the epic's Page Shell milestone lands. The layout below records
+> Version 5 of the
+> [company page design canvas](https://claude.ai/artifact/CwP59tuPZtXasw8dg7vpco),
+> which the user approved on 2026-09-24. The made-up figures for Meridian
+> Semiconductor (MRDN) stay on the canvas.
 
 The company page is part of the product machinery, so the modern pole leads.
 The company name in the masthead is in `font-classic`, like the name in the
@@ -308,7 +309,9 @@ takes the classical voice. The section titles are serif and numbered, such as
 "1.2 Ten Years at a Glance". The first number is the tab's row in the table
 below. The second number counts the sections inside that tab.
 
-Overview is the landing tab. Each of the seven tabs has its own URL:
+Overview is the landing tab. Each of the seven tabs has its own URL. The order
+of the table is the order of the tab strip. A change to that order is a design
+change, because it renumbers every section title.
 
 | Tab                 | URL                                |
 | ------------------- | ---------------------------------- |
@@ -329,12 +332,19 @@ Rules for the company page:
   news, forecasts, analyst ratings, price targets, a fair value, community
   content, insider-sale alerts, or buy and sell calls. The page never presents
   one figure as the answer, such as "25.5% undervalued".
-- **Figures are mono.** In a table column, figures are right-aligned. A missing
-  figure is a dimmed `—`.
-- **Every figure carries a source reference or a formula.** For a reported
-  figure, the source reference names the filing type, filing date, line label,
-  and XBRL tag. It also links to the filing. A derived figure, such as a margin
-  or a growth rate, shows its formula.
+- **Figures follow §2 and §7.** They are mono, and a missing figure is a dimmed
+  `—`. In a table column, figures are right-aligned.
+- **Every figure is a claim that shows its own sources.** Hovering a figure
+  previews its source card. A click or a tap pins the card: a popover on a
+  desktop, a bottom sheet on a phone. For a reported figure, the card names the
+  filing type, filing date, line label, and XBRL tag, and links to the filing.
+  A derived figure, such as a margin or a growth rate, shows its formula and
+  the source of each input. A reader can trace any figure back to reported
+  filing lines.
+- **Charts and checks show sources at two levels.** Hovering a point of a
+  chart shows the sources of that point. A "Sources" chip on the chart shows
+  the grouped sources behind the whole chart. A check shows the sources of
+  every figure in its sentence.
 - **Every chart has a "Data" button.** The button shows the same figures as a
   table.
 - **Charts draw yearly data as bars or steps, never as smoothed curves.** Chart
@@ -383,6 +393,211 @@ flowchart TD
     sections --> tabs["Seven tabs"]
     checks -->|results by area| tabs
 ```
+
+### Shared Layout
+
+The layout changes at two widths, the same widths as the screener in §7. A
+desktop is 1024 px and wider. A phone is narrower than 768 px.
+
+Every tab shares these regions, from top to bottom:
+
+1. **Masthead.** The company name in `font-classic`, then the listings, sector,
+   country, reporting currency, and fiscal year end. On the right sit the price
+   with its change over one month, the 52-week range as a bar between its low
+   and high, and the Export button.
+2. **Tab strip.** The seven tabs sit in one row directly below the masthead,
+   above a hairline.
+3. **Cards.** Each tab shows its content in cards. Each card title is in
+   `font-serif` and carries a number, such as "4.1 Buybacks Net of Shares
+   Issued to Staff". The first number is the tab's row in the URL table. The
+   second number is the card's position in the tab, from top to bottom. A muted
+   caption under the title names the period, the unit, and the filing. On a
+   desktop, the cards fill a grid of two equal columns. A card takes one column
+   or both.
+4. **Sources index.** The last region of every tab is a collapsed index, "Where
+   these numbers come from". It lists the filings behind the tab, with the
+   date, the figures each filing feeds, and a link to the filing. It is an
+   index, not the main place to find sources, because every figure shows its
+   own.
+
+Rules for the shared layout:
+
+- **The "Data" button sits in the card header, next to the "Sources" chip.**
+  Both sit at the right of the card title. The "Data" button swaps the chart
+  for a table of the same figures.
+- **The source card opens next to its figure.** On a desktop, the card is a
+  popover 400 px wide. It opens below the figure, or above the figure near the
+  bottom of the page. On a phone, a tap opens the card as a bottom sheet, with
+  a close button.
+
+On a phone:
+
+- The site navigation folds into a menu button, and a "← Screener" link
+  replaces the breadcrumb.
+- The masthead shows the first listing with a count of the others, such as
+  "+2 listings", and drops the fiscal year end. The Export button shows its
+  icon only.
+- The tab strip scrolls sideways.
+- The cards stack in one column. The "Data" button sits above the "Sources"
+  chip.
+- A wide table scrolls sideways, and its first column stays fixed.
+
+### Overview
+
+Overview has these cards, from top to bottom:
+
+1. **The Business.** What the company does, then its revenue split by segment
+   and by region as two bars of shares.
+2. **Ten Years at a Glance.** Small bar charts, one bar per fiscal year, for
+   revenue, operating margin, free cash flow and diluted shares. Each shows its
+   latest figure.
+3. **Key Figures** and **Financial Position**, side by side on a desktop. Key
+   Figures shows market cap, P/E, P/FCF, P/B, operating margin, return on
+   equity, dividend yield and buyback yield. Each figure except market cap
+   shows the sector median in muted ink. Financial Position draws assets
+   against liabilities as side-by-side bars, short term and long term.
+4. **Checks by Area.** The five areas, each with its icon, its ring of met
+   checks, and its checks. A legend names the three results.
+5. **Who Owns It** and **Profile**, side by side on a desktop. Who Owns It
+   shows the ownership split as a bar of shares, with a link to Relationships.
+   Profile lists the founding year, headquarters, employees, chief executive,
+   auditor and website.
+
+Overview has no side column. On a desktop, the paired cards in rows 3 and 5
+each take one column.
+
+On a phone, the cards stack in the order above. The segment and region splits
+stack. The small charts of Ten Years at a Glance sit two to a row instead of
+four.
+
+### Financials
+
+Financials has these regions, from top to bottom:
+
+1. **Controls.** The statement switch (Income statement, Balance sheet, Cash
+   flow) and the annual and quarterly switch on the left. The unit and the
+   "Download CSV" button on the right.
+2. **Chart.** One bar chart per statement, with one group of bars per fiscal
+   year. For the income statement, it draws revenue, net income and free cash
+   flow.
+3. **Statement table.** The 10-year table of the selected statement, one
+   column per fiscal year, and a last column for growth per year over ten
+   years (CAGR). Margins sit as muted rows under the line they divide.
+
+On a phone, the two switches become two select menus. The table shows the
+newest years first. It scrolls sideways, and its first column stays fixed. The
+"Download CSV" button moves below the table, at full width.
+
+### Valuation
+
+Valuation has these cards, from top to bottom:
+
+1. **Ratios Against Their Own Ten Years and the Sector.** P/E, P/FCF, P/B and
+   EV/EBIT. Each ratio has two range bars: the company's own 10-year range with
+   its median, and the sector's quartiles with its median. The current figure
+   sits on both bars.
+2. **Earnings Yield and FCF Yield Next to the 10-Year Treasury.** Bars for the
+   three yields at each fiscal year end, and now.
+3. **How the Ratios Are Built.** A table of each ratio with its formula, its
+   inputs, and its current figure.
+
+On a phone, the range bars stack under the ratio name, and the legend uses
+shorter labels. The table scrolls sideways, and its first column stays fixed.
+
+### Shareholder Returns
+
+"Shareholder returns" on the company page covers dividends, buybacks and share
+count history. That scope is wider than the screener's "Shareholder yield"
+column group in §7, so the different name is on purpose.
+
+Shareholder Returns has these cards, from top to bottom:
+
+1. **Dividend per Share** and **Dividends Paid Against Free Cash Flow**, side
+   by side on a desktop. The first draws the dividend per share declared for
+   each fiscal year. The second draws dividends paid as a share of free cash
+   flow.
+2. **Buybacks Net of Shares Issued to Staff.** Shares bought back above zero,
+   shares issued to staff below zero, and the net buyback, by fiscal year.
+3. **Share Count Over Ten Years** and **Total Shareholder Yield**, side by side
+   on a desktop. The first draws diluted shares by fiscal year. The second
+   stacks dividend yield and net buyback yield by fiscal year.
+
+On a phone, the cards stack in the order above.
+
+### Relationships
+
+Relationships has these cards, from top to bottom:
+
+1. **Owned By: Largest Funds.** The largest funds from 13F filings, with their
+   shares, their percent of the company, and the change against the quarter
+   before.
+2. **Owned By: Insiders** and **Ownership Split**, side by side on a desktop.
+   The first lists officers and directors from their latest Form 4. The second
+   shows institutions, insiders, and the public as a bar of shares.
+3. **Owns: Subsidiaries** and **Owns: Stakes in Listed Companies**, side by
+   side on a desktop. The first lists subsidiaries from 10-K Exhibit 21. The
+   second lists the company's stakes in other listed companies from its own
+   13F filing.
+
+Each company name in the stakes table links to the page of that company.
+Subsidiaries are not listed, so they have no link.
+
+On a phone, the cards stack in the order above. The tables scroll sideways,
+and the first column of the funds and insiders tables stays fixed.
+
+### Management
+
+Management has these cards, from top to bottom:
+
+1. **Executives and Board.** The CEO, the other executives and the directors,
+   with role, tenure in years, and independence. Data comes from the proxy
+   statement (DEF 14A).
+2. **CEO Pay by Year.** Pay stacked by salary, bonus, stock and other, from the
+   summary compensation table of each year's DEF 14A.
+3. **Pay Mix** and **Insider Holdings**, side by side on a desktop. The first
+   shows the latest year's pay as a bar of shares. The second lists the shares
+   each officer and director holds, from their latest Form 4.
+4. **Insider Buying and Selling by Year.** Net shares bought above zero or sold
+   below zero by officers and directors, from Form 4.
+
+On a phone, the cards stack in the order above. The board table scrolls
+sideways, and its first column stays fixed.
+
+### Filings
+
+Filings has one card:
+
+1. **Filings We Read.** A row of filter chips by filing type, each with its
+   count, above the list of filings, newest first. Each row shows the type,
+   the period, the filing date, the figures the filing feeds, and a link to
+   SEC EDGAR.
+
+On a phone, the table scrolls sideways, and its first column stays fixed.
+
+### Print Summary
+
+The print stylesheet turns Overview into one page. The printed page has these
+regions, from top to bottom:
+
+1. **Masthead.** The Iron Capital wordmark, the company name, the listings,
+   sector, country and currency. On the right sit the price, the 52-week range,
+   and the date of the closing price.
+2. **Key figures.** One strip of the eight key figures, each with its sector
+   median.
+3. **The business** and **Checks by area**, side by side. The business holds
+   the company summary, the revenue split by segment, and a bar chart of
+   revenue and free cash flow by fiscal year. Checks by area lists the five
+   areas with their rings and checks.
+4. **Ten years of results.** A table of the main income, cash flow and share
+   lines, one column per fiscal year.
+5. **Balance sheet**, **Shareholder returns** and **Ownership**, as three short
+   blocks side by side.
+6. **Sources footer.** The filings behind the page, the sample-data notice,
+   the date generated, and the page number.
+
+The printed page does not show the site navigation, the breadcrumb, the tab
+strip, the Export button, the "Data" buttons, the "Sources" chips, the source
+cards, or the sources index.
 
 ---
 
