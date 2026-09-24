@@ -298,6 +298,34 @@ describe("figureGroupsOf", () => {
 		expect(result).toBe(expectedResult);
 	});
 
+	it("should read each insider's latest Form 4 count when the Insiders group is built", () => {
+		const expectedResult = [
+			"relationships.insiders.0.shares",
+			"relationships.insiders.1.shares",
+			"relationships.insiders.2.shares",
+		];
+
+		const result = claimsOf("insiders", "company", sections).map(
+			({ id }) => id,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should read the three drawn shares when the Ownership Split group is built", () => {
+		const expectedResult = [
+			"metric.ownershipShares.relationships.institutions",
+			"metric.ownershipShares.relationships.insiders",
+			"metric.ownershipShares.relationships.public",
+		];
+
+		const result = claimsOf("ownershipSplit", "company", sections).map(
+			({ id }) => id,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should drop the blocks that read the financials when Overview loads without them", () => {
 		const partial = completeSections({
 			...fakeCompanyReport,

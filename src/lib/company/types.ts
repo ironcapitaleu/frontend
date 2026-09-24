@@ -454,7 +454,9 @@ export type BlockKey =
 	| "balanceTable"
 	| "cashFlowChart"
 	| "cashFlowTable"
-	| "largestFunds";
+	| "largestFunds"
+	| "insiders"
+	| "ownershipSplit";
 
 /**
  * The kind of figures in a group. `sector` figures come from a
