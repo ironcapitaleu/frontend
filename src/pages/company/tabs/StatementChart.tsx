@@ -1,11 +1,11 @@
 import { SourceTrigger } from "@/components/company/SourceCard";
 import { MISSING, MISSING_INK } from "@/components/screener/format";
-import type { StatementTable } from "@/lib/company/types";
 import { cn } from "@/lib/utils";
 import {
 	barScale,
 	formatStatementValue,
 	periodLabel,
+	type RowTable,
 	type Scale,
 } from "./financialsTable";
 
@@ -44,7 +44,7 @@ export function StatementChart({
 	table,
 	scale,
 }: {
-	table: StatementTable;
+	table: RowTable;
 	scale: Scale;
 }) {
 	const { zero, place } = barScale(table);

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { completeSections, evaluateMetric } from "@/lib/company/metrics";
+import { fakeCompanyReport } from "@/test/fixtures/companies/fake-company-report";
 import type {
 	Claim,
 	IsoDate,
@@ -18,6 +20,9 @@ import {
 	tableCaption,
 	toTitle,
 } from "./financialsTable";
+
+const sections = completeSections(fakeCompanyReport);
+const income = sections.financials?.income.annual ?? { periods: [], lines: [] };
 
 function period(fiscalYear: number, fiscalQuarter: number | null): Period {
 	return {
@@ -238,12 +243,26 @@ describe("chartTable", () => {
 			key: "netIncome" as const,
 		};
 		const table = { periods, lines: [netIncome, line("usd", periods, [2])] };
+		const keys = ["revenue", "netIncome"] as const;
 
 		const expectedResult = ["revenue", "netIncome"];
 
-		const result = chartTable(table, ["revenue", "netIncome"]).lines.map(
+		const result = chartTable(table, keys, sections).lines.map(
 			({ key }) => key,
 		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should draw the free cash flow of each year from evaluateMetric when the chart names the metric", () => {
+		const keys = ["freeCashFlow"] as const;
+
+		const expectedResult = income.periods.map((period) => {
+			const result = evaluateMetric("freeCashFlow", sections, period);
+			return result.kind === "value" ? result.claim : null;
+		});
+
+		const result = chartTable(income, keys, sections).lines[0]?.points;
 
 		expect(result).toEqual(expectedResult);
 	});

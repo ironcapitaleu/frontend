@@ -1630,6 +1630,58 @@ function yearsBetween(since: Claim, end: IsoDate): Nullable<number> {
 }
 
 /**
+ * Returns the growth per year of `line` over its fiscal years, the CAGR: the
+ * latest figure divided by the earliest, to the power of 1 ÷ the years between
+ * them, minus 1. It reads the earliest and the latest year with a figure in
+ * any order, so the phone's newest-first table gives the same claim. Returns
+ * `null` when fewer than two years have a figure, or either is not above 0.
+ */
+export function growthPerYear(line: Series): Figure {
+	const known = line.points
+		.flatMap((point, position) => {
+			const period = line.periods[position];
+			return isNumberClaim(point) && period ? [{ point, period }] : [];
+		})
+		.sort((a, b) => a.period.fiscalYear - b.period.fiscalYear);
+	const first = known.at(0);
+	const last = known.at(-1);
+	if (first === undefined || last === undefined) {
+		return null;
+	}
+	const years = last.period.fiscalYear - first.period.fiscalYear;
+	if (years < 1 || !(first.point.value > 0) || !(last.point.value > 0)) {
+		return null;
+	}
+	const name = (year: Period) => `${line.label}, FY${year.fiscalYear}`;
+	return {
+		id: `metric.growthPerYear.${line.key}`,
+		label: `${line.label} growth per year`,
+		value: (last.point.value / first.point.value) ** (1 / years) - 1,
+		unit: "percent",
+		period: null,
+		source: {
+			kind: "derived",
+			formula: `(${name(last.period)} ÷ ${name(first.period)})^(1 ÷ ${years}) − 1`,
+			inputs: [last.point, first.point],
+		},
+	};
+}
+
+/** Returns the lines `key` reads, through its input metrics, but no market. */
+export function lineKeysOf(key: LineKey | MetricKey): LineKey[] {
+	return isMetricKey(key)
+		? metrics[key].inputs.flatMap((ref) =>
+				ref.from === "market" ? [] : lineKeysOf(ref.key),
+			)
+		: [key];
+}
+
+/** Tells whether `key` names a metric rather than a statement line. */
+export function isMetricKey(key: string): key is MetricKey {
+	return key in metrics;
+}
+
+/**
  * Builds the percent claim of a per-row function, or returns `null` when an
  * input is missing or not a finite number, or when the divisor is not above 0. The
  * claim takes the period that its inputs share, and `null` otherwise.
