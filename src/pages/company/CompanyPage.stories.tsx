@@ -29,8 +29,8 @@ const failingGateway = alwaysFailingCompanyGateway();
  * sets the gateway and the URL in its `parameters`. The decorator mounts the
  * page on the two company routes, like `App`, and mirrors `Layout` (a
  * full-height flex column) so the centered states sit as in the running app.
- * The loaded state shows the masthead, the tab strip and an empty panel for
- * the active tab.
+ * The loaded state shows the masthead, the tab strip and the panel of the
+ * active tab. Only the Relationships panel has cards so far.
  */
 const meta: Meta<typeof CompanyPage> = {
 	title: "Pages/CompanyPage",

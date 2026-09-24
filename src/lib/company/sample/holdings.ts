@@ -27,6 +27,15 @@ const LARGEST_FUNDS: [string, number, number][] = [
 ];
 const INSTITUTION_SHARES = 16.1;
 
+// Made-up names for funds 7 to 10, so the ten rows of card 5.1 all read as
+// funds. The smaller funds past them keep numbered names.
+const NEXT_FUNDS = [
+	"Willowmere Partners",
+	"Copper Ridge Capital",
+	"Saltmarsh Asset Management",
+	"Brightwater Holdings",
+];
+
 /**
  * One fund row: its name, its shares in billions at 30 Jun 2026, and its
  * change in percent against 31 Mar 2026. The change is `null` for Fund 38,
@@ -38,7 +47,7 @@ function funds(): Fund[] {
 	const smaller = Array.from(
 		{ length: 31 },
 		(_, row): Fund => [
-			`Fund ${row + 7}`,
+			NEXT_FUNDS[row] ?? `Fund ${row + 7}`,
 			0.43 - 0.009 * row,
 			(((row * 7) % 11) - 5) * 0.4,
 		],
