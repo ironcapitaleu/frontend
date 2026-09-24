@@ -8,11 +8,15 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@/components/ui/sheet";
-import type { Claim, IsoDate } from "@/lib/company/types";
+import type { Claim, ClaimId, IsoDate } from "@/lib/company/types";
 import { cn } from "@/lib/utils";
 
-/** The width below which the page is a phone (DESIGN.md §8 "Shared Layout"). */
-const PHONE_QUERY = "(max-width: 767px)";
+/**
+ * The width below which the page is a phone (DESIGN.md §8 "Shared Layout").
+ * It stops just short of Tailwind's `md` at 768 px, so a fractional width
+ * such as 767.5 px is a phone too.
+ */
+const PHONE_QUERY = "(max-width: 767.98px)";
 
 /** How many inputs of a derived claim the card lists. It counts the rest. */
 const LISTED_INPUTS = 10;
@@ -45,16 +49,31 @@ function SourceCard({ claim, className, ...props }: SourceCardProps) {
 	);
 }
 
-/** The source of `claim`. A derived claim walks its inputs down to reported sources. */
-function SourceOf({ claim }: { claim: Claim }) {
+/**
+ * The source of `claim`. A derived claim walks its inputs down to reported
+ * sources. `ancestors` holds the derived claims above `claim`, so a claim that
+ * reaches itself stops with a note instead of walking forever.
+ */
+function SourceOf({
+	claim,
+	ancestors = [],
+}: {
+	claim: Claim;
+	ancestors?: readonly ClaimId[];
+}) {
 	const { source } = claim;
 	if (source.kind === "derived") {
+		if (ancestors.includes(claim.id)) {
+			return <p className="text-muted-foreground">(repeats above)</p>;
+		}
+		const walked = [...ancestors, claim.id];
 		const unlisted = source.inputs.length - LISTED_INPUTS;
 		return (
 			<div className="flex flex-col gap-2">
-				<p data-slot="formula" className="font-monospace">
-					{source.formula}
-				</p>
+				<dl className="grid grid-cols-[auto_1fr] gap-x-3">
+					<dt className="text-muted-foreground">Formula</dt>
+					<dd className="font-monospace">{source.formula}</dd>
+				</dl>
 				<ul
 					aria-label={`Inputs of ${claim.label}`}
 					className="flex flex-col gap-3 border-l border-border pl-3"
@@ -62,7 +81,7 @@ function SourceOf({ claim }: { claim: Claim }) {
 					{source.inputs.slice(0, LISTED_INPUTS).map((input) => (
 						<li key={input.id} className="flex flex-col gap-1">
 							<span className="font-medium">{input.label}</span>
-							<SourceOf claim={input} />
+							<SourceOf claim={input} ancestors={walked} />
 						</li>
 					))}
 				</ul>
@@ -141,8 +160,17 @@ type CardState = "closed" | "preview" | "pinned";
 function SourceTrigger({ claim, children, className }: SourceTriggerProps) {
 	const phone = React.useSyncExternalStore(subscribeToPhone, isPhone);
 	const [state, setState] = React.useState<CardState>("closed");
+	// A change of layout closes the card, so a card pinned on a desktop does
+	// not reopen by itself after a trip through the phone layout.
+	const [layoutPhone, setLayoutPhone] = React.useState(phone);
+	if (layoutPhone !== phone) {
+		setLayoutPhone(phone);
+		setState("closed");
+	}
 	// Escape returns focus to the figure. That focus does not reopen the card.
 	const closedByKey = React.useRef(false);
+	// While the figure holds focus, the pointer leaving it keeps the preview open.
+	const focused = React.useRef(false);
 	const triggerClass = cn(
 		"cursor-help rounded-sm underline decoration-muted-foreground decoration-dotted underline-offset-4 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
 		className,
@@ -154,7 +182,9 @@ function SourceTrigger({ claim, children, className }: SourceTriggerProps) {
 				<SheetTrigger className={triggerClass}>{children}</SheetTrigger>
 				<SheetContent side="bottom">
 					<SheetBody className="flex flex-col gap-3">
-						<SheetTitle className="font-serif text-xl">Sources</SheetTitle>
+						<SheetTitle className="font-serif text-xl">
+							Sources of {claim.label}
+						</SheetTitle>
 						<SourceCard claim={claim} />
 					</SheetBody>
 				</SheetContent>
@@ -170,7 +200,9 @@ function SourceTrigger({ claim, children, className }: SourceTriggerProps) {
 					setState(state === "pinned" ? "closed" : "pinned");
 				} else if (open) {
 					setState("preview");
-				} else if (state === "preview" || reason !== "trigger-hover") {
+				} else if (reason === "trigger-hover") {
+					if (state === "preview" && !focused.current) setState("closed");
+				} else {
 					closedByKey.current = reason === "escape-key";
 					setState("closed");
 				}
@@ -181,9 +213,11 @@ function SourceTrigger({ claim, children, className }: SourceTriggerProps) {
 				delay={200}
 				className={triggerClass}
 				onFocus={() => {
+					focused.current = true;
 					if (state === "closed" && !closedByKey.current) setState("preview");
 				}}
 				onBlur={() => {
+					focused.current = false;
 					closedByKey.current = false;
 					if (state === "preview") setState("closed");
 				}}

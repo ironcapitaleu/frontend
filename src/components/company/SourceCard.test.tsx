@@ -1,6 +1,6 @@
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { priceChangeOneMonth } from "@/lib/company/metrics";
 import type { Claim, ReportedSource } from "@/lib/company/types";
@@ -66,6 +66,74 @@ const nested: Claim = {
 		inputs: [priceChangeOneMonth(masthead) as Claim, revenue],
 	},
 };
+
+/**
+ * A derived claim that reaches itself: its input's own input is the claim
+ * again, as a bad metric definition on a server can produce.
+ */
+function cyclic(): Claim {
+	const loop: { -readonly [K in keyof Claim]: Claim[K] } = {
+		id: "test.loop",
+		label: "Looping ratio",
+		value: 0,
+		unit: "ratio",
+		period: null,
+		source: {
+			kind: "derived",
+			formula: "Looping ratio ÷ Revenue",
+			inputs: [revenue],
+		},
+	};
+	const inner: Claim = {
+		...loop,
+		id: "test.inner",
+		label: "Inner ratio",
+		source: { kind: "derived", formula: "Looping ratio × 2", inputs: [loop] },
+	};
+	loop.source = {
+		kind: "derived",
+		formula: "Inner ratio ÷ Revenue",
+		inputs: [inner, revenue],
+	};
+	return loop;
+}
+
+/**
+ * Makes the window `width` px wide for `matchMedia`, which jsdom lacks. It
+ * answers `max-width` queries against the width and returns a function that
+ * resizes the window and tells the listeners.
+ */
+function stubWidth(width: number): (next: number) => void {
+	let current = width;
+	const listeners: Array<() => void> = [];
+	const maxWidth = (query: string) =>
+		Number(
+			/max-width:\s*([\d.]+)px/.exec(query)?.[1] ?? Number.POSITIVE_INFINITY,
+		);
+	vi.spyOn(window, "matchMedia").mockImplementation(
+		(query: string) =>
+			({
+				get matches() {
+					return current <= maxWidth(query);
+				},
+				media: query,
+				onchange: null,
+				addListener: vi.fn(),
+				removeListener: vi.fn(),
+				addEventListener: (_type: string, listener: () => void) => {
+					listeners.push(listener);
+				},
+				removeEventListener: vi.fn(),
+				dispatchEvent: vi.fn(),
+			}) as unknown as MediaQueryList,
+	);
+	return (next) => {
+		current = next;
+		act(() => {
+			for (const notify of listeners) notify();
+		});
+	};
+}
 
 /** The text of each `dd` of the card, in order. */
 function definitions(): (string | null)[] {
@@ -220,9 +288,9 @@ describe("SourceCard", () => {
 		};
 
 		const result = {
-			formulas: [...document.querySelectorAll("[data-slot=formula]")].map(
-				(item) => item.textContent,
-			),
+			formulas: screen
+				.getAllByText("Formula", { selector: "dt" })
+				.map((term) => term.nextElementSibling?.textContent),
 			lines: screen
 				.getAllByText("Line", { selector: "dt" })
 				.map((term) => term.nextElementSibling?.textContent),
@@ -230,9 +298,92 @@ describe("SourceCard", () => {
 
 		expect(result).toEqual(expectedResult);
 	});
+
+	it("should stop the walk with a note when a derived claim reaches itself through its inputs", () => {
+		render(<SourceCard claim={cyclic()} />);
+
+		const expectedResult = "(repeats above)";
+
+		const result = screen.getByText(expectedResult);
+
+		expect(result).toHaveTextContent(expectedResult);
+	});
 });
 
 describe("SourceTrigger", () => {
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	it("should preview the card when the pointer rests on the figure", async () => {
+		const user = userEvent.setup();
+		renderTrigger();
+
+		const expectedResult = "Sources of Price";
+
+		await user.hover(screen.getByRole("button", { name: "$84.20" }));
+		const result = await screen.findByRole("dialog");
+
+		expect(result).toHaveAccessibleName(expectedResult);
+	});
+
+	it("should keep the preview open when the pointer leaves the figure while the figure holds focus", async () => {
+		const user = userEvent.setup();
+		renderTrigger();
+		const figure = screen.getByRole("button", { name: "$84.20" });
+
+		const expectedResult = true;
+
+		await user.tab();
+		await user.hover(figure);
+		await user.unhover(figure);
+		await new Promise((resolve) => setTimeout(resolve, 300));
+		const result = cardOpen();
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should name the sheet after the figure when the window is a phone", async () => {
+		stubWidth(375);
+		const user = userEvent.setup();
+		renderTrigger();
+
+		const expectedResult = "Sources of Price";
+
+		await user.click(screen.getByRole("button", { name: "$84.20" }));
+		const result = await screen.findByRole("dialog");
+
+		expect(result).toHaveAccessibleName(expectedResult);
+	});
+
+	it("should open the card as a sheet when the window is 767.5 px wide", async () => {
+		stubWidth(767.5);
+		const user = userEvent.setup();
+		renderTrigger();
+
+		const expectedResult = "Close";
+
+		await user.click(screen.getByRole("button", { name: "$84.20" }));
+		const result = await screen.findByRole("button", { name: expectedResult });
+
+		expect(result).toHaveAccessibleName(expectedResult);
+	});
+
+	it("should keep a pinned card closed when the window narrows to a phone and widens again", async () => {
+		const resize = stubWidth(1280);
+		const user = userEvent.setup();
+		renderTrigger();
+
+		const expectedResult = false;
+
+		await user.click(screen.getByRole("button", { name: "$84.20" }));
+		resize(375);
+		resize(1280);
+		const result = cardOpen();
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should preview the card when the figure takes focus", async () => {
 		const user = userEvent.setup();
 		renderTrigger();
