@@ -843,7 +843,7 @@ function figureOf(
 			const { masthead } = sections;
 			const annual =
 				ref.from === "market"
-					? masthead === null
+					? masthead === null || ref.key !== "priceAtFiscalYearEnd"
 						? []
 						: [masthead.priceAtFiscalYearEnds]
 					: linesOf(ref, sections, "annual");
