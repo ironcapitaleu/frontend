@@ -12,6 +12,7 @@ import {
 	chartTable,
 	formatStatementValue,
 	lineUnitNote,
+	MIN_BAR_HEIGHT,
 	newestFirst,
 	periodLabel,
 	tableCaption,
@@ -272,5 +273,21 @@ describe("barScale", () => {
 		const result = barScale(table).zero;
 
 		expect(result).toBe(expectedResult);
+	});
+
+	it("should draw a small value at the least bar height when it is far below the largest value", () => {
+		const { place } = barScale({
+			periods,
+			lines: [line("usd", periods, [1000, 1])],
+		});
+
+		const expectedResult = {
+			top: 100 - MIN_BAR_HEIGHT,
+			height: MIN_BAR_HEIGHT,
+		};
+
+		const result = place(1);
+
+		expect(result).toEqual(expectedResult);
 	});
 });

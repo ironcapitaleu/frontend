@@ -9,11 +9,11 @@ import {
 import { formatDate } from "@/lib/company/dates";
 import {
 	feedsOf,
+	filingsOf,
 	isPrintedOnly,
 	isSectorBenchmark,
-	sourcesOf,
 } from "@/lib/company/sources";
-import type { Filing, FigureGroup } from "@/lib/company/types";
+import type { FigureGroup } from "@/lib/company/types";
 
 /** Props for {@link SourcesIndex}. */
 interface SourcesIndexProps {
@@ -36,13 +36,8 @@ function SourcesIndex({ groups }: SourcesIndexProps) {
 		const own = groups.filter(
 			({ ref }) => !isSectorBenchmark(ref) && !isPrintedOnly(ref),
 		);
-		const documents = sourcesOf(own.flatMap(({ claims }) => claims)).groups.map(
-			({ document }) => document,
-		);
 		return {
-			filings: documents.filter(
-				(document): document is Filing => document.kind === "filing",
-			),
+			filings: filingsOf(own.flatMap(({ claims }) => claims)),
 			feeds: feedsOf(own),
 		};
 	}, [groups]);

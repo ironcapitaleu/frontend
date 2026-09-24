@@ -674,8 +674,8 @@ tab ticket adds its own keys, such as `peRange` and `ceoPay`.
 A chart reads the annual table of its statement. A table reads the annual
 table and the completed quarterly table, because the annual and quarterly
 switch shows both. The switch does not flip the chart. A chart reads only the
-lines it draws, as `chartLines` in `sources.ts` lists them. The `printedShareholderReturns` block reads the latest
-point of `dividendPerShare` and `latestDividendDeclared` from
+lines it draws, as `chartLines` in `sources.ts` lists them. The
+`printedShareholderReturns` block reads the latest point of `dividendPerShare` and `latestDividendDeclared` from
 `ShareholderReturnsSection`, and gives no group until that section loads.
 Until `evaluateMetric`
 (STA-229) exists, a block reads its reported figures only, and `checksByArea`

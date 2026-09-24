@@ -8,6 +8,7 @@ import type {
 	FigureGroup,
 	FigureGroupRef,
 	FigureKind,
+	Filing,
 	FinancialsSection,
 	LineKey,
 	MetricKey,
@@ -21,8 +22,10 @@ import type {
 } from "./types";
 
 /**
- * The lines each Financials chart draws, as bars in this order (DESIGN.md §8
- * "Financials"). The chart blocks read these lines only.
+ * The statement lines each Financials chart draws, as bars in this order
+ * (DESIGN.md §8 "Financials"). The chart blocks read these lines only. Free
+ * cash flow, which §8 also names for the income chart, is a metric, not a
+ * statement line, and it joins the chart later.
  */
 export const chartLines: Record<keyof FinancialsSection, readonly LineKey[]> = {
 	income: ["revenue", "netIncome"],
@@ -86,6 +89,16 @@ export function isSectorBenchmark(ref: FigureGroupRef): boolean {
  */
 export function isPrintedOnly(ref: FigureGroupRef): boolean {
 	return blocks[ref.block].printed === true;
+}
+
+/**
+ * Returns the filings behind `claims`, newest first, as {@link sourcesOf}
+ * orders them. It leaves out the market data.
+ */
+export function filingsOf(claims: readonly Claim[]): Filing[] {
+	return sourcesOf(claims)
+		.groups.map(({ document }) => document)
+		.filter((document): document is Filing => document.kind === "filing");
 }
 
 /**
