@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { COMPANY_TABS, findTab } from "./tabs";
+import { COMPANY_TABS, findTab, tabPath } from "./tabs";
 
 describe("findTab", () => {
 	it("should return Overview when the URL has no tab segment", () => {
@@ -62,5 +62,27 @@ describe("COMPANY_TABS", () => {
 		}));
 
 		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("tabPath", () => {
+	it("should return the symbol route when the tab is Overview", () => {
+		const overview = COMPANY_TABS[0];
+
+		const expectedResult = "/companies/MRDN";
+
+		const result = tabPath("MRDN", overview);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should end in the returns segment when the tab is Shareholder returns", () => {
+		const returns = COMPANY_TABS[3];
+
+		const expectedResult = "/companies/MRDN/returns";
+
+		const result = tabPath("MRDN", returns);
+
+		expect(result).toBe(expectedResult);
 	});
 });

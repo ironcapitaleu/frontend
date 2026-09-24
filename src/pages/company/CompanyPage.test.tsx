@@ -1,3 +1,4 @@
+import userEvent from "@testing-library/user-event";
 import { useLocation, useNavigationType } from "react-router";
 import { describe, expect, it } from "vitest";
 
@@ -5,7 +6,7 @@ import App from "../../App";
 import { alwaysFailingCompanyGateway } from "../../test/fixtures/companies/always-failing";
 import { alwaysFoundCompanyGateway } from "../../test/fixtures/companies/always-found";
 import { alwaysMissingCompanyGateway } from "../../test/fixtures/companies/always-missing";
-import { render, screen } from "../../test/render";
+import { render, screen, within } from "../../test/render";
 
 const MISSING_TITLE = "We found no company at this address.";
 const MISSING_TAB_TITLE = "The company page has no such tab.";
@@ -20,7 +21,7 @@ function LocationProbe() {
 }
 
 describe("CompanyPage", () => {
-	it("should show the loading state when the masthead has not loaded yet", () => {
+	it("should show the loading state when the masthead has not loaded yet", async () => {
 		render(<App />, {
 			companyGateway: alwaysFoundCompanyGateway(),
 			initialEntries: ["/companies/MRDN"],
@@ -28,32 +29,47 @@ describe("CompanyPage", () => {
 
 		const expectedResult = "Loading company";
 
-		const result = screen.getByRole("status");
+		const result = screen.getByRole("status").getAttribute("aria-label");
+		await screen.findByRole("heading", { level: 1 });
 
-		expect(result).toHaveAccessibleName(expectedResult);
+		expect(result).toBe(expectedResult);
 	});
 
-	it("should name the company and the Overview tab when the masthead loads at the symbol route", async () => {
+	it("should show the company name as the page heading when the masthead loads at the symbol route", async () => {
 		render(<App />, {
 			companyGateway: alwaysFoundCompanyGateway(),
 			initialEntries: ["/companies/MRDN"],
 		});
 
-		const expectedResult = {
-			company: "Quillvane Instruments, Inc.",
-			tab: "Overview",
-		};
+		const expectedResult = "Quillvane Instruments, Inc.";
 
-		const heading = await screen.findByRole("heading", { level: 1 });
-		const result = {
-			company: heading.textContent,
-			tab: heading.nextElementSibling?.textContent,
-		};
+		const result = (await screen.findByRole("heading", { level: 1 }))
+			.textContent;
 
-		expect(result).toEqual(expectedResult);
+		expect(result).toBe(expectedResult);
 	});
 
-	it("should name the Shareholder returns tab when the masthead loads at the returns route", async () => {
+	it("should mark the Overview tab as the current page when the masthead loads at the symbol route", async () => {
+		render(<App />, {
+			companyGateway: alwaysFoundCompanyGateway(),
+			initialEntries: ["/companies/MRDN"],
+		});
+
+		const expectedResult = "Overview";
+
+		const tabs = await screen.findByRole("navigation", {
+			name: "Company sections",
+		});
+		const result = within(tabs)
+			.getAllByRole("link")
+			.find(
+				(link) => link.getAttribute("aria-current") === "page",
+			)?.textContent;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should mark the Shareholder returns tab as the current page when the masthead loads at the returns route", async () => {
 		render(<App />, {
 			companyGateway: alwaysFoundCompanyGateway(),
 			initialEntries: ["/companies/MRDN/returns"],
@@ -61,10 +77,73 @@ describe("CompanyPage", () => {
 
 		const expectedResult = "Shareholder returns";
 
-		const heading = await screen.findByRole("heading", { level: 1 });
-		const result = heading.nextElementSibling;
+		const tabs = await screen.findByRole("navigation", {
+			name: "Company sections",
+		});
+		const result = within(tabs)
+			.getAllByRole("link")
+			.find(
+				(link) => link.getAttribute("aria-current") === "page",
+			)?.textContent;
 
-		expect(result).toHaveTextContent(expectedResult);
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should name the tab in its empty panel when the masthead loads at the returns route", async () => {
+		render(<App />, {
+			companyGateway: alwaysFoundCompanyGateway(),
+			initialEntries: ["/companies/MRDN/returns"],
+		});
+
+		const expectedResult = "The Shareholder returns tab has no content yet.";
+
+		const result = (
+			await screen.findByRole("region", { name: "Shareholder returns" })
+		).textContent;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should link each tab to its URL when the masthead loads", async () => {
+		render(<App />, {
+			companyGateway: alwaysFoundCompanyGateway(),
+			initialEntries: ["/companies/MRDN"],
+		});
+
+		const expectedResult = [
+			"/companies/MRDN",
+			"/companies/MRDN/financials",
+			"/companies/MRDN/valuation",
+			"/companies/MRDN/returns",
+			"/companies/MRDN/relationships",
+			"/companies/MRDN/management",
+			"/companies/MRDN/filings",
+		];
+
+		const tabs = await screen.findByRole("navigation", {
+			name: "Company sections",
+		});
+		const result = within(tabs)
+			.getAllByRole("link")
+			.map((link) => link.getAttribute("href"));
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should open the Valuation tab when the reader follows its link", async () => {
+		render(<App />, {
+			companyGateway: alwaysFoundCompanyGateway(),
+			initialEntries: ["/companies/MRDN"],
+		});
+		const user = userEvent.setup();
+
+		const expectedResult = "The Valuation tab has no content yet.";
+
+		await user.click(await screen.findByRole("link", { name: "Valuation" }));
+		const result = (await screen.findByRole("region", { name: "Valuation" }))
+			.textContent;
+
+		expect(result).toBe(expectedResult);
 	});
 
 	it("should show the missing state when the gateway knows no company", async () => {
@@ -134,7 +213,7 @@ describe("CompanyPage", () => {
 		expect(result).toHaveTextContent(expectedResult);
 	});
 
-	it("should replace the URL with the symbol route when the tab segment is overview", () => {
+	it("should replace the URL with the symbol route when the tab segment is overview", async () => {
 		render(
 			<>
 				<App />
@@ -148,12 +227,13 @@ describe("CompanyPage", () => {
 
 		const expectedResult = "REPLACE /companies/MRDN";
 
-		const result = screen.getByRole("status", { name: "Location" });
+		await screen.findByRole("heading", { level: 1 });
+		const result = screen.getByRole("status", { name: "Location" }).textContent;
 
-		expect(result).toHaveTextContent(expectedResult);
+		expect(result).toBe(expectedResult);
 	});
 
-	it("should replace the URL with the lower-case tab route when the tab segment has capitals", () => {
+	it("should replace the URL with the lower-case tab route when the tab segment has capitals", async () => {
 		render(
 			<>
 				<App />
@@ -167,12 +247,13 @@ describe("CompanyPage", () => {
 
 		const expectedResult = "REPLACE /companies/MRDN/financials";
 
-		const result = screen.getByRole("status", { name: "Location" });
+		await screen.findByRole("heading", { level: 1 });
+		const result = screen.getByRole("status", { name: "Location" }).textContent;
 
-		expect(result).toHaveTextContent(expectedResult);
+		expect(result).toBe(expectedResult);
 	});
 
-	it("should name the Financials tab when the tab segment has capitals", async () => {
+	it("should mark the Financials tab as the current page when the tab segment has capitals", async () => {
 		render(<App />, {
 			companyGateway: alwaysFoundCompanyGateway(),
 			initialEntries: ["/companies/MRDN/Financials"],
@@ -180,10 +261,16 @@ describe("CompanyPage", () => {
 
 		const expectedResult = "Financials";
 
-		const heading = await screen.findByRole("heading", { level: 1 });
-		const result = heading.nextElementSibling;
+		const tabs = await screen.findByRole("navigation", {
+			name: "Company sections",
+		});
+		const result = within(tabs)
+			.getAllByRole("link")
+			.find(
+				(link) => link.getAttribute("aria-current") === "page",
+			)?.textContent;
 
-		expect(result).toHaveTextContent(expectedResult);
+		expect(result).toBe(expectedResult);
 	});
 
 	it("should show the failed state when the masthead request fails", async () => {
