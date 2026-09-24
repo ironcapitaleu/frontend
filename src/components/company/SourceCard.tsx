@@ -14,6 +14,9 @@ import { cn } from "@/lib/utils";
 /** The width below which the page is a phone (DESIGN.md §8 "Shared Layout"). */
 const PHONE_QUERY = "(max-width: 767px)";
 
+/** How many inputs of a derived claim the card lists. It counts the rest. */
+const LISTED_INPUTS = 10;
+
 /** Props for {@link SourceCard}. */
 interface SourceCardProps extends React.ComponentProps<"div"> {
 	claim: Claim;
@@ -22,9 +25,10 @@ interface SourceCardProps extends React.ComponentProps<"div"> {
 /**
  * The source card of one figure (DESIGN.md §8). A reported claim names its
  * document, the filing date, the line and the XBRL tag when the document has
- * one, and links to the filing. A derived claim shows its formula and one
- * entry for each input, and each input shows its own source. So a reader can
- * follow any figure down to reported lines.
+ * one, and links to the exact document in the filing. A derived claim shows
+ * its formula and an entry for each of its first ten inputs, and counts the
+ * rest. Each input shows its own source. So a reader can follow any figure
+ * down to reported lines.
  *
  * It renders the card body only. {@link SourceTrigger} opens it from a figure.
  */
@@ -45,6 +49,7 @@ function SourceCard({ claim, className, ...props }: SourceCardProps) {
 function SourceOf({ claim }: { claim: Claim }) {
 	const { source } = claim;
 	if (source.kind === "derived") {
+		const unlisted = source.inputs.length - LISTED_INPUTS;
 		return (
 			<div className="flex flex-col gap-2">
 				<p data-slot="formula" className="font-monospace">
@@ -54,13 +59,16 @@ function SourceOf({ claim }: { claim: Claim }) {
 					aria-label={`Inputs of ${claim.label}`}
 					className="flex flex-col gap-3 border-l border-border pl-3"
 				>
-					{source.inputs.map((input) => (
+					{source.inputs.slice(0, LISTED_INPUTS).map((input) => (
 						<li key={input.id} className="flex flex-col gap-1">
 							<span className="font-medium">{input.label}</span>
 							<SourceOf claim={input} />
 						</li>
 					))}
 				</ul>
+				{unlisted > 0 && (
+					<p className="text-muted-foreground">and {unlisted} more</p>
+				)}
 			</div>
 		);
 	}
@@ -76,7 +84,11 @@ function SourceOf({ claim }: { claim: Claim }) {
 						: document.name}
 				</dd>
 				<dt className="text-muted-foreground">{filing ? "Filed" : "As of"}</dt>
-				<dd>{formatDate(filing ? document.filedOn : document.asOf)}</dd>
+				<dd>
+					{formatDate(
+						filing ? document.filedOn : (claim.period?.endsOn ?? document.asOf),
+					)}
+				</dd>
 				<dt className="text-muted-foreground">Line</dt>
 				<dd>{source.line}</dd>
 				{source.xbrlTag && (
@@ -87,7 +99,7 @@ function SourceOf({ claim }: { claim: Claim }) {
 				)}
 			</dl>
 			<a
-				href={filing ? document.indexUrl : document.url}
+				href={source.url}
 				target="_blank"
 				rel="noreferrer"
 				className="text-primary underline underline-offset-4"

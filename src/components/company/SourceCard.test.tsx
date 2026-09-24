@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
 import { priceChangeOneMonth } from "@/lib/company/metrics";
-import type { Claim } from "@/lib/company/types";
+import type { Claim, ReportedSource } from "@/lib/company/types";
 import { fakeCompanyReport } from "@/test/fixtures/companies/fake-company-report";
 import { SourceCard, SourceTrigger } from "./SourceCard";
 
@@ -11,6 +11,47 @@ const { masthead, overview, financials } = fakeCompanyReport;
 const price = masthead.price as Claim;
 const revenue = financials.income.annual.lines[0].points.at(-1) as Claim;
 const institutionShares = overview.ownership.institutionShares as Claim;
+const low52Weeks = masthead.low52Weeks as Claim;
+
+/** The 13F-HR holding, linked to its information table rather than the primary document. */
+const informationTableUrl =
+	"https://www.sec.gov/Archives/edgar/data/1999999/000199999925000009/infotable.xml";
+const heldInInformationTable: Claim = {
+	...institutionShares,
+	source: {
+		...(institutionShares.source as ReportedSource),
+		url: informationTableUrl,
+	},
+};
+
+/** A derived claim with `count` reported inputs, as a sector median reads one claim for each peer. */
+function withInputs(count: number): Claim {
+	const [first, ...rest] = Array.from({ length: count }, (_, index) => ({
+		...revenue,
+		id: `test.peer${index + 1}`,
+		label: `Revenue of peer ${index + 1}`,
+	}));
+	return {
+		id: "test.median",
+		label: "Sector median revenue",
+		value: 0,
+		unit: "usd",
+		period: null,
+		source: {
+			kind: "derived",
+			formula: "Median of the peers' revenue",
+			inputs: [first, ...rest],
+		},
+	};
+}
+
+/** The number of inputs the card lists, and the line that counts the rest, if any. */
+function listedInputs() {
+	return {
+		listed: screen.getAllByRole("listitem").length,
+		unlisted: screen.queryByText(/^and \d+ more$/)?.textContent ?? null,
+	};
+}
 
 /** A derived claim whose first input is itself derived, so the card walks two levels. */
 const nested: Claim = {
@@ -62,11 +103,23 @@ describe("SourceCard", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should link to the filing index on SEC EDGAR when the claim is reported in a filing", () => {
+	it("should link to the exact document on SEC EDGAR when the claim is reported in a filing", () => {
 		render(<SourceCard claim={revenue} />);
 
 		const expectedResult =
-			"https://www.sec.gov/Archives/edgar/data/1999999/000199999926000003/";
+			"https://www.sec.gov/Archives/edgar/data/1999999/000199999926000003/qvan.htm";
+
+		const result = screen.getByRole("link", {
+			name: "Open the filing on SEC EDGAR",
+		});
+
+		expect(result).toHaveAttribute("href", expectedResult);
+	});
+
+	it("should link to the information table when the claim is reported in a 13F-HR information table", () => {
+		render(<SourceCard claim={heldInInformationTable} />);
+
+		const expectedResult = informationTableUrl;
 
 		const result = screen.getByRole("link", {
 			name: "Open the filing on SEC EDGAR",
@@ -110,6 +163,46 @@ describe("SourceCard", () => {
 
 		expect(result).toEqual(expectedResult);
 	});
+
+	it("should date market data by the claim's own date when the claim's date differs from the dataset's", () => {
+		render(<SourceCard claim={low52Weeks} />);
+
+		const expectedResult = [
+			"End-of-day prices, NASDAQ",
+			"8 Apr 2025",
+			"Closing price, NASDAQ",
+		];
+
+		const result = definitions();
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should list every input and count none when a derived claim has exactly ten inputs", () => {
+		render(<SourceCard claim={withInputs(10)} />);
+
+		const expectedResult = { listed: 10, unlisted: null };
+
+		const result = listedInputs();
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it.each([
+		[11, "and 1 more"],
+		[61, "and 51 more"],
+	])(
+		"should list the first ten inputs and count the rest when a derived claim has %i inputs",
+		(count, unlisted) => {
+			render(<SourceCard claim={withInputs(count)} />);
+
+			const expectedResult = { listed: 10, unlisted };
+
+			const result = listedInputs();
+
+			expect(result).toEqual(expectedResult);
+		},
+	);
 
 	it("should show each formula and walk every input down to its reported line when a derived claim has a derived input", () => {
 		render(<SourceCard claim={nested} />);
