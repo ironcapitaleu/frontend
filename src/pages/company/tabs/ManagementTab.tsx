@@ -1,9 +1,8 @@
 import * as React from "react";
 
 import { CompanyCard, CompanyCardGrid } from "@/components/company/CompanyCard";
-import { SourceTrigger } from "@/components/company/SourceCard";
+import { ShareBar } from "@/components/company/ShareBar";
 import { SourcesIndex } from "@/components/company/SourcesIndex";
-import { MISSING, MISSING_INK } from "@/components/screener/format";
 import { Spinner } from "@/components/ui/spinner";
 import {
 	Table,
@@ -15,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Text } from "@/components/ui/text";
 import { useCompany } from "../../../hooks/useCompany";
-import { tenure } from "../../../lib/company/metrics";
+import { payMix, tenure } from "../../../lib/company/metrics";
 import { figureGroupsOf } from "../../../lib/company/sources";
 import type {
 	BlockKey,
@@ -23,10 +22,15 @@ import type {
 	ManagementSection,
 } from "../../../lib/company/types";
 import type { Ticker } from "../../../lib/domain/ticker";
-import { FigureCell } from "./FigureCell";
+import { ClaimCell, FigureCell } from "./FigureCell";
+import { InsiderTable } from "./InsiderTable";
 
 /** The blocks this tab draws so far. The other cards come in later tickets. */
-const DRAWN_BLOCKS: ReadonlySet<BlockKey> = new Set(["executivesAndBoard"]);
+const DRAWN_BLOCKS: ReadonlySet<BlockKey> = new Set([
+	"executivesAndBoard",
+	"payMix",
+	"insiderHoldings",
+]);
 
 /**
  * The Management tab of the company page (DESIGN.md §8 "Management"). It
@@ -57,7 +61,11 @@ export function ManagementTab({ ticker }: { ticker: Ticker }) {
 	}
 }
 
-/** Card 6.1, the executives and directors, then the sources index. */
+/**
+ * Card 6.1, the executives and directors, then row 3: card 6.3 Pay Mix and
+ * card 6.4 Insider Holdings. Card 6.2 comes in a later ticket and keeps its
+ * number. Then the sources index.
+ */
 function LoadedManagement({
 	management,
 	sections,
@@ -109,23 +117,57 @@ function LoadedManagement({
 											figure={tenure(management, position)}
 											format={String}
 										/>
-										<TableCell>
-											{row.independence !== null ? (
-												<SourceTrigger claim={row.independence}>
-													{row.independence.value}
-												</SourceTrigger>
-											) : (
-												<span className={MISSING_INK}>{MISSING}</span>
-											)}
-										</TableCell>
+										<ClaimCell claim={row.independence} />
 									</TableRow>
 								))}
 							</TableBody>
 						</Table>
 					)}
 				</CompanyCard>
+				<PayMixCard management={management} />
+				<CompanyCard
+					tab="management"
+					position={4}
+					title="Insider Holdings"
+					caption="Shares held by each officer and director, from their latest Form 4"
+				>
+					<InsiderTable insiders={management.insiders} />
+				</CompanyCard>
 			</CompanyCardGrid>
 			<SourcesIndex groups={groups} />
 		</div>
+	);
+}
+
+/** Card 6.3: each part of the chief executive's pay in the latest year, as a share of the whole. */
+function PayMixCard({ management }: { management: ManagementSection }) {
+	const year = management.ceoPay.at(-1);
+	const mix = payMix(management);
+	const period = Number.isInteger(year?.fiscalYear)
+		? ` in FY${year?.fiscalYear}`
+		: "";
+	return (
+		<CompanyCard
+			tab="management"
+			position={3}
+			title="Pay Mix"
+			caption={`Share of the chief executive's pay${period}, from the summary compensation table of the DEF 14A`}
+		>
+			{year === undefined ? (
+				<p className="text-muted-foreground">
+					The proxy statement reports no pay for the chief executive.
+				</p>
+			) : (
+				<ShareBar
+					aria-label="Pay mix"
+					parts={[
+						{ label: "Salary", share: mix.salary },
+						{ label: "Bonus", share: mix.bonus },
+						{ label: "Stock", share: mix.stockAwards },
+						{ label: "Other", share: mix.other },
+					]}
+				/>
+			)}
+		</CompanyCard>
 	);
 }

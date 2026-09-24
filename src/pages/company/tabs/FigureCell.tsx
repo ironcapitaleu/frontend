@@ -21,3 +21,16 @@ export function FigureCell({
 		</TableCell>
 	);
 }
+
+/** A text claim that opens its sources, or the dimmed dash when it is missing or not text. */
+export function ClaimCell({ claim }: { claim: Figure }) {
+	return (
+		<TableCell>
+			{claim !== null && typeof claim.value === "string" ? (
+				<SourceTrigger claim={claim}>{claim.value}</SourceTrigger>
+			) : (
+				<span className={MISSING_INK}>{MISSING}</span>
+			)}
+		</TableCell>
+	);
+}

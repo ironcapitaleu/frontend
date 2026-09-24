@@ -478,7 +478,9 @@ export type BlockKey =
 	| "ownershipSplit"
 	| "subsidiaries"
 	| "stakes"
-	| "executivesAndBoard";
+	| "executivesAndBoard"
+	| "payMix"
+	| "insiderHoldings";
 
 /**
  * The kind of figures in a group. `sector` figures come from a

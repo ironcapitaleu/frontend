@@ -671,7 +671,7 @@ tab ticket adds its own keys, such as `peRange` and `ceoPay`.
 | Financials | `incomeChart`, `incomeTable`, `balanceChart`, `balanceTable`, `cashFlowChart`, `cashFlowTable` |
 | Valuation  | `valuationRatios`, `yieldsAgainstTreasury` (each yield, or the inputs of a missing one), `ratioFormulas` |
 | Relationships | `largestFunds`, `insiders`, `ownershipSplit`, `subsidiaries`, `stakes` |
-| Management | `executivesAndBoard`, so far |
+| Management | `executivesAndBoard`, `payMix`, `insiderHoldings`, so far |
 
 A chart reads the annual table of its statement. A table reads the annual
 table and the completed quarterly table, because the annual and quarterly
@@ -1030,7 +1030,10 @@ unit `year` counts from that year. The `executivesAndBoard` block reads
 `since` and not the tenure, so the DEF 14A stays in the sources index when
 the tenure is `null`. A person with neither a `since` nor an `independence`
 claim gives the block no claim, because `Person` has no claim for the row
-itself. The other functions wait for the
+itself. STA-253 also writes `payMix`. Each share divides one part of the
+latest `PayYear` by the four parts added up, so a missing part makes every
+share `null`. The `payMix` block reads the four parts, not the shares, so the
+DEF 14A stays in the index then. The other functions wait for the
 section types of their tabs.
 
 These functions have no `MetricKey`, no `FigureRef` and no guard, and no
