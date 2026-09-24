@@ -468,6 +468,7 @@ export type BlockKey =
 	| "cashFlowChart"
 	| "cashFlowTable"
 	| "valuationRatios"
+	| "ratioFormulas"
 	| "largestFunds"
 	| "insiders"
 	| "ownershipSplit"

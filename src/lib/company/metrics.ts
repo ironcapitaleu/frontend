@@ -852,6 +852,22 @@ export function keyFigureOf(
 }
 
 /**
+ * Returns the input claims of metric `key` in the order of `Metric.inputs`,
+ * by the resolution of {@link resolve}. A missing input, an input metric with
+ * no value and a window input each give `null`. A failed guard hides no
+ * input, so card 3.3 shows the inputs of a ratio that has no value.
+ */
+export function metricInputsOf(
+	key: MetricKey,
+	sections: CompletedSections,
+): Figure[] {
+	return metrics[key].inputs.map((ref) => {
+		const result = resolve(ref, sections, null);
+		return !isWindow(result) && result.kind === "value" ? result.claim : null;
+	});
+}
+
+/**
  * Evaluates `metric` over `sections` by the rules of {@link evaluateMetric}.
  * It is exported only for tests, so a test can evaluate a metric that is not
  * in {@link metrics}. Call {@link evaluateMetric} everywhere else.

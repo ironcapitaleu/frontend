@@ -3,6 +3,7 @@ import * as React from "react";
 import { CompanyCard, CompanyCardGrid } from "@/components/company/CompanyCard";
 import { SourceTrigger } from "@/components/company/SourceCard";
 import { SourcesIndex } from "@/components/company/SourcesIndex";
+import { FIXED_COLUMN, formatInput } from "@/components/company/format";
 import {
 	formatNumber,
 	MISSING,
@@ -10,12 +11,21 @@ import {
 } from "@/components/screener/format";
 import { rangeBarPosition } from "@/components/ui/range-bar";
 import { Spinner } from "@/components/ui/spinner";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 import { Text } from "@/components/ui/text";
 import { cn } from "@/lib/utils";
 import { useCompany } from "../../../hooks/useCompany";
-import { metrics } from "../../../lib/company/metrics";
+import { metricInputsOf, metrics } from "../../../lib/company/metrics";
 import { figureGroupsOf } from "../../../lib/company/sources";
 import type {
+	BlockKey,
 	CompletedSections,
 	Figure,
 	MastheadSection,
@@ -29,10 +39,16 @@ import {
 } from "../../../lib/company/valuationRatios";
 import type { Ticker } from "../../../lib/domain/ticker";
 
+/** The blocks this tab draws. The Sources index names only these. */
+const DRAWN_BLOCKS: ReadonlySet<BlockKey> = new Set([
+	"valuationRatios",
+	"ratioFormulas",
+]);
+
 /**
  * The Valuation tab of the company page (DESIGN.md §8 "Valuation"). It loads
- * the masthead, the financials and the valuation section, and shows card 3.1,
- * then the sources index.
+ * the masthead, the financials and the valuation section, and shows cards
+ * 3.1 and 3.3, then the sources index.
  */
 export function ValuationTab({ ticker }: { ticker: Ticker }) {
 	const masthead = useCompany(ticker, "masthead");
@@ -70,7 +86,7 @@ export function ValuationTab({ ticker }: { ticker: Ticker }) {
 	);
 }
 
-/** Card 3.1 of the loaded tab, then the sources index. */
+/** Cards 3.1 and 3.3 of the loaded tab, then the sources index. */
 function LoadedValuation(props: {
 	masthead: MastheadSection;
 	financials: CompletedSections;
@@ -84,7 +100,10 @@ function LoadedValuation(props: {
 	);
 	const ranges = React.useMemo(() => ratioRanges(sections), [sections]);
 	const groups = React.useMemo(
-		() => figureGroupsOf("valuation", sections),
+		() =>
+			figureGroupsOf("valuation", sections).filter(({ ref }) =>
+				DRAWN_BLOCKS.has(ref.block),
+			),
 		[sections],
 	);
 	return (
@@ -102,6 +121,44 @@ function LoadedValuation(props: {
 							<RatioRow key={range.ratio} range={range} />
 						))}
 					</ul>
+				</CompanyCard>
+				<CompanyCard
+					tab="valuation"
+					position={3}
+					span={2}
+					className="min-w-0"
+					title="How the Ratios Are Built"
+					caption="Each ratio now, with its formula and the figures it divides."
+				>
+					<Table
+						aria-label="How the Ratios Are Built table"
+						className="text-base"
+					>
+						<TableHeader>
+							<TableRow>
+								<TableHead className={FIXED_COLUMN}>Ratio</TableHead>
+								<TableHead>Formula</TableHead>
+								<TableHead>Inputs</TableHead>
+								<TableHead className="text-right">Now</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{ranges.map(({ ratio, now }) => (
+								<TableRow key={ratio}>
+									<TableHead scope="row" className={FIXED_COLUMN}>
+										{metrics[ratio].name}
+									</TableHead>
+									<TableCell>{metrics[ratio].formula}</TableCell>
+									<TableCell>
+										<Inputs inputs={metricInputsOf(ratio, sections)} />
+									</TableCell>
+									<TableCell className="text-right">
+										<Value figure={now} />
+									</TableCell>
+								</TableRow>
+							))}
+						</TableBody>
+					</Table>
 				</CompanyCard>
 			</CompanyCardGrid>
 			<SourcesIndex groups={groups} />
@@ -214,5 +271,30 @@ function Value({ figure }: { figure: Figure }) {
 		<SourceTrigger claim={figure} className="font-monospace">
 			{formatNumber(Number(figure.value))}
 		</SourceTrigger>
+	);
+}
+
+/**
+ * The inputs of a ratio, each with its sources. An input that is missing
+ * shows the dimmed dash. A ratio that fails its guard still shows its inputs.
+ */
+function Inputs({ inputs }: { inputs: readonly Figure[] }) {
+	return (
+		<ul className="flex flex-col gap-1">
+			{inputs.map((input, index) => (
+				<li key={input?.id ?? index}>
+					{input === null ? (
+						<Value figure={null} />
+					) : (
+						<>
+							<span className="text-muted-foreground">{input.label} </span>
+							<SourceTrigger claim={input} className="font-monospace">
+								{formatInput(input)}
+							</SourceTrigger>
+						</>
+					)}
+				</li>
+			))}
+		</ul>
 	);
 }
