@@ -1,9 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, within } from "storybook/test";
+import { expect, userEvent, within } from "storybook/test";
 
 import { CompanyGatewayProvider } from "../../../contexts/CompanyGatewayContext";
 import type { CompanyGateway } from "../../../lib/company/gateway";
 import { Ticker } from "../../../lib/domain/ticker";
+import { barTargetsOf, TAPPABLE_BARS } from "../../../test/barTargets";
 import { alwaysFailingCompanyGateway } from "../../../test/fixtures/companies/always-failing";
 import { alwaysFoundCompanyGateway } from "../../../test/fixtures/companies/always-found";
 import { fakeCompanyReport } from "../../../test/fixtures/companies/fake-company-report";
@@ -34,7 +35,44 @@ const missingBonusGateway: CompanyGateway = {
 	}),
 };
 
-/** A gateway with no pay and no insider, so cards 6.3 and 6.4 show their empty copy. */
+/** A gateway with a salary that is not a number, a missing bonus, and a year of no pay whose year is not a whole number. */
+const oddPayGateway: CompanyGateway = {
+	...found,
+	getManagement: async () => ({
+		...management,
+		ceoPay: [
+			...management.ceoPay.map((year, position) =>
+				position === 0
+					? {
+							...year,
+							salary: year.salary && { ...year.salary, value: Number.NaN },
+						}
+					: { ...year, bonus: null },
+			),
+			{
+				fiscalYear: 2025.5,
+				salary: null,
+				bonus: null,
+				stockAwards: null,
+				other: null,
+			},
+		],
+	}),
+};
+
+/** A gateway with sixteen years of pay, so the chart is wider than a phone. */
+const longPayGateway: CompanyGateway = {
+	...found,
+	getManagement: async () => ({
+		...management,
+		ceoPay: Array.from({ length: 16 }, (_, n) => ({
+			...management.ceoPay[n % 2],
+			fiscalYear: 2010 + n,
+		})),
+	}),
+};
+
+/** A gateway with no pay and no insider, so cards 6.2, 6.3 and 6.4 show their empty copy. */
 const noPayNoInsidersGateway: CompanyGateway = {
 	...found,
 	getManagement: async () => ({ ...management, ceoPay: [], insiders: [] }),
@@ -82,6 +120,7 @@ export const Loaded: Story = {
 
 		const expectedResult = [
 			"6.1 Executives and Board",
+			"6.2 CEO Pay by Year",
 			"6.3 Pay Mix",
 			"6.4 Insider Holdings",
 		];
@@ -172,7 +211,7 @@ export const MissingPayPart: Story = {
 	},
 };
 
-/** Play test: with no pay and no insider, cards 6.3 and 6.4 each say so in one line. */
+/** Play test: with no pay and no insider, cards 6.2, 6.3 and 6.4 each say so in one line. */
 export const NoPayNoInsiders: Story = {
 	parameters: { companyGateway: noPayNoInsidersGateway },
 	play: async ({ canvasElement }) => {
@@ -180,13 +219,71 @@ export const NoPayNoInsiders: Story = {
 
 		const expectedResult = [
 			"The proxy statement reports no pay for the chief executive.",
+			"The proxy statement reports no pay for the chief executive.",
 			"No insider reports a holding.",
 		];
 
 		const result = [
-			await canvas.findByText(/reports no pay/),
+			...(await canvas.findAllByText(/reports no pay/)),
 			canvas.getByText(/No insider reports/),
 		].map((line) => line.textContent);
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: card 6.2 draws no part for a missing or odd figure, leaves a gap for a year with no pay, and its "Data" table shows each as the dash. */
+export const PayMissingParts: Story = {
+	parameters: { companyGateway: oddPayGateway },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const plot = await canvas.findByRole("list", { name: "Fiscal years" });
+		const parts = within(plot)
+			.getAllByRole("listitem")
+			.map((year) => within(year).queryAllByRole("button").length);
+		await userEvent.click(canvas.getByRole("button", { name: "Data" }));
+
+		const expectedResult = {
+			parts: [3, 3, 0],
+			rows: [
+				["FY2024", "—", "1,200", "6,500", "200"],
+				["FY2025", "1,000", "—", "7,200", "250"],
+				["—", "—", "—", "—", "—"],
+			],
+		};
+
+		const table = canvas.getByRole("table", { name: "CEO pay by year" });
+		const rows = within(table)
+			.getAllByRole("row")
+			.slice(1)
+			.map((row) => [...row.children].map((cell) => cell.textContent));
+		const result = { parts, rows };
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Card 6.2 in the dark theme. The four parts take `chart-1` to `chart-4` of the dark ramp, each at 3:1 on the card. */
+export const PayDark: Story = {
+	globals: { theme: "dark" },
+};
+
+/** Play test: at 320 px, each part of card 6.2 is a target at least 24 × 24 px inside the plot, and the chart scrolls inside its card while the page does not. */
+export const PayPhone: Story = {
+	globals: { viewport: { value: "mobile1", isRotated: false } },
+	parameters: { companyGateway: longPayGateway },
+	play: async ({ canvasElement }) => {
+		const plot = await within(canvasElement).findByRole("list", {
+			name: "Fiscal years",
+		});
+		const scroller = plot.parentElement?.parentElement?.parentElement;
+
+		const expectedResult = { ...TAPPABLE_BARS, chartScrolls: true };
+
+		const result = {
+			...barTargetsOf(plot),
+			chartScrolls: !!scroller && scroller.scrollWidth > scroller.clientWidth,
+		};
 
 		await expect(result).toEqual(expectedResult);
 	},

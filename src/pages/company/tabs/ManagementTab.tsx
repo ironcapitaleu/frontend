@@ -2,7 +2,10 @@ import * as React from "react";
 
 import { CompanyCard, CompanyCardGrid } from "@/components/company/CompanyCard";
 import { ShareBar } from "@/components/company/ShareBar";
+import { SourcesChip } from "@/components/company/SourcesChip";
 import { SourcesIndex } from "@/components/company/SourcesIndex";
+import { MISSING, toFixedWithMinus } from "@/components/screener/format";
+import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
 	Table,
@@ -18,16 +21,21 @@ import { payMix, tenure } from "../../../lib/company/metrics";
 import { figureGroupsOf } from "../../../lib/company/sources";
 import type {
 	BlockKey,
+	Claim,
+	ClaimValue,
 	CompletedSections,
 	ManagementSection,
 } from "../../../lib/company/types";
 import type { Ticker } from "../../../lib/domain/ticker";
 import { ClaimCell, FigureCell } from "./FigureCell";
+import type { ChartTable } from "./financialsTable";
 import { InsiderTable } from "./InsiderTable";
+import { StatementChart, yearLabel } from "./StatementChart";
 
 /** The blocks this tab draws so far. The other cards come in later tickets. */
 const DRAWN_BLOCKS: ReadonlySet<BlockKey> = new Set([
 	"executivesAndBoard",
+	"ceoPay",
 	"payMix",
 	"insiderHoldings",
 ]);
@@ -61,10 +69,18 @@ export function ManagementTab({ ticker }: { ticker: Ticker }) {
 	}
 }
 
+/** The parts of the chief executive's pay, in the order card 6.3 names them. */
+const PAY_PARTS = [
+	["salary", "Salary"],
+	["bonus", "Bonus"],
+	["stockAwards", "Stock"],
+	["other", "Other"],
+] as const;
+
 /**
- * Card 6.1, the executives and directors, then row 3: card 6.3 Pay Mix and
- * card 6.4 Insider Holdings. Card 6.2 comes in a later ticket and keeps its
- * number. Then the sources index.
+ * Card 6.1, the executives and directors, card 6.2, the chief executive's pay
+ * by year, then row 3: card 6.3 Pay Mix and card 6.4 Insider Holdings. Then
+ * the sources index.
  */
 function LoadedManagement({
 	management,
@@ -124,6 +140,12 @@ function LoadedManagement({
 						</Table>
 					)}
 				</CompanyCard>
+				<CeoPayCard
+					management={management}
+					claims={
+						groups.find(({ ref }) => ref.block === "ceoPay")?.claims ?? []
+					}
+				/>
 				<PayMixCard management={management} />
 				<CompanyCard
 					tab="management"
@@ -166,6 +188,97 @@ function PayMixCard({ management }: { management: ManagementSection }) {
 						{ label: "Stock", share: mix.stockAwards },
 						{ label: "Other", share: mix.other },
 					]}
+				/>
+			)}
+		</CompanyCard>
+	);
+}
+
+/** Writes a pay figure in USD thousands, such as `7,200`, or the dash when it is not a number. */
+function formatPay(value: ClaimValue): string {
+	return typeof value === "number"
+		? toFixedWithMinus(value / 1e3, 0, true)
+		: MISSING;
+}
+
+/** Card 6.2: the chief executive's pay in each year, stacked by part. "Data" swaps the chart for a table. */
+function CeoPayCard({
+	management,
+	claims,
+}: {
+	management: ManagementSection;
+	claims: readonly Claim[];
+}) {
+	const [data, setData] = React.useState(false);
+	const { ceoPay } = management;
+	const table: ChartTable = {
+		periods: ceoPay.map(({ fiscalYear }) => ({ fiscalYear })),
+		lines: PAY_PARTS.map(([key, label]) => ({
+			key,
+			label,
+			points: ceoPay.map((year) => year[key]),
+		})),
+	};
+	const [first, last] = [ceoPay.at(0), ceoPay.at(-1)].map((year) =>
+		yearLabel(year?.fiscalYear ?? Number.NaN, true),
+	);
+	return (
+		<CompanyCard
+			tab="management"
+			position={2}
+			title="CEO Pay by Year"
+			caption={`${first}–${last} · USD thousands · Summary compensation table of each year's DEF 14A`}
+			span={2}
+			className="min-w-0"
+			actions={
+				<>
+					<Button
+						variant="outline"
+						size="sm"
+						aria-pressed={data}
+						onClick={() => setData(!data)}
+					>
+						Data
+					</Button>
+					<SourcesChip claims={claims} />
+				</>
+			}
+		>
+			{ceoPay.length === 0 ? (
+				<p className="text-muted-foreground">
+					The proxy statement reports no pay for the chief executive.
+				</p>
+			) : data ? (
+				<Table aria-label="CEO pay by year">
+					<TableHeader>
+						<TableRow>
+							<TableHead className="sticky left-0 bg-card">Year</TableHead>
+							{PAY_PARTS.map(([key, label]) => (
+								<TableHead key={key} className="text-right">
+									{label}
+								</TableHead>
+							))}
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{ceoPay.map((year, position) => (
+							// biome-ignore lint/suspicious/noArrayIndexKey: a year can repeat or be missing, and the rows keep their order
+							<TableRow key={position}>
+								<TableHead scope="row" className="sticky left-0 bg-card">
+									{yearLabel(year.fiscalYear, true)}
+								</TableHead>
+								{PAY_PARTS.map(([key]) => (
+									<FigureCell key={key} figure={year[key]} format={formatPay} />
+								))}
+							</TableRow>
+						))}
+					</TableBody>
+				</Table>
+			) : (
+				<StatementChart
+					table={table}
+					format={(claim) => formatPay(claim.value)}
+					stacked
 				/>
 			)}
 		</CompanyCard>

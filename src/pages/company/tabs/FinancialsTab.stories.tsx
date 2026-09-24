@@ -5,6 +5,7 @@ import { MISSING, MISSING_INK } from "@/components/screener/format";
 import { CompanyGatewayProvider } from "../../../contexts/CompanyGatewayContext";
 import type { CompanyGateway } from "../../../lib/company/gateway";
 import { Ticker } from "../../../lib/domain/ticker";
+import { barTargetsOf, TAPPABLE_BARS } from "../../../test/barTargets";
 import { alwaysFailingCompanyGateway } from "../../../test/fixtures/companies/always-failing";
 import { alwaysFoundCompanyGateway } from "../../../test/fixtures/companies/always-found";
 import { fakeCompanyReport } from "../../../test/fixtures/companies/fake-company-report";
@@ -254,31 +255,10 @@ async function checkBarTargets(canvasElement: HTMLElement) {
 	);
 	await userEvent.click(await body.findByRole("option", { name: "Cash flow" }));
 	const plot = await canvas.findByRole("list", { name: "Fiscal years" });
-	const bars = within(plot).getAllByRole("button");
-	const page = canvasElement.ownerDocument.documentElement;
-	const { top, bottom } = plot.getBoundingClientRect();
 
-	const expectedResult = {
-		smallTargets: [],
-		targetsOutsidePlot: [],
-		invisibleBars: [],
-		pageScrollsSideways: false,
-	};
+	const expectedResult = TAPPABLE_BARS;
 
-	const result = {
-		smallTargets: bars.filter((bar) => {
-			const { width, height } = bar.getBoundingClientRect();
-			return width < 24 || height < 24;
-		}),
-		targetsOutsidePlot: bars.filter((bar) => {
-			const rect = bar.getBoundingClientRect();
-			return rect.top < top - 0.5 || rect.bottom > bottom + 0.5;
-		}),
-		invisibleBars: bars.filter(
-			(bar) => bar.parentElement?.getBoundingClientRect().height === 0,
-		),
-		pageScrollsSideways: page.scrollWidth > page.clientWidth,
-	};
+	const result = barTargetsOf(plot);
 
 	await expect(result).toEqual(expectedResult);
 }

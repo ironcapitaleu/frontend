@@ -3,7 +3,7 @@ import { MISSING, MISSING_INK } from "@/components/screener/format";
 import { TableCell } from "@/components/ui/table";
 import type { Figure } from "../../../lib/company/types";
 
-/** A right-aligned mono figure that opens its sources, or the dimmed dash when it is missing. */
+/** A right-aligned mono figure that opens its sources, or the dimmed dash when it is missing or not a finite number. */
 export function FigureCell({
 	figure,
 	format,
@@ -13,7 +13,9 @@ export function FigureCell({
 }) {
 	return (
 		<TableCell className="text-right font-monospace">
-			{figure !== null && typeof figure.value === "number" ? (
+			{figure !== null &&
+			typeof figure.value === "number" &&
+			Number.isFinite(figure.value) ? (
 				<SourceTrigger claim={figure}>{format(figure.value)}</SourceTrigger>
 			) : (
 				<span className={MISSING_INK}>{MISSING}</span>

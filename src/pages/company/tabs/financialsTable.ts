@@ -3,7 +3,9 @@ import type {
 	Claim,
 	FinancialsSection,
 	LineKey,
+	Nullable,
 	Period,
+	Series,
 	StatementTable,
 	Unit,
 } from "@/lib/company/types";
@@ -130,6 +132,12 @@ export function chartTable(
  */
 export const MIN_BAR_HEIGHT = 2;
 
+/** The figures of a chart: a column for each fiscal year and a line for each series. */
+export interface ChartTable {
+	readonly periods: readonly Pick<Period, "fiscalYear">[];
+	readonly lines: readonly Pick<Series, "key" | "label" | "points">[];
+}
+
 /** Where a bar sits, in percent of the plot height from the top. */
 export interface BarBox {
 	readonly top: number;
@@ -144,7 +152,7 @@ export interface BarBox {
  * {@link MIN_BAR_HEIGHT} tall, within the room on its side of the zero line.
  * A text value is not on the scale.
  */
-export function barScale(table: StatementTable): {
+export function barScale(table: ChartTable): {
 	zero: number;
 	place: (value: number) => BarBox;
 } {
@@ -172,4 +180,49 @@ export function barScale(table: StatementTable): {
 			return { top: value > 0 ? zero - height : zero, height };
 		},
 	};
+}
+
+/** Where a part of a stacked bar sits, in px up from the foot of the plot. */
+export interface StackBox {
+	readonly bottom: number;
+	readonly height: number;
+}
+
+/**
+ * Returns where each part of each column sits in a stacked chart `plot` px
+ * tall, as `boxes[line][column]`, first line lowest. A part that is not a
+ * finite number of at least 0 is `null`, so it never reads as 0. A part is at
+ * least `least` px tall, so it can be tapped. That floor adds at most `least`
+ * px for each line, so the scale leaves that room and the tallest column fits.
+ */
+export function stackScale(
+	table: ChartTable,
+	plot: number,
+	least: number,
+): Nullable<StackBox>[][] {
+	const values = table.lines.map(({ points }) =>
+		table.periods.map((_, column) => {
+			const value = points[column]?.value;
+			return Number.isFinite(value) && Number(value) >= 0
+				? Number(value)
+				: null;
+		}),
+	);
+	const bottoms = table.periods.map(() => 0);
+	const totals = bottoms.map((_, column) =>
+		values.reduce((sum, row) => sum + (row[column] ?? 0), 0),
+	);
+	const high = Math.max(0, ...totals);
+	const unit = high > 0 ? (plot - least * values.length) / high : 0;
+	return values.map((row) =>
+		row.map((value, column) => {
+			if (value === null) return null;
+			const box = {
+				bottom: bottoms[column] ?? 0,
+				height: Math.max(least, value * unit),
+			};
+			bottoms[column] = box.bottom + box.height;
+			return box;
+		}),
+	);
 }

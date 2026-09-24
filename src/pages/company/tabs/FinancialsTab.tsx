@@ -183,7 +183,10 @@ export function FinancialsTab({ ticker }: { ticker: Ticker }) {
 							label={`${label} chart`}
 						/>
 					) : (
-						<StatementChart table={chart} scale={scale} />
+						<StatementChart
+							table={chart}
+							format={(claim) => formatStatementValue(claim, scale)}
+						/>
 					)}
 				</CompanyCard>
 				<CompanyCard

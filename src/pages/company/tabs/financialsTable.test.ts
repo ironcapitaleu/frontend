@@ -15,6 +15,7 @@ import {
 	MIN_BAR_HEIGHT,
 	newestFirst,
 	periodLabel,
+	stackScale,
 	tableCaption,
 	toTitle,
 } from "./financialsTable";
@@ -287,6 +288,31 @@ describe("barScale", () => {
 		};
 
 		const result = place(1);
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("stackScale", () => {
+	it("should floor a small or zero part at the least height and draw no part for a figure that is not a number when a stack is scaled", () => {
+		const periods = [period(2025, null), period(2026, null)];
+		const table = {
+			periods,
+			lines: [
+				line("usd", periods, [96, Number.NaN]),
+				line("usd", periods, [4, 0]),
+			],
+		};
+
+		const expectedResult = [
+			[{ bottom: 0, height: 96 }, null],
+			[
+				{ bottom: 96, height: 24 },
+				{ bottom: 0, height: 24 },
+			],
+		];
+
+		const result = stackScale(table, 148, 24);
 
 		expect(result).toEqual(expectedResult);
 	});
