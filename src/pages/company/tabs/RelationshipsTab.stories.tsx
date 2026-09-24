@@ -145,7 +145,7 @@ export const NoInsiders: Story = {
 
 /** Play test: a stake whose company has a page links to `/companies/:symbol`. */
 export const StakeWithPage: Story = {
-	args: { hasCompanyPage: (symbol) => symbol === "CRVD" },
+	args: { hasCompanyPage: (ticker) => ticker.equals(Ticker.parse("CRVD")) },
 	play: async ({ canvasElement }) => {
 		const expectedResult = "/companies/CRVD";
 

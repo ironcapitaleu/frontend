@@ -30,7 +30,7 @@ import {
 	ownershipShares,
 	stakePercent,
 } from "../../../lib/company/metrics";
-import { hasCompanyPage as hasSampleCompanyPage } from "../../../lib/company/sampleCompanies";
+import { servesTicker } from "../../../lib/company/sampleCompanies";
 import { figureGroupsOf } from "../../../lib/company/sources";
 import type {
 	CompletedSections,
@@ -48,10 +48,10 @@ import { formatShares } from "./relationships";
  */
 export function RelationshipsTab({
 	ticker,
-	hasCompanyPage = hasSampleCompanyPage,
+	hasCompanyPage = servesTicker,
 }: {
 	ticker: Ticker;
-	hasCompanyPage?: (symbol: string) => boolean;
+	hasCompanyPage?: (ticker: Ticker) => boolean;
 }) {
 	const state = useCompany(ticker, "relationships");
 
@@ -89,7 +89,7 @@ function LoadedRelationships({
 }: {
 	relationships: RelationshipsSection;
 	sections: CompletedSections;
-	hasCompanyPage: (symbol: string) => boolean;
+	hasCompanyPage: (ticker: Ticker) => boolean;
 }) {
 	// The same `groups` on each render lets `SourcesIndex` keep its memo.
 	const groups = React.useMemo(
@@ -293,7 +293,7 @@ function StakesCard({
 	hasCompanyPage,
 }: {
 	relationships: RelationshipsSection;
-	hasCompanyPage: (symbol: string) => boolean;
+	hasCompanyPage: (ticker: Ticker) => boolean;
 }) {
 	return (
 		<CompanyCard
@@ -320,7 +320,7 @@ function StakesCard({
 							// biome-ignore lint/suspicious/noArrayIndexKey: the section fixes the order of the rows, and a stake can have no ticker
 							<TableRow key={position}>
 								<TableHead scope="row" className="sticky left-0 bg-card">
-									{row.ticker !== null && hasCompanyPage(row.ticker.value) ? (
+									{row.ticker !== null && hasCompanyPage(row.ticker) ? (
 										<Link
 											to={`/companies/${row.ticker.value}`}
 											className="underline underline-offset-4 hover:text-primary"
