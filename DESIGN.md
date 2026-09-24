@@ -512,7 +512,9 @@ Overview has these cards, from top to bottom:
    Figures shows market cap, P/E, P/FCF, P/B, operating margin, return on
    equity, dividend yield and buyback yield. Each figure except market cap
    shows the sector median in muted ink. Financial Position draws assets
-   against liabilities as side-by-side bars, short term and long term.
+   against liabilities as side-by-side bars, short term and long term. The
+   bars share one scale that holds zero, so a negative figure draws below the
+   zero line, and a small figure keeps a least height.
 4. **Checks by Area.** The five areas, each with its icon, its ring of met
    checks, and its checks. A legend names the three results.
 5. **Who Owns It** and **Profile**, side by side on a desktop. Who Owns It

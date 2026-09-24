@@ -32,7 +32,7 @@ function formatBillions(value: number): string {
 /**
  * The small yearly bar chart of the company page, with the revenue of the
  * sample company Meridian Semiconductor. The stories cover ten full years, a
- * negative year, a missing year, a value that is not finite, a single year,
+ * negative year, a reported zero, a missing year, a value that is not finite, a single year,
  * every year missing, no years at all, and the phone width.
  */
 const meta: Meta<typeof MiniBarChart> = {
@@ -85,6 +85,22 @@ export const Missing: Story = {
 		const expectedResult = "FY2021: —";
 
 		const result = canvas.getAllByRole("listitem")[4]?.textContent;
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/** Play test: a reported zero draws a 2 px mark on the zero line, so it never reads as a missing year. */
+export const ReportedZero: Story = {
+	args: { series: withValues({ 4: 0 }) },
+	play: async ({ canvasElement }) => {
+		const bar = within(canvasElement)
+			.getAllByRole("listitem")[4]
+			?.querySelector('[data-slot="mini-bar-chart-bar"]');
+
+		const expectedResult = 2;
+
+		const result = Math.round(bar?.getBoundingClientRect().height ?? 0);
 
 		await expect(result).toBe(expectedResult);
 	},

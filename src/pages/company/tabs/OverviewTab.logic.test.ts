@@ -239,6 +239,32 @@ describe("positionBars", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should speak a dash when a figure is null", () => {
+		const rows = rowsOf([4, 1, 1, 2]).map((row) =>
+			row.term === "Long term" ? { ...row, liabilities: null } : row,
+		);
+
+		const expectedResult = "Long term liabilities: —";
+
+		const result = positionBars(rows).plots[1]?.[1]?.text;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should drop the value and keep the other bars' heights when a value is not finite", () => {
+		const expectedResult = { value: null, heights: [100, 25, 50] };
+
+		const { plots } = positionBars(rowsOf([4, Number.NaN, 1, 2]));
+		const result = {
+			value: plots[0]?.[1]?.value,
+			heights: [plots[0]?.[0], plots[1]?.[0], plots[1]?.[1]].map(
+				(bar) => bar?.height,
+			),
+		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should speak the value in the figure's unit when the unit is not dollars", () => {
 		const expectedResult = "Short term assets: 5.0B";
 

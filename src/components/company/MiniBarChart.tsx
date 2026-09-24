@@ -34,7 +34,7 @@ interface MiniBar {
 	readonly value: number | null;
 	/** The top edge of the bar, from 0 to 100 percent of the plot height. */
 	readonly top: number;
-	/** The height of the bar, from 0 to 100 percent. `0` for a missing year. */
+	/** The height of the bar, from 0 to 100 percent. `0` for a missing year or a zero. */
 	readonly height: number;
 }
 
@@ -56,8 +56,10 @@ interface BarBox {
 /**
  * Returns where each of `values` draws. One scale spans the lowest and the
  * highest value and always holds zero, so a negative value draws below the
- * zero line. A known non-zero value is at least {@link MIN_HEIGHT} tall. A
- * `null` or zero value gets no height.
+ * zero line. A known non-zero value is at least {@link MIN_HEIGHT} tall, but
+ * never taller than the room on its side of the zero line. So for the values
+ * `[100, -10000]` the positive bar is under 2% tall. A `null` or zero value
+ * gets a height of `0`, and {@link barStyle} draws a zero as a 2 px mark.
  */
 function barBoxes(values: readonly (number | null)[]): {
 	boxes: BarBox[];
@@ -77,6 +79,17 @@ function barBoxes(values: readonly (number | null)[]): {
 		return { top: value !== null && value > 0 ? zero - height : zero, height };
 	});
 	return { boxes, zero };
+}
+
+/**
+ * Returns the `top` and `height` style of a known value's bar at `box`. A
+ * reported zero has no height, so it draws as a 2 px mark on the zero line
+ * and never reads as a missing year.
+ */
+function barStyle({ top, height }: BarBox): React.CSSProperties {
+	return height === 0
+		? { top: `calc(${top}% - 2px)`, height: "2px" }
+		: { top: `${top}%`, height: `${height}%` };
 }
 
 /**
@@ -110,8 +123,9 @@ function miniBars(series: Series): MiniBars {
  * Overview's "Ten Years at a Glance" draws four of them.
  *
  * It draws the years the series has, up to the last ten. A negative value
- * draws below the zero line. A missing or non-finite point leaves a gap with
- * a small dot on the zero line, so it never reads as zero. The latest year
+ * draws below the zero line. A reported zero draws a 2 px mark on the zero
+ * line. A missing or non-finite point leaves a gap with a small dot on the
+ * zero line, so it never reads as zero. The latest year
  * draws in a stronger fill. The bars form a list, one item per year. The
  * name of each item is its year and value, with a dash for a missing year.
  * A known year's bar is a button, so hover, focus, a click or a tap opens its
@@ -176,7 +190,7 @@ function MiniBarChart({
 										bar.value > 0 ? "rounded-t-sm" : "rounded-b-sm",
 										index === bars.length - 1 ? "bg-chart-3" : "bg-chart-1",
 									)}
-									style={{ top: `${bar.top}%`, height: `${bar.height}%` }}
+									style={barStyle(bar)}
 								/>
 							);
 						const text = (
@@ -222,6 +236,7 @@ function MiniBarChart({
 export {
 	type BarBox,
 	barBoxes,
+	barStyle,
 	type MiniBar,
 	MiniBarChart,
 	type MiniBarChartProps,

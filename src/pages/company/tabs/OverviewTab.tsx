@@ -1,13 +1,12 @@
 import * as React from "react";
 
+import { ChartActions } from "@/components/company/ChartActions";
 import { CompanyCard, CompanyCardGrid } from "@/components/company/CompanyCard";
 import { FIXED_COLUMN, formatInUnit } from "@/components/company/format";
-import { MiniBarChart } from "@/components/company/MiniBarChart";
+import { barStyle, MiniBarChart } from "@/components/company/MiniBarChart";
 import { ShareBar } from "@/components/company/ShareBar";
 import { SourceTrigger } from "@/components/company/SourceCard";
-import { SourcesChip } from "@/components/company/SourcesChip";
 import { SourcesIndex } from "@/components/company/SourcesIndex";
-import { Button } from "@/components/ui/button";
 import { MISSING, MISSING_INK } from "@/components/screener/format";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -28,7 +27,7 @@ import {
 	type PositionRow,
 } from "@/lib/company/metrics";
 import { figureGroupsOf, sectorMedianOf } from "@/lib/company/sources";
-import type { BlockKey, Claim, CompletedSections } from "@/lib/company/types";
+import type { BlockKey, CompletedSections } from "@/lib/company/types";
 import type { Ticker } from "@/lib/domain/ticker";
 import { cn } from "@/lib/utils";
 import { FigureCell, FigureText } from "./FigureCell";
@@ -187,34 +186,6 @@ export function OverviewTab({ ticker }: { ticker: Ticker }) {
 }
 
 /**
- * The "Data" button and the "Sources" chip of a chart card, as the Financials
- * chart card draws them. The button swaps the chart for a table.
- */
-function ChartActions({
-	data,
-	onData,
-	claims,
-}: {
-	data: boolean;
-	onData: (data: boolean) => void;
-	claims: readonly Claim[];
-}) {
-	return (
-		<>
-			<Button
-				variant="outline"
-				size="sm"
-				aria-pressed={data}
-				onClick={() => onData(!data)}
-			>
-				Data
-			</Button>
-			<SourcesChip claims={claims} />
-		</>
-	);
-}
-
-/**
  * The table of card 1.3: each key figure, and its sector median in muted
  * ink. Market cap has no median, so its median cell stays empty.
  */
@@ -297,11 +268,7 @@ function PositionBars({ rows }: { rows: readonly PositionRow[] }) {
 														value < 0 ? "rounded-b-sm" : "rounded-t-sm",
 														side.fill,
 													)}
-													style={
-														height === 0
-															? { top: `calc(${top}% - 2px)`, height: "2px" }
-															: { top: `${top}%`, height: `${height}%` }
-													}
+													style={barStyle({ top, height })}
 												/>
 											</SourceTrigger>
 										</li>

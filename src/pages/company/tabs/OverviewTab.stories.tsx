@@ -53,27 +53,57 @@ const missingTotalAssetsGateway: CompanyGateway = {
 	},
 };
 
+/** A gateway whose latest quarterly balance sheet line `key` holds `value`. */
+function latestBalanceGateway(key: string, value: number): CompanyGateway {
+	return {
+		...sampleGateway,
+		getFinancials: async (ticker) => {
+			const financials = await sampleGateway.getFinancials(ticker);
+			const { balance } = financials;
+			const lines = balance.quarterly.lines.map((line) => {
+				const last = line.points.at(-1);
+				return line.key === key && last
+					? {
+							...line,
+							points: [...line.points.slice(0, -1), { ...last, value }],
+						}
+					: line;
+			});
+			return {
+				...financials,
+				balance: { ...balance, quarterly: { ...balance.quarterly, lines } },
+			};
+		},
+	};
+}
+
 /** A gateway whose latest current liabilities are $1, well under 1% of the highest figure. */
-const tinyLiabilitiesGateway: CompanyGateway = {
-	...sampleGateway,
-	getFinancials: async (ticker) => {
-		const financials = await sampleGateway.getFinancials(ticker);
-		const { balance } = financials;
-		const lines = balance.quarterly.lines.map((line) => {
-			const last = line.points.at(-1);
-			return line.key === "totalCurrentLiabilities" && last
-				? {
-						...line,
-						points: [...line.points.slice(0, -1), { ...last, value: 1 }],
-					}
-				: line;
-		});
-		return {
-			...financials,
-			balance: { ...balance, quarterly: { ...balance.quarterly, lines } },
-		};
-	},
-};
+const tinyLiabilitiesGateway = latestBalanceGateway(
+	"totalCurrentLiabilities",
+	1,
+);
+/** A gateway whose latest total liabilities are $1, so the long-term liabilities are negative. */
+const negativeLiabilitiesGateway = latestBalanceGateway("totalLiabilities", 1);
+/** A gateway whose latest current liabilities are a reported zero. */
+const zeroLiabilitiesGateway = latestBalanceGateway(
+	"totalCurrentLiabilities",
+	0,
+);
+
+/** Where the bar named `name` in card 1.4 sits against its zero line, in px. */
+async function positionBarAt(canvasElement: HTMLElement, name: RegExp) {
+	const button = await within(canvasElement).findByRole("button", { name });
+	const bar = button.querySelector("[data-slot=position-bar]");
+	const line = button
+		.closest("[data-slot=position-plot]")
+		?.querySelector("div[aria-hidden=true]");
+	const box = bar?.getBoundingClientRect();
+	const zero = line?.getBoundingClientRect().top ?? 0;
+	return {
+		top: Math.round((box?.top ?? 0) - zero),
+		bottom: Math.round((box?.bottom ?? 0) - zero),
+	};
+}
 
 /**
  * The Overview tab with the sample data of Meridian Semiconductor (MRDN).
@@ -439,5 +469,36 @@ export const FinancialPositionTinyFigure: Story = {
 		const result = (bar?.getBoundingClientRect().height ?? 0) >= 3;
 
 		await expect(result).toBe(expectedResult);
+	},
+};
+
+/** Play test: a negative long-term figure in card 1.4 draws down from the zero line. */
+export const FinancialPositionNegative: Story = {
+	parameters: { companyGateway: negativeLiabilitiesGateway },
+	play: async ({ canvasElement }) => {
+		const expectedResult = { startsAtZero: true, drawsDown: true };
+
+		const { top, bottom } = await positionBarAt(
+			canvasElement,
+			/^Long term liabilities/,
+		);
+		const result = { startsAtZero: Math.abs(top) <= 1, drawsDown: bottom > 2 };
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: a reported zero in card 1.4 draws a 2 px mark that ends on the zero line. */
+export const FinancialPositionZero: Story = {
+	parameters: { companyGateway: zeroLiabilitiesGateway },
+	play: async ({ canvasElement }) => {
+		const expectedResult = { top: -2, bottom: 0 };
+
+		const result = await positionBarAt(
+			canvasElement,
+			/^Short term liabilities/,
+		);
+
+		await expect(result).toEqual(expectedResult);
 	},
 };
