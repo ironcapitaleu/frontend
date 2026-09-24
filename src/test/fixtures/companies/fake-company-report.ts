@@ -962,7 +962,7 @@ const INSIDERS: [string, string, number, string][] = [
 ];
 
 function form4(filer: string, row: number, filedOn: string): Filing {
-	const [, year, month, day] = filedOn.split("-").map((part) => part.slice(-2));
+	const [year, month, day] = filedOn.split("-").map((part) => part.slice(-2));
 	return {
 		...filing(
 			"Form 4",
