@@ -18,6 +18,7 @@ import {
 	keyFigureOf,
 	type MetricResult,
 	type Metric,
+	metricInputsOf,
 	metrics,
 	otherRevenueShare,
 	ownershipShares,
@@ -26,6 +27,7 @@ import {
 	revenueShare,
 	sameRef,
 	stakePercent,
+	tenure,
 } from "./metrics";
 import type {
 	Claim,
@@ -1508,6 +1510,101 @@ describe("per-row derived figures", () => {
 		const expectedResult = null;
 
 		const result = stakePercent(section, 2);
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("metricInputsOf", () => {
+	it("should give each input of EV/EBIT when operating income fails the guard", () => {
+		const sections = sectionsWith(
+			"income",
+			"annual",
+			"operatingIncome",
+			[9],
+			-50_000_000,
+		);
+		const [operatingIncome] = pointsOf(
+			income.annual,
+			"operatingIncome",
+			[9],
+		) as Claim[];
+
+		const expectedResult = ["metric.enterpriseValue", operatingIncome?.id];
+
+		const result = metricInputsOf("enterpriseValueToEbit", sections).map(
+			(input) => input?.id ?? null,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give null for an input when it is missing", () => {
+		const sections = sectionsWith(
+			"income",
+			"annual",
+			"operatingIncome",
+			[9],
+			null,
+		);
+
+		const expectedResult = ["metric.enterpriseValue", null];
+
+		const result = metricInputsOf("enterpriseValueToEbit", sections).map(
+			(input) => input?.id ?? null,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("tenure", () => {
+	const section = fakeCompanyReport.management;
+
+	it("should count the whole years from the start date to the DEF 14A filing date when the start is a date", () => {
+		// To 10 Apr 2025 from 1 Apr 2019, and from 12 May 2016, a month short of 9.
+		const expectedResult = [6, 8];
+
+		const result = [tenure(section, 0)?.value, tenure(section, 1)?.value];
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should subtract the start year from the filing year when the start is a year", () => {
+		const [first] = section.people;
+		const since = first.since as Claim;
+		const people = [
+			{ ...first, since: { ...since, value: 2010, unit: "year" as const } },
+		];
+
+		const expectedResult = 15;
+
+		const result = tenure({ ...section, people }, 0)?.value;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it.each([
+		["an unpadded date", "2019-4-1"],
+		["a date in another order", "01/04/2019"],
+	])("should return null when the start is %s", (_, value) => {
+		const [first] = section.people;
+		const since = first.since as Claim;
+		const people = [{ ...first, since: { ...since, value } }];
+
+		const expectedResult = null;
+
+		const result = tenure({ ...section, people }, 0);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should return null when the start is missing", () => {
+		const people = [{ ...section.people[0], since: null }];
+
+		const expectedResult = null;
+
+		const result = tenure({ ...section, people }, 0);
 
 		expect(result).toEqual(expectedResult);
 	});

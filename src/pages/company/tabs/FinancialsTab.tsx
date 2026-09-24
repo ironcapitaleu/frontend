@@ -2,8 +2,11 @@ import { useMemo, useState } from "react";
 
 import { CompanyCard, CompanyCardGrid } from "@/components/company/CompanyCard";
 import { SourceTrigger } from "@/components/company/SourceCard";
+import { SourcesChip } from "@/components/company/SourcesChip";
 import { SourcesIndex } from "@/components/company/SourcesIndex";
+import { FIXED_COLUMN } from "@/components/company/format";
 import { MISSING, MISSING_INK } from "@/components/screener/format";
+import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
 import {
 	Select,
@@ -25,11 +28,12 @@ import { Text } from "@/components/ui/text";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useCompany } from "@/hooks/useCompany";
 import { usePhone } from "@/hooks/usePhone";
-import { figureGroupsOf } from "@/lib/company/sources";
+import { chartLines, figureGroupsOf } from "@/lib/company/sources";
 import type { BlockKey, StatementTable } from "@/lib/company/types";
 import type { Ticker } from "@/lib/domain/ticker";
 import { cn } from "@/lib/utils";
 import {
+	chartTable,
 	formatStatementValue,
 	lineUnitNote,
 	newestFirst,
@@ -41,23 +45,19 @@ import {
 	tableCaption,
 	toTitle,
 } from "./financialsTable";
+import { StatementChart } from "./StatementChart";
 
 /** The indent of a statement line, by its `level`. */
 const INDENT = ["", "pl-6", "pl-10"];
 
 /**
- * The fixed first column below 1024 px. Its card ink lets the scrolled
- * figures pass under it. At 1024 px and wider it has no ink of its own, so
- * the row hover reaches it.
- */
-const FIXED_COLUMN = "max-lg:sticky max-lg:left-0 max-lg:z-10 max-lg:bg-card";
-
-/**
- * The blocks this tab draws today: the three statement tables. The Sources
- * index names only these, so it names no chart card before the chart
- * ticket adds one.
+ * The blocks this tab draws: the three charts and the three statement
+ * tables. The Sources index names only these.
  */
 const DRAWN_BLOCKS: ReadonlySet<BlockKey> = new Set([
+	"incomeChart",
+	"balanceChart",
+	"cashFlowChart",
 	"incomeTable",
 	"balanceTable",
 	"cashFlowTable",
@@ -76,10 +76,12 @@ const UNITS: readonly { key: Scale; label: string }[] = [
 /**
  * The Financials tab of the company page (DESIGN.md §8 "Financials"). A row of
  * controls picks the statement, the annual or quarterly view and the unit.
- * The statement table card below shows the chosen table. Every cell opens the
- * sources of its figure. On a phone, the statement and period switches are
- * select menus and the table shows the newest period first. The tab loads the
- * Financials section through `useCompany`. It shows the page's spinner while
+ * The chart card draws the statement's fiscal years, and its "Data" button
+ * swaps the chart for a table. The statement table card below shows the
+ * chosen table. Every cell and every bar opens the sources of its figure. On
+ * a phone, the statement and period switches are select menus and the table
+ * shows the newest period first. The tab loads the Financials section through
+ * `useCompany`. It shows the page's spinner while
  * it loads and, when the load fails, the page's failed copy in the panel.
  */
 export function FinancialsTab({ ticker }: { ticker: Ticker }) {
@@ -87,6 +89,7 @@ export function FinancialsTab({ ticker }: { ticker: Ticker }) {
 	const [statement, setStatement] = useState<StatementKey>("income");
 	const [view, setView] = useState<PeriodView>("annual");
 	const [scale, setScale] = useState<Scale>("billions");
+	const [data, setData] = useState(false);
 	const phone = usePhone();
 	const sections = state.status === "loaded" ? state.sections : null;
 	const groups = useMemo(
@@ -122,6 +125,9 @@ export function FinancialsTab({ ticker }: { ticker: Ticker }) {
 	const shown = state.data[statement][view];
 	const table = phone ? newestFirst(shown) : shown;
 	const label = STATEMENTS.find(({ key }) => key === statement)?.label ?? "";
+	const chart = chartTable(state.data[statement].annual, chartLines[statement]);
+	const chartClaims =
+		groups.find(({ ref }) => ref.block === `${statement}Chart`)?.claims ?? [];
 	return (
 		<div className="flex flex-col gap-6">
 			<div className="flex flex-wrap items-center justify-between gap-3">
@@ -149,6 +155,37 @@ export function FinancialsTab({ ticker }: { ticker: Ticker }) {
 				/>
 			</div>
 			<CompanyCardGrid>
+				<CompanyCard
+					tab="financials"
+					position={1}
+					title={`${toTitle(label)} Chart`}
+					caption={tableCaption(chart, "annual", scale)}
+					span={2}
+					className="min-w-0"
+					actions={
+						<>
+							<Button
+								variant="outline"
+								size="sm"
+								aria-pressed={data}
+								onClick={() => setData(!data)}
+							>
+								Data
+							</Button>
+							<SourcesChip claims={chartClaims} />
+						</>
+					}
+				>
+					{data ? (
+						<StatementGrid
+							table={phone ? newestFirst(chart) : chart}
+							scale={scale}
+							label={`${label} chart`}
+						/>
+					) : (
+						<StatementChart table={chart} scale={scale} />
+					)}
+				</CompanyCard>
 				<CompanyCard
 					tab="financials"
 					position={2}

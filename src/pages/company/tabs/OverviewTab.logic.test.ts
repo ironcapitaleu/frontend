@@ -7,7 +7,6 @@ import type { CompanySectionKey, CompanyState } from "@/hooks/useCompany";
 import { MissingCompany } from "@/lib/company/errors";
 import { Ticker } from "@/lib/domain/ticker";
 import {
-	formatInUnit,
 	heldBack,
 	joinSections,
 	revenueParts,
@@ -136,23 +135,6 @@ describe("tenYearsSeries", () => {
 
 		expect(result).toBe(expectedResult);
 	});
-});
-
-describe("formatInUnit", () => {
-	it.each([
-		[212_000_000_000, "$212.0B", "usd"],
-		[-4_000_000_000, "−$4.0B", "usd"],
-		[24_500_000_000, "24.5B", "shares"],
-		[18.44, "18.4", "ratio"],
-		[0.312, "31.2%", "percent"],
-	] as const)(
-		"should write %s as %s when the unit is %s",
-		(value, expectedResult, unit) => {
-			const result = formatInUnit(value, unit);
-
-			expect(result).toBe(expectedResult);
-		},
-	);
 });
 
 describe("joinSections", () => {

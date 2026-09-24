@@ -34,10 +34,10 @@ import { servesTicker } from "../../../lib/company/sampleCompanies";
 import { figureGroupsOf } from "../../../lib/company/sources";
 import type {
 	CompletedSections,
-	Figure,
 	RelationshipsSection,
 } from "../../../lib/company/types";
 import type { Ticker } from "../../../lib/domain/ticker";
+import { FigureCell } from "./FigureCell";
 import { formatShares } from "./relationships";
 
 /**
@@ -342,24 +342,5 @@ function StakesCard({
 				</Table>
 			)}
 		</CompanyCard>
-	);
-}
-
-/** A right-aligned mono figure that opens its sources, or the dimmed dash when it is missing. */
-function FigureCell({
-	figure,
-	format,
-}: {
-	figure: Figure;
-	format: (value: number) => string;
-}) {
-	return (
-		<TableCell className="text-right font-monospace">
-			{figure !== null && typeof figure.value === "number" ? (
-				<SourceTrigger claim={figure}>{format(figure.value)}</SourceTrigger>
-			) : (
-				<span className={MISSING_INK}>{MISSING}</span>
-			)}
-		</TableCell>
 	);
 }
