@@ -300,18 +300,21 @@ Rules for the screener:
 > Version 5 of the
 > [company page design canvas](https://claude.ai/artifact/CwP59tuPZtXasw8dg7vpco),
 > which the user approved on 2026-09-24. The made-up figures for Meridian
-> Semiconductor (MRDN) stay on the canvas.
+> Semiconductor (MRDN) stay on the canvas. The epic covers US companies that
+> file with the SEC. Pages for companies that report elsewhere are a later
+> decision.
 
 The company page is part of the product machinery, so the modern pole leads.
 The company name in the masthead is in `font-classic`, like the name in the
 screener's company preview. The name speaks about the company as a whole, so it
-takes the classical voice. The section titles are serif and numbered, such as
+takes the classical voice. The card titles are serif and numbered, such as
 "1.2 Ten Years at a Glance". The first number is the tab's row in the table
-below. The second number counts the sections inside that tab.
+below. The second number counts the cards inside that tab, as the shared layout
+below defines.
 
 Overview is the landing tab. Each of the seven tabs has its own URL. The order
 of the table is the order of the tab strip. A change to that order is a design
-change, because it renumbers every section title.
+change, because it renumbers every card title.
 
 | Tab                 | URL                                |
 | ------------------- | ---------------------------------- |
@@ -343,8 +346,8 @@ Rules for the company page:
   filing lines. With a keyboard, focus on a figure previews its card, `Enter`
   or `Space` pins it, and `Escape` closes it.
 - **Charts and checks show sources at two levels.** Hovering, focusing, or
-  tapping a point of a chart shows the sources of that point. A "Sources" chip on the chart shows
-  the grouped sources behind the whole chart. A check shows the sources of
+  tapping a point of a chart shows the sources of that point. A "Sources" chip
+  on the chart shows the grouped sources behind the whole chart. A check shows the sources of
   every figure in its sentence.
 - **Short or empty history shows as it is.** A company with fewer than ten
   fiscal years shows the years it has. A growth rate or a 10-year range needs
@@ -421,10 +424,11 @@ Every tab shares these regions, from top to bottom:
    second number is the card's position in the tab, read top to bottom and then
    left to right, so two cards side by side take consecutive numbers. A tab can
    carry controls above its cards, such as the switches on Financials. Controls
-   are not a card and carry no number. A muted
-   caption under the title names the period, the unit, and the filing. On a
-   desktop, the cards fill a grid of two equal columns. A card takes one column
-   or both.
+   are not a card and carry no number. A muted caption under the title names
+   the period, the unit, and the filing. On a desktop, the cards fill a grid of
+   two equal columns. A card takes one column or both. Each tab's list below
+   numbers the rows of its layout, not its cards. A row that holds two cards
+   side by side uses two card numbers.
 4. **Sources index.** The last region of every tab is a collapsed index, "Where
    these numbers come from". It lists the filings behind the tab, with the
    date, the figures each filing feeds, and a link to the filing. It is an
@@ -434,7 +438,11 @@ Every tab shares these regions, from top to bottom:
 
 The tab order and the card numbers are documentation only for now. The Page
 Shell milestone of the epic adds a test that the tab strip follows the URL
-table.
+table. Each tab ticket adds a story test that checks its card titles against
+this section.
+
+Below 1024 px, a wide table scrolls sideways, and its first column stays fixed.
+This rule holds on every tab.
 
 Rules for the shared layout:
 
@@ -455,7 +463,6 @@ On a phone:
   icon only.
 - The cards stack in one column. The "Data" button sits above the "Sources"
   chip.
-- A wide table scrolls sideways, and its first column stays fixed.
 
 ### Overview
 
@@ -501,8 +508,8 @@ Financials has these cards, from top to bottom:
    years (CAGR). Margins sit as muted rows under the line they divide.
 
 On a phone, the two switches become two select menus. The table shows the
-newest years first. It scrolls sideways, and its first column stays fixed. The
-"Download CSV" button moves below the table, at full width.
+newest years first. The "Download CSV" button moves below the table, at full
+width.
 
 ### Valuation
 
@@ -518,7 +525,7 @@ Valuation has these cards, from top to bottom:
    inputs, and its current figure.
 
 On a phone, the range bars stack under the ratio name, and the legend uses
-shorter labels. The table scrolls sideways, and its first column stays fixed.
+shorter labels.
 
 ### Shareholder returns
 
@@ -558,8 +565,7 @@ Relationships has these cards, from top to bottom:
 Each company name in the stakes table links to the page of that company.
 Subsidiaries are not listed, so they have no link.
 
-On a phone, the cards stack in the order above. The tables scroll sideways,
-and the first column of the funds and insiders tables stays fixed.
+On a phone, the cards stack in the order above.
 
 ### Management
 
@@ -576,8 +582,7 @@ Management has these cards, from top to bottom:
 4. **Insider Buying and Selling by Year.** Net shares bought above zero or sold
    below zero by officers and directors, from Form 4.
 
-On a phone, the cards stack in the order above. The board table scrolls
-sideways, and its first column stays fixed.
+On a phone, the cards stack in the order above.
 
 ### Filings
 
@@ -588,7 +593,7 @@ Filings has one card:
    the period, the filing date, the figures the filing feeds, and a link to
    SEC EDGAR.
 
-On a phone, the table scrolls sideways, and its first column stays fixed.
+The Filings table follows the wide-table rule of the shared layout.
 
 ### Print Summary
 
