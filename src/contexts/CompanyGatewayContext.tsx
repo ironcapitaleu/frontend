@@ -13,6 +13,12 @@ const CompanyGatewayContext = createContext<CompanyGateway | undefined>(
  * Why the `gateway` prop? The page depends on the port and not on an adapter.
  * A test passes a named fake, so no test needs `vi.mock`. A later backend
  * adapter replaces the sample adapter without a change to any tab.
+ *
+ * Pass the same gateway object on every render. `useCompany` ties each load
+ * to the gateway instance, so a new instance starts every load under this
+ * provider again. Create the gateway once, at module scope, the way
+ * `AuthContext.tsx` creates its default gateway. Do not call a gateway factory
+ * inline in JSX.
  */
 export function CompanyGatewayProvider({
 	children,
@@ -31,8 +37,8 @@ export function CompanyGatewayProvider({
 /**
  * Returns the gateway of the nearest {@link CompanyGatewayProvider}.
  *
- * Throws an `Error` when used outside a `CompanyGatewayProvider`. Every
- * consumer must be rendered inside one.
+ * @throws Error when used outside a `CompanyGatewayProvider`. Every consumer
+ * must sit under the provider.
  */
 export function useCompanyGateway(): CompanyGateway {
 	const gateway = useContext(CompanyGatewayContext);

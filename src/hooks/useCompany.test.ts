@@ -144,6 +144,27 @@ describe("useCompany", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should return the failed state when a gateway method throws instead of rejecting", async () => {
+		const error = new FailedCompanyRequest();
+		const gateway: CompanyGateway = {
+			...alwaysFoundCompanyGateway(),
+			getOverview: () => {
+				throw error;
+			},
+		};
+		const { result: hook } = renderCompany(gateway, {
+			ticker: Ticker.parse("MRDN"),
+			section: "overview",
+		});
+
+		const expectedResult = { status: "failed", error };
+
+		await settled(hook);
+		const result = hook.current;
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should ignore the result of the old symbol when the symbol changes before the first result", async () => {
 		const found = alwaysFoundCompanyGateway();
 		const answers = new Map<string, (masthead: MastheadSection) => void>();
@@ -196,6 +217,85 @@ describe("useCompany", () => {
 
 		await settled(hook);
 		rerender({ ticker: Ticker.parse("mrdn"), section: "masthead" });
+		await settled(hook);
+		const result = calls;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should load the new section when the section changes for the same ticker", async () => {
+		const ticker = Ticker.parse("MRDN");
+		const { result: hook, rerender } = renderCompany<CompanySectionKey>(
+			alwaysFoundCompanyGateway(),
+			{ ticker, section: "masthead" },
+		);
+
+		const expectedResult = { status: "loaded", overviewLoaded: true };
+
+		await settled(hook);
+		rerender({ ticker, section: "overview" });
+		await settled(hook);
+		const state = hook.current;
+		const result = {
+			status: state.status,
+			overviewLoaded:
+				state.status === "loaded" && state.sections.overview !== null,
+		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should call the gateway once when the parent re-renders with the same gateway", async () => {
+		const found = alwaysFoundCompanyGateway();
+		let calls = 0;
+		const gateway: CompanyGateway = {
+			...found,
+			getMasthead: (ticker) => {
+				calls += 1;
+				return found.getMasthead(ticker);
+			},
+		};
+		const ticker = Ticker.parse("MRDN");
+		const { result: hook, rerender } = renderCompany(gateway, {
+			ticker,
+			section: "masthead",
+		});
+
+		const expectedResult = 1;
+
+		await settled(hook);
+		rerender({ ticker, section: "masthead" });
+		rerender({ ticker, section: "masthead" });
+		await settled(hook);
+		const result = calls;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should call the gateway again when the provider receives a new gateway instance", async () => {
+		const found = alwaysFoundCompanyGateway();
+		let calls = 0;
+		const countingGateway = (): CompanyGateway => ({
+			...found,
+			getMasthead: (ticker) => {
+				calls += 1;
+				return found.getMasthead(ticker);
+			},
+		});
+		let gateway = countingGateway();
+		const wrapper = ({ children }: { children: ReactNode }) =>
+			createElement(CompanyGatewayProvider, { gateway, children });
+		const ticker = Ticker.parse("MRDN");
+		const { result: hook, rerender } = renderHook(
+			() => useCompany(ticker, "masthead"),
+			{ wrapper },
+		);
+
+		const expectedResult = 2;
+
+		await settled(hook);
+		gateway = countingGateway();
+		rerender();
 		await settled(hook);
 		const result = calls;
 
