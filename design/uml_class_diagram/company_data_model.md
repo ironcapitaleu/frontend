@@ -1376,12 +1376,13 @@ const c1: Check = {
 
 The subject resolves to ten claims, `metric.freeCashFlow.FY2017` to
 `metric.freeCashFlow.FY2026`. Each claim has a `DerivedSource` with the two
-reported lines of its own year as inputs. Four companies show the three
-results:
+reported lines of its own year as inputs. MRDN has free cash flow above 0 in
+all ten years, so C1 reads met, "10 of 10 years". Four other companies show
+the three results:
 
 | Company                     | Years above 0 (`k`) | Missing years (`m`) | Result                            |
 | --------------------------- | ------------------- | ------------------- | --------------------------------- |
-| MRDN, one negative year     | 9                   | 0                   | met, "9 of 10 years"              |
+| Ten years, one negative     | 9                   | 0                   | met, "9 of 10 years"              |
 | Ten years, four negative    | 6                   | 0                   | not met, "6 of 10 years"          |
 | Listed in 2024, three years | 3                   | 7                   | not enough data, `shortHistory`   |
 | Ten years, FY2019 capex missing, nine positive | 9      | 1                   | met, "9 of 10 years"              |
@@ -1671,8 +1672,9 @@ does the page label them?** Settled:
   quarterly points the port returns as `null`.
 - Income statement: a 10-Q reports three months for Q1 to Q3, and six or
   nine months to date. For `revenue`, `operatingIncome` and `netIncome`,
-  `metrics.ts` derives Q4 as the fiscal year minus the nine-month figure. `dilutedShares` and `dilutedEps` do not add
-  up over a year, so their Q4 stays `null` (§4).
+  `metrics.ts` derives Q4 as the fiscal year minus the nine-month figure.
+  `dilutedShares` and `dilutedEps` do not add up over a year, so their Q4
+  stays `null` (§4).
 - Cash flow statement: a 10-Q reports year to date. `metrics.ts` derives each
   quarter as the difference of two year-to-date figures, and Q4 as the fiscal
   year minus the nine-month figure.

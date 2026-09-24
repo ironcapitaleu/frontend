@@ -8,7 +8,8 @@ import { meridianOverview } from "./sample/overview";
 /**
  * The sample {@link CompanyGateway} adapter. It serves made-up data for one
  * company, Meridian Semiconductor, under the ticker `MRDN`, until the backend
- * adapter exists. The running app uses it, as `DESIGN.md` §8 records.
+ * adapter exists. A later ticket wires it into the running app, as `DESIGN.md`
+ * §8 plans.
  *
  * Each method resolves the MRDN section for `MRDN`. For any other ticker, it
  * rejects with {@link MissingCompany}. The data lives in `sample/`.

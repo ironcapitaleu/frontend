@@ -545,7 +545,7 @@ const QUARTERLY = {
 	]),
 };
 
-/** The six-month and nine-month cash flow table, with the 10-Q of each period. */
+/** The six-month and nine-month table of the income and cash flow statements, with the 10-Q of each period. */
 const YEAR_TO_DATE = {
 	periods: QUARTER_YEARS.flatMap((year) => [
 		yearToDate(year, 2),

@@ -48,12 +48,12 @@ const QUARTERS = Array.from({ length: 7 }).reduce<FiscalQuarter[]>(
 	[LATEST_QUARTER],
 );
 
-/** The quarters with a six-month or nine-month cash flow figure, oldest first. */
+/** The quarters with a six-month or nine-month figure, oldest first. */
 const YEAR_TO_DATE = QUARTERS.flatMap((at) =>
 	at.quarter === 3 ? [previousQuarter(at), at] : at.quarter === 2 ? [at] : [],
 ).filter(
 	(at, position, all) =>
-		position === 0 || label(at) !== label(all[position - 1]),
+		all.findIndex((each) => label(each) === label(at)) === position,
 );
 
 // ---- The figures, in billions of USD unless the name says otherwise ----
@@ -84,7 +84,7 @@ const OPERATING_INCOME = byYear(
 	),
 );
 const NET_INCOME = byYear([
-	1.7, 3.0, 4.1, 2.8, 4.3, 9.8, 4.4, 29.8, 72.9, 135.1,
+	1.7, 3.0, 3.5, 2.8, 4.3, 9.8, 4.4, 29.8, 72.9, 135.1,
 ]);
 const FREE_CASH_FLOW = byYear([
 	1.5, 2.9, 3.1, 4.3, 4.7, 8.1, 3.8, 27.0, 60.9, 118.0,
@@ -93,7 +93,7 @@ const CAPITAL_EXPENDITURE = byYear([
 	0.2, 0.6, 0.6, 0.5, 1.1, 1.0, 1.8, 1.1, 3.2, 4.9,
 ]);
 /** Diluted shares, in billions. */
-export const DILUTED_SHARES = byYear([
+const DILUTED_SHARES = byYear([
 	25.1, 25.5, 25.4, 24.8, 25.0, 25.4, 25.1, 24.9, 24.8, 24.5,
 ]);
 // The dividend per share in USD. The mock-up series is ten times this. At the
