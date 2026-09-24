@@ -293,16 +293,20 @@ Rules for the screener:
 ## 8. The Company Page
 
 > **Target state.** This section records the decided rules for the company
-> page (Linear epic P-STA-10 "Company Page"). The per-tab layout waits for
-> the revised mockup and its approval. The ticket STA-221 then adds that
-> layout here. The current mockup is the
+> page (Linear epic P-STA-10 "Company Page"). Nothing here is built yet. The
+> app has no `/companies` route, so the screener's "Open company page" link
+> reaches the not-found page today. Audit the live page against this section
+> once the epic's Page Shell milestone lands. The per-tab layout waits for the
+> revised mockup and its approval. The ticket STA-221 then adds that layout
+> here. The current mockup is the
 > [company page design canvas](https://claude.ai/artifact/CwP59tuPZtXasw8dg7vpco).
 
 The company page is part of the product machinery, so the modern pole leads.
 The company name in the masthead is in `font-classic`, like the name in the
 screener's company preview. The name speaks about the company as a whole, so it
 takes the classical voice. The section titles are serif and numbered, such as
-"4.1 Financial Position Analysis".
+"1.2 Ten Years at a Glance". The first number is the tab's row in the table
+below. The second number counts the sections inside that tab.
 
 Overview is the landing tab. Each of the seven tabs has its own URL:
 
@@ -354,14 +358,21 @@ Rules for the company page:
 
 The page reads its data through the `CompanyGateway` port (AGENTS.md
 "Dependency Injection & Ports"). Until the backend adapter exists in a later
-epic, a sample adapter serves made-up data for Meridian Semiconductor (MRDN).
-`CompanyGatewayProvider` injects the adapter into `useCompany`. For a `Ticker`,
-`useCompany` returns a loading, loaded, missing, or failed state.
+epic, the sample adapter `sampleCompanyGateway` serves made-up data for
+Meridian Semiconductor (MRDN). It is a real adapter in the sense of AGENTS.md:
+production wires it, and its data source is the sample files in the repository,
+as for the screener. The named fakes (`always{Behaviour}CompanyGateway`) stay
+test-only. `CompanyGatewayProvider` injects the adapter into `useCompany`.
+
+A `:symbol` that `Ticker.parse` rejects renders the missing state, the same
+state an unknown ticker reaches. For a valid `Ticker`, `useCompany` returns a
+loading, loaded, missing, or failed state.
 
 ```mermaid
 flowchart TD
     route["Route param :symbol"] --> parse["Ticker.parse"]
     parse -->|Ticker| hook["useCompany"]
+    parse -.->|InvalidTicker| states["Page states"]
     provider["CompanyGatewayProvider"] -->|injects the adapter| hook
     hook -->|asks| port["CompanyGateway port"]
     sample["sampleCompanyGateway (sample adapter)"] -->|implements| port
