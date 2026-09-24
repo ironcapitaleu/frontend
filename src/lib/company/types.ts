@@ -316,7 +316,7 @@ export type BlockKey =
 	| "checksByArea"
 	| "ownership"
 	| "profile"
-	| "shareholderReturns"
+	| "printedShareholderReturns"
 	| "incomeChart"
 	| "incomeTable"
 	| "balanceChart"

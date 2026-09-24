@@ -9,7 +9,15 @@ import {
 	isSectorBenchmark,
 	sourcesOf,
 } from "./sources";
-import type { Claim, Filing, FigureGroup, FigureGroupRef } from "./types";
+import type {
+	BlockKey,
+	Claim,
+	Filing,
+	FigureGroup,
+	FigureGroupRef,
+	LineKey,
+	StatementTable,
+} from "./types";
 
 const sections = completeSections(fakeCompanyReport);
 
@@ -52,6 +60,22 @@ function derived(id: string, inputs: [Claim, ...Claim[]]): Claim {
 	};
 }
 
+/** The completed statements that the blocks of the Financials tab read. */
+const statements = (() => {
+	if (!sections.financials) throw new Error("The fixture has no financials.");
+	return sections.financials;
+})();
+
+/** Returns the claims of the lines `keys` of `tables`, or of every line when `keys` is absent. */
+function claimsIn(tables: StatementTable[], keys?: LineKey[]): Claim[] {
+	return tables.flatMap((table) =>
+		table.lines
+			.filter((line) => keys === undefined || keys.includes(line.key))
+			.flatMap((line) => line.points)
+			.filter((point) => point !== null),
+	);
+}
+
 /** Returns the ids of the documents of `sourcesOf(claims)`, in order. */
 function documentIds(claims: Claim[]): string[] {
 	return sourcesOf(claims).groups.map(({ document }) =>
@@ -60,6 +84,9 @@ function documentIds(claims: Claim[]): string[] {
 }
 
 describe("claimsOf", () => {
+	// TODO(STA-229): the company claims of Key Figures stay empty until
+	// `evaluateMetric` exists, so this test cannot fail before then. The next
+	// test pins the sector side exactly, so it binds today.
 	it("should share no ClaimId when the two kinds of Key Figures are read", () => {
 		const sector = new Set(
 			claimsOf("keyFigures", "sector", sections).map(({ id }) => id),
@@ -84,6 +111,64 @@ describe("claimsOf", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should return no claim when a block with no sector reader is read for sector figures", () => {
+		const expectedResult: Claim[] = [];
+
+		const result = claimsOf("profile", "sector", sections);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	const financialsReaders: {
+		block: BlockKey;
+		statement: string;
+		tables: StatementTable[];
+		keys?: LineKey[];
+	}[] = [
+		{
+			block: "incomeChart",
+			statement: "annual income",
+			tables: [statements.income.annual],
+			keys: ["revenue", "netIncome"],
+		},
+		{
+			block: "incomeTable",
+			statement: "income",
+			tables: [statements.income.annual, statements.income.quarterly],
+		},
+		{
+			block: "balanceChart",
+			statement: "annual balance",
+			tables: [statements.balance.annual],
+		},
+		{
+			block: "balanceTable",
+			statement: "balance",
+			tables: [statements.balance.annual, statements.balance.quarterly],
+		},
+		{
+			block: "cashFlowChart",
+			statement: "annual cash flow",
+			tables: [statements.cashFlow.annual],
+		},
+		{
+			block: "cashFlowTable",
+			statement: "cash flow",
+			tables: [statements.cashFlow.annual, statements.cashFlow.quarterly],
+		},
+	];
+
+	it.each(financialsReaders)(
+		"should read the $statement statement when the $block block is read",
+		({ block, tables, keys }) => {
+			const expectedResult = claimsIn(tables, keys);
+
+			const result = claimsOf(block, "company", sections);
+
+			expect(result).toEqual(expectedResult);
+		},
+	);
+
 	it("should return no claim when the section of the block has not loaded", () => {
 		const unloaded = completeSections({ ...fakeCompanyReport, overview: null });
 
@@ -96,6 +181,8 @@ describe("claimsOf", () => {
 });
 
 describe("figureGroupsOf", () => {
+	// TODO(STA-229): no company group of Overview reads a `SectorBenchmark`
+	// field until `evaluateMetric` exists, so this test cannot fail before then.
 	it("should hold no sector benchmark claim when a company group of Overview is built", () => {
 		const expectedResult: string[] = [];
 
@@ -132,6 +219,52 @@ describe("figureGroupsOf", () => {
 		const result = figureGroupsOf("overview", sections).map(
 			({ ref }) => ref.block,
 		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give a group for each block when the Financials tab is read", () => {
+		const expectedResult = [
+			"incomeChart",
+			"incomeTable",
+			"balanceChart",
+			"balanceTable",
+			"cashFlowChart",
+			"cashFlowTable",
+		];
+
+		const result = figureGroupsOf("financials", sections).map(
+			({ ref }) => ref.block,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should drop the blocks that read the financials when Overview loads without them", () => {
+		const partial = completeSections({
+			...fakeCompanyReport,
+			financials: null,
+		});
+
+		const expectedResult = [
+			"business",
+			"keyFigures",
+			"keyFigures",
+			"ownership",
+			"profile",
+		];
+
+		const result = figureGroupsOf("overview", partial).map(
+			({ ref }) => ref.block,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give no group when a tab has no blocks", () => {
+		const expectedResult: FigureGroup[] = [];
+
+		const result = figureGroupsOf("valuation", sections);
 
 		expect(result).toEqual(expectedResult);
 	});

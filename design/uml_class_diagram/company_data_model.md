@@ -665,15 +665,16 @@ tab ticket adds its own keys, such as `peRange` and `ceoPay`.
 
 | Tab        | `BlockKey` values |
 | ---------- | ----------------- |
-| Overview   | `business`, `tenYears`, `keyFigures`, `financialPosition`, `checksByArea`, `ownership`, `profile`, and the print-only `shareholderReturns` |
+| Overview   | `business`, `tenYears`, `keyFigures`, `financialPosition`, `checksByArea`, `ownership`, `profile`, and the print-only `printedShareholderReturns` |
 | Financials | `incomeChart`, `incomeTable`, `balanceChart`, `balanceTable`, `cashFlowChart`, `cashFlowTable` |
 
 A chart reads the annual table of its statement. A table reads the annual
 table and the completed quarterly table, because the annual and quarterly
-switch shows both. Until `ShareholderReturnsSection` exists, the
-`shareholderReturns` block gives no group. Until `evaluateMetric` (STA-229)
-exists, a block reads its reported figures only, and `checksByArea` and the
-company figures of `keyFigures` read no claim.
+switch shows both. §8 holds the open question of whether the switch also
+flips the chart. Until `ShareholderReturnsSection` exists, the
+`printedShareholderReturns` block gives no group. Until `evaluateMetric`
+(STA-229) exists, a block reads its reported figures only, and `checksByArea`
+and the company figures of `keyFigures` read no claim.
 
 **Share counts for buybacks.** `ShareholderReturnsSection.sharesRepurchased`
 and `sharesIssuedToStaff` hold the shares bought back and the shares issued
@@ -1735,8 +1736,8 @@ does the page label them?** Settled:
   "to 26 Jul 2026". The page does not print the abbreviation "TTM".
 
 **Open for the implementing tickets.** The fifth review raised three questions
-that this note leaves to a ticket. Each one has a default that the ticket
-takes unless it finds a reason not to.
+that this note leaves to a ticket, and the STA-232 review raised a fourth.
+Each one has a default that the ticket takes unless it finds a reason not to.
 
 - STA-226: **Does `marketCap` read a point-in-time share count?** It reads
   `dilutedShares @ fiscalYear(0)`, a weighted average over a year that can be
@@ -1762,6 +1763,14 @@ takes unless it finds a reason not to.
   ships `completeSections` in `metrics.ts` as a function that brands the
   sections and completes nothing. STA-226 then adds `completeQuarters`, and
   `completeSections` holds the completed quarterly tables from that point.
+- Financials tab: **Does the annual and quarterly switch flip the chart?**
+  `DESIGN.md` §8 puts the switch above both Financials cards. STA-232 has each
+  chart read the annual table only (§4). If the switch flips the chart, the
+  chart draws quarterly bars while its "Sources" chip names the annual
+  filings, and §3 exists to stop that disagreement. Default: the chart follows
+  the switch, and its chip reads the same table as the chart. The Financials
+  tab ticket passes the chosen period to the chart readers, since `claimsOf`
+  takes no period today.
 
 ## 9. Enforcement levels
 

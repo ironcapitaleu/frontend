@@ -10,11 +10,105 @@ import type {
 	LineKey,
 	Nullable,
 	ReportedSource,
+	SourceDocument,
 	SourceGroup,
 	SourceSet,
 	StatementTable,
 	TabKey,
 } from "./types";
+
+/**
+ * Returns the claims of one kind that `block` draws. The `sector` claims are
+ * the ones the block reads from a `SectorBenchmark` field, and the
+ * `company` claims are all the others. So the two kinds share no claim.
+ *
+ * Returns an empty list when the sections of the block have not loaded.
+ */
+export function claimsOf(
+	block: BlockKey,
+	figures: FigureKind,
+	sections: CompletedSections,
+): Claim[] {
+	return read(blocks[block], figures, sections) ?? [];
+}
+
+/**
+ * Returns one group for each block of `tab` and each kind of figure the block
+ * draws, in the order of the blocks. A block with sector figures gives a
+ * `company` group and then a `sector` group.
+ *
+ * A block whose sections have not loaded gives no group. The masthead is not
+ * a tab, so it gives no group.
+ */
+export function figureGroupsOf(
+	tab: TabKey,
+	sections: CompletedSections,
+): FigureGroup[] {
+	return blockKeys
+		.filter((block) => blocks[block].tab === tab)
+		.flatMap((block) => {
+			const { label, sector } = blocks[block];
+			const kinds: FigureKind[] = sector ? ["company", "sector"] : ["company"];
+			return kinds.flatMap((figures) => {
+				const claims = read(blocks[block], figures, sections);
+				return claims ? [{ ref: { tab, block, label, figures }, claims }] : [];
+			});
+		});
+}
+
+/**
+ * Tells whether `ref` names sector figures. It reads `ref.figures` only, so no
+ * label decides it. The "Sources" chip, the sources index, the Filings walk
+ * and the printed footer skip these groups, so they never name a peer filing.
+ */
+export function isSectorBenchmark(ref: FigureGroupRef): boolean {
+	return ref.figures === "sector";
+}
+
+/**
+ * Returns the reported sources of `claims`, one group for each filing or
+ * market dataset. The filings come first, newest first, and the market data
+ * comes last. A claim that two trees share appears once.
+ */
+export function sourcesOf(claims: readonly Claim[]): SourceSet {
+	const groups = new Map<string, SourceGroup & { claims: Claim[] }>();
+	for (const claim of reportedClaimsOf(claims)) {
+		const { document } = claim.source;
+		const key =
+			document.kind === "filing"
+				? document.accessionNumber
+				: JSON.stringify([document.name, document.url]);
+		const group = groups.get(key) ?? { document, claims: [] };
+		group.claims.push(claim);
+		groups.set(key, group);
+	}
+	return { groups: [...groups.values()].sort(byFilingsNewestFirst) };
+}
+
+/**
+ * Maps the accession number of each filing to the groups whose claims reach
+ * it, in the order of `groups`. A market dataset is not a filing, so it gets
+ * no entry.
+ */
+export function feedsOf(
+	groups: readonly FigureGroup[],
+): Map<string, FigureGroupRef[]> {
+	const feeds = new Map<string, FigureGroupRef[]>();
+	for (const { ref, claims } of groups) {
+		const filings = new Set<string>();
+		for (const { source } of reportedClaimsOf(claims)) {
+			if (source.document.kind === "filing") {
+				filings.add(source.document.accessionNumber);
+			}
+		}
+		for (const filing of filings) {
+			const refs = feeds.get(filing) ?? [];
+			refs.push(ref);
+			feeds.set(filing, refs);
+		}
+	}
+	return feeds;
+}
 
 /** Reads the figures of one kind of a block, or `null` when its sections have not loaded. */
 type Reader = (sections: CompletedSections) => Nullable<readonly Figure[]>;
@@ -28,22 +122,23 @@ interface Block {
 	readonly sector?: Reader;
 }
 
-/** Returns the points of the lines `keys` of `table`, or of every line when `keys` is absent. */
-function pointsOf(
-	table: StatementTable,
-	keys?: readonly LineKey[],
-): readonly Figure[] {
-	return table.lines
-		.filter((line) => keys === undefined || keys.includes(line.key))
-		.flatMap((line) => line.points);
-}
-
-/** Returns the latest point of the lines `keys` of `table`. */
-function latestOf(table: StatementTable, keys: readonly LineKey[]): Figure[] {
-	return table.lines
-		.filter((line) => keys.includes(line.key))
-		.map((line) => line.points.at(-1) ?? null);
-}
+/** The blocks of every tab, in the order of the page. */
+const blockKeys: readonly BlockKey[] = [
+	"business",
+	"tenYears",
+	"keyFigures",
+	"financialPosition",
+	"checksByArea",
+	"ownership",
+	"profile",
+	"printedShareholderReturns",
+	"incomeChart",
+	"incomeTable",
+	"balanceChart",
+	"balanceTable",
+	"cashFlowChart",
+	"cashFlowTable",
+];
 
 // The derived metrics of the Overview blocks, such as the operating margin,
 // the free cash flow and the ratios of Key Figures, need `evaluateMetric`
@@ -109,7 +204,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	},
 	// The printed page only. Its figures live in `ShareholderReturnsSection`,
 	// which the port does not return yet, so the block gives no group.
-	shareholderReturns: {
+	printedShareholderReturns: {
 		tab: "overview",
 		label: "Shareholder returns, printed page",
 		company: () => null,
@@ -175,52 +270,21 @@ function read(
 	return reader?.(sections)?.filter((figure) => figure !== null) ?? null;
 }
 
-/**
- * Returns the claims of one kind that `block` draws. The `sector` claims are
- * the ones the block reads from a `SectorBenchmark` field, and the
- * `company` claims are all the others. So the two kinds share no claim.
- *
- * Returns an empty list when the sections of the block have not loaded.
- */
-export function claimsOf(
-	block: BlockKey,
-	figures: FigureKind,
-	sections: CompletedSections,
-): Claim[] {
-	return read(blocks[block], figures, sections) ?? [];
+/** Returns the points of the lines `keys` of `table`, or of every line when `keys` is absent. */
+function pointsOf(
+	table: StatementTable,
+	keys?: readonly LineKey[],
+): readonly Figure[] {
+	return table.lines
+		.filter((line) => keys === undefined || keys.includes(line.key))
+		.flatMap((line) => line.points);
 }
 
-/**
- * Returns one group for each block of `tab` and each kind of figure the block
- * draws, in the order of the blocks. A block with sector figures gives a
- * `company` group and then a `sector` group.
- *
- * A block whose sections have not loaded gives no group. The masthead is not
- * a tab, so it gives no group.
- */
-export function figureGroupsOf(
-	tab: TabKey,
-	sections: CompletedSections,
-): FigureGroup[] {
-	return (Object.keys(blocks) as BlockKey[])
-		.filter((block) => blocks[block].tab === tab)
-		.flatMap((block) => {
-			const { label, sector } = blocks[block];
-			const kinds: FigureKind[] = sector ? ["company", "sector"] : ["company"];
-			return kinds.flatMap((figures) => {
-				const claims = read(blocks[block], figures, sections);
-				return claims ? [{ ref: { tab, block, label, figures }, claims }] : [];
-			});
-		});
-}
-
-/**
- * Tells whether `ref` names sector figures. It reads `ref.figures` only, so no
- * label decides it. The "Sources" chip, the sources index, the Filings walk
- * and the printed footer skip these groups, so they never name a peer filing.
- */
-export function isSectorBenchmark(ref: FigureGroupRef): boolean {
-	return ref.figures === "sector";
+/** Returns the latest point of the lines `keys` of `table`. */
+function latestOf(table: StatementTable, keys: readonly LineKey[]): Figure[] {
+	return table.lines
+		.filter((line) => keys.includes(line.key))
+		.map((line) => line.points.at(-1) ?? null);
 }
 
 /** A claim that one document reports. */
@@ -248,47 +312,19 @@ function reportedClaimsOf(claims: readonly Claim[]): ReportedClaim[] {
 	return found;
 }
 
-/**
- * Returns the reported sources of `claims`, one group for each filing or
- * market dataset. The filings come first, newest first, and the market data
- * comes last. A claim that two trees share appears once.
- */
-export function sourcesOf(claims: readonly Claim[]): SourceSet {
-	const groups = new Map<string, SourceGroup & { claims: Claim[] }>();
-	for (const claim of reportedClaimsOf(claims)) {
-		const { document } = claim.source;
-		const key =
-			document.kind === "filing" ? document.accessionNumber : document.url;
-		const group = groups.get(key) ?? { document, claims: [] };
-		group.claims.push(claim);
-		groups.set(key, group);
+/** Puts the filings first, newest first, and the market data last. */
+function byFilingsNewestFirst(a: SourceGroup, b: SourceGroup): number {
+	const first = a.document;
+	const second = b.document;
+	if (first.kind !== "filing" || second.kind !== "filing") {
+		return kindRank(first.kind) - kindRank(second.kind);
 	}
-	const rank = ({ document }: SourceGroup) =>
-		document.kind === "filing" ? document.filedOn : "";
-	return {
-		groups: [...groups.values()].sort((a, b) => rank(b).localeCompare(rank(a))),
-	};
+	if (first.filedOn > second.filedOn) return -1;
+	if (first.filedOn < second.filedOn) return 1;
+	return 0;
 }
 
-/**
- * Maps the accession number of each filing to the groups whose claims reach
- * it, in the order of `groups`. A market dataset is not a filing, so it gets
- * no entry.
- */
-export function feedsOf(
-	groups: readonly FigureGroup[],
-): Map<string, FigureGroupRef[]> {
-	const feeds = new Map<string, FigureGroupRef[]>();
-	for (const { ref, claims } of groups) {
-		const filings = new Set<string>();
-		for (const { source } of reportedClaimsOf(claims)) {
-			if (source.document.kind === "filing") {
-				filings.add(source.document.accessionNumber);
-			}
-		}
-		for (const filing of filings) {
-			feeds.set(filing, [...(feeds.get(filing) ?? []), ref]);
-		}
-	}
-	return feeds;
+/** Ranks a filing before a market dataset. */
+function kindRank(kind: SourceDocument["kind"]): number {
+	return kind === "filing" ? 0 : 1;
 }
