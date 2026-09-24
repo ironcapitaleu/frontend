@@ -813,9 +813,9 @@ const DIVIDEND_8K = filing(
 	"12 Feb 2026",
 );
 
-/** A series of one figure for each fiscal year in `years`, each point from the 10-K of its year. */
+/** The Shareholder returns series `key`, with one figure for each fiscal year in `years`, each point from the 10-K of its year. */
 function annualSeries(
-	id: string,
+	key: keyof ShareholderReturnsSection,
 	label: string,
 	unit: Unit,
 	values: readonly number[],
@@ -825,13 +825,13 @@ function annualSeries(
 ): Series {
 	const periods = years.map(fiscalYear);
 	return {
-		key: id.split(".")[1],
+		key,
 		label,
 		unit,
 		periods,
 		points: periods.map((period, position) =>
 			reported(
-				`${id}.${periodId(period)}`,
+				`shareholderReturns.${key}.${periodId(period)}`,
 				label,
 				values[position],
 				unit,
@@ -915,7 +915,7 @@ function buildShareholderReturns(): ShareholderReturnsSection {
 		);
 	return {
 		dividendPerShare: annualSeries(
-			"shareholderReturns.dividendPerShare",
+			"dividendPerShare",
 			"Dividend per share declared",
 			"usdPerShare",
 			base.map(
@@ -936,7 +936,7 @@ function buildShareholderReturns(): ShareholderReturnsSection {
 			null,
 		),
 		sharesRepurchased: annualSeries(
-			"shareholderReturns.sharesRepurchased",
+			"sharesRepurchased",
 			"Shares bought back",
 			"shares",
 			perYear(0.3, (position) => PRICE_AT_YEAR_ENDS[position]),
@@ -944,7 +944,7 @@ function buildShareholderReturns(): ShareholderReturnsSection {
 			"us-gaap:StockRepurchasedDuringPeriodShares",
 		),
 		sharesIssuedToStaff: annualSeries(
-			"shareholderReturns.sharesIssuedToStaff",
+			"sharesIssuedToStaff",
 			"Shares issued to staff",
 			"shares",
 			perYear(0.05, (position) => PRICE_AT_YEAR_ENDS[position] * 0.6),
