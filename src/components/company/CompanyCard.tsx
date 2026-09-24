@@ -52,15 +52,14 @@ function CompanyCard({
 		<Card
 			role="region"
 			aria-labelledby={titleId}
-			data-span={span}
 			className={cn(span === 2 && "lg:col-span-2", className)}
 			{...props}
 		>
 			<CardHeader>
 				<CardTitle>
-					<h3 id={titleId} className="font-serif text-xl font-normal">
+					<h2 id={titleId} className="font-serif text-xl font-normal">
 						{row}.{position} {title}
-					</h3>
+					</h2>
 				</CardTitle>
 				<CardDescription>{caption}</CardDescription>
 				{actions && (

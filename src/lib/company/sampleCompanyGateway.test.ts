@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { Ticker } from "../domain/ticker";
 import { MissingCompany } from "./errors";
+import { listedFundPositions } from "./holdings";
 import { completeSections } from "./metrics";
 import { meridianFilingsSection } from "./sample/filings";
 import { meridianFinancials } from "./sample/financials";
@@ -1147,6 +1148,16 @@ describe("the MRDN relationships sample data", () => {
 							1000,
 					) / 10,
 			);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give every listed fund a name when card 5.1 lists the largest funds", () => {
+		const expectedResult: string[] = [];
+
+		const result = listedFundPositions(funds)
+			.map((position) => funds[position].fund)
+			.filter((name) => /^Fund \d+$/.test(name));
 
 		expect(result).toEqual(expectedResult);
 	});
