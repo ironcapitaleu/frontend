@@ -1,3 +1,4 @@
+import { formatDate } from "./dates";
 import { MissingGuardInput } from "./errors";
 import type {
 	Claim,
@@ -5,7 +6,9 @@ import type {
 	CompanySections,
 	CompletedSections,
 	Figure,
+	IsoDate,
 	LineKey,
+	ManagementSection,
 	MastheadSection,
 	MetricKey,
 	Nullable,
@@ -1394,6 +1397,48 @@ export function stakePercent(
 		[row.sharesHeld, row.sharesOutstanding],
 		([held, outstanding]) => [held, outstanding],
 	);
+}
+
+/**
+ * Returns the whole years that the person at `position` of
+ * `management.people` has held the role, from their start to the filing date
+ * of the DEF 14A that reports the start. A start given as a year counts from
+ * that year. Returns `null` when the list has no row at `position`, when the
+ * start is missing, or when the start comes after the filing date.
+ */
+export function tenure(
+	management: ManagementSection,
+	position: number,
+): Figure {
+	const row = management.people[position];
+	const since = row?.since ?? null;
+	if (since?.source.kind !== "reported") return null;
+	const { document } = since.source;
+	if (document.kind !== "filing") return null;
+	const years = yearsBetween(since, document.filedOn);
+	if (years === null || years < 0) return null;
+	return {
+		id: `metric.tenure.people.${position}`,
+		label: `Tenure of ${row.name}`,
+		value: years,
+		unit: "count",
+		period: null,
+		source: {
+			kind: "derived",
+			formula: `Years from the start date to ${formatDate(document.filedOn)}, the filing date of the ${document.form}`,
+			inputs: [since],
+		},
+	};
+}
+
+/** Counts the whole years from `since`, a year or a date, to `end`. A year counts from 1 January. */
+function yearsBetween(since: Claim, end: IsoDate): Nullable<number> {
+	const start = since.unit === "year" ? `${since.value}-01-01` : since.value;
+	if (!["year", "date"].includes(since.unit) || typeof start !== "string") {
+		return null;
+	}
+	const years = Number(end.slice(0, 4)) - Number(start.slice(0, 4));
+	return end.slice(5) < start.slice(5) ? years - 1 : years;
 }
 
 /**
