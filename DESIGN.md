@@ -290,7 +290,103 @@ Rules for the screener:
 
 ---
 
-## 8. Quick reference for contributors
+## 8. The Company Page
+
+> **Target state.** This section records the decided rules for the company
+> page (Linear epic P-STA-10 "Company Page"). Nothing here is built yet. The
+> app has no `/companies` route, so the screener's "Open company page" link
+> reaches the not-found page today. Audit the live page against this section
+> once the epic's Page Shell milestone lands. The per-tab layout waits for the
+> revised mockup and its approval. The ticket STA-221 then adds that layout
+> here. The current mockup is the
+> [company page design canvas](https://claude.ai/artifact/CwP59tuPZtXasw8dg7vpco).
+
+The company page is part of the product machinery, so the modern pole leads.
+The company name in the masthead is in `font-classic`, like the name in the
+screener's company preview. The name speaks about the company as a whole, so it
+takes the classical voice. The section titles are serif and numbered, such as
+"1.2 Ten Years at a Glance". The first number is the tab's row in the table
+below. The second number counts the sections inside that tab.
+
+Overview is the landing tab. Each of the seven tabs has its own URL:
+
+| Tab                 | URL                                |
+| ------------------- | ---------------------------------- |
+| Overview            | `/companies/:symbol`               |
+| Financials          | `/companies/:symbol/financials`    |
+| Valuation           | `/companies/:symbol/valuation`     |
+| Shareholder returns | `/companies/:symbol/returns`       |
+| Relationships       | `/companies/:symbol/relationships` |
+| Management          | `/companies/:symbol/management`    |
+| Filings             | `/companies/:symbol/filings`       |
+
+The "Open company page" link in the screener's company preview opens Overview.
+On a phone, the tab strip scrolls sideways.
+
+Rules for the company page:
+
+- **Fundamentals only.** The page shows past facts from filings. It never shows
+  news, forecasts, analyst ratings, price targets, a fair value, community
+  content, insider-sale alerts, or buy and sell calls. The page never presents
+  one figure as the answer, such as "25.5% undervalued".
+- **Figures are mono.** In a table column, figures are right-aligned. A missing
+  figure is a dimmed `—`.
+- **Every figure carries a source reference or a formula.** For a reported
+  figure, the source reference names the filing type, filing date, line label,
+  and XBRL tag. It also links to the filing. A derived figure, such as a margin
+  or a growth rate, shows its formula.
+- **Every chart has a "Data" button.** The button shows the same figures as a
+  table.
+- **Charts draw yearly data as bars or steps, never as smoothed curves.** Chart
+  series use the `chart-1` … `chart-5` tokens.
+- **The page groups its checks in five areas.** The areas are Balance sheet,
+  Profitability, Valuation, Shareholder returns, and Consistency. Each area has
+  an icon and a small ring that counts its met checks. There is no overall
+  score and no snowflake chart.
+- **A check shows its evidence.** Each check states its rule with the
+  threshold, the company's figure, and the source. The figure sits inside the
+  sentence, such as "Short-term assets ($197.4B) exceed short-term liabilities
+  ($43.0B)". Each check has one of three results: met, not met, or not enough
+  data.
+- **A check name carries no verdict.** The name states the rule and never
+  judges the company. The page never shows a name such as "Notable Dividend"
+  next to a red cross.
+- **Export is a print stylesheet and CSV.** The print stylesheet formats the
+  Overview tab as a one-page summary on A4 and Letter paper, in the Value Line
+  style. The user saves the summary through the browser's "Save as PDF" option.
+  Each financial statement table downloads as CSV. There is no server-side PDF.
+
+The page reads its data through the `CompanyGateway` port (AGENTS.md
+"Dependency Injection & Ports"). Until the backend adapter exists in a later
+epic, the sample adapter `sampleCompanyGateway` serves made-up data for
+Meridian Semiconductor (MRDN). It is a real adapter in the sense of AGENTS.md:
+production wires it, and its data source is the sample files in the repository,
+as for the screener. The named fakes (`always{Behaviour}CompanyGateway`) stay
+test-only. `CompanyGatewayProvider` injects the adapter into `useCompany`.
+
+A `:symbol` that `Ticker.parse` rejects renders the missing state, the same
+state an unknown ticker reaches. For a valid `Ticker`, `useCompany` returns a
+loading, loaded, missing, or failed state.
+
+```mermaid
+flowchart TD
+    route["Route param :symbol"] --> parse["Ticker.parse"]
+    parse -->|Ticker| hook["useCompany"]
+    parse -.->|InvalidTicker| states["Page states"]
+    provider["CompanyGatewayProvider"] -->|injects the adapter| hook
+    hook -->|asks| port["CompanyGateway port"]
+    sample["sampleCompanyGateway (sample adapter)"] -->|implements| port
+    backend["Backend adapter (later epic)"] -.->|implements| port
+    hook -->|"loading, missing, failed"| states["Page states"]
+    hook -->|loaded| sections["Company sections"]
+    sections --> checks["Check evaluation"]
+    sections --> tabs["Seven tabs"]
+    checks -->|results by area| tabs
+```
+
+---
+
+## 9. Quick reference for contributors
 
 - **Hold the dual mandate:** classical foundation, modern spark. Ask of any
   screen — does it feel _timeless AND modern, trustworthy AND elegant_? If it's
