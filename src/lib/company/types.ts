@@ -66,7 +66,10 @@ export type FilingForm =
 export interface Filing {
 	readonly kind: "filing";
 	readonly form: FilingForm;
-	/** The company that filed it. For a stake, this is the target company. */
+	/**
+	 * Who filed it: the company, the person who reports a Form 4, or the fund
+	 * that files a 13F-HR. For a stake, it is the target company.
+	 */
 	readonly filer: string;
 	readonly accessionNumber: string;
 	readonly filedOn: IsoDate;
@@ -354,7 +357,7 @@ export interface RelationshipsSection {
 	/** The same figures as `OverviewSection.ownership`, under this section's ids. */
 	readonly ownership: OwnershipSummary;
 	readonly funds: readonly FundHolding[];
-	/** The same rows as `ManagementSection.insiders`, in the same order. */
+	/** The same rows as `ManagementSection.insiders`, in the same order, under this section's ids. */
 	readonly insiders: readonly InsiderHolding[];
 	readonly subsidiaries: readonly Subsidiary[];
 	readonly stakes: readonly Stake[];
@@ -386,7 +389,7 @@ export interface ManagementSection {
 	readonly people: readonly Person[];
 	/** One row for each fiscal year, oldest first. */
 	readonly ceoPay: readonly PayYear[];
-	/** The same rows as `RelationshipsSection.insiders`, in the same order. */
+	/** The same rows as `RelationshipsSection.insiders`, in the same order, under this section's ids. */
 	readonly insiders: readonly InsiderHolding[];
 	/** The shares that officers and directors bought in each fiscal year, from Form 4. */
 	readonly insiderSharesBought: Series;
