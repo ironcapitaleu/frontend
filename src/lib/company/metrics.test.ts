@@ -15,6 +15,7 @@ import {
 	type MetricResult,
 	type Metric,
 	metrics,
+	otherRevenueShare,
 	ownershipShares,
 	priceChangeOneMonth,
 	resolve,
@@ -151,6 +152,20 @@ function inputIdsOf(result: MetricResult): string[] | string {
 const completed = completeSections(fakeCompanyReport);
 const price = fakeCompanyReport.masthead.price as Claim;
 const [sharesFY2025] = pointsOf(income.annual, "dilutedShares", [9]) as Claim[];
+const YEAR_FY2025 = income.annual.periods[9];
+const PRICE_FY2025 = Number(
+	fakeCompanyReport.masthead.priceAtFiscalYearEnds.points[9]?.value,
+);
+
+/** Returns the FY2025 value of line `key` in the annual `table`. */
+function valueFY2025(table: StatementTable, key: LineKey): number {
+	return Number(pointsOf(table, key, [9])[0]?.value);
+}
+
+/** Returns the value of `result`, or `null` when it holds no claim. */
+function numberOf(result: MetricResult): number | string | null {
+	return result.kind === "value" ? result.claim.value : null;
+}
 
 describe("flowLineKeys", () => {
 	it("should hold the flow lines of note §4 when read as a list", () => {
@@ -745,6 +760,96 @@ describe("evaluateMetric", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should divide the FY2025 year-end market cap by the FY2025 free cash flow when it evaluates the year-end P/FCF", () => {
+		const sections = completed;
+		const cap = PRICE_FY2025 * valueFY2025(income.annual, "dilutedShares");
+		const cash = valueFY2025(cashFlow.annual, "operatingCashFlow");
+		const capital = valueFY2025(cashFlow.annual, "capitalExpenditure");
+
+		const expectedResult = cap / (cash - capital);
+
+		const result = numberOf(
+			evaluateMetric("priceToFreeCashFlowAtYearEnd", sections, YEAR_FY2025),
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should divide the FY2025 year-end market cap by the equity at the FY2025 year end when it evaluates the year-end P/B", () => {
+		const sections = completed;
+		const cap = PRICE_FY2025 * valueFY2025(income.annual, "dilutedShares");
+
+		const expectedResult =
+			cap / valueFY2025(balance.annual, "shareholdersEquity");
+
+		const result = numberOf(
+			evaluateMetric("priceToBookAtYearEnd", sections, YEAR_FY2025),
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should divide the FY2025 year-end enterprise value by the FY2025 operating income when it evaluates the year-end EV/EBIT", () => {
+		const sections = completed;
+		const cap = PRICE_FY2025 * valueFY2025(income.annual, "dilutedShares");
+		const value =
+			cap +
+			valueFY2025(balance.annual, "shortTermDebt") +
+			valueFY2025(balance.annual, "longTermDebt") -
+			valueFY2025(balance.annual, "cashAndShortTermInvestments");
+
+		const expectedResult =
+			value / valueFY2025(income.annual, "operatingIncome");
+
+		const result = numberOf(
+			evaluateMetric("enterpriseValueToEbitAtYearEnd", sections, YEAR_FY2025),
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it.each([
+		["priceToFreeCashFlowMedian10y", "priceToFreeCashFlowAtYearEnd"],
+		["priceToBookMedian10y", "priceToBookAtYearEnd"],
+		["enterpriseValueToEbitMedian10y", "enterpriseValueToEbitAtYearEnd"],
+	] as const)(
+		"should read the ten year-end figures when it evaluates %s",
+		(median, atYearEnd) => {
+			const sections = completed;
+
+			const expectedResult = income.annual.periods.map(
+				(year) => `metric.${atYearEnd}.FY${year.fiscalYear}`,
+			);
+
+			const result = inputIdsOf(evaluateMetric(median, sections));
+
+			expect(result).toEqual(expectedResult);
+		},
+	);
+
+	it.each([
+		["priceToFreeCashFlowMedian10y", "cashFlow", "operatingCashFlow"],
+		["priceToBookMedian10y", "balance", "shareholdersEquity"],
+		["enterpriseValueToEbitMedian10y", "income", "operatingIncome"],
+	] as const)(
+		"should give %s a short history when the %s line %s is missing in six of ten years",
+		(median, statement, divisor) => {
+			const sections = sectionsWith(
+				statement,
+				"annual",
+				divisor,
+				[0, 1, 2, 3, 4, 5],
+				null,
+			);
+
+			const expectedResult: MetricResult = { kind: "shortHistory" };
+
+			const result = evaluateMetric(median, sections);
+
+			expect(result).toEqual(expectedResult);
+		},
+	);
+
 	it("should fail the EPS guard of the P/E when the company made a loss", () => {
 		const sections = sectionsWith("income", "annual", "dilutedEps", [9], -1.2);
 		const [eps] = pointsOf(income.annual, "dilutedEps", [9]) as Claim[];
@@ -1053,6 +1158,14 @@ describe("per-row derived figures", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should give no Other share when the list has no row where the fold starts", () => {
+		const expectedResult = null;
+
+		const result = otherRevenueShare(overview, "segments", 2);
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should read the regions list when it gives a region share", () => {
 		const section = overview;
 
@@ -1104,6 +1217,22 @@ describe("per-row derived figures", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should give Overview and Relationships different claim ids when both give the ownership shares", () => {
+		const section = overview;
+
+		const expectedResult = [
+			"metric.ownershipShares.overview.institutions",
+			"metric.ownershipShares.relationships.institutions",
+		];
+
+		const result = [
+			ownershipShares(section, "overview").institutions?.id,
+			ownershipShares(section, "relationships").institutions?.id,
+		];
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should divide each holding by the shares outstanding when it gives the ownership shares", () => {
 		const section = overview;
 
@@ -1132,6 +1261,24 @@ describe("per-row derived figures", () => {
 			"overview.ownership.institutionShares",
 			"overview.ownership.insiderShares",
 			"overview.ownership.sharesOutstanding",
+		];
+
+		const { source } = ownershipShares(section).public ?? {};
+		const result =
+			source?.kind === "derived"
+				? source.inputs.map((claim) => claim.id)
+				: null;
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should name the Relationships share counts as inputs when it gives the public share of the Relationships section", () => {
+		const section = fakeCompanyReport.relationships;
+
+		const expectedResult = [
+			"relationships.ownership.institutionShares",
+			"relationships.ownership.insiderShares",
+			"relationships.ownership.sharesOutstanding",
 		];
 
 		const { source } = ownershipShares(section).public ?? {};

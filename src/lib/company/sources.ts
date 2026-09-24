@@ -1,4 +1,5 @@
 import { listedFundPositions } from "./holdings";
+import { ownershipShares } from "./metrics";
 import type {
 	BlockKey,
 	Claim,
@@ -164,6 +165,8 @@ const blockKeys = [
 	"cashFlowChart",
 	"cashFlowTable",
 	"largestFunds",
+	"insiders",
+	"ownershipSplit",
 ] as const satisfies readonly BlockKey[];
 
 /**
@@ -329,6 +332,21 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 					return [row.shares, row.sharesQuarterEarlier];
 				}),
 			],
+	},
+	insiders: {
+		tab: "relationships",
+		label: "Owned By: Insiders",
+		company: ({ relationships }) =>
+			relationships ? relationships.insiders.map((row) => row.shares) : null,
+	},
+	// The three shares that card 5.3 draws. The institutions share reaches the
+	// 13F-HR of every fund, because its share count sums all funds.
+	ownershipSplit: {
+		tab: "relationships",
+		label: "Ownership Split",
+		company: ({ relationships }) =>
+			relationships &&
+			Object.values(ownershipShares(relationships, "relationships")),
 	},
 };
 

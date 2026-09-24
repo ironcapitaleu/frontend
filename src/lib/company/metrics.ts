@@ -10,6 +10,7 @@ import type {
 	MetricKey,
 	Nullable,
 	OverviewSection,
+	OwnershipSummary,
 	Period,
 	RelationshipsSection,
 	Series,
@@ -389,6 +390,16 @@ function line(key: LineKey, at: PeriodChoice): FigureRef {
 }
 
 const marketCapRef: FigureRef = { from: "metric", key: "marketCap", at: null };
+const priceAtYearEnd: FigureRef = {
+	from: "market",
+	key: "priceAtFiscalYearEnd",
+	at: samePeriod,
+};
+const marketCapAtYearEndRef: FigureRef = {
+	from: "metric",
+	key: "marketCapAtYearEnd",
+	at: samePeriod,
+};
 const priceNow: FigureRef = {
 	from: "market",
 	key: "price",
@@ -523,7 +534,7 @@ export const metrics: Record<MetricKey, Metric> = {
 		"P/E at fiscal year end",
 		"Price at fiscal year end ÷ diluted EPS",
 		"ratio",
-		{ from: "market", key: "priceAtFiscalYearEnd", at: samePeriod },
+		priceAtYearEnd,
 		line("dilutedEps", samePeriod),
 	),
 	priceToEarningsMedian10y: {
@@ -601,6 +612,102 @@ export const metrics: Record<MetricKey, Metric> = {
 		{ from: "metric", key: "enterpriseValue", at: null },
 		line("operatingIncome", latestYear),
 	),
+	marketCapAtYearEnd: metric(
+		"perPeriod",
+		"marketCapAtYearEnd",
+		"Market cap at fiscal year end",
+		"Price at fiscal year end × diluted shares",
+		"usd",
+		[priceAtYearEnd, line("dilutedShares", samePeriod)],
+	),
+	enterpriseValueAtYearEnd: metric(
+		"perPeriod",
+		"enterpriseValueAtYearEnd",
+		"Enterprise value at fiscal year end",
+		"Market cap + short-term debt + long-term debt − cash and short-term investments, at fiscal year end",
+		"usd",
+		[
+			marketCapAtYearEndRef,
+			line("shortTermDebt", samePeriod),
+			line("longTermDebt", samePeriod),
+			line("cashAndShortTermInvestments", samePeriod),
+		],
+	),
+	priceToFreeCashFlowAtYearEnd: ratio(
+		"perPeriod",
+		"priceToFreeCashFlowAtYearEnd",
+		"P/FCF at fiscal year end",
+		"Market cap at fiscal year end ÷ free cash flow",
+		"ratio",
+		marketCapAtYearEndRef,
+		{ from: "metric", key: "freeCashFlow", at: samePeriod },
+	),
+	priceToFreeCashFlowMedian10y: {
+		kind: "point",
+		key: "priceToFreeCashFlowMedian10y",
+		name: "Median P/FCF, 10 years",
+		formula: "Median of the P/FCF at the last 10 fiscal year ends",
+		unit: "ratio",
+		inputs: [
+			{
+				from: "metric",
+				key: "priceToFreeCashFlowAtYearEnd",
+				at: { kind: "lastFiscalYears", count: 10 },
+			},
+		],
+		guards: [],
+		minPoints: 5,
+	},
+	priceToBookAtYearEnd: ratio(
+		"perPeriod",
+		"priceToBookAtYearEnd",
+		"P/B at fiscal year end",
+		"Market cap at fiscal year end ÷ shareholders' equity",
+		"ratio",
+		marketCapAtYearEndRef,
+		line("shareholdersEquity", samePeriod),
+	),
+	priceToBookMedian10y: {
+		kind: "point",
+		key: "priceToBookMedian10y",
+		name: "Median P/B, 10 years",
+		formula: "Median of the P/B at the last 10 fiscal year ends",
+		unit: "ratio",
+		inputs: [
+			{
+				from: "metric",
+				key: "priceToBookAtYearEnd",
+				at: { kind: "lastFiscalYears", count: 10 },
+			},
+		],
+		guards: [],
+		minPoints: 5,
+	},
+	enterpriseValueToEbitAtYearEnd: ratio(
+		"perPeriod",
+		"enterpriseValueToEbitAtYearEnd",
+		"EV/EBIT at fiscal year end",
+		"Enterprise value at fiscal year end ÷ operating income",
+		"ratio",
+		{ from: "metric", key: "enterpriseValueAtYearEnd", at: samePeriod },
+		line("operatingIncome", samePeriod),
+	),
+	enterpriseValueToEbitMedian10y: {
+		kind: "point",
+		key: "enterpriseValueToEbitMedian10y",
+		name: "Median EV/EBIT, 10 years",
+		formula: "Median of the EV/EBIT at the last 10 fiscal year ends",
+		unit: "ratio",
+		inputs: [
+			{
+				from: "metric",
+				key: "enterpriseValueToEbitAtYearEnd",
+				at: { kind: "lastFiscalYears", count: 10 },
+			},
+		],
+		guards: [],
+		minPoints: 5,
+	},
 };
 
 /** Returns the value of a single-period input. */
@@ -645,6 +752,15 @@ export const formulas: Record<MetricKey, Formula> = {
 	enterpriseValue: ([cap, debt, cash]) =>
 		amount(cap) + amount(debt) - amount(cash),
 	enterpriseValueToEbit: divide,
+	marketCapAtYearEnd: ([price, shares]) => amount(price) * amount(shares),
+	enterpriseValueAtYearEnd: ([cap, shortDebt, longDebt, cash]) =>
+		amount(cap) + amount(shortDebt) + amount(longDebt) - amount(cash),
+	priceToFreeCashFlowAtYearEnd: divide,
+	priceToFreeCashFlowMedian10y: ([window]) => median(window),
+	priceToBookAtYearEnd: divide,
+	priceToBookMedian10y: ([window]) => median(window),
+	enterpriseValueToEbitAtYearEnd: divide,
+	enterpriseValueToEbitMedian10y: ([window]) => median(window),
 };
 
 /**
@@ -1132,6 +1248,34 @@ export function revenueShare(
 	);
 }
 
+/**
+ * Returns the share of revenue of the rows from `from` on in the `list` of
+ * `overview`: their revenue added up, divided by the revenue of every row of
+ * the list. A chart that folds its smaller parts into one "Other" part shows
+ * this share for it. Returns `null` when the list has no row at `from`.
+ */
+export function otherRevenueShare(
+	overview: OverviewSection,
+	list: "segments" | "regions",
+	from: number,
+): Figure {
+	const parts = overview[list];
+	if (from < 0 || parts[from] === undefined) {
+		return null;
+	}
+	const sum = (values: number[]) =>
+		values.reduce((total, value) => total + value, 0);
+	const revenueOf = (rows: typeof parts) =>
+		rows.map((part) => `${part.name} revenue`).join(" + ");
+	return share(
+		`metric.revenueShare.${list}.other`,
+		"Other share of revenue",
+		`(${revenueOf(parts.slice(from))}) ÷ (${revenueOf(parts)})`,
+		parts.map((part) => part.revenue),
+		(values) => [sum(values.slice(from)), sum(values)],
+	);
+}
+
 /** The three ownership shares of the company, one figure each. */
 export interface OwnershipShares {
 	readonly institutions: Figure;
@@ -1144,21 +1288,27 @@ export interface OwnershipShares {
  * public hold, each as a fraction of the shares outstanding. The public
  * holds the shares that neither institutions nor insiders hold. Its share
  * is `null` when the other two hold more than the shares outstanding.
+ * Overview and Relationships each pass their own section and name it as
+ * `owner`, which goes into the claim ids, so the ids stay unique on a page
+ * that draws both.
  */
-export function ownershipShares(overview: OverviewSection): OwnershipShares {
+export function ownershipShares(
+	section: { readonly ownership: OwnershipSummary },
+	owner: "overview" | "relationships" = "overview",
+): OwnershipShares {
 	const { sharesOutstanding, institutionShares, insiderShares } =
-		overview.ownership;
+		section.ownership;
 	const held = [institutionShares, insiderShares, sharesOutstanding];
 	return {
 		institutions: share(
-			"metric.ownershipShares.institutions",
+			`metric.ownershipShares.${owner}.institutions`,
 			"Held by institutions",
 			"Shares held by institutions ÷ Shares outstanding",
 			[institutionShares, sharesOutstanding],
 			([shares, outstanding]) => [shares, outstanding],
 		),
 		insiders: share(
-			"metric.ownershipShares.insiders",
+			`metric.ownershipShares.${owner}.insiders`,
 			"Held by insiders",
 			"Shares held by insiders ÷ Shares outstanding",
 			[insiderShares, sharesOutstanding],
@@ -1166,7 +1316,7 @@ export function ownershipShares(overview: OverviewSection): OwnershipShares {
 		),
 		public: withinTotal(
 			share(
-				"metric.ownershipShares.public",
+				`metric.ownershipShares.${owner}.public`,
 				"Held by the public",
 				"(Shares outstanding − Shares held by institutions − Shares held by insiders) ÷ Shares outstanding",
 				held,

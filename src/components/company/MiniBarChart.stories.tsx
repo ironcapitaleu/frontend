@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, within } from "storybook/test";
+import { expect, screen, userEvent, within } from "storybook/test";
 
 import { meridianFinancials } from "@/lib/company/sample/financials";
 import type { Claim, Series } from "@/lib/company/types";
@@ -118,7 +118,20 @@ export const NoYears: Story = {
 	args: { series: { ...revenue, periods: [], points: [] } },
 };
 
-/** On a phone the chart fills its card. Overview sets two charts to a row. */
+/**
+ * On a phone the chart fills its card. Overview sets two charts to a row.
+ * Play test: a tap on the oldest bar opens the sources of that year in a sheet.
+ */
 export const Phone: Story = {
 	globals: { viewport: { value: "mobile1", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const oldest = within(canvasElement).getAllByRole("button")[1];
+		await userEvent.click(oldest as HTMLElement);
+
+		const expectedResult = `Sources of ${revenue.points[0]?.label}`;
+
+		const result = await screen.findByRole("dialog");
+
+		await expect(result).toHaveAccessibleName(expectedResult);
+	},
 };
