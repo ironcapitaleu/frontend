@@ -6,6 +6,7 @@ import {
 	AccordionItem,
 	AccordionTrigger,
 } from "@/components/ui/accordion";
+import { formatDate } from "@/lib/company/dates";
 import {
 	feedsOf,
 	isPrintedOnly,
@@ -13,7 +14,6 @@ import {
 	sourcesOf,
 } from "@/lib/company/sources";
 import type { Filing, FigureGroup } from "@/lib/company/types";
-import { formatDate } from "./SourceCard";
 
 /** Props for {@link SourcesIndex}. */
 interface SourcesIndexProps {
@@ -28,6 +28,8 @@ interface SourcesIndexProps {
  * feeds and a link to the filing. It skips the sector benchmark groups, so it
  * names no peer filing, and the groups only the printed page draws, so it
  * names no filing that no figure on the screen uses. It lists no market data.
+ * When no filing is left, it renders nothing, since an index that opens onto
+ * nothing only adds a control.
  */
 function SourcesIndex({ groups }: SourcesIndexProps) {
 	const { filings, feeds } = React.useMemo(() => {
@@ -45,6 +47,10 @@ function SourcesIndex({ groups }: SourcesIndexProps) {
 		};
 	}, [groups]);
 
+	if (filings.length === 0) {
+		return null;
+	}
+
 	return (
 		<Accordion>
 			<AccordionItem>
@@ -52,39 +58,32 @@ function SourcesIndex({ groups }: SourcesIndexProps) {
 					Where these numbers come from
 				</AccordionTrigger>
 				<AccordionContent>
-					{filings.length === 0 ? (
-						<p className="text-muted-foreground">No filing feeds this tab.</p>
-					) : (
-						<ul className="flex flex-col gap-4">
-							{filings.map((filing) => (
-								<li
-									key={filing.accessionNumber}
-									className="flex flex-col gap-1"
+					<ul className="flex flex-col gap-4">
+						{filings.map((filing) => (
+							<li key={filing.accessionNumber} className="flex flex-col gap-1">
+								<span className="font-medium">
+									{filing.form} for {filing.periodLabel}, {filing.filer}
+								</span>
+								<span className="text-muted-foreground">
+									Filed {formatDate(filing.filedOn)}
+								</span>
+								<span>
+									Feeds{" "}
+									{(feeds.get(filing.accessionNumber) ?? [])
+										.map(({ label }) => label)
+										.join(", ")}
+								</span>
+								<a
+									href={filing.indexUrl}
+									target="_blank"
+									rel="noreferrer"
+									className="text-primary underline underline-offset-4"
 								>
-									<span className="font-medium">
-										{filing.form} for {filing.periodLabel}, {filing.filer}
-									</span>
-									<span className="text-muted-foreground">
-										Filed {formatDate(filing.filedOn)}
-									</span>
-									<span>
-										Feeds{" "}
-										{(feeds.get(filing.accessionNumber) ?? [])
-											.map(({ label }) => label)
-											.join(", ")}
-									</span>
-									<a
-										href={filing.indexUrl}
-										target="_blank"
-										rel="noreferrer"
-										className="text-primary underline underline-offset-4"
-									>
-										Open the filing on SEC EDGAR
-									</a>
-								</li>
-							))}
-						</ul>
-					)}
+									Open the filing on SEC EDGAR
+								</a>
+							</li>
+						))}
+					</ul>
 				</AccordionContent>
 			</AccordionItem>
 		</Accordion>

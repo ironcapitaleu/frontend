@@ -162,4 +162,17 @@ describe("SourcesIndex", () => {
 
 		expect(result).toEqual(expectedResult);
 	});
+
+	it.each([
+		["there are no groups", []],
+		["the only group is a sector group", groups.slice(2)],
+	])("should render nothing when %s", (_, only) => {
+		const { container } = render(<SourcesIndex groups={only} />);
+
+		const expectedResult = "";
+
+		const result = container.innerHTML;
+
+		expect(result).toBe(expectedResult);
+	});
 });

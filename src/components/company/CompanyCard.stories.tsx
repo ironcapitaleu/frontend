@@ -44,7 +44,7 @@ export const Default: Story = {
 	play: async ({ canvasElement }) => {
 		const expectedResult = "4.3 Buybacks Net of Shares Issued to Staff";
 
-		const result = within(canvasElement).getByRole("heading", { level: 3 });
+		const result = within(canvasElement).getByRole("heading", { level: 2 });
 
 		await expect(result).toHaveTextContent(expectedResult);
 	},
