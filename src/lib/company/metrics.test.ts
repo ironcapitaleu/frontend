@@ -12,6 +12,8 @@ import {
 	fundChange,
 	fundShare,
 	isValidFigureRef,
+	keyFigureKeys,
+	keyFigureOf,
 	type MetricResult,
 	type Metric,
 	metrics,
@@ -21,6 +23,7 @@ import {
 	resolve,
 	revenueShare,
 	sameRef,
+	stakePercent,
 } from "./metrics";
 import type {
 	Claim,
@@ -1040,6 +1043,38 @@ describe("resolve", () => {
 	});
 });
 
+describe("keyFigureOf", () => {
+	it("should give each key figure the claim of evaluateMetric, the operating margin at the latest fiscal year, when every section has loaded", () => {
+		const expectedResult = [
+			"metric.marketCap",
+			"metric.priceToEarnings",
+			"metric.priceToFreeCashFlow",
+			"metric.priceToBook",
+			"metric.operatingMargin.FY2025",
+			"metric.returnOnEquity",
+			"metric.dividendYield",
+			"metric.buybackYield",
+		];
+
+		const result = keyFigureKeys.map((key) => keyFigureOf(key, completed)?.id);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give null when the masthead has not loaded, so market cap has no price", () => {
+		const withoutMasthead = completeSections({
+			...fakeCompanyReport,
+			masthead: null,
+		});
+
+		const expectedResult = null;
+
+		const result = keyFigureOf("marketCap", withoutMasthead);
+
+		expect(result).toBe(expectedResult);
+	});
+});
+
 describe("isValidFigureRef", () => {
 	it("should reject each reference that note §4 and §5 call a defect", () => {
 		const refs: FigureRef[] = [
@@ -1380,6 +1415,31 @@ describe("per-row derived figures", () => {
 			share: fundShare(section, 2),
 			change: fundChange(section, 2),
 		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should divide the shares held by the shares outstanding of the target when it gives a stake", () => {
+		const section = fakeCompanyReport.relationships;
+
+		// Corvid Sensing 2.4M ÷ 48M.
+		const expectedResult = {
+			id: "metric.stakePercent.stakes.0",
+			value: 2_400_000 / 48_000_000,
+		};
+
+		const stake = stakePercent(section, 0);
+		const result = { id: stake?.id, value: stake?.value };
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should return null when the stakes list has no row at the position", () => {
+		const section = fakeCompanyReport.relationships;
+
+		const expectedResult = null;
+
+		const result = stakePercent(section, 2);
 
 		expect(result).toEqual(expectedResult);
 	});

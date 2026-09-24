@@ -10,7 +10,7 @@ import { alwaysFailingCompanyGateway } from "../../../test/fixtures/companies/al
 import { OverviewTab } from "./OverviewTab";
 
 const failingGateway = alwaysFailingCompanyGateway();
-/** A gateway whose two Overview loads never answer, so both cards stay loading. */
+/** A gateway whose Overview and Financials loads never answer, so the three cards stay loading. */
 const pending = (): Promise<never> => new Promise(() => {});
 const neverAnsweringGateway: CompanyGateway = {
 	...failingGateway,
@@ -18,8 +18,18 @@ const neverAnsweringGateway: CompanyGateway = {
 	getFinancials: pending,
 };
 
-/** A gateway whose Overview section loads and whose Financials section fails. */
 const sampleGateway = sampleCompanyGateway();
+/** A gateway whose Valuation section fails, so the P/E, P/FCF and P/B medians are missing. */
+const valuationFailingGateway: CompanyGateway = {
+	...sampleGateway,
+	getValuation: failingGateway.getValuation,
+};
+/** A gateway whose Overview section fails and whose other sections load. */
+const overviewFailingGateway: CompanyGateway = {
+	...sampleGateway,
+	getOverview: failingGateway.getOverview,
+};
+/** A gateway whose Overview section loads and whose Financials section fails. */
 const financialsFailingGateway: CompanyGateway = {
 	...sampleGateway,
 	getFinancials: failingGateway.getFinancials,
@@ -27,7 +37,8 @@ const financialsFailingGateway: CompanyGateway = {
 
 /**
  * The Overview tab with the sample data of Meridian Semiconductor (MRDN).
- * It draws card 1.1 "The Business" and card 1.2 "Ten Years at a Glance".
+ * It draws card 1.1 "The Business", card 1.2 "Ten Years at a Glance" and
+ * card 1.3 "Key Figures", then the sources index.
  * A story sets its gateway in `parameters`. Without one, the tab reads the
  * default sample gateway.
  */
@@ -56,7 +67,11 @@ export const Loaded: Story = {
 		const canvas = within(canvasElement);
 		await canvas.findByText("Diluted shares");
 
-		const expectedResult = ["1.1 The Business", "1.2 Ten Years at a Glance"];
+		const expectedResult = [
+			"1.1 The Business",
+			"1.2 Ten Years at a Glance",
+			"1.3 Key Figures",
+		];
 
 		const result = canvas
 			.getAllByRole("heading", { level: 2 })
@@ -153,11 +168,85 @@ export const SegmentSource: Story = {
 	},
 };
 
+/** Play test: a click on a key figure pins its source card with the formula. */
+export const KeyFigureSource: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const row = await canvas.findByRole("row", { name: /^P\/E / });
+		await userEvent.click(within(row).getAllByRole("button")[0]);
+
+		const expectedResult = "Price ÷ diluted EPS, latest fiscal year";
+
+		const result = await within(await screen.findByRole("dialog")).findByText(
+			expectedResult,
+		);
+
+		await expect(result).toHaveTextContent(expectedResult);
+	},
+};
+
+/**
+ * Play test: the key figures read the masthead and Financials, not Overview.
+ * So when Overview fails, card 1.3 still shows each figure, and only the
+ * medians that Overview holds are dimmed dashes.
+ */
+export const KeyFiguresWithoutOverview: Story = {
+	parameters: { companyGateway: overviewFailingGateway },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const row = await canvas.findByRole("row", { name: /^Operating margin / });
+
+		const expectedResult = { figureMissing: false, median: "—" };
+
+		const cells = within(row).getAllByRole("cell");
+		const result = {
+			figureMissing: cells[0]?.textContent === "—",
+			median: cells.at(-1)?.textContent,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: while Valuation is missing, the P/E median is a dimmed dash. */
+export const MissingMedian: Story = {
+	parameters: { companyGateway: valuationFailingGateway },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const row = await canvas.findByRole("row", { name: /^P\/E / });
+
+		const expectedResult = "—";
+
+		const result = within(row).getAllByRole("cell").at(-1);
+
+		await expect(result).toHaveTextContent(expectedResult);
+	},
+};
+
+/**
+ * Play test: Key Figures needs the Financials section too, so when it fails
+ * the card says so instead of showing a dash for every figure.
+ */
+export const KeyFiguresNeedFinancials: Story = {
+	parameters: { companyGateway: financialsFailingGateway },
+	play: async ({ canvasElement }) => {
+		const expectedResult =
+			"The key figures did not load. Try again in a moment.";
+
+		const result = await within(canvasElement).findByText(
+			/key figures did not load/,
+		);
+
+		await expect(result).toHaveTextContent(expectedResult);
+	},
+};
+
 /** Play test: each card shows a spinner while its section loads. */
 export const Loading: Story = {
 	parameters: { companyGateway: neverAnsweringGateway },
 	play: async ({ canvasElement }) => {
-		const expectedResult = 2;
+		const expectedResult = 3;
 
 		const result = within(canvasElement).getAllByRole("status").length;
 

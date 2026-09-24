@@ -1,5 +1,5 @@
 import { listedFundPositions } from "./holdings";
-import { ownershipShares } from "./metrics";
+import { keyFigureKeys, keyFigureOf, ownershipShares } from "./metrics";
 import type {
 	BlockKey,
 	Claim,
@@ -104,6 +104,24 @@ export function filingsOf(claims: readonly Claim[]): Filing[] {
 }
 
 /**
+ * Returns the sector median of the key figure `metric`. P/E, P/FCF and P/B
+ * read it from Valuation, and the other key figures from Overview. Returns
+ * `null` when that section has not loaded or lists no benchmark of `metric`.
+ */
+export function sectorMedianOf(
+	metric: MetricKey,
+	sections: CompletedSections,
+): Figure {
+	const section = valuationKeyFigures.has(metric)
+		? sections.valuation
+		: sections.overview;
+	return (
+		section?.sectorBenchmarks.find((row) => row.metric === metric)?.median ??
+		null
+	);
+}
+
+/**
  * Returns the reported sources of `claims`, one group for each filing or
  * market dataset. The filings come first, newest first, and the market data
  * comes last. A claim that two trees share appears once.
@@ -182,6 +200,8 @@ const blockKeys = [
 	"largestFunds",
 	"insiders",
 	"ownershipSplit",
+	"subsidiaries",
+	"stakes",
 ] as const satisfies readonly BlockKey[];
 
 /**
@@ -207,10 +227,8 @@ const valuationKeyFigures: ReadonlySet<MetricKey> = new Set<MetricKey>([
 	"priceToBook",
 ]);
 
-// The derived metrics of the Overview blocks, such as the operating margin,
-// the free cash flow and the ratios of Key Figures, need `evaluateMetric`
-// (STA-229). Until it exists, each block reads its reported figures only. A
-// later part of STA-226 adds the checks, so "Checks by Area" reads no figure yet.
+// A later part of STA-226 adds the checks, so "Checks by Area" reads no
+// figure yet.
 const blocks: Readonly<Record<BlockKey, Block>> = {
 	business: {
 		tab: "overview",
@@ -233,16 +251,15 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	keyFigures: {
 		tab: "overview",
 		label: "Key Figures",
-		company: ({ overview }) => overview && [],
-		sector: ({ overview, valuation }) =>
-			overview && [
-				...overview.sectorBenchmarks
-					.filter(({ metric }) => !valuationKeyFigures.has(metric))
-					.map((row) => row.median),
-				...(valuation?.sectorBenchmarks ?? [])
-					.filter(({ metric }) => valuationKeyFigures.has(metric))
-					.map((row) => row.median),
-			],
+		company: (sections) =>
+			sections.masthead && sections.financials
+				? keyFigureKeys.map((key) => keyFigureOf(key, sections))
+				: null,
+		// The medians the card draws: every key figure but market cap.
+		sector: (sections) =>
+			keyFigureKeys
+				.filter((key) => key !== "marketCap")
+				.map((key) => sectorMedianOf(key, sections)),
 	},
 	financialPosition: {
 		tab: "overview",
@@ -386,6 +403,30 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		company: ({ relationships }) =>
 			relationships &&
 			Object.values(ownershipShares(relationships, "relationships")),
+	},
+	subsidiaries: {
+		tab: "relationships",
+		label: "Owns: Subsidiaries",
+		company: ({ relationships }) =>
+			relationships
+				? relationships.subsidiaries.map((row) => row.jurisdiction)
+				: null,
+	},
+	// The reported inputs of the rows that card 5.5 draws: the shares held from
+	// the company's own 13F-HR, and the shares outstanding from the 10-Q or
+	// 10-K of the target company. Like the largest funds, the block reads the
+	// inputs and not `stakePercent`, so the target's filing stays in the index
+	// when the stake cannot be computed.
+	stakes: {
+		tab: "relationships",
+		label: "Owns: Stakes in Listed Companies",
+		company: ({ relationships }) =>
+			relationships
+				? relationships.stakes.flatMap((row) => [
+						row.sharesHeld,
+						row.sharesOutstanding,
+					])
+				: null,
 	},
 };
 

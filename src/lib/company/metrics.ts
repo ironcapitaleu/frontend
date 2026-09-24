@@ -825,6 +825,32 @@ export function evaluateMetric(
 	return evaluate(metrics[key], sections, period);
 }
 
+/** The metrics of Overview card 1.3 "Key Figures", in the order of DESIGN.md §8. */
+export const keyFigureKeys = [
+	"marketCap",
+	"priceToEarnings",
+	"priceToFreeCashFlow",
+	"priceToBook",
+	"operatingMargin",
+	"returnOnEquity",
+	"dividendYield",
+	"buybackYield",
+] as const satisfies readonly MetricKey[];
+
+/**
+ * Returns the claim of the key figure `key`, or `null` when
+ * {@link evaluateMetric} gives no value. A per-period metric, such as the
+ * operating margin, reads the latest fiscal year.
+ */
+export function keyFigureOf(
+	key: MetricKey,
+	sections: CompletedSections,
+): Figure {
+	const at = metrics[key].kind === "perPeriod" ? latestYear : null;
+	const result = resolve({ from: "metric", key, at }, sections, null);
+	return !isWindow(result) && result.kind === "value" ? result.claim : null;
+}
+
 /**
  * Evaluates `metric` over `sections` by the rules of {@link evaluateMetric}.
  * It is exported only for tests, so a test can evaluate a metric that is not
@@ -1371,6 +1397,28 @@ export function fundChange(
 		"(Shares held − Shares held a quarter earlier) ÷ Shares held a quarter earlier",
 		[row.shares, row.sharesQuarterEarlier],
 		([now, before]) => [now - before, before],
+	);
+}
+
+/**
+ * Returns the stake at `position` of `relationships.stakes` as a fraction of
+ * the target company: the shares held divided by the shares outstanding of
+ * that company. Returns `null` when the list has no row at `position`.
+ */
+export function stakePercent(
+	relationships: RelationshipsSection,
+	position: number,
+): Figure {
+	const row = relationships.stakes[position];
+	if (row === undefined) {
+		return null;
+	}
+	return share(
+		`metric.stakePercent.stakes.${position}`,
+		`Stake in ${row.company}`,
+		`Shares of ${row.company} held ÷ Shares outstanding of ${row.company}`,
+		[row.sharesHeld, row.sharesOutstanding],
+		([held, outstanding]) => [held, outstanding],
 	);
 }
 
