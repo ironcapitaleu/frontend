@@ -1,6 +1,7 @@
 // The placeholder universe the screener shows until a real data source
 // exists. The page takes its data through the `stocks` prop, so tests inject
-// their own fixture and this list can change freely.
+// their own fixture and this list can change freely. Only the page and its
+// own tests import it.
 
 import type { Stock } from "@/components/screener/screener.logic";
 import {
@@ -11,7 +12,12 @@ import {
 import { meridianFinancials } from "@/lib/company/sample/financials";
 import { meridianMasthead } from "@/lib/company/sample/masthead";
 import { meridianOverview } from "@/lib/company/sample/overview";
-import type { MetricKey } from "@/lib/company/types";
+import type {
+	CompletedSections,
+	Figure,
+	MastheadSection,
+	MetricKey,
+} from "@/lib/company/types";
 
 // The Meridian sections, as the company page reads them.
 const MERIDIAN_SECTIONS = completeSections({
@@ -25,50 +31,116 @@ const MERIDIAN_SECTIONS = completeSections({
 	filings: null,
 });
 
-// The screener names a country by its two-letter code.
+// The screener names a country by its two-letter code and a sector by the
+// coarse taxonomy of the other rows.
 const COUNTRY_CODES: Readonly<Record<string, string>> = {
 	"United States": "US",
 };
-
-/** The value of a Meridian metric, or `null` when the metric has none. */
-function meridianMetric(key: MetricKey): number | null {
-	const result = evaluateMetric(key, MERIDIAN_SECTIONS);
-	return result.kind === "value" ? Number(result.claim.value) : null;
-}
-
-/** Turns a fraction into the percent the screener shows, such as 0.012 → 1.2. */
-function asPercent(value: number | null): number | null {
-	return value === null ? null : value * 100;
-}
-
-/**
- * Meridian Semiconductor (MRDN), the one company with a company page. Each
- * figure comes from the company sample, so the row and the page agree. The
- * port has no P/Cash metric and no inventory line for the quick ratio, so
- * both stay `null`.
- */
-export const MERIDIAN_STOCK: Stock = {
-	symbol: meridianMasthead.ticker.value,
-	name: meridianMasthead.name,
-	sector: meridianMasthead.sector,
-	country: COUNTRY_CODES[meridianMasthead.country] ?? meridianMasthead.country,
-	price: Number(meridianMasthead.price?.value),
-	marketCap: meridianMetric("marketCap") ?? 0,
-	changePercent1M: Number(priceChangeOneMonth(meridianMasthead)?.value) * 100,
-	peRatio: meridianMetric("priceToEarnings"),
-	priceToCash: null,
-	priceToFcf: meridianMetric("priceToFreeCashFlow"),
-	quickRatio: null,
-	currentRatio: meridianMetric("currentRatio"),
-	buybackYield: asPercent(meridianMetric("buybackYield")),
-	dividendYield: asPercent(meridianMetric("dividendYield")),
-	weekLow52: Number(meridianMasthead.low52Weeks?.value),
-	weekHigh52: Number(meridianMasthead.high52Weeks?.value),
+const SECTORS: Readonly<Record<string, string>> = {
+	Semiconductors: "Technology",
 };
 
 /**
- * Twelve large companies across five countries, with sample figures, and
- * {@link MERIDIAN_STOCK}.
+ * Error indicating that the company sample has no figure for a column the
+ * screener needs, such as a market cap whose metric does not resolve. It stops
+ * the module from loading, so the row never shows `0` or `NaN`.
+ */
+export class MissingSampleFigure extends Error {
+	constructor(column: string) {
+		super(
+			`[MissingSampleFigure] The company sample has no figure for a screener column, Input: '${column}'`,
+		);
+		this.name = "MissingSampleFigure";
+	}
+}
+
+/**
+ * Error indicating that the screener has no code for a sector or a country of
+ * the company sample, so the row would add a filter chip of its own.
+ */
+export class UnmappedSampleCategory extends Error {
+	constructor(field: "sector" | "country", value: string) {
+		super(
+			`[UnmappedSampleCategory] The screener has no code for a category of the company sample, Input: '${field} ${value}'`,
+		);
+		this.name = "UnmappedSampleCategory";
+	}
+}
+
+/** The number in `figure`. Throws {@link MissingSampleFigure} when there is none. */
+export function requiredFigure(column: string, figure: Figure): number {
+	const value = figure === null ? Number.NaN : Number(figure.value);
+	if (!Number.isFinite(value)) {
+		throw new MissingSampleFigure(column);
+	}
+	return value;
+}
+
+/** The value of a metric. Throws {@link MissingSampleFigure} when it has none. */
+function requiredMetric(key: MetricKey, sections: CompletedSections): number {
+	const result = evaluateMetric(key, sections);
+	return requiredFigure(key, result.kind === "value" ? result.claim : null);
+}
+
+/** The screener code of `value`. Throws {@link UnmappedSampleCategory} when `codes` has none. */
+function requiredCode(
+	codes: Readonly<Record<string, string>>,
+	field: "sector" | "country",
+	value: string,
+): string {
+	const code = codes[value];
+	if (code === undefined) {
+		throw new UnmappedSampleCategory(field, value);
+	}
+	return code;
+}
+
+/**
+ * The screener row of a company with a company page. Each figure comes from
+ * `masthead` and `sections`, so the row and the page agree. The port has no
+ * P/Cash metric and no inventory line for the quick ratio, so both stay
+ * `null`. A fraction becomes the percent the screener shows, such as
+ * 0.012 → 1.2.
+ *
+ * Throws {@link MissingSampleFigure} when a figure does not resolve, and
+ * {@link UnmappedSampleCategory} when the sector or the country has no
+ * screener code.
+ */
+export function companyStock(
+	masthead: MastheadSection,
+	sections: CompletedSections,
+): Stock {
+	return {
+		symbol: masthead.ticker.value,
+		name: masthead.name,
+		sector: requiredCode(SECTORS, "sector", masthead.sector),
+		country: requiredCode(COUNTRY_CODES, "country", masthead.country),
+		price: requiredFigure("price", masthead.price),
+		marketCap: requiredMetric("marketCap", sections),
+		changePercent1M:
+			requiredFigure("changePercent1M", priceChangeOneMonth(masthead)) * 100,
+		peRatio: requiredMetric("priceToEarnings", sections),
+		priceToCash: null,
+		priceToFcf: requiredMetric("priceToFreeCashFlow", sections),
+		quickRatio: null,
+		currentRatio: requiredMetric("currentRatio", sections),
+		buybackYield: requiredMetric("buybackYield", sections) * 100,
+		dividendYield: requiredMetric("dividendYield", sections) * 100,
+		weekLow52: requiredFigure("weekLow52", masthead.low52Weeks),
+		weekHigh52: requiredFigure("weekHigh52", masthead.high52Weeks),
+	};
+}
+
+/** Meridian Semiconductor (MRDN), the one company with a company page. */
+export const MERIDIAN_STOCK: Stock = companyStock(
+	meridianMasthead,
+	MERIDIAN_SECTIONS,
+);
+
+/**
+ * Thirteen large companies across five countries, with sample figures.
+ * {@link MERIDIAN_STOCK} leads the list, because it is the one with a company
+ * page.
  */
 export const SAMPLE_STOCKS: readonly Stock[] = [
 	MERIDIAN_STOCK,
