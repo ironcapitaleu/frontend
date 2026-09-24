@@ -242,8 +242,9 @@ export const EmptyChart: Story = {
 /**
  * Play test: every bar of the cash flow chart can be tapped on a phone. Each
  * bar's trigger is at least 24 px wide and 24 px tall, even when the bar is
- * drawn smaller, and the chart scrolls inside its card, so the page does not
- * scroll sideways.
+ * drawn smaller, and it stays inside the plot. Every bar draws, including the
+ * years that report zero share repurchases. The chart scrolls inside its
+ * card, so the page does not scroll sideways.
  */
 export const BarTargets: Story = {
 	globals: phone,
@@ -256,18 +257,30 @@ export const BarTargets: Story = {
 		await userEvent.click(
 			await body.findByRole("option", { name: "Cash flow" }),
 		);
-		const bars = within(
-			await canvas.findByRole("list", { name: "Fiscal years" }),
-		).getAllByRole("button");
+		const plot = await canvas.findByRole("list", { name: "Fiscal years" });
+		const bars = within(plot).getAllByRole("button");
 		const page = canvasElement.ownerDocument.documentElement;
+		const { top, bottom } = plot.getBoundingClientRect();
 
-		const expectedResult = { smallTargets: [], pageScrollsSideways: false };
+		const expectedResult = {
+			smallTargets: [],
+			targetsOutsidePlot: [],
+			invisibleBars: [],
+			pageScrollsSideways: false,
+		};
 
 		const result = {
 			smallTargets: bars.filter((bar) => {
 				const { width, height } = bar.getBoundingClientRect();
 				return width < 24 || height < 24;
 			}),
+			targetsOutsidePlot: bars.filter((bar) => {
+				const rect = bar.getBoundingClientRect();
+				return rect.top < top - 0.5 || rect.bottom > bottom + 0.5;
+			}),
+			invisibleBars: bars.filter(
+				(bar) => bar.parentElement?.getBoundingClientRect().height === 0,
+			),
 			pageScrollsSideways: page.scrollWidth > page.clientWidth,
 		};
 

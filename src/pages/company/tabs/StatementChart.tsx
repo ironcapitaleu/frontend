@@ -93,6 +93,10 @@ export function StatementChart({
 											);
 										}
 										const { top, height } = place(point.value);
+										const negative = point.value < 0;
+										// A reported zero draws a 2 px mark above the zero line,
+										// so it never reads as a missing year.
+										const zeroMark = point.value === 0;
 										return (
 											<div
 												key={line.key}
@@ -102,17 +106,19 @@ export function StatementChart({
 													className={cn(
 														"absolute inset-x-0",
 														inkOf(index),
-														point.value > 0
-															? "rounded-t-[2px]"
-															: "rounded-b-[2px]",
+														negative ? "rounded-b-[2px]" : "rounded-t-[2px]",
 													)}
-													style={{ top: `${top}%`, height: `${height}%` }}
+													style={
+														zeroMark
+															? { top: `calc(${top}% - 2px)`, height: "2px" }
+															: { top: `${top}%`, height: `${height}%` }
+													}
 												>
 													<SourceTrigger
 														claim={point}
 														className={cn(
 															"absolute inset-x-0 block h-full min-h-6 rounded-none",
-															point.value > 0 ? "bottom-0" : "top-0",
+															negative ? "top-0" : "bottom-0",
 														)}
 													>
 														<span className="sr-only">
