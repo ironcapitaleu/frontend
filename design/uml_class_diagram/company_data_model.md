@@ -14,7 +14,7 @@ serves.
 | [1. Terms](#1-terms)                      | The words the note uses                                            | every ticket     |
 | [2. The port](#2-the-companygateway-port) | `CompanyGateway`, `Ticker`, the errors and the page states         | STA-224          |
 | [3. Claims](#3-claims-periods-and-source-references) | `Claim`, `Period`, source references, `sourcesOf`, `feedsOf`, figure groups | every ticket |
-| [4. Sections](#4-sections)                | The eight section types, the line keys, the kinds of line, the latest reported period, completed sections and what the port returns | STA-224, STA-227 |
+| [4. Sections](#4-sections)                | The eight section types, the line keys, the kinds of line, the latest covered period, completed sections and what the port returns | STA-224, STA-227 |
 | [5. Metrics and checks](#5-metrics-checks-and-results) | Figure references, market keys, per-row derived figures, guards, thresholds, check results | STA-226 |
 | [6. The first check set](#6-the-first-check-set) | The 11 checks and the metrics they read                     | STA-226, STA-227 |
 | [7. Worked examples](#7-worked-examples)  | S1, C1, V1, three loss-making cases, the weeks around a 10-K, a fiscal year end, the ownership copies and one Filings row, in the types | STA-224, STA-226, STA-227 |
@@ -376,7 +376,11 @@ functions in `src/lib/company/sources.ts`:
   claims reach that filing too. A `MarketDataset` is not a filing, so it gets no
   entry.
 
-The "Sources" chip of a chart or table shows `sourcesOf(claimsOf(block))`.
+The "Sources" chip of a chart or table shows `sourcesOf` over the claims of
+each group of the block. So a block that draws sector figures next to the
+company's figures shows two chips: one for the company's filings and one for
+the peers. The chip of the company's group, which `isSectorBenchmark`
+rejects, names no peer filing.
 The per-tab sources index reads the company's own groups, as the Filings walk
 below does. It is `sourcesOf` over the claims of the groups of
 `figureGroupsOf(tab, sections)` that `isSectorBenchmark` rejects, and `feedsOf`
@@ -694,17 +698,25 @@ and `metrics.ts` completes it:
   `completeQuarters(statement)`. It never writes to a section. Every section
   that the port returns stays unchanged.
 
-**Latest means latest reported.** A table's window ends at the latest period
-that a filing reports, not at the latest period that has elapsed. The annual
-table's latest fiscal year is the latest one with a 10-K. The quarterly
-table's latest quarter is the latest one that a 10-Q reports, or the fourth
-quarter once the 10-K reports it. `fiscalYear(0)`, `latestQuarter` and
-`lastFourQuarters` all read from that window. So in the weeks between a fiscal
-year end and its 10-K, `fiscalYear(0)` is still the year before, and the
-checks read the same figures as the week before. A `null` point above is a
-position inside the window that no filing reports. It is never a whole period
-that no filing covers yet, and a port that returns one is an adapter defect.
-§7 works the case at 20 Feb 2026.
+**Latest means latest covered.** A table's window ends at the latest period
+that a filing covers, not at the latest period that has elapsed. A filing
+covers a period when it reports that period, or when `completeQuarters`
+derives the period from a figure that the filing reports. The annual table's
+latest fiscal year is the latest one with a 10-K. The quarterly table's
+latest quarter is the quarter end of the latest 10-Q, or the fourth quarter
+once the 10-K is filed. The three statements share that one quarterly
+window. So a cash flow quarter that `metrics.ts` derives from a year-to-date
+figure is inside the window, as is a fourth quarter that it derives from the
+10-K. The market series read the same annual window as the tables. A
+year-end price or yield for a fiscal year with no 10-K is outside it, so V1
+pairs each price with the earnings of the same year. The adapter reads which
+filings exist from `FilingsSection.filings`. `fiscalYear(0)`,
+`latestQuarter` and `lastFourQuarters` all read from that window. So in the
+weeks between a fiscal year end and its 10-K, `fiscalYear(0)` is still the
+year before, and the checks read the same figures as the week before. A
+`null` point above is a position inside the window that no filing reports.
+It is never a whole period that no filing covers yet, and a port that
+returns one is an adapter defect. §7 works the case at 20 Feb 2026.
 
 **Only a flow line has a derived quarter.** A subtraction or a sum of
 quarters is correct only for a figure that adds up over a fiscal year. The
@@ -812,7 +824,7 @@ The variants of `PeriodChoice`:
 
 | Variant                    | Picks                                                                          | Resolves to |
 | -------------------------- | ------------------------------------------------------------------------------ | ----------- |
-| `fiscalYear`, `yearsBack`  | The fiscal year `yearsBack` years before the latest reported one (§4). `0` is that one. | one value   |
+| `fiscalYear`, `yearsBack`  | The fiscal year `yearsBack` years before the latest covered one (§4). `0` is that one. | one value   |
 | `latestQuarter`            | The latest column of the quarterly table: three months, or a quarter end       | one value   |
 | `lastFourQuarters`         | The sum of a flow line over the last four quarters that `metrics.ts` derives   | one value   |
 | `latestClose`              | The latest daily value of a market figure: a closing price or a daily yield   | one value   |
@@ -839,8 +851,9 @@ sheet line, `dilutedShares` or `dilutedEps` with `lastFourQuarters` is a
 defect, and so is `dilutedShares` or `dilutedEps` with `latestQuarter`. A
 test in STA-226 rejects each of them. Resolution reads `CompletedSections`
 (§4), so it reads the completed quarterly table and never the table from the
-port. For a flow line of the income statement, the latest quarterly column
-can be a derived fourth quarter.
+port. For a flow line, the latest quarterly column can be a derived quarter:
+a fourth quarter of the income statement, or a second, third or fourth
+quarter of the cash flow statement.
 
 **Which field a market figure reads.** `MarketKey` is one of `price`,
 `priceAtFiscalYearEnd` and `treasuryYield10y`. Each pair of key and period
@@ -884,17 +897,18 @@ ownership shares, returns one `Figure` for each part. §3 gives the ids.
 | Tenure in years                       | `tenure`                  | `Person.since` or `Profile.chiefExecutiveSince`                          |
 | Net shares bought back, per year      | `netSharesBoughtBack`     | `sharesRepurchased` and `sharesIssuedToStaff` at the same fiscal year    |
 | Net insider shares, per year          | `netInsiderShares`        | `insiderSharesBought` and `insiderSharesSold` at the same fiscal year    |
-| Subsidiary count                      | `subsidiaryCount`         | the `Subsidiary.jurisdiction` of every row                               |
+| Subsidiary count                      | `subsidiaryCount`         | none, the Exhibit 21 list itself (§8)                                    |
 
 `tenure` measures to the `filedOn` date of the filing that reports `since`.
 That date is a field of a `Filing`, not a claim, so it is not an input. The
 formula text names it, such as "Years from the start date to 24 Apr 2026, the
 filing date of the DEF 14A". `subsidiaryCount` counts the rows of the Exhibit
 21 list that `RelationshipsSection.subsidiaries` carries, so no section field
-holds the count. A row exists even when its jurisdiction is `null`, so the
-count includes that row. This is the one exception to the `null` rule above:
-the rule covers a function that does arithmetic on its input values, and a
-count reads only the number of rows. An empty list gives a count of 0.
+holds the count. It is the one function of the table whose claim is reported,
+not derived. Its source is a `ReportedSource` for the Exhibit 21 list, and it
+has no input claims. A row exists even when its jurisdiction is `null`, so
+the count includes that row. An empty list gives a count of 0, and the claim
+still names the exhibit. §8 holds the question and this answer.
 
 These functions have no `MetricKey`, no `FigureRef` and no guard, and no
 check reads them. A check that needs one of these figures first needs a
@@ -1454,12 +1468,13 @@ builds the fixture at 20 Mar 2026 for this reason.
 
 ### Before the 10-K: 20 Feb 2026
 
-This example is the regression case for the "latest reported" rule of §4. On
+This example is the regression case for the "latest covered" rule of §4. On
 20 Feb 2026, MRDN's FY2026 has ended on 25 Jan 2026, and its 10-K comes on
 12 Mar 2026. The latest 10-K is the one for FY2025, which ends on 26 Jan 2025.
-The latest 10-Q reports Q3 FY2026, which ends on 26 Oct 2025.
+The latest 10-Q is for Q3 FY2026, which ends on 26 Oct 2025. It reports the
+income statement for three months and the cash flow statement for nine.
 
-| Reference          | Latest elapsed, a defect         | Latest reported (§4)     |
+| Reference          | Latest elapsed, a defect         | Latest covered (§4)      |
 | ------------------ | -------------------------------- | ------------------------ |
 | `fiscalYear(0)`    | FY2026, a `null` column          | FY2025                   |
 | `latestQuarter`    | Q4 FY2026, a `null` column       | Q3 FY2026, 26 Oct 2025   |
@@ -1470,12 +1485,25 @@ The latest 10-Q reports Q3 FY2026, which ends on 26 Oct 2025.
 Under the elapsed reading, B1, B2 and P2 read a `null` at `latestQuarter`.
 P1, S1, S3 and V1 read a `null` at `fiscalYear(0)`, and S2 and V2 lose
 `marketCap`. Nine of the eleven checks read "not enough data", reason
-`missingInput`, for six weeks every year. Under the reported reading, every
+`missingInput`, for six weeks every year. Under the covered reading, every
 check reads the same figures as in January. The annual balance sheet view
 adds a column for 26 Oct 2025, because that date is not the end of FY2025.
 
-STA-226 builds this fixture next to the one at 20 Mar 2026. A test in STA-224
-rejects a fake port that returns FY2026 before its 10-K.
+The cash flow statement is the case that tells "covered" from "reported". The
+Q3 10-Q reports Q1 FY2026 as three months, and Q2 and Q3 only as six and nine
+months. A window that ends at the latest quarter a 10-Q reports ends at Q1
+FY2026 for the cash flow statement and at Q3 FY2026 for the other two. S2
+then sums dividends over Q2 FY2025 to Q1 FY2026, two quarters behind the
+income table beside it. Under the covered reading, `completeQuarters`
+derives Q2 and Q3 FY2026 from the six-month and nine-month figures. All three
+statements end at Q3 FY2026, and S2 sums Q4 FY2025 to Q3 FY2026. V1 reads its
+ten year-end prices over FY2016 to FY2025, the same years as its earnings,
+though the FY2026 year-end price exists.
+
+STA-226 builds this fixture next to the one at 20 Mar 2026. Its
+`FilingsSection.filings` lists the 10-Q for Q3 FY2026 and no 10-K for FY2026.
+A test in STA-224 gives a fake port this list and fails when the port returns
+a FY2026 column, or a cash flow window that ends before Q3 FY2026.
 
 ### P/B: one date in two tables
 
@@ -1503,7 +1531,7 @@ is 26 Jul 2026, and the annual view adds the column
 The sample adapter fills `OverviewSection.ownership` and
 `RelationshipsSection.ownership` from the same 13F totals, at the quarter end
 30 Jun 2026. Institutions hold 1.68B of 2.46B shares, so both bars show
-68.2%. A faulty adapter fills the Relationships copy from the 13F totals at
+68.3%. A faulty adapter fills the Relationships copy from the 13F totals at
 31 Mar 2026 instead, with 1.66B shares, so the bar shows 67.5%. Both copies
 carry valid sources. The STA-227 test compares the copies field by field and
 fails on `asOf` first: `2026-06-30` against `2026-03-31`.
@@ -1624,10 +1652,11 @@ takes unless it finds a reason not to.
   card reads "diluted shares, latest fiscal year". STA-226 adds
   `sharesOutstanding` as a balance sheet line only with a change to §4 and
   §6 in the same pull request.
-- STA-226: **What input does `subsidiaryCount` carry?** Its inputs are the
-  `Subsidiary.jurisdiction` claims, so a company with no subsidiaries, or a
-  list with no jurisdictions, gives a derived claim with no input. That
-  breaks the `1..*` on `DerivedSource`, and its source card traces nowhere.
+- STA-226: **What input does `subsidiaryCount` carry?** A derived count
+  takes the `Subsidiary.jurisdiction` claims as inputs, so a company with no
+  subsidiaries, or a list with no jurisdictions, gives a derived claim with
+  no input. That breaks the `1..*` on `DerivedSource`, and its source card
+  traces nowhere.
   Default: `subsidiaryCount` gives a reported claim, with a `ReportedSource`
   for the Exhibit 21 list, the line `Exhibit 21 › Subsidiaries of the
   registrant` and no XBRL tag. A count of 0 still names the exhibit.
