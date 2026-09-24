@@ -140,6 +140,14 @@ describe("barStyle", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should draw the 2 px mark below the zero line when the zero line is the top edge of the plot", () => {
+		const expectedResult = { top: "0%", height: "2px" };
+
+		const result = barStyle({ top: 0, height: 0 });
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should draw the bar at its top and height in percent when the bar has a height", () => {
 		const expectedResult = { top: "25%", height: "50%" };
 
