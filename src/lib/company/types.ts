@@ -301,3 +301,67 @@ export interface CompanySections {
 export type CompletedSections = CompanySections & {
 	readonly [completedBrand]: true;
 };
+
+/** Names one tab of the company page, in the order of the tab strip. */
+export type TabKey =
+	| "overview"
+	| "financials"
+	| "valuation"
+	| "shareholderReturns"
+	| "relationships"
+	| "management"
+	| "filings";
+
+/**
+ * Names one chart, table or check card of a tab. It is a code key, so a card
+ * title can change. This list holds the blocks of the Overview and Financials
+ * tabs, and the Shareholder returns block that only the printed Overview
+ * shows. Each later tab adds its own keys.
+ */
+export type BlockKey =
+	| "business"
+	| "tenYears"
+	| "keyFigures"
+	| "financialPosition"
+	| "checksByArea"
+	| "ownership"
+	| "profile"
+	| "printedShareholderReturns"
+	| "incomeChart"
+	| "incomeTable"
+	| "balanceChart"
+	| "balanceTable"
+	| "cashFlowChart"
+	| "cashFlowTable";
+
+/**
+ * The kind of figures in a group. `sector` figures come from a
+ * {@link SectorBenchmark} field. Every other figure is a `company` figure.
+ */
+export type FigureKind = "company" | "sector";
+
+/** Names the figures of one kind that one block draws. */
+export interface FigureGroupRef {
+	readonly tab: TabKey;
+	readonly block: BlockKey;
+	/** Display copy only. No function reads it to decide. */
+	readonly label: string;
+	readonly figures: FigureKind;
+}
+
+/** The claims of one {@link FigureGroupRef}. No section stores one. */
+export interface FigureGroup {
+	readonly ref: FigureGroupRef;
+	readonly claims: readonly Claim[];
+}
+
+/** The reported claims that one document backs. */
+export interface SourceGroup {
+	readonly document: SourceDocument;
+	readonly claims: readonly Claim[];
+}
+
+/** The reported sources behind some claims, one group for each document. No section stores one. */
+export interface SourceSet {
+	readonly groups: readonly SourceGroup[];
+}
