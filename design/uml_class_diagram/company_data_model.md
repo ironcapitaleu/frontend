@@ -259,7 +259,9 @@ The value types:
   takes the fiscal year. A derived quarter of §4 is the one exception. It
   takes the quarter of its column.
 - Two periods are the **same period** when their `kind`, `fiscalYear` and
-  `fiscalQuarter` match. The one exception pairs a fiscal year with the
+  `fiscalQuarter` match. Two instants also need the same `endsOn`, so the
+  closes of 20 Feb and 20 Mar of one fiscal year are two periods. The one
+  exception pairs a fiscal year with the
   instant at its end, because a year-end price and a year's EPS belong
   together. The pair reads the annual encoding of the instant, with
   `fiscalQuarter: null`. §5 uses this rule to pair the inputs of a
