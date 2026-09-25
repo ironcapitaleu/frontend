@@ -420,7 +420,7 @@
 
 /* The print stylesheet (DESIGN.md §8 "Print Summary"). The page prints on A4
    or Letter, so the margin fits both, and the page number sits at the foot
-   of each page. At a root size of 15px, the smallest type, `text-xs`, prints
+   of each page in Chromium browsers (margin boxes, Chrome 131 and later). At a root size of 15px, the smallest type, `text-xs`, prints
    at 7pt, the floor for tables and labels. The bars are backgrounds, so they
    print in color. */
 @media print {
@@ -428,7 +428,6 @@
 		margin: 12mm;
 		@bottom-right {
 			content: "Page " counter(page) " of " counter(pages);
-			font-family: var(--font-sans-serif);
 			font-size: 7pt;
 		}
 	}

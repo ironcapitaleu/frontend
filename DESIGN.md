@@ -702,7 +702,9 @@ page has these regions, from top to bottom:
    each form, such as "10-K for FY2017 to FY2026 (10 filings)". It leaves out
    the sector medians and the Profile, which the paper does not show. Then the
    sample-data notice and the date generated. The page number, such as "Page 1
-   of 2", sits at the foot of each page, in the margin of the `@page` rule.
+   of 2", sits at the foot of each page, in a margin box of the `@page` rule.
+   Chrome and Edge print margin boxes from version 131. Firefox and Safari
+   skip them and show their own page footer when the reader turns it on.
 
 The printed page does not show the site navigation, the breadcrumb, the tab
 strip, the Export button, the "Data" buttons, the "Sources" chips, the source

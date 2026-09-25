@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { formatInput } from "../../components/company/format";
 import { MISSING, MISSING_INK } from "../../components/screener/format";
 import { completeSections } from "../../lib/company/metrics";
 import type { CompletedSections } from "../../lib/company/types";
@@ -92,6 +93,69 @@ describe("PrintSummary regions 4 to 6", () => {
 		}));
 
 		expect(result).toEqual(expectedResult);
+	});
+
+	it("should show the dimmed dash for the ten years of results when the income statement has no fiscal year", () => {
+		const { financials } = fakeCompanyReport;
+		const annual = financials.income.annual;
+		const income = {
+			...financials.income,
+			annual: {
+				...annual,
+				periods: [],
+				lines: annual.lines.map((line) => ({ ...line, points: [] })),
+			},
+		};
+		render(
+			<PrintSummary
+				masthead={masthead}
+				summary={loaded(
+					completeSections({
+						...fakeCompanyReport,
+						financials: { ...financials, income },
+					}),
+				)}
+			/>,
+		);
+
+		const expectedResult = MISSING;
+
+		const result = screen.getByRole("region", {
+			name: "Ten years of results",
+			hidden: true,
+		}).textContent;
+
+		expect(result).toContain(expectedResult);
+	});
+
+	it("should write the latest dividend declared in its own unit when the claim is not per share", () => {
+		const returns = fakeCompanyReport.shareholderReturns;
+		const declared = returns.latestDividendDeclared;
+		const total = declared && {
+			...declared,
+			unit: "usd" as const,
+			value: 2.5e9,
+		};
+		render(
+			<PrintSummary
+				masthead={masthead}
+				summary={loaded(
+					completeSections({
+						...fakeCompanyReport,
+						shareholderReturns: { ...returns, latestDividendDeclared: total },
+					}),
+				)}
+			/>,
+		);
+		const block = screen
+			.getAllByRole("region", { name: "Shareholder returns", hidden: true })
+			.at(-1);
+
+		const expectedResult = formatInput({ value: 2.5e9, unit: "usd" });
+
+		const result = block?.querySelectorAll("dd")[1]?.textContent;
+
+		expect(result).toBe(expectedResult);
 	});
 
 	it("should name the filings by form in the sources footer when the summary is loaded", () => {

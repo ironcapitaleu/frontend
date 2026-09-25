@@ -15,6 +15,7 @@ import {
 	feedsOf,
 	figureGroupsOf,
 	isDrawn,
+	isOnPaper,
 	isPrintedOnly,
 	isSectorBenchmark,
 	sectorMedianOf,
@@ -1023,6 +1024,29 @@ describe("isDrawn", () => {
 					.map(({ ref }) => ref.block),
 			),
 		].sort();
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("isOnPaper", () => {
+	it("should keep every Overview block but the Profile and the sector figures when the printed footer reads them", () => {
+		const ref: FigureGroupRef = {
+			tab: "overview",
+			block: "business",
+			label: "The Business",
+			figures: "company",
+		};
+
+		const expectedResult = [true, true, false, false, false];
+
+		const result = [
+			isOnPaper(ref),
+			isOnPaper({ ...ref, block: "printedShareholderReturns" }),
+			isOnPaper({ ...ref, block: "profile" }),
+			isOnPaper({ ...ref, figures: "sector" }),
+			isOnPaper({ ...ref, tab: "financials", block: "incomeTable" }),
+		];
 
 		expect(result).toEqual(expectedResult);
 	});

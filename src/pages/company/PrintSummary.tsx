@@ -21,11 +21,10 @@ import {
 	documentLabel,
 	figureGroupsOf,
 	filingsOf,
-	isSectorBenchmark,
+	isOnPaper,
 	sectorMedianOf,
 } from "@/lib/company/sources";
 import type {
-	BlockKey,
 	Claim,
 	CompletedSections,
 	Figure,
@@ -48,21 +47,6 @@ import {
 
 /** The series of the bar chart in "The business". */
 const BUSINESS_SERIES = ["revenue", "freeCashFlow"];
-
-/**
- * The Overview blocks whose figures the printed page draws. The sources
- * footer names the filings behind them and leaves out the Profile, which
- * the paper does not show.
- */
-const PRINTED_BLOCKS: ReadonlySet<BlockKey> = new Set<BlockKey>([
-	"business",
-	"tenYears",
-	"keyFigures",
-	"financialPosition",
-	"checksByArea",
-	"ownership",
-	"printedShareholderReturns",
-]);
 
 /** The state of the sections that the printed summary reads. */
 export type PrintSections =
@@ -286,7 +270,7 @@ function Business({ sections }: { sections: CompletedSections }) {
 function Results({ sections }: { sections: CompletedSections }) {
 	const series = React.useMemo(() => resultsSeries(sections), [sections]);
 	const years = (series[0]?.periods ?? []).map(({ fiscalYear }) => fiscalYear);
-	if (series.length === 0) return <Missing />;
+	if (years.length === 0) return <Missing />;
 	return (
 		<table aria-label="Ten years of results" className="w-full">
 			<thead>
@@ -377,7 +361,9 @@ function ShareholderReturns({ sections }: { sections: CompletedSections }) {
 					<dd className="font-monospace">
 						<FigureText
 							figure={figure}
-							format={(value) => formatInput({ value, unit: "usdPerShare" })}
+							format={(value) =>
+								formatInput({ value, unit: figure?.unit ?? "usdPerShare" })
+							}
 						/>
 					</dd>
 				</div>
@@ -430,7 +416,7 @@ function SourcesFooter({
 
 /**
  * Names the filings behind the printed figures: the company figures of
- * {@link PRINTED_BLOCKS} and the points of region 4. It gives one entry for
+ * the Overview blocks that {@link isOnPaper} keeps, and the points of region 4. It gives one entry for
  * each form, with the newest filing's form first. A form with one filing
  * gets its label, such as "8-K for 28 May 2026, Meridian Semiconductor
  * Corp.", and a form with more gets its periods and a count, such as "10-K
@@ -440,8 +426,7 @@ function SourcesFooter({
 function printedFilings(sections: CompletedSections): string[] {
 	const claims = [
 		...figureGroupsOf("overview", sections)
-			.filter(({ ref }) => PRINTED_BLOCKS.has(ref.block))
-			.filter(({ ref }) => !isSectorBenchmark(ref))
+			.filter(({ ref }) => isOnPaper(ref))
 			.flatMap(({ claims }) => claims),
 		...resultsSeries(sections)
 			.flatMap(({ points }) => points)

@@ -106,7 +106,10 @@ async function readPrintedPage(canvasElement: HTMLElement) {
 			...printed(canvasElement, "heading", 1),
 			...printed(canvasElement, "heading", 2),
 		].map(({ textContent }) => textContent),
-		fitsWidth: article.scrollWidth <= article.clientWidth,
+		fitsWidth:
+			article.scrollWidth <= article.clientWidth &&
+			document.documentElement.scrollWidth <=
+				document.documentElement.clientWidth,
 		secondPageBreak: second && getComputedStyle(second).breakBefore,
 		pagesThatFit: heights.map((height) => height <= window.innerHeight),
 	};
