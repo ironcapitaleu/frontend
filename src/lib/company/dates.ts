@@ -21,3 +21,14 @@ export function formatDate(date: IsoDate): string {
 		timeZone: "UTC",
 	});
 }
+
+/**
+ * Returns the reader's own calendar day of `date`, such as `2026-09-25`. It
+ * reads the local date, not the UTC date of `toISOString`, so an evening print
+ * west of Greenwich still carries its own day.
+ */
+export function localIsoDate(date: Date): IsoDate {
+	const month = String(date.getMonth() + 1).padStart(2, "0");
+	const day = String(date.getDate()).padStart(2, "0");
+	return `${date.getFullYear()}-${month}-${day}` as IsoDate;
+}

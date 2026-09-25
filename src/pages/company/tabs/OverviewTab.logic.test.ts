@@ -13,6 +13,7 @@ import {
 	joinSections,
 	ownershipParts,
 	positionBars,
+	resultsSeries,
 	revenueParts,
 	tenYearsSeries,
 } from "./OverviewTab.logic";
@@ -199,6 +200,42 @@ describe("tenYearsSeries", () => {
 		)[2]?.points[0];
 
 		expect(result).toBe(expectedResult);
+	});
+});
+
+describe("resultsSeries", () => {
+	it("should take the cash flow point of the same fiscal year when the cash flow table starts a year later", () => {
+		const { cashFlow } = financials;
+		const laterCashFlow = {
+			...financials,
+			cashFlow: {
+				...cashFlow,
+				annual: {
+					periods: cashFlow.annual.periods.slice(1),
+					lines: cashFlow.annual.lines.map((line) => ({
+						...line,
+						periods: line.periods.slice(1),
+						points: line.points.slice(1),
+					})),
+				},
+			},
+		};
+		const reported = cashFlow.annual.lines.find(
+			({ key }) => key === "operatingCashFlow",
+		);
+
+		const expectedResult = [
+			null,
+			...(reported?.points.slice(1).map((point) => point?.value) ?? []),
+		];
+
+		const result = resultsSeries(
+			completeSections({ ...fakeCompanyReport, financials: laterCashFlow }),
+		)
+			.find(({ key }) => key === "operatingCashFlow")
+			?.points.map((point) => point?.value ?? null);
+
+		expect(result).toEqual(expectedResult);
 	});
 });
 

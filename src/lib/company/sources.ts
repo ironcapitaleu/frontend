@@ -112,6 +112,18 @@ export function isSectorBenchmark(ref: FigureGroupRef): boolean {
 }
 
 /**
+ * Tells whether the printed summary draws the figures of `ref`. The paper
+ * leaves out the sector medians and the Profile, and draws every other
+ * Overview block, so a new Overview block reaches the printed footer by
+ * default instead of dropping out of it.
+ */
+export function isOnPaper(ref: FigureGroupRef): boolean {
+	return (
+		ref.tab === "overview" && !isSectorBenchmark(ref) && ref.block !== "profile"
+	);
+}
+
+/**
  * Tells whether `ref` names a block that only the printed page draws. It reads
  * the block's `printed` marker, so no label decides it. The on-screen sources
  * index skips these groups, so it names no filing that no figure on the

@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { formatDate } from "./dates";
+import { formatDate, localIsoDate } from "./dates";
 import type { IsoDate } from "./types";
 
 describe("formatDate", () => {
@@ -22,4 +22,25 @@ describe("formatDate", () => {
 			expect(result).toBe(expectedResult);
 		},
 	);
+});
+
+describe("localIsoDate", () => {
+	// A zone west of Greenwich, where an evening is already the next UTC day.
+	beforeEach(() => {
+		vi.stubEnv("TZ", "America/Los_Angeles");
+	});
+	afterEach(() => {
+		vi.unstubAllEnvs();
+	});
+
+	it("should return the local day when the UTC day has already turned", () => {
+		// 20:30 on 25 Sep in Los Angeles is already 26 Sep in UTC.
+		const evening = new Date("2026-09-26T03:30:00Z");
+
+		const expectedResult = "2026-09-25";
+
+		const result = localIsoDate(evening);
+
+		expect(result).toBe(expectedResult);
+	});
 });

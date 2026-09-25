@@ -20,13 +20,26 @@ const REGIONS = [
 	"Key figures",
 	"The business",
 	"Checks by area",
+	"Ten years of results",
+	"Balance sheet",
+	"Shareholder returns",
+	"Ownership",
 ];
+
+/** Both pages of the summary fit the paper (DESIGN.md §8 "Print Summary"). */
+const TWO_PAGES = {
+	regions: REGIONS,
+	fitsWidth: true,
+	secondPageBreak: "page",
+	pagesThatFit: [true, true],
+};
 
 /**
  * The Overview of MRDN as the browser prints it (DESIGN.md §8 "Print
  * Summary"). Each story renders the page in the site layout at print media,
  * with the printable area of A4 or Letter paper as its viewport. The printed
- * page shows regions 1 to 3 and hides the controls of the screen.
+ * summary shows the six regions on two pages and hides the controls of the
+ * screen.
  */
 const meta: Meta<typeof CompanyPage> = {
 	title: "Pages/CompanyPage/PrintSummary",
@@ -64,37 +77,92 @@ function printed(canvasElement: HTMLElement, role: string, level?: number) {
 		.filter((element) => element.checkVisibility());
 }
 
-/** Reads the printed region headings and whether the page fits the paper's width and height. */
+/**
+ * Reads the printed region headings, whether the summary fits the paper's
+ * width, the break before its second page, and whether each page fits the
+ * paper's height. It measures the article of the summary, not the document:
+ * the first page runs from the top of the article to the second page, and
+ * the second page from there to the end of the article.
+ */
 async function readPrintedPage(canvasElement: HTMLElement) {
 	await waitFor(() =>
-		within(canvasElement).getByRole("heading", {
-			name: "Checks by area",
+		within(canvasElement).getByRole("region", {
+			name: "Sources",
 			hidden: true,
 		}),
 	);
+	const article = canvasElement.querySelector<HTMLElement>(
+		'[data-slot="print-summary"]',
+	);
+	if (article === null) throw new Error("The printed summary is missing");
+	const second = article.querySelector<HTMLElement>(
+		'[data-slot="print-second-page"]',
+	);
+	const top = article.getBoundingClientRect().top;
+	const firstHeight = (second?.getBoundingClientRect().top ?? top) - top;
+	const heights = [firstHeight, article.scrollHeight - firstHeight];
 	return {
 		regions: [
 			...printed(canvasElement, "heading", 1),
 			...printed(canvasElement, "heading", 2),
 		].map(({ textContent }) => textContent),
 		fitsWidth:
+			article.scrollWidth <= article.clientWidth &&
 			document.documentElement.scrollWidth <=
-			document.documentElement.clientWidth,
-		fitsHeight:
-			document.documentElement.scrollHeight <=
-			document.documentElement.clientHeight,
+				document.documentElement.clientWidth,
+		secondPageBreak: second && getComputedStyle(second).breakBefore,
+		pagesThatFit: heights.map((height) => height <= window.innerHeight),
 	};
 }
 
-/** Regions 1 to 3 on the printable area of A4 paper, on one page. */
+/**
+ * The size in points of the smallest printed text, and of the smallest
+ * printed paragraph, to one decimal and rounded down.
+ */
+function smallestType(canvasElement: HTMLElement) {
+	const texts = [
+		...canvasElement.querySelectorAll<HTMLElement>(
+			'[data-slot="print-summary"] *',
+		),
+	].filter(
+		(element) =>
+			element.checkVisibility() &&
+			[...element.childNodes].some(
+				(node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim(),
+			),
+	);
+	const points = (elements: HTMLElement[]) =>
+		Math.floor(
+			Math.min(
+				...elements.map(
+					(element) =>
+						(parseFloat(getComputedStyle(element).fontSize) * 72) / 96,
+				),
+			) * 10,
+		) / 10;
+	return {
+		text: points(texts),
+		prose: points(texts.filter((element) => element.tagName === "P")),
+	};
+}
+
+/** The six regions on the printable area of A4 paper, on two pages. */
 export const PrintedOnA4: Story = {
 	globals: { viewport: { value: "a4", isRotated: false } },
 	play: async ({ canvasElement }) => {
-		const expectedResult = {
-			regions: REGIONS,
-			fitsWidth: true,
-			fitsHeight: true,
-		};
+		const expectedResult = TWO_PAGES;
+
+		const result = await readPrintedPage(canvasElement);
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** The six regions on the printable area of Letter paper, on two pages. */
+export const PrintedOnLetter: Story = {
+	globals: { viewport: { value: "letter", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const expectedResult = TWO_PAGES;
 
 		const result = await readPrintedPage(canvasElement);
 
@@ -103,16 +171,18 @@ export const PrintedOnA4: Story = {
 };
 
 /**
- * Regions 1 to 3 on the printable area of Letter paper. They are 28 px taller
- * than one Letter page (DESIGN.md §8 "Print Summary"), which STA-260 settles,
- * so this story checks the regions and the width only.
+ * No printed text is smaller than 7pt, the floor for tables and labels, and
+ * no printed paragraph is smaller than 8pt, the floor for prose (DESIGN.md
+ * §8 "Print Summary").
  */
-export const PrintedOnLetter: Story = {
-	globals: { viewport: { value: "letter", isRotated: false } },
+export const PrintsAtTheTypeFloor: Story = {
+	globals: { viewport: { value: "a4", isRotated: false } },
 	play: async ({ canvasElement }) => {
-		const expectedResult = { regions: REGIONS, fitsWidth: true };
+		await readPrintedPage(canvasElement);
 
-		const { fitsHeight: _, ...result } = await readPrintedPage(canvasElement);
+		const expectedResult = { text: 7, prose: 8 };
+
+		const result = smallestType(canvasElement);
 
 		await expect(result).toEqual(expectedResult);
 	},
