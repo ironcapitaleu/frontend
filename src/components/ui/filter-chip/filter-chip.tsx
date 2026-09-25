@@ -3,6 +3,10 @@ import type * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/** The chip surface that `FilterChip` and `FilterChipToggle` share. */
+const CHIP =
+	"inline-flex h-7 max-w-full items-center gap-1.5 rounded-md border border-border bg-muted pl-2.5 text-base text-foreground";
+
 interface FilterChipProps
 	extends Omit<React.ComponentProps<"span">, "children"> {
 	/** Names the filter, for example "P/E". */
@@ -44,10 +48,7 @@ function FilterChip({
 	return (
 		<span
 			data-slot="filter-chip"
-			className={cn(
-				"inline-flex h-7 max-w-full items-center gap-1.5 rounded-md border border-border bg-muted pr-1 pl-2.5 text-base text-foreground",
-				className,
-			)}
+			className={cn(CHIP, "pr-1", className)}
 			{...props}
 		>
 			<span className="truncate">{label}</span>
@@ -68,4 +69,55 @@ function FilterChip({
 	);
 }
 
-export { FilterChip, type FilterChipProps };
+interface FilterChipToggleProps
+	extends Omit<React.ComponentProps<"button">, "children" | "onClick"> {
+	/** Names the filter, for example "10-K". */
+	label: string;
+	/** A count or bound in mono, for example `5`. */
+	value?: string;
+	/** Whether the filter is on. */
+	pressed: boolean;
+	/** Called with the new state when the reader presses the chip. */
+	onPressedChange: (pressed: boolean) => void;
+}
+
+/**
+ * A chip that the reader presses to turn one filter on or off, for a row of
+ * choices such as the filing types of the Filings tab. It is a button with
+ * `aria-pressed`, so screen readers announce it as a toggle. A pressed chip
+ * fills with `primary`. Use `FilterChip` for a filter that is already on and
+ * that the reader only removes.
+ */
+function FilterChipToggle({
+	label,
+	value,
+	pressed,
+	onPressedChange,
+	className,
+	...props
+}: FilterChipToggleProps) {
+	return (
+		<button
+			type="button"
+			data-slot="filter-chip-toggle"
+			aria-pressed={pressed}
+			onClick={() => onPressedChange(!pressed)}
+			className={cn(
+				CHIP,
+				"shrink-0 cursor-pointer pr-2.5 transition-colors outline-none hover:bg-foreground/10 focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground",
+				className,
+			)}
+			{...props}
+		>
+			<span className="truncate">{label}</span>
+			{value ? <span className="shrink-0 font-monospace">{value}</span> : null}
+		</button>
+	);
+}
+
+export {
+	FilterChip,
+	type FilterChipProps,
+	FilterChipToggle,
+	type FilterChipToggleProps,
+};
