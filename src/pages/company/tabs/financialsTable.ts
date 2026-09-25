@@ -87,9 +87,16 @@ export function tableCaption(
 	const periods =
 		first && last ? `${periodLabel(first)}–${periodLabel(last)}` : "No periods";
 	const filings = view === "annual" ? "10-K" : "10-Q and 10-K";
+	return `${periods} · ${tableUnit(table, scale)} · ${filings}`;
+}
+
+/**
+ * Returns the unit of the table at `scale`, such as `USD billions`, or
+ * `USD billions unless noted` when a line carries its own unit note.
+ */
+export function tableUnit(table: RowTable, scale: Scale): string {
 	const noted = table.lines.some(({ unit }) => lineUnitNote(unit, scale));
-	const unit = noted ? `USD ${scale} unless noted` : `USD ${scale}`;
-	return `${periods} · ${unit} · ${filings}`;
+	return noted ? `USD ${scale} unless noted` : `USD ${scale}`;
 }
 
 /**

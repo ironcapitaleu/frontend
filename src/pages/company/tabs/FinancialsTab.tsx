@@ -6,6 +6,7 @@ import { ChartActions } from "@/components/company/ChartActions";
 import { SourcesIndex } from "@/components/company/SourcesIndex";
 import { FIXED_COLUMN } from "@/components/company/format";
 import { MISSING, MISSING_INK } from "@/components/screener/format";
+import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
 import {
 	Select,
@@ -32,6 +33,7 @@ import { chartLines, figureGroupsOf, isDrawn } from "@/lib/company/sources";
 import type { Figure } from "@/lib/company/types";
 import type { Ticker } from "@/lib/domain/ticker";
 import { cn } from "@/lib/utils";
+import { csvFileName, statementCsv } from "./financialsCsv";
 import {
 	chartTable,
 	formatStatementValue,
@@ -71,7 +73,9 @@ const UNITS: readonly { key: Scale; label: string }[] = [
  * (CAGR). Operating margin and net margin sit as muted rows under the
  * line each divides. Every cell and every bar opens the sources of its figure. On a
  * phone, the statement and period switches are select menus and the table
- * shows the newest period first. The tab loads the Financials section through
+ * shows the newest period first. The "Download CSV" button saves the chosen
+ * table as a file: on the right of the control row, or below the table at
+ * full width on a phone. The tab loads the Financials section through
  * `useCompany`. It shows the page's spinner while
  * it loads and, when the load fails, the page's failed copy in the panel.
  */
@@ -116,6 +120,21 @@ export function FinancialsTab({ ticker }: { ticker: Ticker }) {
 	const shown = withMargins(state.data[statement][view]);
 	const table = phone ? newestFirst(shown) : shown;
 	const label = STATEMENTS.find(({ key }) => key === statement)?.label ?? "";
+	const download = (
+		<Button
+			variant="outline"
+			size={phone ? "lg" : "sm"}
+			className={cn("btn-tactile", phone && "h-11 w-full")}
+			onClick={() =>
+				saveFile(
+					csvFileName(ticker.value, statement, view),
+					statementCsv(shown, scale, view === "annual"),
+				)
+			}
+		>
+			Download CSV
+		</Button>
+	);
 	const chart = chartTable(
 		state.data[statement].annual,
 		chartLines[statement],
@@ -142,12 +161,15 @@ export function FinancialsTab({ ticker }: { ticker: Ticker }) {
 						menu={phone}
 					/>
 				</div>
-				<ControlSwitch
-					label="Unit"
-					value={scale}
-					options={UNITS}
-					onChange={setScale}
-				/>
+				<div className="flex flex-wrap items-center gap-3">
+					<ControlSwitch
+						label="Unit"
+						value={scale}
+						options={UNITS}
+						onChange={setScale}
+					/>
+					{!phone && download}
+				</div>
 			</div>
 			<CompanyCardGrid>
 				<CompanyCard
@@ -185,6 +207,7 @@ export function FinancialsTab({ ticker }: { ticker: Ticker }) {
 						label={label}
 						growth={view === "annual"}
 					/>
+					{phone && <div className="mt-4">{download}</div>}
 				</CompanyCard>
 			</CompanyCardGrid>
 			<SourcesIndex groups={groups} />
@@ -348,4 +371,21 @@ function UnitNote({ note }: { note: string | null }) {
 	return (
 		<span className="ml-1 font-normal text-muted-foreground">({note})</span>
 	);
+}
+
+/**
+ * Saves `text` as the CSV file `name` through the browser's download. The
+ * file starts with a UTF-8 byte order mark, so Excel reads it as UTF-8.
+ */
+function saveFile(name: string, text: string) {
+	const url = URL.createObjectURL(
+		new Blob(["\uFEFF", text], { type: "text/csv;charset=utf-8" }),
+	);
+	const link = document.createElement("a");
+	link.href = url;
+	link.download = name;
+	document.body.append(link);
+	link.click();
+	link.remove();
+	setTimeout(() => URL.revokeObjectURL(url), 0);
 }
