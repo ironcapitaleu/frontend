@@ -136,7 +136,7 @@ export const Failed: Story = {
 export const Empty: Story = {
 	parameters: { companyGateway: emptyGateway },
 	play: async ({ canvasElement }) => {
-		const expectedResult = "No filing feeds a figure on this page yet.";
+		const expectedResult = "This company has no filings on SEC EDGAR yet.";
 
 		const result = await within(canvasElement).findByText(/No filing/);
 

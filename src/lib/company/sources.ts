@@ -231,6 +231,7 @@ const blockKeys = [
 	"subsidiaries",
 	"stakes",
 	"executivesAndBoard",
+	"ceoPay",
 	"payMix",
 	"insiderHoldings",
 ] as const satisfies readonly BlockKey[];
@@ -503,6 +504,19 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 			management
 				? management.people.flatMap((row) => [row.since, row.independence])
 				: null,
+	},
+	// Card 6.2 reads every part, so a year with a missing part keeps its DEF 14A.
+	ceoPay: {
+		tab: "management",
+		label: "CEO Pay by Year",
+		drawn: true,
+		company: ({ management }) =>
+			management?.ceoPay.flatMap((y) => [
+				y.salary,
+				y.bonus,
+				y.stockAwards,
+				y.other,
+			]) ?? null,
 	},
 	// Card 6.3 reads the four parts of the latest pay, not `payMix`, so the
 	// DEF 14A stays in the index when a part is missing and no share exists.

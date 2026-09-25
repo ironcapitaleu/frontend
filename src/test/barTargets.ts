@@ -31,3 +31,23 @@ export const BAR_TARGETS_OK = {
 	invisibleBars: [],
 	pageScrollsSideways: false,
 };
+
+/**
+ * Lists the bars of chart `plot` that no pointer reaches, because another
+ * element covers every point down the middle of the bar. Each bar scrolls
+ * into view first, since only a point on screen can be hit.
+ */
+export function unreachableBarsOf(plot: HTMLElement) {
+	const page = plot.ownerDocument;
+	return within(plot)
+		.getAllByRole("button")
+		.filter((bar) => {
+			bar.scrollIntoView({ block: "nearest", inline: "nearest" });
+			const { left, width, top, bottom } = bar.getBoundingClientRect();
+			for (let y = top + 0.5; y < bottom; y++) {
+				const hit = page.elementFromPoint(left + width / 2, y);
+				if (hit !== null && bar.contains(hit)) return false;
+			}
+			return true;
+		});
+}

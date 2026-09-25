@@ -61,7 +61,7 @@ export function FilingsTab({ ticker }: { ticker: Ticker }) {
 					</Text>
 				) : list.length === 0 ? (
 					<Text font="sans" className="text-left">
-						No filing feeds a figure on this page yet.
+						This company has no filings on SEC EDGAR yet.
 					</Text>
 				) : (
 					<ul className="flex flex-col divide-y divide-border">

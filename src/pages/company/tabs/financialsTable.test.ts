@@ -10,6 +10,7 @@ import type {
 	Unit,
 } from "@/lib/company/types";
 import {
+	type BarTable,
 	barScale,
 	chartTable,
 	formatStatementValue,
@@ -17,8 +18,12 @@ import {
 	MIN_BAR_HEIGHT,
 	newestFirst,
 	periodLabel,
+	type StackBox,
+	stackScale,
 	tableCaption,
 	toTitle,
+	withMargins,
+	ZERO_MARK,
 } from "./financialsTable";
 
 const sections = completeSections(fakeCompanyReport);
@@ -169,6 +174,61 @@ describe("newestFirst", () => {
 	});
 });
 
+describe("withMargins", () => {
+	it("should put each margin row under the line it divides when the table has revenue", () => {
+		const expectedResult = [
+			"Revenue",
+			"Operating income",
+			"Operating margin",
+			"Net income",
+			"Net margin",
+			"Diluted EPS",
+			"Diluted shares",
+		];
+
+		const result = withMargins(income).lines.map(({ label }) => label);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should mark a margin row and put it one level deeper than its line when the table has revenue", () => {
+		const lines = withMargins(income).lines;
+		const line = lines.find(({ key }) => key === "operatingIncome");
+
+		const expectedResult = { level: (line?.level ?? 0) + 1, margin: true };
+
+		const margin = lines.find(({ key }) => key === "operatingIncomeMargin");
+		const result = { level: margin?.level, margin: margin?.margin };
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should read a margin as a percent when the view is newest first", () => {
+		const table = newestFirst(withMargins(income));
+		const margin = table.lines.find(({ key }) => key === "netIncomeMargin");
+
+		const expectedResult = true;
+
+		const result = (margin?.points ?? [null]).every(
+			(point) =>
+				point !== null &&
+				/^−?\d+\.\d%$/.test(formatStatementValue(point, "billions")),
+		);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should add no margin row when the table has no revenue line", () => {
+		const table = sections.financials?.balance.annual ?? income;
+
+		const expectedResult = table.lines.length;
+
+		const result = withMargins(table).lines.length;
+
+		expect(result).toBe(expectedResult);
+	});
+});
+
 describe("formatStatementValue", () => {
 	it("should write a dollar figure in billions with one decimal when the unit is billions", () => {
 		const expectedResult = "212.0";
@@ -306,6 +366,140 @@ describe("barScale", () => {
 		};
 
 		const result = place(1);
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("stackScale", () => {
+	const plot = 224;
+	const least = 24;
+
+	/** Returns a table with one column, one line for each of `values`. */
+	function column(...values: (number | null)[]): BarTable {
+		return {
+			columns: [{ key: "FY26", label: "FY2026", short: "FY26" }],
+			lines: values.map((value, index) => ({
+				key: String(index),
+				label: String(index),
+				points: [
+					value === null ? null : { id: "t", label: "T", value, unit: "usd" },
+				],
+			})),
+		} as BarTable;
+	}
+
+	/** Returns the drawn part of each box of the first column, without its trigger. */
+	function drawn(boxes: (StackBox | null)[][]) {
+		return boxes.map(([box]) =>
+			box ? { bottom: box.bottom, height: box.height } : null,
+		);
+	}
+
+	it("should draw each part as a zero mark on the one before when every total is zero", () => {
+		const table = column(0, 0);
+
+		const expectedResult = [
+			{ bottom: 0, height: ZERO_MARK },
+			{ bottom: ZERO_MARK, height: ZERO_MARK },
+		];
+
+		const result = drawn(stackScale(table, plot, least));
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should draw nothing for a line and close the gap when the line is null", () => {
+		const table = column(100, null, 100);
+
+		const expectedResult = [
+			{ bottom: 0, height: 112 },
+			null,
+			{ bottom: 112, height: 112 },
+		];
+
+		const result = drawn(stackScale(table, plot, least));
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep the proportions of the values when one value is far below the others", () => {
+		const table = column(1000, 1);
+
+		const expectedResult = 1 / 1000;
+
+		const [[big], [small]] = stackScale(table, plot, least);
+		const result = (small?.height ?? 0) / (big?.height ?? 1);
+
+		expect(result).toBeCloseTo(expectedResult, 12);
+	});
+
+	it("should start the next part on top of the zero mark when a zero sits between two parts", () => {
+		const table = column(100, 0, 100);
+
+		const expectedResult = [
+			{ bottom: 0, height: 111 },
+			{ bottom: 111, height: ZERO_MARK },
+			{ bottom: 113, height: 111 },
+		];
+
+		const result = drawn(stackScale(table, plot, least));
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should draw nothing for a part when the part is negative", () => {
+		const table = column(100, -50);
+
+		const expectedResult = [{ bottom: 0, height: plot }, null];
+
+		const result = drawn(stackScale(table, plot, least));
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep every part and trigger inside the plot with a strip of each trigger uncovered when the column has more lines than the plot fits", () => {
+		const boxes = stackScale(column(...Array(12).fill(1)), plot, least).map(
+			([box]) => box as StackBox,
+		);
+
+		const expectedResult = {
+			partsFit: true,
+			triggersInside: true,
+			triggersTallEnough: true,
+			eachKeepsAStrip: true,
+		};
+
+		const result = {
+			partsFit: boxes.every(
+				({ bottom, height }) => bottom >= 0 && bottom + height <= plot + 1e-9,
+			),
+			triggersInside: boxes.every(
+				({ trigger }) =>
+					trigger.bottom >= 0 && trigger.bottom + trigger.height <= plot,
+			),
+			triggersTallEnough: boxes.every(({ trigger }) => trigger.height >= least),
+			eachKeepsAStrip: boxes.every(
+				({ trigger }, index) =>
+					(boxes[index + 1]?.trigger.bottom ?? plot) - trigger.bottom > 0,
+			),
+		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give a tiny part a trigger of its own at least 24 px tall when it sits between two large parts", () => {
+		const boxes = stackScale(column(1000, 1, 1000), plot, least).map(
+			([box]) => box as StackBox,
+		);
+
+		const expectedResult = { height: least, uncovered: least };
+
+		const tiny = boxes[1]?.trigger;
+		const result = {
+			height: tiny?.height,
+			uncovered: (boxes[2]?.trigger.bottom ?? 0) - (tiny?.bottom ?? 0),
+		};
 
 		expect(result).toEqual(expectedResult);
 	});

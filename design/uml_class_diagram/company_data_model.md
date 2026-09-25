@@ -608,13 +608,14 @@ the adapter puts the line only in that statement's tables:
 These keys cover every statement figure that `DESIGN.md` §8 names for the
 Overview, Valuation and Shareholder returns tabs, the Financials chart and the
 print summary. `operatingIncome` feeds the operating margin and EV/EBIT.
+`operatingIncome` and `netIncome` give the margin rows of the Financials
+statement table, each divided by `revenue`.
 `totalAssets` and `totalLiabilities` give the long-term parts of Financial
 Position, as the total minus the current part. The point metrics
 `longTermAssets` and `longTermLiabilities` compute them at the latest
 quarter end. `shareRepurchases` and
-`shareIssuanceProceeds` give the net buybacks in dollars. The Financials
-statement table draws more lines than these, such as gross profit. The
-Financials Tab ticket adds their keys to this table. §5 says which table of the
+`shareIssuanceProceeds` give the net buybacks in dollars. No key gives
+gross profit, so the statement table has no gross margin. §5 says which table of the
 statement each period choice reads.
 
 **A label or a figure.** A `string` field is a label. It names the row or
@@ -673,7 +674,7 @@ tab ticket adds its own keys, such as `peRange` and `ceoPay`.
 | Financials | `incomeChart`, `incomeTable`, `balanceChart`, `balanceTable`, `cashFlowChart`, `cashFlowTable` |
 | Valuation  | `valuationRatios`, `yieldsAgainstTreasury` (each yield, or the inputs of a missing one), `ratioFormulas` |
 | Relationships | `largestFunds`, `insiders`, `ownershipSplit`, `subsidiaries`, `stakes` |
-| Management | `executivesAndBoard`, `payMix`, `insiderHoldings`, so far |
+| Management | `executivesAndBoard`, `ceoPay`, `payMix`, `insiderHoldings`, so far |
 
 A chart reads the annual table of its statement. A table reads the annual
 table and the completed quarterly table, because the annual and quarterly
@@ -1036,7 +1037,9 @@ claim gives the block no claim, because `Person` has no claim for the row
 itself. STA-253 also writes `payMix`. Each share divides one part of the
 latest `PayYear` by the four parts added up, so a missing part makes every
 share `null`. The `payMix` block reads the four parts, not the shares, so the
-DEF 14A stays in the index then. The other functions wait for the
+DEF 14A stays in the index then. The `ceoPay` block reads the four parts of
+every `PayYear`, so each year's DEF 14A stays in the index when a part is
+missing. The other functions wait for the
 section types of their tabs.
 
 These functions have no `MetricKey`, no `FigureRef` and no guard, and no

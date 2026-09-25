@@ -1,4 +1,5 @@
 import { SourceTrigger } from "@/components/company/SourceCard";
+import { SHARE_FILLS } from "@/components/company/ShareBar";
 import { MISSING, MISSING_INK } from "@/components/screener/format";
 import type { Claim } from "@/lib/company/types";
 import { cn } from "@/lib/utils";
@@ -9,6 +10,7 @@ import {
 	periodLabel,
 	type RowTable,
 	type Scale,
+	stackScale,
 } from "./financialsTable";
 
 /**
@@ -62,17 +64,27 @@ export function StatementChart({
  * a chart that does not fit its card scrolls sideways (DESIGN.md §8 "Shared
  * Layout"), and the year labels scroll with their groups. A table with no
  * column or no line draws one line that says so. `format` writes a figure.
+ *
+ * With `stacked`, a column stacks its parts, first line lowest, in the fills
+ * of `ShareBar`, and the zero line sits at the foot of the plot. Each part is
+ * as tall as its value, and its trigger is at least 24 px tall and stays
+ * inside the plot (see `stackScale`). A reported zero draws a 2 px mark. A
+ * missing, negative or odd part draws nothing.
  */
 export function BarChart({
 	table,
 	format,
+	stacked = false,
 }: {
 	table: BarTable;
 	format: (claim: Claim) => string;
+	stacked?: boolean;
 }) {
 	const { zero, place } = barScale(table);
+	const boxes = stacked ? stackScale(table, PLOT_HEIGHT, MIN_TARGET) : null;
+	const width = boxes ? 1 : table.lines.length;
 	// A group and its year label take the same width, so the two rows line up.
-	const groupWidth = `calc(${table.lines.length} * 1.5rem + ${table.lines.length - 1}px)`;
+	const groupWidth = `calc(${width} * 1.5rem + ${width - 1}px)`;
 	if (table.columns.length === 0 || table.lines.length === 0) {
 		return (
 			<p className="text-base text-muted-foreground">
@@ -90,7 +102,7 @@ export function BarChart({
 					<li key={line.key} className="flex items-center gap-1.5">
 						<span
 							aria-hidden="true"
-							className={cn("size-3 rounded-[2px]", inkOf(index))}
+							className={cn("size-3 rounded-[2px]", inkOf(index, stacked))}
 						/>
 						{line.label}
 					</li>
@@ -103,18 +115,23 @@ export function BarChart({
 							{table.columns.map((group, column) => (
 								<li
 									key={group.key}
-									className="flex flex-1 justify-center gap-px"
+									className={cn(
+										"flex flex-1 justify-center gap-px",
+										boxes && "relative",
+									)}
 									style={{ minWidth: groupWidth }}
 								>
 									<span className="sr-only">{group.label}</span>
 									{table.lines.map((line, index) => {
 										const point = line.points[column] ?? null;
+										const box = boxes?.[index]?.[column];
 										if (
 											point === null ||
 											typeof point.value !== "number" ||
-											!Number.isFinite(point.value)
+											!Number.isFinite(point.value) ||
+											(boxes && !box)
 										) {
-											return (
+											return boxes ? null : (
 												<span
 													key={line.key}
 													className={cn(
@@ -140,26 +157,47 @@ export function BarChart({
 										return (
 											<div
 												key={line.key}
-												className="relative h-full w-6 shrink-0"
+												className={cn(
+													"h-full w-6 shrink-0",
+													box
+														? "pointer-events-none absolute inset-x-0 mx-auto"
+														: "relative",
+												)}
 											>
 												<div
 													className={cn(
 														"absolute inset-x-0",
-														inkOf(index),
+														inkOf(index, stacked),
+														// A shadow, not a border, splits the parts, so a part
+														// thinner than 1 px keeps its true height.
+														box &&
+															!zeroMark &&
+															"shadow-[inset_0_1px_0_var(--color-card)]",
 														negative ? "rounded-b-[2px]" : "rounded-t-[2px]",
 													)}
 													style={
-														zeroMark
-															? { top: `calc(${top}% - 2px)`, height: "2px" }
-															: { top: `${top}%`, height: `${height}%` }
+														box
+															? { bottom: box.bottom, height: box.height }
+															: zeroMark
+																? { top: `calc(${top}% - 2px)`, height: "2px" }
+																: { top: `${top}%`, height: `${height}%` }
 													}
 												>
 													<SourceTrigger
 														claim={point}
 														className={cn(
-															"absolute inset-x-0 block h-full min-h-6 rounded-none",
-															growsDown ? "top-0" : "bottom-0",
+															"absolute inset-x-0 block rounded-none",
+															box ? "pointer-events-auto" : "h-full min-h-6",
+															!box && (growsDown ? "top-0" : "bottom-0"),
 														)}
+														style={
+															box
+																? {
+																		bottom: box.trigger.bottom - box.bottom,
+																		height: box.trigger.height,
+																	}
+																: undefined
+														}
 													>
 														<span className="sr-only">
 															{`${line.label}: ${format(point)}`}
@@ -175,7 +213,7 @@ export function BarChart({
 						<div
 							aria-hidden="true"
 							className="pointer-events-none absolute inset-x-0 h-px bg-muted-foreground/50"
-							style={{ top: `${zero}%` }}
+							style={{ top: `${boxes ? 100 : zero}%` }}
 						/>
 					</div>
 					<div
@@ -198,7 +236,8 @@ export function BarChart({
 	);
 }
 
-/** Returns the fill of the line at `index`. */
-function inkOf(index: number): string {
-	return INKS[index % INKS.length] ?? "";
+/** Returns the fill of the line at `index`, from the stacked fills when `stacked`. */
+function inkOf(index: number, stacked: boolean): string {
+	const inks = stacked ? SHARE_FILLS : INKS;
+	return inks[index % inks.length] ?? "";
 }

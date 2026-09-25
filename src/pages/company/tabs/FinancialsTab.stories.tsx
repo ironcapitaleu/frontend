@@ -243,9 +243,9 @@ export const EmptyChart: Story = {
 };
 
 /**
- * Opens the chart of `statement` and checks every bar: each year draws three,
- * a trigger is at least 24 px wide and tall and inside the plot, the bar
- * draws, and the page does not scroll sideways.
+ * Opens the chart of `statement` and checks every bar: each of the ten years
+ * draws three bars, a trigger is at least 24 px wide and tall and inside the
+ * plot, the bar draws, and the page does not scroll sideways.
  */
 async function checkBarTargets(
 	canvasElement: HTMLElement,
@@ -259,13 +259,13 @@ async function checkBarTargets(
 	await userEvent.click(await body.findByRole("option", { name: statement }));
 	const plot = await canvas.findByRole("list", { name: "Fiscal years" });
 
-	const expectedResult = { ...BAR_TARGETS_OK, barsPerYear: 3 };
+	const expectedResult = { ...BAR_TARGETS_OK, barsPerYear: Array(10).fill(3) };
 
 	const result = {
 		...barTargetsOf(plot),
-		barsPerYear:
-			within(plot).getAllByRole("button").length /
-			within(plot).getAllByRole("listitem").length,
+		barsPerYear: within(plot)
+			.getAllByRole("listitem")
+			.map((year) => within(year).queryAllByRole("button").length),
 	};
 
 	await expect(result).toEqual(expectedResult);
@@ -518,6 +518,119 @@ export const MissingGrowth: Story = {
 		const result = cell?.querySelector("span")?.className;
 
 		await expect(result).toBe(expectedResult);
+	},
+};
+
+/**
+ * A gateway whose revenue for FY2026 is 0, so both margins of that year have
+ * no value.
+ */
+const zeroRevenueGateway: CompanyGateway = {
+	...sampleGateway,
+	getFinancials: async () => {
+		const financials = await sampleGateway.getFinancials(Ticker.parse("MRDN"));
+		const { annual } = financials.income;
+		const lines = annual.lines.map((line) =>
+			line.key === "revenue"
+				? {
+						...line,
+						points: line.points.map((point, position) =>
+							point !== null && position === line.points.length - 1
+								? { ...point, value: 0 }
+								: point,
+						),
+					}
+				: line,
+		);
+		return {
+			...financials,
+			income: { ...financials.income, annual: { ...annual, lines } },
+		};
+	},
+};
+
+/**
+ * Play test: a margin reads as a percent, and a margin whose revenue is 0
+ * shows the dimmed dash. The margin row has no growth rate.
+ */
+export const MissingMargin: Story = {
+	globals: desktop,
+	parameters: { companyGateway: zeroRevenueGateway },
+	play: async ({ canvasElement }) => {
+		const cells = await cellsOf(canvasElement, "Operating margin");
+
+		const expectedResult = { percent: true, latest: MISSING, growth: "" };
+
+		const result = {
+			percent: /^\d+\.\d%$/.test(cells.at(-3)?.textContent ?? ""),
+			latest: cells.at(-2)?.textContent,
+			growth: cells.at(-1)?.textContent,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: a margin row is muted and indented one level deeper than the
+ * line it divides by revenue.
+ */
+export const MarginRowStyle: Story = {
+	globals: desktop,
+	play: async ({ canvasElement }) => {
+		const table = await within(canvasElement).findByRole("table", {
+			name: "Income statement table",
+		});
+		const style = (name: string) =>
+			getComputedStyle(within(table).getByRole("rowheader", { name }));
+		const [line, margin] = [
+			style("Operating income"),
+			style("Operating margin"),
+		];
+
+		const expectedResult = { deeper: true, muted: true };
+
+		const result = {
+			deeper:
+				Number.parseFloat(margin.paddingLeft) >
+				Number.parseFloat(line.paddingLeft),
+			muted: margin.color !== line.color,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: on a phone, the margin rows run newest first and read as a
+ * percent in the annual and the quarterly view. The annual row ends in the
+ * empty cell of the growth column.
+ */
+export const PhoneMargins: Story = {
+	globals: phone,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const texts = async () =>
+			(await cellsOf(canvasElement, "Net margin")).map(
+				({ textContent }) => textContent ?? "",
+			);
+		const percents = (values: string[]) =>
+			values.every((value) => value === MISSING || /%$/.test(value));
+
+		const expectedResult = { annual: true, growth: "", quarterly: true };
+
+		const annualTexts = await texts();
+		const annual = percents(annualTexts.slice(0, -1));
+		const growth = annualTexts.at(-1);
+		await userEvent.click(canvas.getByRole("combobox", { name: "Period" }));
+		await userEvent.click(
+			await within(canvasElement.ownerDocument.body).findByRole("option", {
+				name: "Quarterly",
+			}),
+		);
+		const result = { annual, growth, quarterly: percents(await texts()) };
+
+		await expect(result).toEqual(expectedResult);
 	},
 };
 

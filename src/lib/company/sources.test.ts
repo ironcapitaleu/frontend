@@ -273,6 +273,34 @@ describe("claimsOf", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should keep the operating income of a year in the income table block when that year has no operating margin", () => {
+		const { income } = fakeCompanyReport.financials;
+		const lines = income.annual.lines.map((line) =>
+			line.key === "revenue"
+				? { ...line, points: line.points.map(() => null) }
+				: line,
+		);
+		const noRevenue = completeSections({
+			...fakeCompanyReport,
+			financials: {
+				...fakeCompanyReport.financials,
+				income: { ...income, annual: { ...income.annual, lines } },
+			},
+		});
+
+		const expectedResult = claimsIn(
+			[statements.income.annual],
+			["operatingIncome"],
+		);
+
+		const ids = new Set(expectedResult.map(({ id }) => id));
+		const result = claimsOf("incomeTable", "company", noRevenue).filter(
+			({ id }) => ids.has(id),
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should return no claim when the section of the block has not loaded", () => {
 		const unloaded = completeSections({ ...fakeCompanyReport, overview: null });
 
@@ -669,6 +697,34 @@ describe("figureGroupsOf", () => {
 				document.kind === "filing" ? document.accessionNumber : document.name,
 			),
 		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should read the four parts of every year when the CEO Pay by Year group is built", () => {
+		const expectedResult = ["FY2024", "FY2025"].flatMap((year) =>
+			["salary", "bonus", "stockAwards", "other"].map(
+				(part) => `management.ceoPay.${part}.${year}`,
+			),
+		);
+
+		const result = claimsOf("ceoPay", "company", sections).map(({ id }) => id);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep each year's DEF 14A in the sources when a pay part is missing", () => {
+		const { management } = fakeCompanyReport;
+		const [first, latest] = management.ceoPay;
+		const ceoPay = [{ ...first, salary: null }, latest];
+		const partial = completeSections({
+			...fakeCompanyReport,
+			management: { ...management, ceoPay },
+		});
+
+		const expectedResult = ["0001999999-26-000014", "0001999999-25-000014"];
+
+		const result = documentIds(claimsOf("ceoPay", "company", partial));
 
 		expect(result).toEqual(expectedResult);
 	});
