@@ -11,6 +11,7 @@ import {
 } from "./metrics";
 import {
 	claimsOf,
+	documentLabel,
 	feedsOf,
 	figureGroupsOf,
 	isDrawn,
@@ -25,7 +26,9 @@ import type {
 	Filing,
 	FigureGroup,
 	FigureGroupRef,
+	IsoDate,
 	LineKey,
+	MarketDataset,
 	StatementTable,
 } from "./types";
 import { COMPANY_TABS } from "./tabs";
@@ -977,7 +980,6 @@ describe("isDrawn", () => {
 		// without the marker fails here, before its filings drop out of the
 		// sources index and the Filings card.
 		const expectedResult = [
-			"checksByArea",
 			"ownership",
 			"printedShareholderReturns",
 			"profile",
@@ -1175,5 +1177,32 @@ describe("Shareholder returns blocks", () => {
 		);
 
 		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("documentLabel", () => {
+	it("should name the form, the period and the filer when a filing is named", () => {
+		const document = filingOf(eps2025);
+
+		const expectedResult = `${document.form} for ${document.periodLabel}, ${document.filer}`;
+
+		const result = documentLabel(document);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should give the name of the dataset when a market dataset is named", () => {
+		const document: MarketDataset = {
+			kind: "market",
+			name: "10-year Treasury yield",
+			asOf: "2026-09-24" as IsoDate,
+			url: "https://example.com/treasury",
+		};
+
+		const expectedResult = "10-year Treasury yield";
+
+		const result = documentLabel(document);
+
+		expect(result).toBe(expectedResult);
 	});
 });

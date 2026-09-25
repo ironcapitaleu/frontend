@@ -7,7 +7,12 @@ import {
 	AccordionTrigger,
 } from "@/components/ui/accordion";
 import { formatDate } from "@/lib/company/dates";
-import { feedsOf, filingsOf, isOnScreen } from "@/lib/company/sources";
+import {
+	documentLabel,
+	feedsOf,
+	filingsOf,
+	isOnScreen,
+} from "@/lib/company/sources";
 import type { FigureGroup } from "@/lib/company/types";
 
 /** Props for {@link SourcesIndex}. */
@@ -49,9 +54,7 @@ function SourcesIndex({ groups }: SourcesIndexProps) {
 					<ul className="flex flex-col gap-4">
 						{filings.map((filing) => (
 							<li key={filing.accessionNumber} className="flex flex-col gap-1">
-								<span className="font-medium">
-									{filing.form} for {filing.periodLabel}, {filing.filer}
-								</span>
+								<span className="font-medium">{documentLabel(filing)}</span>
 								<span className="text-muted-foreground">
 									Filed {formatDate(filing.filedOn)}
 								</span>
