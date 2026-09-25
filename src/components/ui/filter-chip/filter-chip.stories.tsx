@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, userEvent, within } from "storybook/test";
 
-import { FilterChip } from ".";
+import { FilterChip, FilterChipToggle } from ".";
 
 /**
  * A `FilterChip` names one active filter, with its bound in mono and a button
@@ -136,5 +136,38 @@ export const RemovesOnClick: Story = {
 		const result = (args.onRemove as ReturnType<typeof fn>).mock.calls.length;
 
 		await expect(result).toBe(expectedResult);
+	},
+};
+
+/** `FilterChipToggle` calls `onPressedChange` with the new state when pressed. */
+export const Toggle: Story = {
+	render: (args) => (
+		<div className="flex gap-1.5">
+			<FilterChipToggle
+				label="10-K"
+				value="3"
+				pressed={false}
+				onPressedChange={args.onRemove}
+			/>
+			<FilterChipToggle
+				label="8-K"
+				value="2"
+				pressed
+				onPressedChange={args.onRemove}
+			/>
+		</div>
+	),
+	play: async ({ args, canvasElement }) => {
+		const chip = within(canvasElement).getByRole("button", {
+			name: "10-K 3",
+			pressed: false,
+		});
+
+		const expectedResult = [[true]];
+
+		await userEvent.click(chip);
+		const result = (args.onRemove as ReturnType<typeof fn>).mock.calls;
+
+		await expect(result).toEqual(expectedResult);
 	},
 };
