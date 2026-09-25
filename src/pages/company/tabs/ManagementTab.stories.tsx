@@ -372,7 +372,8 @@ export const PayNegativePart: Story = {
 				.getAllByRole("listitem")
 				.map((year) => within(year).queryAllByRole("button").length),
 			zeroLineAboveFoot:
-				plot.getBoundingClientRect().bottom - (zeroLine?.top ?? 0) >= 1,
+				zeroLine !== undefined &&
+				plot.getBoundingClientRect().bottom - zeroLine.top >= 1,
 			targets: barTargetsOf(plot),
 		};
 
