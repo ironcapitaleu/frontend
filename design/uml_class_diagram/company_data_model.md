@@ -685,11 +685,13 @@ lines it draws, as `chartLines` in `sources.ts` lists them. The
 `ShareholderReturnsSection`, and gives no group until that section loads.
 The company figures of `keyFigures` are the eight claims of `keyFigureOf`, the
 figures card 1.3 draws. Its sector figures are the medians of the benchmark
-rows, and `sectorMedianOf` picks one for the card. `checksByArea` reads no
-claim until the checks land. The `ownership` block of card 1.6 "Who Owns It"
-reads the three counts of `OwnershipSummary`, not the shares of
-`ownershipShares`, so each filing stays in the index when the public share
-has no value. The `profile` block of card 1.7 "Profile" reads the seven facts
+rows, and `sectorMedianOf` picks one for the card. `checksByArea` reads every
+figure the checks compare, or the inputs of a figure with no value. The
+`ownership` block of card 1.6 "Who Owns It" and the `ownershipSplit` block of
+card 5.3 read the three counts of `OwnershipSummary`, not the shares of
+`ownershipShares`. Without the shares outstanding every share is null, so
+reading the shares would drop the 13F-HR and the Form 4 behind the counts
+from the index. The `profile` block of card 1.7 "Profile" reads the seven facts
 of `Profile`, since the card prints the chief executive's start year after
 the name. Both blocks need the Overview section only.
 

@@ -36,6 +36,7 @@ import type {
 	Profile,
 	Series,
 } from "@/lib/company/types";
+import { COMPANY_TABS, tabPath } from "@/lib/company/tabs";
 import type { Ticker } from "@/lib/domain/ticker";
 import { cn } from "@/lib/utils";
 import { ChecksByArea } from "./ChecksByArea";
@@ -53,6 +54,12 @@ import {
 
 /** Card 1.2 draws the last ten fiscal years, as `MiniBarChart` does. */
 const TEN_YEARS = 10;
+
+/**
+ * The Relationships tab, which card 1.6 links to. It is found by its key, so
+ * the tab table stays the one place that spells its URL.
+ */
+const RELATIONSHIPS = COMPANY_TABS.find(({ key }) => key === "relationships");
 
 /**
  * The Overview tab of the company page (DESIGN.md §8 "Overview"). It draws
@@ -219,12 +226,14 @@ export function OverviewTab({ ticker }: { ticker: Ticker }) {
 								aria-label="Ownership split"
 								parts={ownershipParts(data, "overview")}
 							/>
-							<Link
-								to={`/companies/${ticker.value}/relationships`}
-								className="inline-flex min-h-11 items-center self-start text-primary underline underline-offset-4 md:min-h-0"
-							>
-								See the funds and insiders on Relationships
-							</Link>
+							{RELATIONSHIPS && (
+								<Link
+									to={tabPath(ticker.value, RELATIONSHIPS)}
+									className="inline-flex min-h-11 items-center self-start text-primary underline underline-offset-4 md:min-h-0"
+								>
+									See the funds and insiders on Relationships
+								</Link>
+							)}
 						</div>
 					)}
 				</Loaded>
@@ -283,7 +292,8 @@ function KeyFigures({ sections }: { sections: CompletedSections }) {
 /**
  * The list of card 1.7: each fact of the profile opens its sources, or shows
  * the dimmed dash when it is missing. The chief executive's start year sits
- * after the name. A long website breaks inside the card on a phone.
+ * after the name, and only when both are known, so a missing name reads as the
+ * dimmed dash alone. A long website breaks inside the card on a phone.
  */
 function ProfileList({ profile }: { profile: Profile }) {
 	const rows: [string, React.ReactNode][] = [
@@ -294,8 +304,13 @@ function ProfileList({ profile }: { profile: Profile }) {
 			"Chief executive",
 			<React.Fragment key="ceo">
 				<ProfileFact figure={profile.chiefExecutive} />
-				<span className="text-muted-foreground">, since </span>
-				<ProfileFact figure={profile.chiefExecutiveSince} />
+				{profile.chiefExecutive !== null &&
+					profile.chiefExecutiveSince !== null && (
+						<>
+							<span className="text-muted-foreground">, since </span>
+							<ProfileFact figure={profile.chiefExecutiveSince} />
+						</>
+					)}
 			</React.Fragment>,
 		],
 		["Auditor", <ProfileFact key="auditor" figure={profile.auditor} />],

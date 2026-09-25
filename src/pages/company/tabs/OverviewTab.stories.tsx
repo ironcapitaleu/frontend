@@ -9,6 +9,11 @@ import type { Claim, OverviewSection } from "../../../lib/company/types";
 import { meridianOverview } from "../../../lib/company/sample/overview";
 import { MERIDIAN } from "../../../lib/company/sample/sources";
 import { sampleCompanyGateway } from "../../../lib/company/sampleCompanyGateway";
+import {
+	type CompanyTab,
+	COMPANY_TABS,
+	tabPath,
+} from "../../../lib/company/tabs";
 import { Ticker } from "../../../lib/domain/ticker";
 import { alwaysFailingCompanyGateway } from "../../../test/fixtures/companies/always-failing";
 import { OverviewTab } from "./OverviewTab";
@@ -162,6 +167,12 @@ function overviewGateway(
 const noAuditorGateway = overviewGateway((overview) => ({
 	...overview,
 	profile: { ...overview.profile, auditor: null },
+}));
+
+/** A gateway whose profile names no chief executive. */
+const noChiefExecutiveGateway = overviewGateway((overview) => ({
+	...overview,
+	profile: { ...overview.profile, chiefExecutive: null },
 }));
 
 /** A gateway whose institutions hold `share` of the shares outstanding. */
@@ -927,7 +938,10 @@ export const OwnershipAndProfile: Story = {
 
 		const expectedResult = {
 			sideBySide: true,
-			href: "/companies/MRDN/relationships",
+			href: tabPath(
+				"MRDN",
+				COMPANY_TABS.find(({ key }) => key === "relationships") as CompanyTab,
+			),
 			founded: "1993",
 		};
 
@@ -987,6 +1001,25 @@ export const ProfileMissingAuditor: Story = {
 		};
 
 		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: a profile with no chief executive shows the dimmed dash alone,
+ * with no ", since" and no start year after it.
+ */
+export const ProfileMissingChiefExecutive: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	parameters: { companyGateway: noChiefExecutiveGateway },
+	play: async ({ canvasElement }) => {
+		const profile = await overviewCard(canvasElement, "1.7 Profile");
+
+		const expectedResult = MISSING;
+
+		const result =
+			within(profile).getByText("Chief executive").nextSibling?.textContent;
+
+		await expect(result).toBe(expectedResult);
 	},
 };
 

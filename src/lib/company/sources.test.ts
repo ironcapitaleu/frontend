@@ -699,48 +699,51 @@ describe("figureGroupsOf", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should read the three reported counts when the public share of the Who Owns It group has no value", () => {
-		// Institutions hold more than the shares outstanding, so the public share
-		// is `null`, and each input keeps its filing in the index.
+	it("should keep the counts that institutions and insiders hold when the shares outstanding of the Who Owns It group have no value", () => {
+		// Without the shares outstanding every derived share is null, so reading
+		// the shares would drop the 13F-HR and the Form 4 from the index.
 		const { ownership } = overview;
-		const institutions = claim(ownership.institutionShares);
-		const overflowing = completeSections({
+		const withoutOutstanding = completeSections({
 			...fakeCompanyReport,
 			overview: {
 				...overview,
-				ownership: {
-					...ownership,
-					institutionShares: {
-						...institutions,
-						value: 2 * Number(claim(ownership.sharesOutstanding).value),
-					},
-				},
+				ownership: { ...ownership, sharesOutstanding: null },
 			},
 		});
 
 		const expectedResult = [
-			ownership.sharesOutstanding,
-			ownership.institutionShares,
-			ownership.insiderShares,
-		].map((figure) => claim(figure).id);
+			claim(ownership.institutionShares).id,
+			claim(ownership.insiderShares).id,
+		];
 
-		const result = claimsOf("ownership", "company", overflowing).map(
+		const result = claimsOf("ownership", "company", withoutOutstanding).map(
 			({ id }) => id,
 		);
 
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should read the three drawn shares when the Ownership Split group is built", () => {
+	it("should keep the counts that institutions and insiders hold when the shares outstanding of the Ownership Split group have no value", () => {
+		const { relationships } = fakeCompanyReport;
+		const { ownership } = relationships;
+		const withoutOutstanding = completeSections({
+			...fakeCompanyReport,
+			relationships: {
+				...relationships,
+				ownership: { ...ownership, sharesOutstanding: null },
+			},
+		});
+
 		const expectedResult = [
-			"metric.ownershipShares.relationships.institutions",
-			"metric.ownershipShares.relationships.insiders",
-			"metric.ownershipShares.relationships.public",
+			claim(ownership.institutionShares).id,
+			claim(ownership.insiderShares).id,
 		];
 
-		const result = claimsOf("ownershipSplit", "company", sections).map(
-			({ id }) => id,
-		);
+		const result = claimsOf(
+			"ownershipSplit",
+			"company",
+			withoutOutstanding,
+		).map(({ id }) => id);
 
 		expect(result).toEqual(expectedResult);
 	});
