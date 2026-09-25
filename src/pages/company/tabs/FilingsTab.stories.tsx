@@ -130,6 +130,33 @@ export const Phone: Story = {
 	},
 };
 
+/**
+ * Play test: at 320 px the chip row scrolls, so it clips what spills out of
+ * it. The first chip sits at least 3 px inside the row on every side, so its
+ * 3 px focus ring shows whole.
+ */
+export const ChipFocusRing: Story = {
+	globals: phone,
+	play: async ({ canvasElement }) => {
+		const row = await within(canvasElement).findByRole("group", {
+			name: "Filter by filing type",
+		});
+		const [chip] = within(row).getAllByRole("button");
+		const outer = row.getBoundingClientRect();
+		const inner = (chip as HTMLElement).getBoundingClientRect();
+
+		const expectedResult = { top: true, bottom: true, left: true };
+
+		const result = {
+			top: inner.top - outer.top >= 3,
+			bottom: outer.bottom - inner.bottom >= 3,
+			left: inner.left - outer.left >= 3,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
 /** Play test: the card shows a spinner while the Filings section loads. */
 export const Loading: Story = {
 	parameters: { companyGateway: loadingGateway },

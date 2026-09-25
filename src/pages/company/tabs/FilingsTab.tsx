@@ -96,7 +96,7 @@ export function FilingsTab({ ticker }: { ticker: Ticker }) {
 					<>
 						<fieldset
 							aria-label="Filter by filing type"
-							className="mb-3 flex min-w-0 gap-1.5 overflow-x-auto md:flex-wrap"
+							className="-mx-1 mb-2 flex min-w-0 gap-1.5 overflow-x-auto p-1 md:flex-wrap md:overflow-visible"
 						>
 							{formCountsOf(list).map(({ form, count }) => (
 								<FilterChipToggle
