@@ -31,7 +31,8 @@ export function formatInUnit(value: number, unit: Unit): string {
 
 /**
  * Writes an input of a ratio in its unit, such as `$82.75` for a price or
- * `$212.0B` for dollars. A value that is not a number gives {@link MISSING}.
+ * `$212.0B` for dollars. A loss takes a true minus, such as `−$1.20`. A value
+ * that is not a number gives {@link MISSING}.
  */
 export function formatInput({
 	value,
@@ -40,7 +41,7 @@ export function formatInput({
 	const amount = Number(value);
 	if (typeof value !== "number" || !Number.isFinite(amount)) return MISSING;
 	return unit === "usdPerShare"
-		? formatPrice(amount)
+		? `${amount < 0 ? "−" : ""}${formatPrice(Math.abs(amount))}`
 		: formatInUnit(amount, unit);
 }
 

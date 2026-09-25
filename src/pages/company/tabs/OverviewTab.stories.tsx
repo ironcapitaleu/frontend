@@ -5,6 +5,7 @@ import { MISSING, MISSING_INK } from "../../../components/screener/format";
 import { CompanyGatewayProvider } from "../../../contexts/CompanyGatewayContext";
 import type { CompanyGateway } from "../../../lib/company/gateway";
 import { meridianOverview } from "../../../lib/company/sample/overview";
+import { MERIDIAN } from "../../../lib/company/sample/sources";
 import { sampleCompanyGateway } from "../../../lib/company/sampleCompanyGateway";
 import { Ticker } from "../../../lib/domain/ticker";
 import { alwaysFailingCompanyGateway } from "../../../test/fixtures/companies/always-failing";
@@ -115,6 +116,35 @@ const missingRevenueGateway: CompanyGateway = {
 	},
 };
 
+/** A gateway whose masthead fails, so V1, V2 and S2 have no price. */
+const mastheadFailingGateway: CompanyGateway = {
+	...sampleGateway,
+	getMasthead: failingGateway.getMasthead,
+};
+/** A gateway whose Valuation load never answers. */
+const valuationPendingGateway: CompanyGateway = {
+	...sampleGateway,
+	getValuation: pending,
+};
+
+/** Finds card 1.5 once its checks have drawn. */
+async function checksCard(canvasElement: HTMLElement) {
+	const card = await within(canvasElement).findByRole("region", {
+		name: "1.5 Checks by Area",
+	});
+	await within(card).findByRole("region", { name: "Consistency" });
+	return card;
+}
+
+/** Returns the result named by the icon of the check `name` in card 1.5. */
+function checkResult(card: HTMLElement, name: string) {
+	return within(card)
+		.getByText(name)
+		.closest("li")
+		?.querySelector("[role=img]")
+		?.getAttribute("aria-label");
+}
+
 /** Finds card 1.2 once its small charts have drawn. */
 async function tenYearsCard(canvasElement: HTMLElement) {
 	const card = await within(canvasElement).findByRole("region", {
@@ -185,6 +215,7 @@ export const Loaded: Story = {
 			"1.2 Ten Years at a Glance",
 			"1.3 Key Figures",
 			"1.4 Financial Position",
+			"1.5 Checks by Area",
 		];
 
 		const result = canvas
@@ -360,7 +391,7 @@ export const KeyFiguresNeedFinancials: Story = {
 export const Loading: Story = {
 	parameters: { companyGateway: neverAnsweringGateway },
 	play: async ({ canvasElement }) => {
-		const expectedResult = 4;
+		const expectedResult = 5;
 
 		const result = within(canvasElement).getAllByRole("status").length;
 
@@ -613,7 +644,7 @@ export const TenYearsSources: Story = {
 
 		const expectedResult = [
 			2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017,
-		].map((year) => `10-K for FY${year}`);
+		].map((year) => `10-K for FY${year}, ${MERIDIAN}`);
 
 		const result = within(popup)
 			.getAllByRole("listitem")
@@ -646,5 +677,189 @@ export const TenYearsDataPhone: Story = {
 		};
 
 		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: card 1.5 draws the five areas in the order of DESIGN.md §8, a
+ * legend of the three results, and a ring count for each area.
+ */
+export const ChecksDesktop: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const card = await checksCard(canvasElement);
+		const inCard = within(card);
+
+		const expectedResult = {
+			areas: [
+				"Balance sheet",
+				"Profitability",
+				"Valuation",
+				"Shareholder returns",
+				"Consistency",
+			],
+			legend: ["Met", "Not met", "Not enough data"],
+			rings: [
+				"2 of 2 met",
+				"1 of 2 met",
+				"1 of 2 met",
+				"2 of 3 met",
+				"2 of 2 met",
+			],
+		};
+
+		const result = {
+			areas: inCard
+				.getAllByRole("region")
+				.map((area) => area.getAttribute("aria-label")),
+			legend: within(inCard.getByRole("list", { name: "Results" }))
+				.getAllByRole("listitem")
+				.map((item) => item.textContent),
+			rings: [...card.querySelectorAll("[data-slot=ring-count]")].map(
+				(ring) => ring.textContent,
+			),
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: at 320 px, the areas of card 1.5 stack and the page does not scroll sideways. */
+export const ChecksPhone: Story = {
+	globals: { viewport: { value: "mobile1", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const card = await checksCard(canvasElement);
+		const areas = within(card).getAllByRole("region");
+
+		const expectedResult = { columns: 1, pageScrolls: false };
+
+		const result = {
+			columns: new Set(
+				areas.map((area) => Math.round(area.getBoundingClientRect().left)),
+			).size,
+			pageScrolls: document.documentElement.scrollWidth > window.innerWidth,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: with no masthead there is no price, so the P/E check has not enough data. */
+export const ChecksNotEnoughData: Story = {
+	parameters: { companyGateway: mastheadFailingGateway },
+	play: async ({ canvasElement }) => {
+		const card = await checksCard(canvasElement);
+
+		const expectedResult = "Not enough data";
+
+		const result = checkResult(card, "P/E below its own 10-year median");
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/** Play test: while Valuation loads, V2 has not enough data and says a section has no data. */
+export const ChecksValuationLoading: Story = {
+	parameters: { companyGateway: valuationPendingGateway },
+	play: async ({ canvasElement }) => {
+		const card = await checksCard(canvasElement);
+
+		const expectedResult =
+			"The free cash flow yield (2.3%) needs to be above the 10-year Treasury yield (—), but a section of the page has no data.";
+
+		const result = within(card)
+			.getByText(/^The free cash flow yield/)
+			.closest("p");
+
+		await expect(result).toHaveTextContent(expectedResult);
+	},
+};
+
+/**
+ * Play test: a failed masthead never loads, so the P/E sentence says a
+ * section has no data, and never asks the reader to wait for it.
+ */
+export const ChecksMastheadFailed: Story = {
+	parameters: { companyGateway: mastheadFailingGateway },
+	play: async ({ canvasElement }) => {
+		const card = await checksCard(canvasElement);
+
+		const expectedResult =
+			"The P/E (—) needs to be below its own 10-year median (—), but a section of the page has no data.";
+
+		const result = within(card)
+			.getByText(/^The P\/E/)
+			.closest("p");
+
+		await expect(result).toHaveTextContent(expectedResult);
+	},
+};
+
+/** Play test: card 1.5 says so when the Financials section fails to load. */
+export const ChecksFailed: Story = {
+	parameters: { companyGateway: financialsFailingGateway },
+	play: async ({ canvasElement }) => {
+		const card = await within(canvasElement).findByRole("region", {
+			name: "1.5 Checks by Area",
+		});
+
+		const expectedResult = "The checks did not load. Try again in a moment.";
+
+		const result = await within(card).findByText(/checks did not load/);
+
+		await expect(result).toHaveTextContent(expectedResult);
+	},
+};
+
+/**
+ * Play test: C1 reads ten annual filings, and its source line names two and
+ * counts the rest, so it stays one quiet line.
+ */
+export const ChecksSourceLine: Story = {
+	play: async ({ canvasElement }) => {
+		const card = await checksCard(canvasElement);
+		const item = within(card)
+			.getByText("Free cash flow positive in at least 8 of 10 years")
+			.closest("li") as HTMLElement;
+
+		const expectedResult = true;
+
+		const line = item.querySelector("[data-slot=source-line]")?.textContent;
+		const result =
+			/^Sources: 10-K for FY\d{4}, .+ · 10-K for FY\d{4}, .+ and \d+ more$/.test(
+				line ?? "",
+			);
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/** Returns the lightness and alpha of an `oklch(L C H / A)` color. */
+function oklchOf(color: string): { lightness: number; alpha: number } {
+	const [lightness = Number.NaN, , , alpha = 1] =
+		color.match(/[\d.]+/g)?.map(Number) ?? [];
+	return { lightness, alpha };
+}
+
+/**
+ * Play test: in the light theme the track of each ring stays visible on the
+ * white card. Blended over the card, its lightness differs from the card's by
+ * at least 0.1.
+ */
+export const ChecksLight: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false }, theme: "light" },
+	play: async ({ canvasElement }) => {
+		const card = await checksCard(canvasElement);
+		const track = card.querySelector("[data-slot=ring] circle") as SVGElement;
+		const ink = oklchOf(getComputedStyle(track).stroke);
+		const paper = oklchOf(getComputedStyle(card).backgroundColor);
+
+		const expectedResult = true;
+
+		const blended =
+			ink.alpha * ink.lightness + (1 - ink.alpha) * paper.lightness;
+		const result = Math.abs(paper.lightness - blended) >= 0.1;
+
+		await expect(result).toBe(expectedResult);
 	},
 };

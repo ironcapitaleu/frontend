@@ -30,6 +30,7 @@ import { figureGroupsOf, isDrawn, sectorMedianOf } from "@/lib/company/sources";
 import type { BlockKey, CompletedSections, Series } from "@/lib/company/types";
 import type { Ticker } from "@/lib/domain/ticker";
 import { cn } from "@/lib/utils";
+import { ChecksByArea } from "./ChecksByArea";
 import { FigureCell, FigureText } from "./FigureCell";
 import {
 	heldBack,
@@ -49,7 +50,9 @@ const TEN_YEARS = 10;
  * card 1.1 "The Business" from the Overview section, card 1.2 "Ten Years at
  * a Glance" from the Financials section and card 1.3 "Key Figures" from the
  * masthead, Overview, Financials and Valuation sections, and card 1.4
- * "Financial Position" from the Financials section, then the sources index.
+ * "Financial Position" from the Financials section, and card 1.5 "Checks by
+ * Area" from the masthead, Financials and Valuation sections, then the
+ * sources index.
  * Each card shows the loading or failed state of its own section, so a slow
  * section never delays another card.
  */
@@ -176,6 +179,17 @@ export function OverviewTab({ ticker }: { ticker: Ticker }) {
 							<PositionBars rows={financialPositionOf(sections)} />
 						)
 					}
+				</Loaded>
+			</CompanyCard>
+			<CompanyCard
+				tab="overview"
+				position={5}
+				title="Checks by Area"
+				caption="Latest price, fiscal year and quarter · Rules with their thresholds · Form 10-K and 10-Q"
+				span={2}
+			>
+				<Loaded state={financials} what="checks">
+					{() => sections && <ChecksByArea sections={sections} />}
 				</Loaded>
 			</CompanyCard>
 			<div className="lg:col-span-2">

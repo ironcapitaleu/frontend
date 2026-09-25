@@ -3,6 +3,7 @@ import { expect, userEvent, within } from "storybook/test";
 
 import { completeSections } from "@/lib/company/metrics";
 import { meridianFinancials } from "@/lib/company/sample/financials";
+import { MERIDIAN } from "@/lib/company/sample/sources";
 import { figureGroupsOf } from "@/lib/company/sources";
 import { SourcesChip } from "./SourcesChip";
 
@@ -49,7 +50,7 @@ export const FilingsListed: Story = {
 
 		const expectedResult = [
 			2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017,
-		].map((year) => `10-K for FY${year}`);
+		].map((year) => `10-K for FY${year}, ${MERIDIAN}`);
 
 		const result = within(popup)
 			.getAllByRole("listitem")

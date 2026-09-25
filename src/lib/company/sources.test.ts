@@ -11,6 +11,7 @@ import {
 } from "./metrics";
 import {
 	claimsOf,
+	documentLabel,
 	feedsOf,
 	figureGroupsOf,
 	isDrawn,
@@ -25,7 +26,9 @@ import type {
 	Filing,
 	FigureGroup,
 	FigureGroupRef,
+	IsoDate,
 	LineKey,
+	MarketDataset,
 	StatementTable,
 } from "./types";
 import { COMPANY_TABS } from "./tabs";
@@ -364,6 +367,47 @@ describe("claimsOf", () => {
 		const result = claimsOf("profile", "company", unloaded);
 
 		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("claimsOf checksByArea", () => {
+	// Without the masthead there is no price, so V1 has no P/E and no median.
+	const noMasthead = { ...sections, masthead: null };
+	const epsLine = financials.income.annual.lines.find(
+		(line) => line.key === "dilutedEps",
+	);
+
+	it("should read no claim when the Financials section has not loaded", () => {
+		const expectedResult: readonly Claim[] = [];
+
+		const result = claimsOf("checksByArea", "company", {
+			...sections,
+			financials: null,
+		});
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep the latest diluted EPS when the masthead has not loaded", () => {
+		const expectedResult = eps2025.id;
+
+		const result = claimsOf("checksByArea", "company", noMasthead).find(
+			(one) => one.id === eps2025.id,
+		)?.id;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should keep the diluted EPS of the first year of the median window when the masthead has not loaded", () => {
+		const eps2016 = claim(epsLine?.points[0]);
+
+		const expectedResult = eps2016.id;
+
+		const result = claimsOf("checksByArea", "company", noMasthead).find(
+			(one) => one.id === eps2016.id,
+		)?.id;
+
+		expect(result).toBe(expectedResult);
 	});
 });
 
@@ -936,7 +980,6 @@ describe("isDrawn", () => {
 		// without the marker fails here, before its filings drop out of the
 		// sources index and the Filings card.
 		const expectedResult = [
-			"checksByArea",
 			"ownership",
 			"printedShareholderReturns",
 			"profile",
@@ -1218,5 +1261,32 @@ describe("Shareholder returns blocks", () => {
 		const result = claimsOf("totalShareholderYield", "company", changed);
 
 		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("documentLabel", () => {
+	it("should name the form, the period and the filer when a filing is named", () => {
+		const document = filingOf(eps2025);
+
+		const expectedResult = `${document.form} for ${document.periodLabel}, ${document.filer}`;
+
+		const result = documentLabel(document);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should give the name of the dataset when a market dataset is named", () => {
+		const document: MarketDataset = {
+			kind: "market",
+			name: "10-year Treasury yield",
+			asOf: "2026-09-24" as IsoDate,
+			url: "https://example.com/treasury",
+		};
+
+		const expectedResult = "10-year Treasury yield";
+
+		const result = documentLabel(document);
+
+		expect(result).toBe(expectedResult);
 	});
 });

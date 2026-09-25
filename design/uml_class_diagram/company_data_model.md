@@ -1362,8 +1362,11 @@ details:
   a section that exists. V2 lists the masthead, the Financials and the
   Valuation sections. Until the Valuation section loads, V2 reads "not
   enough data", reason `missingSection`.
-- `Check.rule`, `CheckResult.sentence` and the count claim
-  `check.{id}.count` wait for the ticket that draws the check card.
+- `CheckResult` has no `sentence`, and `Check` has no `rule`, because
+  `Check.name` states the rule. Card 1.5 builds each sentence with
+  `sentenceOf` in `src/pages/company/tabs/ChecksByArea.logic.ts`, from the
+  words of each check, which say whether its subject is plural. A period
+  count also builds the claim `check.{id}.count` there.
 - `CheckResult.claims` holds the claims that decide the state: the subject and
   the threshold figure, the input claim of a failed guard, or the points of a
   window.
