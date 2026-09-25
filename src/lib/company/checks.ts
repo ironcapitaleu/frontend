@@ -252,6 +252,12 @@ export const checks: readonly Check[] = [
 	),
 ];
 
+/** Returns the figures that `check` compares: its subject, then the threshold figure. */
+export function figureRefsOf(check: Check): FigureRef[] {
+	const { subject, threshold } = check;
+	return threshold.kind === "figure" ? [subject, threshold.against] : [subject];
+}
+
 /**
  * Evaluates every check over `sections` and groups the results by area, in
  * the order of {@link checkAreas}. No summary adds the areas together.
@@ -332,11 +338,7 @@ function comparedFigures(
 	threshold: Exclude<Threshold, { kind: "periodCount" }>,
 	sections: CompletedSections,
 ): CheckResult {
-	const refs =
-		threshold.kind === "figure"
-			? [check.subject, threshold.against]
-			: [check.subject];
-	const inputs = refs.map((ref) =>
+	const inputs = figureRefsOf(check).map((ref) =>
 		asSinglePeriod(resolve(ref, sections, null)),
 	);
 	const claims = inputs.map((input) =>
