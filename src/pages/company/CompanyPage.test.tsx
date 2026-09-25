@@ -7,7 +7,7 @@ import { PrintProvider } from "../../contexts/PrintContext";
 import { alwaysFailingCompanyGateway } from "../../test/fixtures/companies/always-failing";
 import { alwaysFoundCompanyGateway } from "../../test/fixtures/companies/always-found";
 import { alwaysMissingCompanyGateway } from "../../test/fixtures/companies/always-missing";
-import { render, screen, within } from "../../test/render";
+import { render, screen, waitFor, within } from "../../test/render";
 
 const MISSING_TITLE = "We found no company at this address.";
 const MISSING_TAB_TITLE = "The company page has no such tab.";
@@ -306,10 +306,31 @@ describe("CompanyPage", () => {
 
 		const expectedResult = ["print"];
 
-		await user.click(await screen.findByRole("button", { name: "Export" }));
+		const button = await screen.findByRole("button", { name: "Export" });
+		await waitFor(() => {
+			if (button.hasAttribute("disabled")) throw new Error("still loading");
+		});
+		await user.click(button);
 		const result = prints;
 
 		expect(result).toEqual(expectedResult);
+	});
+
+	it("should disable the Export button when the printed summary is still loading", async () => {
+		render(<App />, {
+			companyGateway: {
+				...alwaysFoundCompanyGateway(),
+				getShareholderReturns: () => new Promise(() => {}),
+			},
+			initialEntries: ["/companies/MRDN"],
+		});
+
+		const expectedResult = true;
+
+		const button = await screen.findByRole("button", { name: "Export" });
+		const result = button.hasAttribute("disabled");
+
+		expect(result).toBe(expectedResult);
 	});
 
 	it("should show no Export button when the masthead loads on the Financials tab", async () => {

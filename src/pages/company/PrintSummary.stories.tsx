@@ -64,7 +64,7 @@ function printed(canvasElement: HTMLElement, role: string, level?: number) {
 		.filter((element) => element.checkVisibility());
 }
 
-/** Reads the printed region headings and whether the page fits the paper's width. */
+/** Reads the printed region headings and whether the page fits the paper's width and height. */
 async function readPrintedPage(canvasElement: HTMLElement) {
 	await waitFor(() =>
 		within(canvasElement).getByRole("heading", {
@@ -80,26 +80,21 @@ async function readPrintedPage(canvasElement: HTMLElement) {
 		fitsWidth:
 			document.documentElement.scrollWidth <=
 			document.documentElement.clientWidth,
+		fitsHeight:
+			document.documentElement.scrollHeight <=
+			document.documentElement.clientHeight,
 	};
 }
 
-/** Regions 1 to 3 on the printable area of A4 paper. */
+/** Regions 1 to 3 on the printable area of A4 paper, on one page. */
 export const PrintedOnA4: Story = {
 	globals: { viewport: { value: "a4", isRotated: false } },
 	play: async ({ canvasElement }) => {
-		const expectedResult = { regions: REGIONS, fitsWidth: true };
-
-		const result = await readPrintedPage(canvasElement);
-
-		await expect(result).toEqual(expectedResult);
-	},
-};
-
-/** Regions 1 to 3 on the printable area of Letter paper. */
-export const PrintedOnLetter: Story = {
-	globals: { viewport: { value: "letter", isRotated: false } },
-	play: async ({ canvasElement }) => {
-		const expectedResult = { regions: REGIONS, fitsWidth: true };
+		const expectedResult = {
+			regions: REGIONS,
+			fitsWidth: true,
+			fitsHeight: true,
+		};
 
 		const result = await readPrintedPage(canvasElement);
 
@@ -108,9 +103,25 @@ export const PrintedOnLetter: Story = {
 };
 
 /**
+ * Regions 1 to 3 on the printable area of Letter paper. They are 28 px taller
+ * than one Letter page (DESIGN.md §8 "Print Summary"), which STA-260 settles,
+ * so this story checks the regions and the width only.
+ */
+export const PrintedOnLetter: Story = {
+	globals: { viewport: { value: "letter", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const expectedResult = { regions: REGIONS, fitsWidth: true };
+
+		const { fitsHeight: _, ...result } = await readPrintedPage(canvasElement);
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
  * The printed page hides the site navigation and footer, the tab strip, the
  * Export button, the "Data" buttons, the "Sources" chips, the sources index,
- * and a source card that a figure opened.
+ * and a source card that a figure opened, with the backdrop behind it.
  */
 export const HidesScreenControls: Story = {
 	globals: { viewport: { value: "a4", isRotated: false } },
@@ -138,6 +149,7 @@ export const HidesScreenControls: Story = {
 			}),
 			canvas.getByRole("contentinfo", { hidden: true }),
 			card,
+			...document.querySelectorAll<HTMLElement>('[data-slot="sheet-overlay"]'),
 		];
 		const result = controls
 			.filter((control) => control.checkVisibility())

@@ -20,6 +20,8 @@ interface CompanyMastheadProps extends React.ComponentProps<"header"> {
 	masthead: MastheadSection;
 	/** Called when the Export button is pressed. Without it, the masthead shows no Export button. */
 	onExport?: () => void;
+	/** Disables the Export button, such as while the printed summary loads. */
+	exportDisabled?: boolean;
 }
 
 const CHIP =
@@ -43,6 +45,7 @@ const CHIP =
 function CompanyMasthead({
 	masthead,
 	onExport,
+	exportDisabled = false,
 	className,
 	...props
 }: CompanyMastheadProps) {
@@ -141,6 +144,7 @@ function CompanyMasthead({
 						variant="outline"
 						aria-label="Export"
 						onClick={onExport}
+						disabled={exportDisabled}
 						className="min-h-11 min-w-11 self-start md:min-h-0 md:min-w-0 md:self-end print:hidden"
 					>
 						<Download aria-hidden="true" />

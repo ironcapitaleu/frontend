@@ -32,21 +32,19 @@ import {
 /** The series of the bar chart in "The business". */
 const BUSINESS_SERIES = ["revenue", "freeCashFlow"];
 
+/** The state of the sections that the printed summary reads. */
+export type PrintSections =
+	| { readonly status: "loading" }
+	| { readonly status: "failed" }
+	| { readonly status: "loaded"; readonly sections: CompletedSections };
+
 /**
- * The printed summary of the Overview tab (DESIGN.md §8 "Print Summary"), in
- * the Value Line style. It is `hidden` on the screen, and the print
- * stylesheet shows it in place of the tab. It draws the masthead, the strip of key
- * figures, then "The business" and "Checks by area" side by side. Regions 4
- * to 6 follow them, in the order of DESIGN.md §8. It loads the sections its
- * figures read, and draws its figures once no load is pending.
+ * Loads the sections that the printed summary reads. It is `loading` while
+ * any load is pending, `failed` when none of them loaded, and `loaded`
+ * otherwise. The page disables the Export button while it is `loading`, so
+ * the paper never shows a summary that is still loading.
  */
-export function PrintSummary({
-	ticker,
-	masthead,
-}: {
-	ticker: Ticker;
-	masthead: MastheadSection;
-}) {
+export function usePrintSections(ticker: Ticker): PrintSections {
 	const loads = [
 		useCompany(ticker, "masthead"),
 		useCompany(ticker, "overview"),
@@ -61,7 +59,28 @@ export function PrintSummary({
 		() => joinSections([first, second, third, fourth, fifth]),
 		[first, second, third, fourth, fifth],
 	);
+	return React.useMemo(() => {
+		if (pending) return { status: "loading" };
+		if (sections === null) return { status: "failed" };
+		return { status: "loaded", sections };
+	}, [pending, sections]);
+}
 
+/**
+ * The printed summary of the Overview tab (DESIGN.md §8 "Print Summary"), in
+ * the Value Line style. It is `hidden` on the screen, and the print
+ * stylesheet shows it in place of the tab. It draws the masthead, the strip of key
+ * figures, then "The business" and "Checks by area" side by side. STA-260
+ * adds regions 4 to 6 below them, in the order of DESIGN.md §8. While
+ * `summary` loads, or when it failed, a sentence says so under the masthead.
+ */
+export function PrintSummary({
+	masthead,
+	summary,
+}: {
+	masthead: MastheadSection;
+	summary: PrintSections;
+}) {
 	return (
 		<article
 			hidden
@@ -70,19 +89,21 @@ export function PrintSummary({
 			className="flex-col gap-4 text-sm"
 		>
 			<PrintMasthead masthead={masthead} />
-			{pending || sections === null ? (
+			{summary.status === "loading" ? (
 				<p>The summary is still loading.</p>
+			) : summary.status === "failed" ? (
+				<p>The figures of this summary did not load. Try again in a moment.</p>
 			) : (
 				<>
 					<Region title="Key figures">
-						<KeyFigureStrip sections={sections} />
+						<KeyFigureStrip sections={summary.sections} />
 					</Region>
 					<div className="grid grid-cols-2 gap-6">
 						<Region title="The business">
-							<Business sections={sections} />
+							<Business sections={summary.sections} />
 						</Region>
 						<Region title="Checks by area">
-							<ChecksByArea sections={sections} />
+							<ChecksByArea sections={summary.sections} />
 						</Region>
 					</div>
 				</>

@@ -103,3 +103,17 @@ export const MissingFigures: Story = {
 		masthead: { ...meridianMasthead, price: null, low52Weeks: null },
 	},
 };
+
+/** Without `onExport`, as on every tab but Overview, the masthead shows no Export button. */
+export const WithoutExport: Story = {
+	args: { onExport: undefined },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+
+		const expectedResult = null;
+
+		const result = canvas.queryByRole("button", { name: "Export" });
+
+		await expect(result).toBe(expectedResult);
+	},
+};

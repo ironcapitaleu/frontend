@@ -703,8 +703,9 @@ It is `hidden` on the screen, and the print stylesheet in `src/index.css`
 shows it in place of Overview. It prints with the light tokens in either
 theme, because paper is white. The stories in `PrintSummary.stories.tsx`
 render it at print media on the printable area of A4 and of Letter, inside a
-12 mm margin. On A4, regions 1 to 3 already take about 990 of the 1,032 px of
-one page, so regions 4 to 6 need a denser layout or a second page.
+12 mm margin. On A4, regions 1 to 3 fill the 1,032 px of one page. On
+Letter they take 993 px, 28 px more than the 965 px of one page. So regions 4
+to 6 need a denser layout or a second page, and STA-260 decides which.
 
 ---
 
