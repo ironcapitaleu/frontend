@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Link } from "react-router";
 
 import { ChartActions } from "@/components/company/ChartActions";
 import { CompanyCard, CompanyCardGrid } from "@/components/company/CompanyCard";
@@ -19,6 +20,7 @@ import {
 } from "@/components/ui/table";
 import { Text } from "@/components/ui/text";
 import { type CompanyState, useCompany } from "@/hooks/useCompany";
+import { formatDate } from "@/lib/company/dates";
 import {
 	financialPositionOf,
 	keyFigureKeys,
@@ -27,15 +29,23 @@ import {
 	type PositionRow,
 } from "@/lib/company/metrics";
 import { figureGroupsOf, isDrawn, sectorMedianOf } from "@/lib/company/sources";
-import type { BlockKey, CompletedSections, Series } from "@/lib/company/types";
+import type {
+	BlockKey,
+	CompletedSections,
+	Figure,
+	Profile,
+	Series,
+} from "@/lib/company/types";
+import { COMPANY_TABS, tabPath } from "@/lib/company/tabs";
 import type { Ticker } from "@/lib/domain/ticker";
 import { cn } from "@/lib/utils";
 import { ChecksByArea } from "./ChecksByArea";
-import { FigureCell, FigureText } from "./FigureCell";
+import { ClaimText, FigureCell, FigureText } from "./FigureCell";
 import {
 	heldBack,
 	joinSections,
 	loadedSections,
+	ownershipParts,
 	positionBars,
 	revenueParts,
 	SIDES,
@@ -46,12 +56,19 @@ import {
 const TEN_YEARS = 10;
 
 /**
+ * The Relationships tab, which card 1.6 links to. It is found by its key, so
+ * the tab table stays the one place that spells its URL.
+ */
+const RELATIONSHIPS = COMPANY_TABS.find(({ key }) => key === "relationships");
+
+/**
  * The Overview tab of the company page (DESIGN.md §8 "Overview"). It draws
  * card 1.1 "The Business" from the Overview section, card 1.2 "Ten Years at
  * a Glance" from the Financials section and card 1.3 "Key Figures" from the
  * masthead, Overview, Financials and Valuation sections, and card 1.4
  * "Financial Position" from the Financials section, and card 1.5 "Checks by
- * Area" from the masthead, Financials and Valuation sections, then the
+ * Area" from the masthead, Financials and Valuation sections. It draws card
+ * 1.6 "Who Owns It" and card 1.7 "Profile" from the Overview section, then the
  * sources index.
  * Each card shows the loading or failed state of its own section, so a slow
  * section never delays another card.
@@ -192,6 +209,45 @@ export function OverviewTab({ ticker }: { ticker: Ticker }) {
 					{() => sections && <ChecksByArea sections={sections} />}
 				</Loaded>
 			</CompanyCard>
+			<CompanyCard
+				tab="overview"
+				position={6}
+				title="Who Owns It"
+				caption={
+					overview.status === "loaded"
+						? `${formatDate(overview.data.ownership.asOf)} · Share of the shares outstanding · 13F-HR, Form 4 and 10-Q`
+						: "Share of the shares outstanding · 13F-HR, Form 4 and 10-Q"
+				}
+			>
+				<Loaded state={overview} what="ownership split">
+					{({ data }) => (
+						<div className="flex flex-col gap-4">
+							<ShareBar
+								aria-label="Ownership split"
+								parts={ownershipParts(data, "overview")}
+							/>
+							{RELATIONSHIPS && (
+								<Link
+									to={tabPath(ticker.value, RELATIONSHIPS)}
+									className="inline-flex min-h-11 items-center self-start text-primary underline underline-offset-4 md:min-h-0"
+								>
+									See the funds and insiders on Relationships
+								</Link>
+							)}
+						</div>
+					)}
+				</Loaded>
+			</CompanyCard>
+			<CompanyCard
+				tab="overview"
+				position={7}
+				title="Profile"
+				caption="Form 10-K and proxy statement"
+			>
+				<Loaded state={overview} what="profile">
+					{({ data }) => <ProfileList profile={data.profile} />}
+				</Loaded>
+			</CompanyCard>
 			<div className="lg:col-span-2">
 				<SourcesIndex groups={groups} />
 			</div>
@@ -230,6 +286,56 @@ function KeyFigures({ sections }: { sections: CompletedSections }) {
 				))}
 			</TableBody>
 		</Table>
+	);
+}
+
+/**
+ * The list of card 1.7: each fact of the profile opens its sources, or shows
+ * the dimmed dash when it is missing. The chief executive's start year sits
+ * after the name, and only when both are known, so a missing name reads as the
+ * dimmed dash alone. A long website breaks inside the card on a phone.
+ */
+function ProfileList({ profile }: { profile: Profile }) {
+	const rows: [string, React.ReactNode][] = [
+		["Founded", <ProfileFact key="founded" figure={profile.founded} />],
+		["Headquarters", <ProfileFact key="hq" figure={profile.headquarters} />],
+		["Employees", <ProfileFact key="employees" figure={profile.employees} />],
+		[
+			"Chief executive",
+			<React.Fragment key="ceo">
+				<ProfileFact figure={profile.chiefExecutive} />
+				{profile.chiefExecutive !== null &&
+					profile.chiefExecutiveSince !== null && (
+						<>
+							<span className="text-muted-foreground">, since </span>
+							<ProfileFact figure={profile.chiefExecutiveSince} />
+						</>
+					)}
+			</React.Fragment>,
+		],
+		["Auditor", <ProfileFact key="auditor" figure={profile.auditor} />],
+		["Website", <ProfileFact key="website" figure={profile.website} />],
+	];
+	return (
+		<dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-2">
+			{rows.map(([term, fact]) => (
+				<div key={term} className="contents">
+					<dt className="text-muted-foreground">{term}</dt>
+					<dd className="min-w-0 break-words">{fact}</dd>
+				</div>
+			))}
+		</dl>
+	);
+}
+
+/** One fact of card 1.7: a text claim in sans, a number in mono, a missing fact as the dimmed dash. */
+function ProfileFact({ figure }: { figure: Figure }) {
+	return figure === null || typeof figure.value === "string" ? (
+		<ClaimText claim={figure} />
+	) : (
+		<span className="font-monospace">
+			<FigureText figure={figure} />
+		</span>
 	);
 }
 

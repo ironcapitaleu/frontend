@@ -217,7 +217,7 @@ export const FinancialsFailed: Story = {
 		const row = await rowOf(canvasElement, "0001234567-26-000012");
 
 		const expectedResult =
-			"Feeds Overview: The Business, Shareholder returns: Dividend per Share, Relationships: Owns: Subsidiaries";
+			"Feeds Overview: The Business, Overview: Profile, Shareholder returns: Dividend per Share, Relationships: Owns: Subsidiaries";
 
 		const result = await within(row).findByText(
 			(_, element) =>

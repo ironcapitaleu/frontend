@@ -6,6 +6,7 @@ import type { CompanySectionKey, CompanyState } from "@/hooks/useCompany";
 import {
 	evaluateMetric,
 	otherRevenueShare,
+	ownershipShares,
 	type PositionRow,
 	revenueShare,
 } from "@/lib/company/metrics";
@@ -16,6 +17,7 @@ import type {
 	MetricKey,
 	OverviewSection,
 	Nullable,
+	OwnershipSummary,
 	Series,
 	Unit,
 } from "@/lib/company/types";
@@ -43,6 +45,27 @@ export function revenueParts(
 	return [
 		...parts,
 		{ label: "Other", share: otherRevenueShare(overview, list, named.length) },
+	];
+}
+
+/**
+ * Returns the three parts of an ownership bar, from `ownershipShares`:
+ * institutions, insiders and the public. Overview card 1.6 and Relationships
+ * card 5.3 both draw these parts, so the two bars cannot differ. The public
+ * share is `null` when institutions and insiders hold more than the shares
+ * outstanding, so it prints the dimmed dash and draws no segment. A share
+ * above 100% keeps its true value, and `ShareBar` shrinks the segments in
+ * step so the bar never overflows.
+ */
+export function ownershipParts(
+	section: { readonly ownership: OwnershipSummary },
+	owner: "overview" | "relationships",
+): SharePart[] {
+	const shares = ownershipShares(section, owner);
+	return [
+		{ label: "Institutions", share: shares.institutions },
+		{ label: "Insiders", share: shares.insiders },
+		{ label: "Public", share: shares.public },
 	];
 }
 

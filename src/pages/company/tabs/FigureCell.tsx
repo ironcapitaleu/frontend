@@ -42,14 +42,19 @@ export function FigureCell({
 }
 
 /** A text claim that opens its sources, or the dimmed dash when it is missing or not text. */
+export function ClaimText({ claim }: { claim: Figure }) {
+	return claim !== null && typeof claim.value === "string" ? (
+		<SourceTrigger claim={claim}>{claim.value}</SourceTrigger>
+	) : (
+		<span className={MISSING_INK}>{MISSING}</span>
+	);
+}
+
+/** A {@link ClaimText} in a table cell. */
 export function ClaimCell({ claim }: { claim: Figure }) {
 	return (
 		<TableCell>
-			{claim !== null && typeof claim.value === "string" ? (
-				<SourceTrigger claim={claim}>{claim.value}</SourceTrigger>
-			) : (
-				<span className={MISSING_INK}>{MISSING}</span>
-			)}
+			<ClaimText claim={claim} />
 		</TableCell>
 	);
 }

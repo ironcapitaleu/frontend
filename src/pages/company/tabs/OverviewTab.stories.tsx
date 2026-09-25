@@ -1,12 +1,19 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, screen, userEvent, within } from "storybook/test";
+import { MemoryRouter } from "react-router";
 
 import { MISSING, MISSING_INK } from "../../../components/screener/format";
 import { CompanyGatewayProvider } from "../../../contexts/CompanyGatewayContext";
 import type { CompanyGateway } from "../../../lib/company/gateway";
+import type { Claim, OverviewSection } from "../../../lib/company/types";
 import { meridianOverview } from "../../../lib/company/sample/overview";
 import { MERIDIAN } from "../../../lib/company/sample/sources";
 import { sampleCompanyGateway } from "../../../lib/company/sampleCompanyGateway";
+import {
+	type CompanyTab,
+	COMPANY_TABS,
+	tabPath,
+} from "../../../lib/company/tabs";
 import { Ticker } from "../../../lib/domain/ticker";
 import { alwaysFailingCompanyGateway } from "../../../test/fixtures/companies/always-failing";
 import { OverviewTab } from "./OverviewTab";
@@ -145,6 +152,54 @@ function checkResult(card: HTMLElement, name: string) {
 		?.getAttribute("aria-label");
 }
 
+/** A gateway whose Overview section is the sample one changed by `change`. */
+function overviewGateway(
+	change: (overview: OverviewSection) => OverviewSection,
+): CompanyGateway {
+	return {
+		...sampleGateway,
+		getOverview: async (ticker) =>
+			change(await sampleGateway.getOverview(ticker)),
+	};
+}
+
+/** A gateway whose profile names no auditor. */
+const noAuditorGateway = overviewGateway((overview) => ({
+	...overview,
+	profile: { ...overview.profile, auditor: null },
+}));
+
+/** A gateway whose profile names no chief executive. */
+const noChiefExecutiveGateway = overviewGateway((overview) => ({
+	...overview,
+	profile: { ...overview.profile, chiefExecutive: null },
+}));
+
+/** A gateway whose institutions hold `share` of the shares outstanding. */
+function institutionsGateway(share: number): CompanyGateway {
+	return overviewGateway((overview) => {
+		const { ownership } = overview;
+		const institutions = ownership.institutionShares as Claim;
+		const outstanding = Number(ownership.sharesOutstanding?.value);
+		return {
+			...overview,
+			ownership: {
+				...ownership,
+				institutionShares: { ...institutions, value: share * outstanding },
+			},
+		};
+	});
+}
+
+/** Finds card `title` of the tab once the Overview section has drawn it. */
+async function overviewCard(canvasElement: HTMLElement, title: string) {
+	const card = await within(canvasElement).findByRole("region", {
+		name: title,
+	});
+	await within(card).findByText(/Institutions|Founded/);
+	return card;
+}
+
 /** Finds card 1.2 once its small charts have drawn. */
 async function tenYearsCard(canvasElement: HTMLElement) {
 	const card = await within(canvasElement).findByRole("region", {
@@ -193,9 +248,11 @@ const meta: Meta<typeof OverviewTab> = {
 	parameters: { layout: "padded" },
 	decorators: [
 		(Story, { parameters }) => (
-			<CompanyGatewayProvider gateway={parameters.companyGateway}>
-				<Story />
-			</CompanyGatewayProvider>
+			<MemoryRouter>
+				<CompanyGatewayProvider gateway={parameters.companyGateway}>
+					<Story />
+				</CompanyGatewayProvider>
+			</MemoryRouter>
 		),
 	],
 };
@@ -216,6 +273,8 @@ export const Loaded: Story = {
 			"1.3 Key Figures",
 			"1.4 Financial Position",
 			"1.5 Checks by Area",
+			"1.6 Who Owns It",
+			"1.7 Profile",
 		];
 
 		const result = canvas
@@ -391,7 +450,7 @@ export const KeyFiguresNeedFinancials: Story = {
 export const Loading: Story = {
 	parameters: { companyGateway: neverAnsweringGateway },
 	play: async ({ canvasElement }) => {
-		const expectedResult = 5;
+		const expectedResult = 7;
 
 		const result = within(canvasElement).getAllByRole("status").length;
 
@@ -861,5 +920,166 @@ export const ChecksLight: Story = {
 		const result = Math.abs(paper.lightness - blended) >= 0.1;
 
 		await expect(result).toBe(expectedResult);
+	},
+};
+
+/**
+ * Play test: on a desktop, card 1.6 "Who Owns It" and card 1.7 "Profile" sit
+ * side by side, one column each. The link opens Relationships, and the
+ * founding year prints as a year.
+ */
+export const OwnershipAndProfile: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const owners = await overviewCard(canvasElement, "1.6 Who Owns It");
+		const profile = await overviewCard(canvasElement, "1.7 Profile");
+		const left = owners.getBoundingClientRect();
+		const right = profile.getBoundingClientRect();
+
+		const expectedResult = {
+			sideBySide: true,
+			href: tabPath(
+				"MRDN",
+				COMPANY_TABS.find(({ key }) => key === "relationships") as CompanyTab,
+			),
+			founded: "1993",
+		};
+
+		const result = {
+			sideBySide: left.top === right.top && left.right < right.left,
+			href: within(owners).getByRole("link").getAttribute("href"),
+			founded: within(profile).getByText("Founded").nextSibling?.textContent,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: at 320 px, card 1.7 stacks below card 1.6, the page does not
+ * scroll sideways, and the Relationships link is a 44 px tap target.
+ */
+export const OwnershipAndProfilePhone: Story = {
+	globals: { viewport: { value: "mobile1", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const owners = await overviewCard(canvasElement, "1.6 Who Owns It");
+		const profile = await overviewCard(canvasElement, "1.7 Profile");
+		const link = within(owners).getByRole("link").getBoundingClientRect();
+
+		const expectedResult = {
+			stacked: true,
+			pageScrolls: false,
+			tapTarget: true,
+		};
+
+		const result = {
+			stacked:
+				profile.getBoundingClientRect().top >=
+				owners.getBoundingClientRect().bottom,
+			pageScrolls: document.documentElement.scrollWidth > window.innerWidth,
+			tapTarget: link.height >= 44,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: a profile with no auditor shows the dimmed dash for it. */
+export const ProfileMissingAuditor: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	parameters: { companyGateway: noAuditorGateway },
+	play: async ({ canvasElement }) => {
+		const profile = await overviewCard(canvasElement, "1.7 Profile");
+
+		const expectedResult = { text: MISSING, dimmed: true };
+
+		const dash = within(profile).getByText("Auditor").nextSibling
+			?.firstChild as HTMLElement;
+		const result = {
+			text: dash.textContent,
+			dimmed: dash.classList.contains(MISSING_INK),
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: a profile with no chief executive shows the dimmed dash alone,
+ * with no ", since" and no start year after it.
+ */
+export const ProfileMissingChiefExecutive: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	parameters: { companyGateway: noChiefExecutiveGateway },
+	play: async ({ canvasElement }) => {
+		const profile = await overviewCard(canvasElement, "1.7 Profile");
+
+		const expectedResult = MISSING;
+
+		const result =
+			within(profile).getByText("Chief executive").nextSibling?.textContent;
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/**
+ * Play test: when institutions hold 105% of the shares outstanding, the
+ * institutions label prints 105.0% and the public prints the dimmed dash,
+ * and the bar stays inside its track (DESIGN.md §8 "Overview").
+ */
+export const OwnershipOverflow: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	parameters: { companyGateway: institutionsGateway(1.05) },
+	play: async ({ canvasElement }) => {
+		const owners = await overviewCard(canvasElement, "1.6 Who Owns It");
+		const track = owners.querySelector("[data-slot=share-bar] > div");
+		const segments = [
+			...owners.querySelectorAll("[data-slot=share-bar-segment]"),
+		];
+		const items = within(owners).getAllByRole("listitem");
+
+		const expectedResult = {
+			institutions: "Institutions105.0%",
+			public: `Public${MISSING}`,
+			segments: 2,
+			fits: true,
+		};
+
+		const bar = track?.getBoundingClientRect();
+		const result = {
+			institutions: items[0]?.textContent,
+			public: items[2]?.textContent,
+			segments: segments.length,
+			fits: segments.every(
+				(segment) =>
+					segment.getBoundingClientRect().right <= (bar?.right ?? 0) + 0.5,
+			),
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: when institutions hold 99.9% and insiders hold the rest and
+ * more, the public prints the dimmed dash and draws no segment, never 0% or
+ * a negative share (DESIGN.md §8 "Overview").
+ */
+export const OwnershipPublicMissing: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	parameters: { companyGateway: institutionsGateway(0.999) },
+	play: async ({ canvasElement }) => {
+		const owners = await overviewCard(canvasElement, "1.6 Who Owns It");
+		const items = within(owners).getAllByRole("listitem");
+
+		const expectedResult = { public: `Public${MISSING}`, segments: 2 };
+
+		const result = {
+			public: items[2]?.textContent,
+			segments: owners.querySelectorAll("[data-slot=share-bar-segment]").length,
+		};
+
+		await expect(result).toEqual(expectedResult);
 	},
 };
