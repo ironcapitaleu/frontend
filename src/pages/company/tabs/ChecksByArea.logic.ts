@@ -24,9 +24,19 @@ export type SentencePart =
 			readonly format: (value: number) => string;
 	  };
 
-/** The words of each check: its subject, and the figure it is compared with. */
-const TERMS: Record<CheckId, { subject: string; against?: string }> = {
-	B1: { subject: "Cash and short-term investments", against: "total debt" },
+/**
+ * The words of each check: its subject, the figure it is compared with, and
+ * whether the subject is plural, so the verb agrees with it.
+ */
+const TERMS: Record<
+	CheckId,
+	{ subject: string; against?: string; plural?: true }
+> = {
+	B1: {
+		subject: "Cash and short-term investments",
+		against: "total debt",
+		plural: true,
+	},
 	B2: { subject: "The current ratio" },
 	P1: { subject: "Stock-based pay as a share of revenue" },
 	P2: { subject: "Return on equity" },
@@ -37,12 +47,14 @@ const TERMS: Record<CheckId, { subject: string; against?: string }> = {
 	},
 	S1: {
 		subject: "Diluted shares in the latest fiscal year",
-		against: "five fiscal years earlier",
+		against: "diluted shares five fiscal years earlier",
+		plural: true,
 	},
 	S2: { subject: "The dividend yield" },
 	S3: {
 		subject: "Dividends paid in the latest fiscal year",
 		against: "free cash flow",
+		plural: true,
 	},
 	C1: { subject: "Free cash flow" },
 	C2: { subject: "Net income" },
@@ -56,7 +68,8 @@ const COMPARISON_WORDS: Record<Comparison, string> = {
 };
 
 const REASON_WORDS: Record<NotEnoughDataReason, string> = {
-	missingSection: "a section has not loaded yet",
+	// True whether the section is still loading or failed to load.
+	missingSection: "a section of the page has no data",
 	missingInput: "a figure is missing",
 	failedGuard: "a figure has no reading",
 	shortHistory: "the history is too short",
@@ -105,9 +118,11 @@ export function sentenceOf(
 		return !isWindow(one) && one.kind === "value" ? one.claim : null;
 	});
 	const words = COMPARISON_WORDS[threshold.comparison];
-	const verb = { met: "is", notMet: "is not", notEnoughData: "needs to be" }[
-		state
-	];
+	const verb = (
+		TERMS[check.id].plural
+			? { met: "are", notMet: "are not", notEnoughData: "need to be" }
+			: { met: "is", notMet: "is not", notEnoughData: "needs to be" }
+	)[state];
 	// Every check with a fixed threshold tests a metric, so its unit writes the number.
 	const unit =
 		check.subject.from === "metric" ? metrics[check.subject.key].unit : "ratio";
