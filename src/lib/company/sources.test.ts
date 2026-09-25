@@ -209,6 +209,18 @@ describe("claimsOf", () => {
 			keys: ["revenue", "netIncome", "operatingCashFlow", "capitalExpenditure"],
 		},
 		{
+			block: "tenYears",
+			statement: "annual income and cash flow",
+			tables: [statements.income.annual, statements.cashFlow.annual],
+			keys: [
+				"revenue",
+				"operatingIncome",
+				"dilutedShares",
+				"operatingCashFlow",
+				"capitalExpenditure",
+			],
+		},
+		{
 			block: "incomeTable",
 			statement: "income",
 			tables: [statements.income.annual, statements.income.quarterly],
@@ -273,6 +285,47 @@ describe("claimsOf", () => {
 		);
 
 		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep the 10-K of a year in the Ten Years block when every chart of card 1.2 misses that year", () => {
+		const { income, cashFlow } = fakeCompanyReport.financials;
+		const year = income.annual.periods.length - 1;
+		const blank = (lines: typeof income.annual.lines, keep: LineKey[]) =>
+			lines.map((line) =>
+				keep.includes(line.key)
+					? line
+					: {
+							...line,
+							points: line.points.map((point, at) =>
+								at === year ? null : point,
+							),
+						},
+			);
+		const missingYear = completeSections({
+			...fakeCompanyReport,
+			financials: {
+				...fakeCompanyReport.financials,
+				income: {
+					...income,
+					annual: { ...income.annual, lines: blank(income.annual.lines, []) },
+				},
+				cashFlow: {
+					...cashFlow,
+					annual: {
+						...cashFlow.annual,
+						lines: blank(cashFlow.annual.lines, ["operatingCashFlow"]),
+					},
+				},
+			},
+		});
+
+		const expectedResult = TEN_K_2025;
+
+		const result = documentIds(
+			claimsOf("tenYears", "company", missingYear),
+		).find((id) => id === TEN_K_2025);
+
+		expect(result).toBe(expectedResult);
 	});
 
 	it("should keep the operating income of a year in the income table block when that year has no operating margin", () => {
@@ -996,6 +1049,21 @@ describe("feedsOf", () => {
 		const expectedResult = 0;
 
 		const result = feedsOf([{ ref: checks, claims: [price] }]).size;
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("Shareholder returns blocks", () => {
+	it("should read the dividend per share of each fiscal year when card 4.1 is read", () => {
+		const expectedResult =
+			fakeCompanyReport.shareholderReturns.dividendPerShare.points.map(
+				(point) => point?.id,
+			);
+
+		const result = figureGroupsOf("shareholderReturns", sections).flatMap(
+			({ claims }) => claims.map(({ id }) => id),
+		);
 
 		expect(result).toEqual(expectedResult);
 	});
