@@ -166,6 +166,20 @@ describe("SourcesIndex", () => {
 	it.each([
 		["there are no groups", []],
 		["the only group is a sector group", groups.slice(2)],
+		[
+			"the only group is a card the screen does not draw",
+			[
+				{
+					ref: {
+						tab: "overview",
+						block: "ownership",
+						label: "Who Owns It",
+						figures: "company",
+					},
+					claims: [annual],
+				},
+			] satisfies FigureGroup[],
+		],
 	])("should render nothing when %s", (_, only) => {
 		const { container } = render(<SourcesIndex groups={only} />);
 

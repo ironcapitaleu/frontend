@@ -7,12 +7,7 @@ import {
 	AccordionTrigger,
 } from "@/components/ui/accordion";
 import { formatDate } from "@/lib/company/dates";
-import {
-	feedsOf,
-	filingsOf,
-	isPrintedOnly,
-	isSectorBenchmark,
-} from "@/lib/company/sources";
+import { feedsOf, filingsOf, isOnScreen } from "@/lib/company/sources";
 import type { FigureGroup } from "@/lib/company/types";
 
 /** Props for {@link SourcesIndex}. */
@@ -33,9 +28,7 @@ interface SourcesIndexProps {
  */
 function SourcesIndex({ groups }: SourcesIndexProps) {
 	const { filings, feeds } = React.useMemo(() => {
-		const own = groups.filter(
-			({ ref }) => !isSectorBenchmark(ref) && !isPrintedOnly(ref),
-		);
+		const own = groups.filter(({ ref }) => isOnScreen(ref));
 		return {
 			filings: filingsOf(own.flatMap(({ claims }) => claims)),
 			feeds: feedsOf(own),
