@@ -608,13 +608,14 @@ the adapter puts the line only in that statement's tables:
 These keys cover every statement figure that `DESIGN.md` §8 names for the
 Overview, Valuation and Shareholder returns tabs, the Financials chart and the
 print summary. `operatingIncome` feeds the operating margin and EV/EBIT.
+`operatingIncome` and `netIncome` give the margin rows of the Financials
+statement table, each divided by `revenue`.
 `totalAssets` and `totalLiabilities` give the long-term parts of Financial
 Position, as the total minus the current part. The point metrics
 `longTermAssets` and `longTermLiabilities` compute them at the latest
 quarter end. `shareRepurchases` and
-`shareIssuanceProceeds` give the net buybacks in dollars. The Financials
-statement table draws more lines than these, such as gross profit. The
-Financials Tab ticket adds their keys to this table. §5 says which table of the
+`shareIssuanceProceeds` give the net buybacks in dollars. No key gives
+gross profit, so the statement table has no gross margin. §5 says which table of the
 statement each period choice reads.
 
 **A label or a figure.** A `string` field is a label. It names the row or
