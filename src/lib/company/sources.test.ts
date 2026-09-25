@@ -13,6 +13,7 @@ import {
 	claimsOf,
 	feedsOf,
 	figureGroupsOf,
+	isDrawn,
 	isPrintedOnly,
 	isSectorBenchmark,
 	sectorMedianOf,
@@ -27,6 +28,7 @@ import type {
 	LineKey,
 	StatementTable,
 } from "./types";
+import { COMPANY_TABS } from "./tabs";
 import { ratioRanges, valuationRatios } from "./valuationRatios";
 
 const sections = completeSections(fakeCompanyReport);
@@ -875,6 +877,30 @@ describe("isSectorBenchmark", () => {
 	});
 });
 
+describe("isDrawn", () => {
+	it("should leave only the blocks of cards not built yet undrawn when every section has loaded", () => {
+		// A new block is undrawn until it says `drawn: true`. So a card that lands
+		// without the marker fails here, before its filings drop out of the
+		// sources index and the Filings card.
+		const expectedResult = [
+			"checksByArea",
+			"ownership",
+			"printedShareholderReturns",
+			"profile",
+		];
+
+		const result = [
+			...new Set(
+				COMPANY_TABS.flatMap(({ key }) => figureGroupsOf(key, sections))
+					.filter(({ ref }) => !isDrawn(ref))
+					.map(({ ref }) => ref.block),
+			),
+		].sort();
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
 describe("isPrintedOnly", () => {
 	it("should read the block and not the label when a ref names the printed shareholder returns", () => {
 		const ref: FigureGroupRef = {
@@ -990,6 +1016,21 @@ describe("feedsOf", () => {
 		const expectedResult = 0;
 
 		const result = feedsOf([{ ref: checks, claims: [price] }]).size;
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("Shareholder returns blocks", () => {
+	it("should read the dividend per share of each fiscal year when card 4.1 is read", () => {
+		const expectedResult =
+			fakeCompanyReport.shareholderReturns.dividendPerShare.points.map(
+				(point) => point?.id,
+			);
+
+		const result = figureGroupsOf("shareholderReturns", sections).flatMap(
+			({ claims }) => claims.map(({ id }) => id),
+		);
 
 		expect(result).toEqual(expectedResult);
 	});

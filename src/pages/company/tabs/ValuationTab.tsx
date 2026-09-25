@@ -24,9 +24,8 @@ import { Text } from "@/components/ui/text";
 import { cn } from "@/lib/utils";
 import { useCompany } from "../../../hooks/useCompany";
 import { metricInputsOf, metrics } from "../../../lib/company/metrics";
-import { figureGroupsOf } from "../../../lib/company/sources";
+import { figureGroupsOf, isDrawn } from "../../../lib/company/sources";
 import type {
-	BlockKey,
 	CompletedSections,
 	Figure,
 	MastheadSection,
@@ -45,13 +44,6 @@ import {
 import type { Ticker } from "../../../lib/domain/ticker";
 import { FigureCell } from "./FigureCell";
 import { BarChart } from "./StatementChart";
-
-/** The blocks this tab draws. The Sources index names only these. */
-const DRAWN_BLOCKS: ReadonlySet<BlockKey> = new Set([
-	"valuationRatios",
-	"yieldsAgainstTreasury",
-	"ratioFormulas",
-]);
 
 /**
  * The Valuation tab of the company page (DESIGN.md §8 "Valuation"). It loads
@@ -110,9 +102,7 @@ function LoadedValuation(props: {
 	const yields = React.useMemo(() => yieldTable(sections), [sections]);
 	const groups = React.useMemo(
 		() =>
-			figureGroupsOf("valuation", sections).filter(({ ref }) =>
-				DRAWN_BLOCKS.has(ref.block),
-			),
+			figureGroupsOf("valuation", sections).filter(({ ref }) => isDrawn(ref)),
 		[sections],
 	);
 	const [yieldData, setYieldData] = React.useState(false);

@@ -11,4 +11,15 @@ describe("formatDate", () => {
 
 		expect(result).toBe(expectedResult);
 	});
+
+	it.each(["2026-02-30", "2026-13-01", "", "12/03/2026"])(
+		"should write the dash when the date is %j, which is not a real date",
+		(date) => {
+			const expectedResult = "—";
+
+			const result = formatDate(date as IsoDate);
+
+			expect(result).toBe(expectedResult);
+		},
+	);
 });

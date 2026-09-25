@@ -26,8 +26,8 @@ import {
 	metrics,
 	type PositionRow,
 } from "@/lib/company/metrics";
-import { figureGroupsOf, sectorMedianOf } from "@/lib/company/sources";
-import type { BlockKey, CompletedSections } from "@/lib/company/types";
+import { figureGroupsOf, isDrawn, sectorMedianOf } from "@/lib/company/sources";
+import type { CompletedSections } from "@/lib/company/types";
 import type { Ticker } from "@/lib/domain/ticker";
 import { cn } from "@/lib/utils";
 import { FigureCell, FigureText } from "./FigureCell";
@@ -40,17 +40,6 @@ import {
 	SIDES,
 	tenYearsSeries,
 } from "./OverviewTab.logic";
-
-/**
- * The blocks this tab draws today. The Sources index names only these, so it
- * names no filing of a card that a later ticket adds.
- */
-const DRAWN_BLOCKS: ReadonlySet<BlockKey> = new Set([
-	"business",
-	"tenYears",
-	"keyFigures",
-	"financialPosition",
-]);
 
 /**
  * The Overview tab of the company page (DESIGN.md §8 "Overview"). It draws
@@ -81,9 +70,7 @@ export function OverviewTab({ ticker }: { ticker: Ticker }) {
 	const groups = React.useMemo(
 		() =>
 			sections
-				? figureGroupsOf("overview", sections).filter(({ ref }) =>
-						DRAWN_BLOCKS.has(ref.block),
-					)
+				? figureGroupsOf("overview", sections).filter(({ ref }) => isDrawn(ref))
 				: [],
 		[sections],
 	);

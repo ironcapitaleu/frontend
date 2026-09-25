@@ -28,8 +28,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useCompany } from "@/hooks/useCompany";
 import { usePhone } from "@/hooks/usePhone";
 import { growthPerYear } from "@/lib/company/metrics";
-import { chartLines, figureGroupsOf } from "@/lib/company/sources";
-import type { BlockKey, Figure } from "@/lib/company/types";
+import { chartLines, figureGroupsOf, isDrawn } from "@/lib/company/sources";
+import type { Figure } from "@/lib/company/types";
 import type { Ticker } from "@/lib/domain/ticker";
 import { cn } from "@/lib/utils";
 import {
@@ -51,19 +51,6 @@ import { StatementChart } from "./StatementChart";
 
 /** The indent of a statement line, by its `level`. */
 const INDENT = ["", "pl-6", "pl-10"];
-
-/**
- * The blocks this tab draws: the three charts and the three statement
- * tables. The Sources index names only these.
- */
-const DRAWN_BLOCKS: ReadonlySet<BlockKey> = new Set([
-	"incomeChart",
-	"balanceChart",
-	"cashFlowChart",
-	"incomeTable",
-	"balanceTable",
-	"cashFlowTable",
-]);
 
 const PERIOD_VIEWS: readonly { key: PeriodView; label: string }[] = [
 	{ key: "annual", label: "Annual" },
@@ -100,7 +87,7 @@ export function FinancialsTab({ ticker }: { ticker: Ticker }) {
 		() =>
 			sections
 				? figureGroupsOf("financials", sections).filter(({ ref }) =>
-						DRAWN_BLOCKS.has(ref.block),
+						isDrawn(ref),
 					)
 				: [],
 		[sections],
