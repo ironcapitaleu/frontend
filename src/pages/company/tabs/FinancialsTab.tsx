@@ -33,6 +33,7 @@ import { chartLines, figureGroupsOf, isDrawn } from "@/lib/company/sources";
 import type { Figure } from "@/lib/company/types";
 import type { Ticker } from "@/lib/domain/ticker";
 import { cn } from "@/lib/utils";
+import { csvFileName, statementCsv } from "./financialsCsv";
 import {
 	chartTable,
 	formatStatementValue,
@@ -48,7 +49,6 @@ import {
 	toTitle,
 	withMargins,
 } from "./financialsTable";
-import { csvFileName, statementCsv } from "./financialsCsv";
 import { StatementChart } from "./StatementChart";
 
 /** The indent of a statement line, by its `level`. */
@@ -373,9 +373,14 @@ function UnitNote({ note }: { note: string | null }) {
 	);
 }
 
-/** Saves `text` as the CSV file `name` through the browser's download. */
+/**
+ * Saves `text` as the CSV file `name` through the browser's download. The
+ * file starts with a UTF-8 byte order mark, so Excel reads it as UTF-8.
+ */
 function saveFile(name: string, text: string) {
-	const url = URL.createObjectURL(new Blob([text], { type: "text/csv" }));
+	const url = URL.createObjectURL(
+		new Blob(["\uFEFF", text], { type: "text/csv;charset=utf-8" }),
+	);
 	const link = document.createElement("a");
 	link.href = url;
 	link.download = name;

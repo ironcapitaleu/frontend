@@ -31,11 +31,12 @@ function row(
 	unit: Unit,
 	values: (Claim["value"] | null)[],
 	margin = false,
+	level = 0,
 ): TableRow {
 	const points: Figure[] = values.map((value) =>
 		value === null ? null : claim(value, unit),
 	);
-	return { key: label, label, unit, level: 0, periods: years, points, margin };
+	return { key: label, label, unit, level, periods: years, points, margin };
 }
 
 function table(...lines: TableRow[]): RowTable {
@@ -155,6 +156,18 @@ describe("statementCsv", () => {
 		const result = statementCsv(table(shares), "billions", false).split(
 			"\r\n",
 		)[0];
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should indent a line name two spaces per level when the line is a part of the line above it", () => {
+		const part = row("Cost of revenue", "usd", [40e9, 44e9], false, 1);
+
+		const expectedResult = "  Cost of revenue,40.0,44.0";
+
+		const result = statementCsv(table(part), "billions", false).split(
+			"\r\n",
+		)[1];
 
 		expect(result).toBe(expectedResult);
 	});

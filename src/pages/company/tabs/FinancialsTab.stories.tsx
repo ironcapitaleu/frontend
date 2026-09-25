@@ -659,15 +659,22 @@ export const Failed: Story = {
  */
 async function downloadCsv(canvasElement: HTMLElement) {
 	const doc = canvasElement.ownerDocument;
-	let file: Promise<{ name: string; rows: string[][] }> | undefined;
+	let file:
+		| Promise<{ name: string; bom: boolean; rows: string[][] }>
+		| undefined;
 	const catchDownload = (event: MouseEvent) => {
 		const link = event.target;
 		if (!(link instanceof HTMLAnchorElement) || !link.download) return;
 		event.preventDefault();
 		file = fetch(link.href)
-			.then((response) => response.text())
-			.then((text) => ({
+			.then((response) => response.arrayBuffer())
+			.then((buffer) => ({
+				bytes: new Uint8Array(buffer),
+				text: new TextDecoder().decode(buffer),
+			}))
+			.then(({ bytes, text }) => ({
 				name: link.download,
+				bom: bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf,
 				rows: text
 					.trimEnd()
 					.split("\r\n")
@@ -734,6 +741,22 @@ export const DownloadCsv: Story = {
 		};
 
 		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: the file starts with a UTF-8 byte order mark, so Excel reads a
+ * name or figure outside ASCII as UTF-8, not as the system code page.
+ */
+export const DownloadCsvUtf8: Story = {
+	globals: desktop,
+	play: async ({ canvasElement }) => {
+		const expectedResult = true;
+
+		const file = await downloadCsv(canvasElement);
+		const result = file?.bom;
+
+		await expect(result).toBe(expectedResult);
 	},
 };
 

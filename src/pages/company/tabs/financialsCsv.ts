@@ -11,6 +11,9 @@ import {
 	tableUnit,
 } from "./financialsTable";
 
+/** The indent of a line name per level, as the page indents its row. */
+const INDENT = "  ";
+
 /**
  * The first characters that make a spreadsheet read a field as a formula,
  * even inside quotes (OWASP "CSV Injection").
@@ -40,7 +43,9 @@ export function csvFileName(
  * Returns the statement table `table` as CSV, with the rows and columns the
  * page shows: a `Line` column, one column per period and, with `growth`, a
  * last `CAGR` column. The `Line` header names the unit of the page caption,
- * such as `Line (USD billions)`, so a file keeps the unit it was saved in. A line name carries its unit note, as on the page. A
+ * such as `Line (USD billions)`, so a file keeps the unit it was saved in.
+ * A line name is indented two spaces per level, as the page indents it, so
+ * a part stays apart from the total above it. A line name carries its unit note, as on the page. A
  * figure reads as on the page, with a plain minus and no comma between
  * thousands, so a spreadsheet reads it as a number. A missing figure, and the
  * growth rate of a margin row, is an empty cell. A line name or a text figure
@@ -61,8 +66,9 @@ export function statementCsv(
 	];
 	const rows = table.lines.map((line) => {
 		const note = lineUnitNote(line.unit, scale);
+		const name = note === null ? line.label : `${line.label} (${note})`;
 		return [
-			asText(note === null ? line.label : `${line.label} (${note})`),
+			`${INDENT.repeat(line.level)}${asText(name)}`,
 			...line.points.map(cell),
 			...(growth ? [line.margin ? "" : cell(growthPerYear(line))] : []),
 		];
@@ -77,7 +83,7 @@ export function statementCsv(
 function csvValue(figure: NonNullable<Figure>, scale: Scale): string {
 	const text = formatStatementValue(figure, scale);
 	if (typeof figure.value === "string") return asText(text);
-	return text.replaceAll(",", "").replace("−", "-");
+	return text.replaceAll(",", "").replaceAll("−", "-");
 }
 
 /** Returns free text with a leading `'` when it starts like a formula. */
