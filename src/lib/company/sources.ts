@@ -1,3 +1,4 @@
+import { checks, figureRefsOf } from "./checks";
 import { listedFundPositions } from "./holdings";
 import {
 	financialPositionInputs,
@@ -5,6 +6,7 @@ import {
 	keyFigureOf,
 	lineKeysOf,
 	metricInputsOf,
+	nestedInputsOf,
 	ownershipShares,
 } from "./metrics";
 import type {
@@ -268,8 +270,6 @@ const valuationKeyFigures: ReadonlySet<MetricKey> = new Set<MetricKey>([
 	"priceToBook",
 ]);
 
-// A later part of STA-226 adds the checks, so "Checks by Area" reads no
-// figure yet.
 const blocks: Readonly<Record<BlockKey, Block>> = {
 	business: {
 		tab: "overview",
@@ -316,10 +316,18 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		company: (sections) =>
 			sections.financials && financialPositionInputs(sections),
 	},
+	// Every figure that card 1.5 compares, or the inputs of a figure with no
+	// value, so the filing behind a check with not enough data stays in the
+	// index.
 	checksByArea: {
 		tab: "overview",
 		label: "Checks by Area",
-		company: ({ overview, financials }) => overview && financials && [],
+		drawn: true,
+		company: (sections) =>
+			sections.financials &&
+			checks.flatMap((check) =>
+				figureRefsOf(check).flatMap((ref) => nestedInputsOf(ref, sections)),
+			),
 	},
 	ownership: {
 		tab: "overview",
