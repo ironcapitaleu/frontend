@@ -8,7 +8,10 @@ import { Ticker } from "../../../lib/domain/ticker";
 import { BAR_TARGETS_OK, barTargetsOf } from "../../../test/barTargets";
 import { alwaysFailingCompanyGateway } from "../../../test/fixtures/companies/always-failing";
 import { alwaysFoundCompanyGateway } from "../../../test/fixtures/companies/always-found";
-import { fakeCompanyReport } from "../../../test/fixtures/companies/fake-company-report";
+import {
+	fakeCompanyReport,
+	fakeMasthead,
+} from "../../../test/fixtures/companies/fake-company-report";
 import { ShareholderReturnsTab } from "./ShareholderReturnsTab";
 
 const failingGateway = alwaysFailingCompanyGateway();
@@ -41,6 +44,39 @@ async function plotOf(canvasElement: HTMLElement, title: string) {
 const PER_SHARE = "4.1 Dividend per Share";
 const PAYOUT = "4.2 Dividends Paid Against Free Cash Flow";
 const BUYBACKS = "4.3 Buybacks Net of Shares Issued to Staff";
+const SHARE_COUNT = "4.4 Share Count Over Ten Years";
+const YIELD = "4.5 Total Shareholder Yield";
+
+const repurchases = fakeCompanyReport.financials.cashFlow.annual.lines.find(
+	({ key }) => key === "shareRepurchases",
+)?.points;
+
+/**
+ * A gateway whose proceeds from stock plans in FY2022 are three times its
+ * share repurchases, so the net buyback yield of FY2022 is below zero.
+ */
+const negativeYieldGateway: CompanyGateway = {
+	...alwaysFoundCompanyGateway(),
+	getFinancials: async () =>
+		financialsWith("shareIssuanceProceeds", (point, index) =>
+			index === 6 && point
+				? { ...point, value: Number(repurchases?.[6]?.value) * 3 }
+				: point,
+		),
+};
+
+/** A gateway with no FY2020 price at fiscal year end, so FY2020 has no yield. */
+const missingPriceGateway: CompanyGateway = {
+	...alwaysFoundCompanyGateway(),
+	getMasthead: async (ticker) => {
+		const masthead = fakeMasthead(ticker);
+		const series = masthead.priceAtFiscalYearEnds;
+		const points = series.points.map((point, index) =>
+			index === 4 ? null : point,
+		);
+		return { ...masthead, priceAtFiscalYearEnds: { ...series, points } };
+	},
+};
 
 /**
  * A gateway with no FY2020 shares issued to staff, and as many shares issued
@@ -145,8 +181,10 @@ const gapAndZeroGateway: CompanyGateway = {
  * 4.2 sits beside it on a desktop and draws dividends paid as a share of free
  * cash flow. On a phone the two cards stack, 4.1 first. Card 4.3 takes both
  * columns below them and draws the shares bought back, the shares issued to
- * staff and the net buyback. The sources index at the foot lists the filings
- * behind the tab.
+ * staff and the net buyback. Cards 4.4 and 4.5 sit side by side below it on
+ * a desktop: the diluted shares, and the dividend yield and net buyback
+ * yield stacked, each at the market cap of the fiscal year end. The sources
+ * index at the foot lists the filings behind the tab.
  */
 const meta: Meta<typeof ShareholderReturnsTab> = {
 	title: "Pages/CompanyPage/ShareholderReturnsTab",
@@ -171,7 +209,7 @@ export const Loaded: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 
-		const expectedResult = [PER_SHARE, PAYOUT, BUYBACKS];
+		const expectedResult = [PER_SHARE, PAYOUT, BUYBACKS, SHARE_COUNT, YIELD];
 
 		const headings = await canvas.findAllByRole("heading", { level: 2 });
 		const result = headings
@@ -183,7 +221,39 @@ export const Loaded: Story = {
 };
 
 /**
- * Play test: at 320 px, every bar of cards 4.1 to 4.3 has a tap target at
+ * Play test: on a desktop, cards 4.4 and 4.5 sit side by side, and every bar
+ * of both has a tap target at least 24 px wide and tall inside the plot.
+ */
+export const LastRowOnDesktop: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const plots = [
+			await plotOf(canvasElement, SHARE_COUNT),
+			await plotOf(canvasElement, YIELD),
+		];
+		const tops = await Promise.all(
+			[SHARE_COUNT, YIELD].map(
+				async (title) =>
+					(await cardOf(canvasElement, title)).getBoundingClientRect().top,
+			),
+		);
+
+		const expectedResult = {
+			sideBySide: true,
+			targets: [BAR_TARGETS_OK, BAR_TARGETS_OK],
+		};
+
+		const result = {
+			sideBySide: tops[0] === tops[1],
+			targets: plots.map(barTargetsOf),
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: at 320 px, every bar of cards 4.1 to 4.5 has a tap target at
  * least 24 px wide and tall inside the plot, every bar draws, and each chart
  * scrolls inside its card, so the page does not scroll sideways.
  */
@@ -194,9 +264,11 @@ export const LoadedOnPhone: Story = {
 			await plotOf(canvasElement, PER_SHARE),
 			await plotOf(canvasElement, PAYOUT),
 			await plotOf(canvasElement, BUYBACKS),
+			await plotOf(canvasElement, SHARE_COUNT),
+			await plotOf(canvasElement, YIELD),
 		];
 
-		const expectedResult = [BAR_TARGETS_OK, BAR_TARGETS_OK, BAR_TARGETS_OK];
+		const expectedResult = Array(5).fill(BAR_TARGETS_OK);
 
 		const result = plots.map(barTargetsOf);
 
@@ -231,14 +303,16 @@ export const DataTable: Story = { play: dataTableOf(PER_SHARE) };
 /** Play test: the "Data" table of card 4.2 shows the shares its chart draws, year by year. */
 export const PayoutDataTable: Story = { play: dataTableOf(PAYOUT) };
 
+/** Play test: the "Data" table of card 4.4 shows the diluted shares its chart draws, year by year. */
+export const ShareCountDataTable: Story = { play: dataTableOf(SHARE_COUNT) };
+
 /**
- * Play test: the "Data" table of card 4.3 shows, year by year, the three
- * figures its chart draws, the dimmed dash included.
+ * Returns the play test that checks the "Data" table of the card titled
+ * `title`, a row for each year, against every bar of its chart.
  */
-export const BuybacksDataTable: Story = {
-	parameters: { companyGateway: buybackGapGateway },
-	play: async ({ canvasElement }) => {
-		const card = within(await cardOf(canvasElement, BUYBACKS));
+function rowsTableOf(title: string): Story["play"] {
+	return async ({ canvasElement }) => {
+		const card = within(await cardOf(canvasElement, title));
 		const plot = await card.findByRole("list", { name: "Fiscal years" });
 
 		const expectedResult = within(plot)
@@ -251,7 +325,7 @@ export const BuybacksDataTable: Story = {
 
 		await userEvent.click(card.getByRole("button", { name: "Data" }));
 		const table = await card.findByRole("table", {
-			name: "Buybacks Net of Shares Issued to Staff table",
+			name: `${title.replace(/^\d+\.\d+ /, "")} table`,
 		});
 		const result = within(table)
 			.getAllByRole("row")
@@ -260,6 +334,80 @@ export const BuybacksDataTable: Story = {
 				within(row)
 					.getAllByRole("cell")
 					.map((cell) => cell.textContent),
+			);
+
+		await expect(result).toEqual(expectedResult);
+	};
+}
+
+/**
+ * Play test: the "Data" table of card 4.3 shows, year by year, the three
+ * figures its chart draws, the dimmed dash included.
+ */
+export const BuybacksDataTable: Story = {
+	parameters: { companyGateway: buybackGapGateway },
+	play: rowsTableOf(BUYBACKS),
+};
+
+/**
+ * Play test: the "Data" table of card 4.5 shows, year by year, both yields
+ * its chart stacks, the negative net buyback yield of FY2022 included.
+ */
+export const YieldDataTable: Story = {
+	parameters: { companyGateway: negativeYieldGateway },
+	play: rowsTableOf(YIELD),
+};
+
+/**
+ * Play test: a negative net buyback yield in FY2022 draws below the zero
+ * line, under the dividend yield of the same year, and still opens its
+ * sources, at 320 px with every tap target inside the plot.
+ */
+export const NegativeYield: Story = {
+	parameters: { companyGateway: negativeYieldGateway },
+	globals: { viewport: { value: "mobile1", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const plot = await plotOf(canvasElement, YIELD);
+		const group = within(plot).getAllByRole("listitem")[6] as HTMLElement;
+		const [dividend, net] = within(group)
+			.getAllByRole("button")
+			.map((bar) => bar.parentElement?.getBoundingClientRect());
+
+		const expectedResult = {
+			netIsNegative: true,
+			netBelowDividend: true,
+			targets: BAR_TARGETS_OK,
+		};
+
+		const result = {
+			netIsNegative: /Net buyback yield: [−-]/.test(group.textContent ?? ""),
+			netBelowDividend:
+				(net?.height ?? 0) > 0 &&
+				Math.abs((net?.top ?? 0) - (dividend?.bottom ?? -1)) < 0.5,
+			targets: barTargetsOf(plot),
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: with no FY2020 price at fiscal year end, card 4.5 draws no bar
+ * for FY2020 but the dimmed dash, and every other year keeps both parts.
+ */
+export const YieldMissingYear: Story = {
+	parameters: { companyGateway: missingPriceGateway },
+	play: async ({ canvasElement }) => {
+		const plot = await plotOf(canvasElement, YIELD);
+
+		const expectedResult = [2, 2, 2, 2, "—", 2, 2, 2, 2, 2];
+
+		const result = within(plot)
+			.getAllByRole("listitem")
+			.map(
+				(group) =>
+					within(group).queryAllByRole("button").length ||
+					group.textContent?.replace(/^FY\d+/, ""),
 			);
 
 		await expect(result).toEqual(expectedResult);

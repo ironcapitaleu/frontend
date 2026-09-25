@@ -23,39 +23,54 @@ import {
 	netBuyback,
 	pointInYear,
 } from "../../../lib/company/metrics";
-import { figureGroupsOf, isDrawn } from "../../../lib/company/sources";
+import {
+	type BarKey,
+	figureGroupsOf,
+	isDrawn,
+	shareholderYields,
+} from "../../../lib/company/sources";
 import type {
 	BlockKey,
 	Claim,
 	CompletedSections,
 	Figure,
+	MastheadSection,
 	Period,
 	Series,
 	ShareholderReturnsSection,
+	StatementTable,
 } from "../../../lib/company/types";
 import type { Ticker } from "../../../lib/domain/ticker";
 import { FigureCell } from "./FigureCell";
-import type { BarTable } from "./financialsTable";
+import { type BarTable, chartTable } from "./financialsTable";
 import { BarChart } from "./StatementChart";
 
 /**
  * The Shareholder returns tab of the company page (DESIGN.md §8 "Shareholder
- * returns"). It loads the financials and the Shareholder returns section, and
- * shows cards 4.1 and 4.2 side by side, card 4.3 across both columns below
- * them, then the sources index.
+ * returns"). It loads the masthead, for the year-end prices of card 4.5, the
+ * financials and the Shareholder returns section. It shows cards 4.1 and 4.2
+ * side by side, card 4.3 across both columns below them, cards 4.4 and 4.5
+ * side by side below that, then the sources index.
  */
 export function ShareholderReturnsTab({ ticker }: { ticker: Ticker }) {
+	const masthead = useCompany(ticker, "masthead");
 	const financials = useCompany(ticker, "financials");
 	const returns = useCompany(ticker, "shareholderReturns");
 
-	if (financials.status === "loading" || returns.status === "loading") {
+	if (
+		[masthead, financials, returns].some((state) => state.status === "loading")
+	) {
 		return (
 			<div className="flex justify-center py-16">
 				<Spinner size="lg" label="Loading shareholder returns" />
 			</div>
 		);
 	}
-	if (financials.status !== "loaded" || returns.status !== "loaded") {
+	if (
+		masthead.status !== "loaded" ||
+		financials.status !== "loaded" ||
+		returns.status !== "loaded"
+	) {
 		return (
 			<Text font="sans" size="lg" className="text-left">
 				The shareholder returns figures did not load. Try again in a moment.
@@ -63,20 +78,25 @@ export function ShareholderReturnsTab({ ticker }: { ticker: Ticker }) {
 		);
 	}
 	return (
-		<LoadedReturns financials={financials.sections} returns={returns.data} />
+		<LoadedReturns
+			masthead={masthead.data}
+			financials={financials.sections}
+			returns={returns.data}
+		/>
 	);
 }
 
-/** Cards 4.1 to 4.3 of the loaded tab, then the sources index. */
+/** Cards 4.1 to 4.5 of the loaded tab, then the sources index. */
 function LoadedReturns(props: {
+	masthead: MastheadSection;
 	financials: CompletedSections;
 	returns: ShareholderReturnsSection;
 }) {
-	const { financials, returns } = props;
-	// The same `sections` on each render keeps the memo below.
+	const { masthead, financials, returns } = props;
+	// The same `sections` on each render keeps the memos below.
 	const sections = React.useMemo<CompletedSections>(
-		() => ({ ...financials, shareholderReturns: returns }),
-		[financials, returns],
+		() => ({ ...financials, masthead, shareholderReturns: returns }),
+		[masthead, financials, returns],
 	);
 	const groups = React.useMemo(
 		() =>
@@ -96,6 +116,15 @@ function LoadedReturns(props: {
 		() => dividendsToFreeCashFlow(sections),
 		[sections],
 	);
+	const income = financials.financials?.income.annual;
+	const shares = React.useMemo(
+		() => yearlyLines(income, ["dilutedShares"], sections),
+		[income, sections],
+	);
+	const yields = React.useMemo(
+		() => yearlyLines(cashFlow, shareholderYields, sections),
+		[cashFlow, sections],
+	);
 	return (
 		<div className="flex flex-col gap-10">
 			<CompanyCardGrid>
@@ -103,7 +132,7 @@ function LoadedReturns(props: {
 					position={1}
 					title="Dividend per Share"
 					caption="Last ten fiscal years · USD per share · Form 10-K"
-					series={returns.dividendPerShare}
+					lines={[returns.dividendPerShare]}
 					paid={returns.dividendPerShare.points}
 					claims={claimsOf("dividendPerShare")}
 				/>
@@ -112,7 +141,7 @@ function LoadedReturns(props: {
 						position={2}
 						title="Dividends Paid Against Free Cash Flow"
 						caption="Last ten fiscal years · Percent of free cash flow · Form 10-K"
-						series={payout}
+						lines={[payout]}
 						paid={paid}
 						claims={claimsOf("dividendsAgainstFreeCashFlow")}
 					/>
@@ -121,6 +150,21 @@ function LoadedReturns(props: {
 					returns={returns}
 					claims={claimsOf("buybacksNetOfStaffShares")}
 				/>
+				<ChartCard
+					position={4}
+					title="Share Count Over Ten Years"
+					caption="Last ten fiscal years · Diluted shares · Form 10-K"
+					lines={shares}
+					claims={claimsOf("shareCount")}
+				/>
+				<ChartCard
+					position={5}
+					title="Total Shareholder Yield"
+					caption="Last ten fiscal years · Percent of market cap at fiscal year end · Form 10-K"
+					lines={yields}
+					stacked
+					claims={claimsOf("totalShareholderYield")}
+				/>
 			</CompanyCardGrid>
 			<SourcesIndex groups={groups} />
 		</div>
@@ -128,28 +172,29 @@ function LoadedReturns(props: {
 }
 
 /**
- * A one-line chart card of the tab. It takes one column of the grid on a
- * desktop. The "Data" button swaps the chart for a table of the same
- * figures. `paid` is the dividend figures the card reads. One line takes the place
- * of the chart only when `paid` reports figures and every one of them is 0
- * or less. A series with no figure at all is missing data, not a zero
- * dividend, so the chart draws its dashes.
+ * A chart card of the tab that takes one column of the grid on a desktop.
+ * Each of `lines` is one bar of each fiscal year, or one part of it with
+ * `stacked`, and the lines share the periods and the unit of the first. The
+ * "Data" button swaps the chart for a table of the same figures. `paid` is
+ * the dividend figures a dividend card reads. One line takes the place of the
+ * chart only when `paid` reports figures and every one of them is 0 or less.
+ * A series with no figure at all is missing data, not a zero dividend, so
+ * the chart draws its dashes.
  */
 function ChartCard(props: {
 	position: number;
 	title: string;
 	caption: string;
-	series: Series;
-	paid: readonly Figure[];
+	lines: readonly Series[];
+	stacked?: boolean;
+	paid?: readonly Figure[];
 	claims: readonly Claim[];
 }) {
 	const [data, setData] = React.useState(false);
-	const { series, title } = props;
-	const table: BarTable = {
-		columns: columnsOf(series.periods),
-		lines: [series],
-	};
-	const reported = props.paid.flatMap((point) =>
+	const { lines, title } = props;
+	const [first] = lines;
+	const table: BarTable = { columns: columnsOf(first?.periods ?? []), lines };
+	const reported = (props.paid ?? []).flatMap((point) =>
 		typeof point?.value === "number" && Number.isFinite(point.value)
 			? [point.value]
 			: [],
@@ -171,14 +216,16 @@ function ChartCard(props: {
 				<DataTable
 					title={title}
 					table={table}
-					format={(value) => formatInput({ value, unit: series.unit })}
+					format={(value) =>
+						formatInput({ value, unit: first?.unit ?? "shares" })
+					}
 				/>
 			) : paidNothing ? (
 				<p className="text-base text-muted-foreground">
 					The company paid no dividend in these fiscal years.
 				</p>
 			) : (
-				<BarChart table={table} format={formatInput} />
+				<BarChart table={table} format={formatInput} stacked={props.stacked} />
 			)}
 		</CompanyCard>
 	);
@@ -238,6 +285,26 @@ function BuybacksCard(props: {
 			)}
 		</CompanyCard>
 	);
+}
+
+/**
+ * Returns the rows `keys` of `table` from `chartTable`, each read back at the
+ * fiscal years of `table` by the point's own period, so no figure pairs with
+ * another year by its position. Returns no row until `table` loads.
+ */
+function yearlyLines(
+	table: StatementTable | undefined,
+	keys: readonly BarKey[],
+	sections: CompletedSections,
+): Series[] {
+	if (table === undefined) return [];
+	return chartTable(table, keys, sections).lines.map((line) => ({
+		...line,
+		periods: table.periods,
+		points: table.periods.map(({ fiscalYear }) =>
+			pointInYear(line, fiscalYear),
+		),
+	}));
 }
 
 /** Returns the fiscal year columns of a chart, `FY2026` in full and `FY26` short. */

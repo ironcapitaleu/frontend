@@ -348,7 +348,11 @@ export const PayTinyParts: Story = {
 	},
 };
 
-/** Play test: a negative part draws nothing. The zero line stays at the foot of the plot, and every trigger stays inside it. */
+/**
+ * Play test: a negative part draws below the zero line, which rises off the
+ * foot of the plot, so the figure still opens its sources, and every trigger
+ * stays inside the plot.
+ */
 export const PayNegativePart: Story = {
 	parameters: { companyGateway: latestPayGateway({ stockAwards: -500_000 }) },
 	play: async ({ canvasElement }) => {
@@ -358,8 +362,8 @@ export const PayNegativePart: Story = {
 		const zeroLine = plot.nextElementSibling?.getBoundingClientRect();
 
 		const expectedResult = {
-			parts: [4, 3],
-			zeroLineAtFoot: true,
+			parts: [4, 4],
+			zeroLineAboveFoot: true,
 			targets: BAR_TARGETS_OK,
 		};
 
@@ -367,9 +371,8 @@ export const PayNegativePart: Story = {
 			parts: within(plot)
 				.getAllByRole("listitem")
 				.map((year) => within(year).queryAllByRole("button").length),
-			zeroLineAtFoot:
-				Math.abs((zeroLine?.top ?? 0) - plot.getBoundingClientRect().bottom) <
-				1,
+			zeroLineAboveFoot:
+				plot.getBoundingClientRect().bottom - (zeroLine?.top ?? 0) >= 1,
 			targets: barTargetsOf(plot),
 		};
 

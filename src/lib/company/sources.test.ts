@@ -1173,4 +1173,50 @@ describe("Shareholder returns blocks", () => {
 
 		expect(result).toEqual(expectedResult);
 	});
+
+	it("should read the diluted shares of each fiscal year when card 4.4 is read", () => {
+		const expectedResult = financials.income.annual.lines
+			.filter(({ key }) => key === "dilutedShares")
+			.flatMap(({ points }) => points.map((point) => point?.id));
+
+		const result = claimsOf("shareCount", "company", sections).map(
+			({ id }) => id,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should read the reported inputs of each yield, not the yields, when card 4.5 is read", () => {
+		const keys = [
+			"dilutedShares",
+			"dividendsPaid",
+			"shareRepurchases",
+			"shareIssuanceProceeds",
+		];
+		const expectedResult = [
+			...[financials.income, financials.cashFlow].flatMap(({ annual }) =>
+				annual.lines
+					.filter(({ key }) => keys.includes(key))
+					.flatMap(({ points }) => points.map((point) => point?.id)),
+			),
+			...masthead.priceAtFiscalYearEnds.points.map((point) => point?.id),
+		].sort();
+
+		const result = claimsOf("totalShareholderYield", "company", sections)
+			.map(({ id }) => id)
+			.sort();
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should read no claim for card 4.5 when the masthead has not loaded", () => {
+		// The tab waits for the masthead's year-end prices before it draws.
+		const changed = { ...sections, masthead: null };
+
+		const expectedResult: readonly Claim[] = [];
+
+		const result = claimsOf("totalShareholderYield", "company", changed);
+
+		expect(result).toEqual(expectedResult);
+	});
 });

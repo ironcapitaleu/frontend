@@ -770,6 +770,31 @@ export const metrics: Record<MetricKey, Metric> = {
 		{ from: "metric", key: "freeCashFlow", at: samePeriod },
 		marketCapAtYearEndRef,
 	),
+	// The yields of Shareholder returns card 4.5 divide a fiscal year's cash
+	// by the market cap at the end of that year, as the Valuation yields do,
+	// so no yield mixes one year's cash with today's price.
+	dividendYieldAtYearEnd: ratio(
+		"perPeriod",
+		"dividendYieldAtYearEnd",
+		"Dividend yield",
+		"Dividends paid ÷ market cap at fiscal year end",
+		"percent",
+		line("dividendsPaid", samePeriod),
+		marketCapAtYearEndRef,
+	),
+	buybackYieldAtYearEnd: metric(
+		"perPeriod",
+		"buybackYieldAtYearEnd",
+		"Net buyback yield",
+		"(Share repurchases − proceeds from stock plans) ÷ market cap at fiscal year end",
+		"percent",
+		[
+			line("shareRepurchases", samePeriod),
+			line("shareIssuanceProceeds", samePeriod),
+			marketCapAtYearEndRef,
+		],
+		marketCapAtYearEndRef,
+	),
 };
 
 /** Returns the value of a single-period input. */
@@ -829,6 +854,9 @@ export const formulas: Record<MetricKey, Formula> = {
 	earningsYield: divide,
 	earningsYieldAtYearEnd: divide,
 	freeCashFlowYieldAtYearEnd: divide,
+	dividendYieldAtYearEnd: divide,
+	buybackYieldAtYearEnd: ([bought, issued, cap]) =>
+		(amount(bought) - amount(issued)) / amount(cap),
 };
 
 /**

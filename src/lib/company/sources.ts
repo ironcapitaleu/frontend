@@ -19,6 +19,7 @@ import type {
 	Filing,
 	FinancialsSection,
 	LineKey,
+	MastheadSection,
 	MetricKey,
 	Nullable,
 	ReportedSource,
@@ -45,6 +46,12 @@ export const chartLines: Record<keyof FinancialsSection, readonly BarKey[]> = {
 	balance: ["totalAssets", "totalLiabilities", "shareholdersEquity"],
 	cashFlow: ["operatingCashFlow", "capitalExpenditure", "shareRepurchases"],
 };
+
+/** The yields of Shareholder returns card 4.5 "Total Shareholder Yield", stacked in this order. */
+export const shareholderYields = [
+	"dividendYieldAtYearEnd",
+	"buybackYieldAtYearEnd",
+] as const satisfies readonly BarKey[];
 
 /** The series of Overview card 1.2 "Ten Years at a Glance", in its order. */
 export const tenYearsBars: readonly BarKey[] = [
@@ -237,6 +244,8 @@ const blockKeys = [
 	"dividendPerShare",
 	"dividendsAgainstFreeCashFlow",
 	"buybacksNetOfStaffShares",
+	"shareCount",
+	"totalShareholderYield",
 	"largestFunds",
 	"insiders",
 	"ownershipSplit",
@@ -488,6 +497,31 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 					]
 				: null,
 	},
+	shareCount: {
+		tab: "shareholderReturns",
+		label: "Share Count Over Ten Years",
+		drawn: true,
+		company: (sections) =>
+			returnsLoaded(sections)
+				? annualPointsOf(sections.financials, ["dilutedShares"])
+				: null,
+	},
+	// Card 4.5 draws yields derived from these inputs: the cash of each year
+	// and the year-end price and diluted shares of its market cap. The block
+	// reads the inputs, so their filings stay in the index when a yield is
+	// `null`.
+	totalShareholderYield: {
+		tab: "shareholderReturns",
+		label: "Total Shareholder Yield",
+		drawn: true,
+		company: (sections) =>
+			returnsLoaded(sections)
+				? [
+						...annualPointsOf(sections.financials, shareholderYields),
+						...sections.masthead.priceAtFiscalYearEnds.points,
+					]
+				: null,
+	},
 	// The block reads the reported inputs of `fundShare` and `fundChange` for
 	// the rows that card 5.1 lists, so the index names no other fund's 13F.
 	largestFunds: {
@@ -627,16 +661,22 @@ function valuationLoaded({
 }
 
 /**
- * Tells whether both sections of the Shareholder returns tab have loaded. The
- * tab draws no card otherwise, so its blocks name no filing until then.
+ * Tells whether the three sections of the Shareholder returns tab have
+ * loaded. The tab draws no card otherwise, so its blocks name no filing until
+ * then.
  */
 function returnsLoaded(
 	sections: CompletedSections,
 ): sections is CompletedSections & {
+	masthead: MastheadSection;
 	financials: FinancialsSection;
 	shareholderReturns: ShareholderReturnsSection;
 } {
-	return sections.financials !== null && sections.shareholderReturns !== null;
+	return (
+		sections.masthead !== null &&
+		sections.financials !== null &&
+		sections.shareholderReturns !== null
+	);
 }
 
 /** Returns the points of the lines `keys` of `table`, or of every line when `keys` is absent. */
