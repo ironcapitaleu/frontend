@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { completeSections, type PositionRow } from "@/lib/company/metrics";
+import { tenYearsBars } from "@/lib/company/sources";
 import type { Claim, OverviewSection } from "@/lib/company/types";
 import { fakeCompanyReport } from "@/test/fixtures/companies/fake-company-report";
 import type { CompanySectionKey, CompanyState } from "@/hooks/useCompany";
@@ -95,6 +96,16 @@ describe("tenYearsSeries", () => {
 		const result = tenYearsSeries(
 			completeSections({ ...fakeCompanyReport, financials: null }),
 		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should draw the series the Sources block reads when Financials has loaded", () => {
+		// The block lists the filings of these series. If the card draws a series
+		// the block does not read, its filings drop out of the Sources index.
+		const expectedResult = tenYearsBars;
+
+		const result = tenYearsSeries(sections).map(({ key }) => key);
 
 		expect(result).toEqual(expectedResult);
 	});
