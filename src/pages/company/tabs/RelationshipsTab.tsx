@@ -23,7 +23,6 @@ import { listedFundPositions } from "../../../lib/company/holdings";
 import {
 	fundChange,
 	fundShare,
-	ownershipShares,
 	stakePercent,
 } from "../../../lib/company/metrics";
 import { servesTicker } from "../../../lib/company/sampleCompanies";
@@ -35,6 +34,7 @@ import type {
 import type { Ticker } from "../../../lib/domain/ticker";
 import { ClaimCell, FigureCell } from "./FigureCell";
 import { InsiderTable } from "./InsiderTable";
+import { ownershipParts } from "./OverviewTab.logic";
 import { formatShares } from "./relationships";
 
 /**
@@ -190,7 +190,6 @@ function OwnershipSplitCard({
 }: {
 	relationships: RelationshipsSection;
 }) {
-	const shares = ownershipShares(relationships, "relationships");
 	return (
 		<CompanyCard
 			tab="relationships"
@@ -200,11 +199,7 @@ function OwnershipSplitCard({
 		>
 			<ShareBar
 				aria-label="Ownership split"
-				parts={[
-					{ label: "Institutions", share: shares.institutions },
-					{ label: "Insiders", share: shares.insiders },
-					{ label: "Public", share: shares.public },
-				]}
+				parts={ownershipParts(relationships, "relationships")}
 			/>
 		</CompanyCard>
 	);

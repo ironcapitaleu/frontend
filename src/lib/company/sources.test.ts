@@ -655,6 +655,38 @@ describe("figureGroupsOf", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should read the three reported counts when the public share of the Who Owns It group has no value", () => {
+		// Institutions hold more than the shares outstanding, so the public share
+		// is `null`, and each input keeps its filing in the index.
+		const { ownership } = overview;
+		const institutions = claim(ownership.institutionShares);
+		const overflowing = completeSections({
+			...fakeCompanyReport,
+			overview: {
+				...overview,
+				ownership: {
+					...ownership,
+					institutionShares: {
+						...institutions,
+						value: 2 * Number(claim(ownership.sharesOutstanding).value),
+					},
+				},
+			},
+		});
+
+		const expectedResult = [
+			ownership.sharesOutstanding,
+			ownership.institutionShares,
+			ownership.insiderShares,
+		].map((figure) => claim(figure).id);
+
+		const result = claimsOf("ownership", "company", overflowing).map(
+			({ id }) => id,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should read the three drawn shares when the Ownership Split group is built", () => {
 		const expectedResult = [
 			"metric.ownershipShares.relationships.institutions",
@@ -935,12 +967,7 @@ describe("isDrawn", () => {
 		// A new block is undrawn until it says `drawn: true`. So a card that lands
 		// without the marker fails here, before its filings drop out of the
 		// sources index and the Filings card.
-		const expectedResult = [
-			"checksByArea",
-			"ownership",
-			"printedShareholderReturns",
-			"profile",
-		];
+		const expectedResult = ["checksByArea", "printedShareholderReturns"];
 
 		const result = [
 			...new Set(

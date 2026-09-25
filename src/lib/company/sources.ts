@@ -323,9 +323,12 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		label: "Checks by Area",
 		company: ({ overview, financials }) => overview && financials && [],
 	},
+	// The reported inputs of the three shares, not the shares, so the filings
+	// stay in the index when the public share has no value.
 	ownership: {
 		tab: "overview",
 		label: "Who Owns It",
+		drawn: true,
 		company: ({ overview }) =>
 			overview && [
 				overview.ownership.sharesOutstanding,
@@ -336,6 +339,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	profile: {
 		tab: "overview",
 		label: "Profile",
+		drawn: true,
 		company: ({ overview }) => overview && Object.values(overview.profile),
 	},
 	// The printed page only. It shows the latest dividend per share and the

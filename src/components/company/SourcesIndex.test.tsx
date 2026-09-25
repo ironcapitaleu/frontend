@@ -172,8 +172,8 @@ describe("SourcesIndex", () => {
 				{
 					ref: {
 						tab: "overview",
-						block: "ownership",
-						label: "Who Owns It",
+						block: "checksByArea",
+						label: "Checks by Area",
 						figures: "company",
 					},
 					claims: [annual],

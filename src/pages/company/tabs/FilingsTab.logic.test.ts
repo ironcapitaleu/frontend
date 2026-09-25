@@ -65,15 +65,17 @@ describe("fedFiguresOf", () => {
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should name neither Who Owns It nor Profile when the rows are built from every section, since no card draws them yet", () => {
-		const expectedResult: string[] = [];
+	it("should name Who Owns It and Profile when the rows are built from every section", () => {
+		const expectedResult = ["Profile", "Who Owns It"];
 
 		const result = [
-			...fedFiguresOf(filingsGroupsOf(completeSections(meridian))).values(),
-		]
-			.flat()
-			.map(({ ref }) => ref.label)
-			.filter((label) => label === "Who Owns It" || label === "Profile");
+			...new Set(
+				[...fedFiguresOf(filingsGroupsOf(completeSections(meridian))).values()]
+					.flat()
+					.map(({ ref }) => ref.label)
+					.filter((label) => label === "Who Owns It" || label === "Profile"),
+			),
+		].sort();
 
 		expect(result).toEqual(expectedResult);
 	});
