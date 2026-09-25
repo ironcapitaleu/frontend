@@ -750,11 +750,17 @@ export const DownloadCsvQuarterly: Story = {
 		);
 		await userEvent.click(canvas.getByRole("button", { name: "Quarterly" }));
 
+		// The file header names the unit that the table caption reads.
+		const unit = canvas
+			.getByText(/ · 10-Q and 10-K$/)
+			.textContent?.split(" · ")[1];
+		const [line, ...periods] = canvas
+			.getAllByRole("columnheader")
+			.map(({ textContent }) => textContent);
+
 		const expectedResult = {
 			name: "MRDN-balance-quarterly.csv",
-			header: canvas
-				.getAllByRole("columnheader")
-				.map(({ textContent }) => textContent),
+			header: [`${line} (${unit})`, ...periods],
 		};
 
 		const file = await downloadCsv(canvasElement);

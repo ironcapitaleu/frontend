@@ -8,7 +8,14 @@ import {
 	type RowTable,
 	type Scale,
 	type StatementKey,
+	tableUnit,
 } from "./financialsTable";
+
+/**
+ * The first characters that make a spreadsheet read a field as a formula,
+ * even inside quotes (OWASP "CSV Injection").
+ */
+const FORMULA_START = /^[=+\-@\t\r]/;
 
 /** The name of each statement in a CSV file name. */
 const FILE_STATEMENTS: Record<StatementKey, string> = {
@@ -32,10 +39,13 @@ export function csvFileName(
 /**
  * Returns the statement table `table` as CSV, with the rows and columns the
  * page shows: a `Line` column, one column per period and, with `growth`, a
- * last `CAGR` column. A line name carries its unit note, as on the page. A
+ * last `CAGR` column. The `Line` header names the unit of the page caption,
+ * such as `Line (USD billions)`, so a file keeps the unit it was saved in. A line name carries its unit note, as on the page. A
  * figure reads as on the page, with a plain minus and no comma between
  * thousands, so a spreadsheet reads it as a number. A missing figure, and the
- * growth rate of a margin row, is an empty cell.
+ * growth rate of a margin row, is an empty cell. A line name or a text figure
+ * that starts like a formula gets a leading `'`, so a spreadsheet shows it as
+ * text and never runs it.
  */
 export function statementCsv(
 	table: RowTable,
@@ -45,14 +55,14 @@ export function statementCsv(
 	const cell = (figure: Figure) =>
 		figure === null ? "" : csvValue(figure, scale);
 	const header = [
-		"Line",
+		`Line (${tableUnit(table, scale)})`,
 		...table.periods.map(periodLabel),
 		...(growth ? ["CAGR"] : []),
 	];
 	const rows = table.lines.map((line) => {
 		const note = lineUnitNote(line.unit, scale);
 		return [
-			note === null ? line.label : `${line.label} (${note})`,
+			asText(note === null ? line.label : `${line.label} (${note})`),
 			...line.points.map(cell),
 			...(growth ? [line.margin ? "" : cell(growthPerYear(line))] : []),
 		];
@@ -66,8 +76,13 @@ export function statementCsv(
 /** Writes a figure as {@link formatStatementValue} does, in a form a spreadsheet reads. */
 function csvValue(figure: NonNullable<Figure>, scale: Scale): string {
 	const text = formatStatementValue(figure, scale);
-	if (typeof figure.value === "string") return text;
+	if (typeof figure.value === "string") return asText(text);
 	return text.replaceAll(",", "").replace("−", "-");
+}
+
+/** Returns free text with a leading `'` when it starts like a formula. */
+function asText(text: string): string {
+	return FORMULA_START.test(text) ? `'${text}` : text;
 }
 
 /** Quotes a field that holds a comma, a quote or a line break (RFC 4180). */

@@ -47,7 +47,7 @@ describe("statementCsv", () => {
 		const revenue = row("Revenue", "usd", [100e9, 121e9]);
 
 		const expectedResult =
-			"Line,FY2025,FY2026,CAGR\r\nRevenue,100.0,121.0,21.0%\r\n";
+			"Line (USD billions),FY2025,FY2026,CAGR\r\nRevenue,100.0,121.0,21.0%\r\n";
 
 		const result = statementCsv(table(revenue), "billions", true);
 
@@ -57,7 +57,8 @@ describe("statementCsv", () => {
 	it("should write no CAGR column when the view is quarterly", () => {
 		const revenue = row("Revenue", "usd", [100e9, 121e9]);
 
-		const expectedResult = "Line,FY2025,FY2026\r\nRevenue,100.0,121.0\r\n";
+		const expectedResult =
+			"Line (USD billions),FY2025,FY2026\r\nRevenue,100.0,121.0\r\n";
 
 		const result = statementCsv(table(revenue), "billions", false);
 
@@ -68,7 +69,7 @@ describe("statementCsv", () => {
 		const margin = row("Net margin", "percent", [0.2, 0.25], true);
 
 		const expectedResult =
-			"Line,FY2025,FY2026,CAGR\r\nNet margin,20.0%,25.0%,\r\n";
+			"Line (USD billions),FY2025,FY2026,CAGR\r\nNet margin,20.0%,25.0%,\r\n";
 
 		const result = statementCsv(table(margin), "billions", true);
 
@@ -78,7 +79,8 @@ describe("statementCsv", () => {
 	it("should write an empty cell when a figure is missing", () => {
 		const revenue = row("Revenue", "usd", [null, 121e9]);
 
-		const expectedResult = "Line,FY2025,FY2026\r\nRevenue,,121.0\r\n";
+		const expectedResult =
+			"Line (USD billions),FY2025,FY2026\r\nRevenue,,121.0\r\n";
 
 		const result = statementCsv(table(revenue), "billions", false);
 
@@ -127,6 +129,42 @@ describe("statementCsv", () => {
 		const expectedResult = '"Plant, ""gross""","a,b",';
 
 		const result = statementCsv(table(text), "billions", false).split(
+			"\r\n",
+		)[1];
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should name the unit in the line header when the unit is millions", () => {
+		const revenue = row("Revenue", "usd", [100e6, 121e6]);
+
+		const expectedResult = "Line (USD millions),FY2025,FY2026";
+
+		const result = statementCsv(table(revenue), "millions", false).split(
+			"\r\n",
+		)[0];
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should say unless noted in the line header when a line carries its own unit", () => {
+		const shares = row("Diluted shares", "shares", [25e9, 24e9]);
+
+		const expectedResult = "Line (USD billions unless noted),FY2025,FY2026";
+
+		const result = statementCsv(table(shares), "billions", false).split(
+			"\r\n",
+		)[0];
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should prefix a quote to a line name and a text figure when they start like a formula", () => {
+		const formula = row("=HYPERLINK(1)", "usd", ["+SUM(A1)", null]);
+
+		const expectedResult = "'=HYPERLINK(1),'+SUM(A1),";
+
+		const result = statementCsv(table(formula), "billions", false).split(
 			"\r\n",
 		)[1];
 
