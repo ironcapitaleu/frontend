@@ -25,6 +25,32 @@ const noDividendGateway: CompanyGateway = {
 	},
 };
 
+/** A gateway whose filings report no dividend figure in any year. */
+const noFiguresGateway: CompanyGateway = {
+	...alwaysFoundCompanyGateway(),
+	getShareholderReturns: async () => {
+		const returns = fakeCompanyReport.shareholderReturns;
+		const series = returns.dividendPerShare;
+		const points = series.points.map(() => null);
+		return { ...returns, dividendPerShare: { ...series, points } };
+	},
+};
+
+/** A gateway whose only non-zero dividend figure is not a finite number. */
+const infiniteGateway: CompanyGateway = {
+	...alwaysFoundCompanyGateway(),
+	getShareholderReturns: async () => {
+		const returns = fakeCompanyReport.shareholderReturns;
+		const series = returns.dividendPerShare;
+		const points = series.points.map((point, index) =>
+			point
+				? { ...point, value: index === 9 ? Number.POSITIVE_INFINITY : 0 }
+				: point,
+		);
+		return { ...returns, dividendPerShare: { ...series, points } };
+	},
+};
+
 /** A gateway with no FY2020 dividend and a dividend of 0 in FY2021. */
 const gapAndZeroGateway: CompanyGateway = {
 	...alwaysFoundCompanyGateway(),
@@ -170,6 +196,44 @@ export const NoDividend: Story = {
 export const NoDividendOnPhone: Story = {
 	...NoDividend,
 	globals: { viewport: { value: "mobile1", isRotated: false } },
+};
+
+/**
+ * Play test: when the filings report no dividend figure at all, the card draws
+ * the chart with its dashes and never says the company paid no dividend,
+ * since missing data is not a zero dividend.
+ */
+export const NoFiguresReported: Story = {
+	parameters: { companyGateway: noFiguresGateway },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await canvas.findByRole("list", { name: "Fiscal years" });
+
+		const expectedResult = null;
+
+		const result = canvas.queryByText(/paid no dividend/);
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/**
+ * Play test: a dividend figure that is not a finite number is not a
+ * dividend, so a series of zeros with one such figure still reads as no
+ * dividend paid.
+ */
+export const InfiniteFigure: Story = {
+	parameters: { companyGateway: infiniteGateway },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+
+		const expectedResult =
+			"The company paid no dividend in these fiscal years.";
+
+		const result = await canvas.findByText(/paid no dividend/);
+
+		await expect(result).toHaveTextContent(expectedResult);
+	},
 };
 
 /** The sections are still loading. */

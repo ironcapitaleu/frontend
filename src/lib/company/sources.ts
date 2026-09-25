@@ -440,6 +440,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	dividendPerShare: {
 		tab: "shareholderReturns",
 		label: "Dividend per Share",
+		drawn: true,
 		company: ({ shareholderReturns }) =>
 			shareholderReturns ? shareholderReturns.dividendPerShare.points : null,
 	},

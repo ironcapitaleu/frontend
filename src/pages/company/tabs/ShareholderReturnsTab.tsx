@@ -14,21 +14,17 @@ import {
 } from "@/components/ui/table";
 import { Text } from "@/components/ui/text";
 import { useCompany } from "../../../hooks/useCompany";
-import { figureGroupsOf } from "../../../lib/company/sources";
+import { figureGroupsOf, isDrawn } from "../../../lib/company/sources";
 import type {
 	BlockKey,
 	Claim,
 	CompletedSections,
 	Series,
-	Unit,
 } from "../../../lib/company/types";
 import type { Ticker } from "../../../lib/domain/ticker";
 import { FigureCell } from "./FigureCell";
 import type { BarTable } from "./financialsTable";
 import { BarChart } from "./StatementChart";
-
-/** The blocks this tab draws. The Sources index names only these. */
-const DRAWN_BLOCKS: ReadonlySet<BlockKey> = new Set(["dividendPerShare"]);
 
 /**
  * The Shareholder returns tab of the company page (DESIGN.md §8 "Shareholder
@@ -60,7 +56,7 @@ function LoadedReturns({ sections }: { sections: CompletedSections }) {
 	const groups = React.useMemo(
 		() =>
 			figureGroupsOf("shareholderReturns", sections).filter(({ ref }) =>
-				DRAWN_BLOCKS.has(ref.block),
+				isDrawn(ref),
 			),
 		[sections],
 	);
@@ -75,7 +71,6 @@ function LoadedReturns({ sections }: { sections: CompletedSections }) {
 						position={1}
 						title="Dividend per Share"
 						caption="Last ten fiscal years · USD per share · Form 10-K"
-						unit="usdPerShare"
 						series={perShare}
 						claims={claimsOf("dividendPerShare")}
 					/>
@@ -89,19 +84,19 @@ function LoadedReturns({ sections }: { sections: CompletedSections }) {
 /**
  * A one-line chart card of the tab. It takes one column of the grid on a
  * desktop. The "Data" button swaps the chart for a table of the same
- * figures. A series with no figure above 0 means the company paid no
- * dividend, so one line takes the place of the chart.
+ * figures. One line takes the place of the chart only when the filings
+ * report figures and every one of them is 0 or less. A series with no figure
+ * at all is missing data, not a zero dividend, so the chart draws its dashes.
  */
 function ChartCard(props: {
 	position: number;
 	title: string;
 	caption: string;
-	unit: Unit;
 	series: Series;
 	claims: readonly Claim[];
 }) {
 	const [data, setData] = React.useState(false);
-	const { series, title, unit } = props;
+	const { series, title } = props;
 	const table: BarTable = {
 		columns: series.periods.map((period) => ({
 			key: period.endsOn,
@@ -110,9 +105,13 @@ function ChartCard(props: {
 		})),
 		lines: [series],
 	};
-	const paysDividend = series.points.some(
-		(point) => typeof point?.value === "number" && point.value > 0,
+	const reported = series.points.flatMap((point) =>
+		typeof point?.value === "number" && Number.isFinite(point.value)
+			? [point.value]
+			: [],
 	);
+	const paidNothing =
+		reported.length > 0 && reported.every((value) => value <= 0);
 	return (
 		<CompanyCard
 			tab="shareholderReturns"
@@ -140,18 +139,18 @@ function ChartCard(props: {
 								</TableHead>
 								<FigureCell
 									figure={series.points[index] ?? null}
-									format={(value) => formatInput({ value, unit })}
+									format={(value) => formatInput({ value, unit: series.unit })}
 								/>
 							</TableRow>
 						))}
 					</TableBody>
 				</Table>
-			) : paysDividend ? (
-				<BarChart table={table} format={formatInput} />
-			) : (
+			) : paidNothing ? (
 				<p className="text-base text-muted-foreground">
 					The company paid no dividend in these fiscal years.
 				</p>
+			) : (
+				<BarChart table={table} format={formatInput} />
 			)}
 		</CompanyCard>
 	);
