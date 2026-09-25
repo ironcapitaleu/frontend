@@ -22,6 +22,7 @@ import {
 	stackScale,
 	tableCaption,
 	toTitle,
+	withMargins,
 	ZERO_MARK,
 } from "./financialsTable";
 
@@ -170,6 +171,61 @@ describe("newestFirst", () => {
 		};
 
 		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("withMargins", () => {
+	it("should put each margin row under the line it divides when the table has revenue", () => {
+		const expectedResult = [
+			"Revenue",
+			"Operating income",
+			"Operating margin",
+			"Net income",
+			"Net margin",
+			"Diluted EPS",
+			"Diluted shares",
+		];
+
+		const result = withMargins(income).lines.map(({ label }) => label);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should mark a margin row and put it one level deeper than its line when the table has revenue", () => {
+		const lines = withMargins(income).lines;
+		const line = lines.find(({ key }) => key === "operatingIncome");
+
+		const expectedResult = { level: (line?.level ?? 0) + 1, margin: true };
+
+		const margin = lines.find(({ key }) => key === "operatingIncomeMargin");
+		const result = { level: margin?.level, margin: margin?.margin };
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should read a margin as a percent when the view is newest first", () => {
+		const table = newestFirst(withMargins(income));
+		const margin = table.lines.find(({ key }) => key === "netIncomeMargin");
+
+		const expectedResult = true;
+
+		const result = (margin?.points ?? [null]).every(
+			(point) =>
+				point !== null &&
+				/^−?\d+\.\d%$/.test(formatStatementValue(point, "billions")),
+		);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should add no margin row when the table has no revenue line", () => {
+		const table = sections.financials?.balance.annual ?? income;
+
+		const expectedResult = table.lines.length;
+
+		const result = withMargins(table).lines.length;
+
+		expect(result).toBe(expectedResult);
 	});
 });
 

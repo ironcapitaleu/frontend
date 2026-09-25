@@ -552,10 +552,14 @@ Financials has these cards, from top to bottom:
    instead. Below 1024 px, a chart that does not fit its card scrolls
    sideways, and the year labels scroll with their groups.
 2. **Statement table.** The 10-year table of the selected statement, one
-   column per fiscal year, and a last column for growth per year over ten
-   years (CAGR) in the annual view. A growth rate needs figures in two years,
-   both above zero, or its cell shows the dimmed dash. Margins sit as muted
-   rows under the line they divide.
+   column per fiscal year, and a last column for growth per year (CAGR) in
+   the annual view. The growth rate spans the earliest and the latest year
+   with a figure, so two years with figures are enough. Both figures must be
+   above zero, or the cell shows the dimmed dash. Operating margin and net
+   margin sit as muted rows under the line they divide, and read as a
+   percent. A margin shows the dimmed dash when its line or revenue is
+   missing, or revenue is not above zero. A margin row has no growth rate.
+   The data has no gross profit line, so the table has no gross margin.
 
 On a phone, the two switches become two select menus. The table shows the
 newest years first. The "Download CSV" button moves below the table, at full

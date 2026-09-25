@@ -273,6 +273,34 @@ describe("claimsOf", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should keep the operating income of a year in the income table block when that year has no operating margin", () => {
+		const { income } = fakeCompanyReport.financials;
+		const lines = income.annual.lines.map((line) =>
+			line.key === "revenue"
+				? { ...line, points: line.points.map(() => null) }
+				: line,
+		);
+		const noRevenue = completeSections({
+			...fakeCompanyReport,
+			financials: {
+				...fakeCompanyReport.financials,
+				income: { ...income, annual: { ...income.annual, lines } },
+			},
+		});
+
+		const expectedResult = claimsIn(
+			[statements.income.annual],
+			["operatingIncome"],
+		);
+
+		const ids = new Set(expectedResult.map(({ id }) => id));
+		const result = claimsOf("incomeTable", "company", noRevenue).filter(
+			({ id }) => ids.has(id),
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should return no claim when the section of the block has not loaded", () => {
 		const unloaded = completeSections({ ...fakeCompanyReport, overview: null });
 

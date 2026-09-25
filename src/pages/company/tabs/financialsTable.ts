@@ -1,5 +1,11 @@
 import { toFixedWithMinus } from "@/components/screener/format";
-import { evaluateMetric, isMetricKey, metrics } from "@/lib/company/metrics";
+import {
+	evaluateMetric,
+	isMetricKey,
+	MARGINS,
+	marginOf,
+	metrics,
+} from "@/lib/company/metrics";
 import type { BarKey } from "@/lib/company/sources";
 import type {
 	Claim,
@@ -36,6 +42,8 @@ export const STATEMENTS: readonly { key: StatementKey; label: string }[] = [
  */
 export interface TableRow extends Series {
 	readonly level: number;
+	/** `true` for a margin row, which reads as a percent and has no growth rate. */
+	readonly margin?: boolean;
 }
 
 /** The rows of a statement table or a chart over a run of periods. */
@@ -93,6 +101,24 @@ export function lineUnitNote(unit: Unit, scale: Scale): string | null {
 	if (unit === "shares") return `${scale} of shares`;
 	if (unit === "usdPerShare") return "USD per share";
 	return null;
+}
+
+/**
+ * Returns `table` with a muted margin row under each line of {@link MARGINS},
+ * one level deeper than that line. A table without a revenue line gets no
+ * margin row (DESIGN.md §8 "Financials").
+ */
+export function withMargins(table: StatementTable): RowTable {
+	const revenue = table.lines.find(({ key }) => key === "revenue");
+	return {
+		periods: table.periods,
+		lines: table.lines.flatMap((line): TableRow[] => {
+			const margin = MARGINS.find(({ key }) => key === line.key);
+			if (revenue === undefined || margin === undefined) return [line];
+			const row = marginOf(line, revenue, margin.name);
+			return [line, { ...row, level: line.level + 1, margin: true }];
+		}),
+	};
 }
 
 /**
