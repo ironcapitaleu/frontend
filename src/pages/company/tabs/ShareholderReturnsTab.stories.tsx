@@ -268,12 +268,12 @@ export const NoDividendOnPhone: Story = {
 export const NoFiguresReported: Story = {
 	parameters: { companyGateway: noFiguresGateway },
 	play: async ({ canvasElement }) => {
-		const canvas = within(canvasElement);
-		await canvas.findByRole("list", { name: "Fiscal years" });
+		const card = await cardOf(canvasElement, PER_SHARE);
+		await within(card).findByRole("list", { name: "Fiscal years" });
 
 		const expectedResult = null;
 
-		const result = canvas.queryByText(/paid no dividend/);
+		const result = within(card).queryByText(/paid no dividend/);
 
 		await expect(result).toBe(expectedResult);
 	},
@@ -287,12 +287,12 @@ export const NoFiguresReported: Story = {
 export const InfiniteFigure: Story = {
 	parameters: { companyGateway: infiniteGateway },
 	play: async ({ canvasElement }) => {
-		const canvas = within(canvasElement);
+		const card = await cardOf(canvasElement, PER_SHARE);
 
 		const expectedResult =
 			"The company paid no dividend in these fiscal years.";
 
-		const result = await canvas.findByText(/paid no dividend/);
+		const result = await within(card).findByText(/paid no dividend/);
 
 		await expect(result).toHaveTextContent(expectedResult);
 	},
