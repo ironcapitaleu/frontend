@@ -1,12 +1,17 @@
+import { formatInUnit } from "@/components/company/format";
+import { type BarBox, barBoxes } from "@/components/company/MiniBarChart";
 import type { SharePart } from "@/components/company/ShareBar";
+import { MISSING } from "@/components/screener/format";
 import type { CompanySectionKey, CompanyState } from "@/hooks/useCompany";
 import {
 	evaluateMetric,
 	otherRevenueShare,
+	type PositionRow,
 	revenueShare,
 } from "@/lib/company/metrics";
 import type {
 	CompletedSections,
+	Figure,
 	LineKey,
 	MetricKey,
 	OverviewSection,
@@ -128,4 +133,55 @@ export function loadedSections<K extends CompanySectionKey>(
 	state: CompanyState<K>,
 ): Nullable<CompletedSections> {
 	return state.status === "loaded" ? state.sections : null;
+}
+
+/** The two sides of each pair of bars in card 1.4, with the chart token of each. */
+export const SIDES = [
+	{ key: "assets", label: "Assets", fill: "bg-chart-2" },
+	{ key: "liabilities", label: "Liabilities", fill: "bg-chart-3" },
+] as const;
+
+/** How one bar of card 1.4 draws. */
+export interface PositionBar extends BarBox {
+	readonly side: (typeof SIDES)[number];
+	readonly figure: Figure;
+	/** `null` when the figure is missing or its value is not a finite number. */
+	readonly value: number | null;
+	/** The name a screen reader speaks, such as `Short term assets: $4.2B`. */
+	readonly text: string;
+}
+
+/**
+ * Returns how the bars of card 1.4 draw: one list for each row of `rows`,
+ * all on one scale that holds zero, and where the zero line sits. A negative
+ * figure draws below the zero line, and a small one keeps a least height.
+ */
+export function positionBars(rows: readonly PositionRow[]): {
+	plots: PositionBar[][];
+	zero: number;
+} {
+	const bars = rows.map((row) =>
+		SIDES.map((side) => {
+			const figure = row[side.key];
+			const value = figure?.value;
+			const known =
+				figure !== null && typeof value === "number" && Number.isFinite(value)
+					? value
+					: null;
+			const shown =
+				figure === null || known === null
+					? MISSING
+					: formatInUnit(known, figure.unit);
+			const text = `${row.term} ${side.label.toLowerCase()}: ${shown}`;
+			return { side, figure, value: known, text };
+		}),
+	);
+	const { boxes, zero } = barBoxes(bars.flat().map(({ value }) => value));
+	const plots = bars.map((plot, row) =>
+		plot.map((bar, index) => ({
+			...bar,
+			...(boxes[row * SIDES.length + index] as BarBox),
+		})),
+	);
+	return { plots, zero };
 }

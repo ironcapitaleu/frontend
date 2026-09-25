@@ -32,7 +32,7 @@ function formatBillions(value: number): string {
 /**
  * The small yearly bar chart of the company page, with the revenue of the
  * sample company Meridian Semiconductor. The stories cover ten full years, a
- * negative year, a missing year, a value that is not finite, a single year,
+ * negative year, a reported zero, a missing year, a value that is not finite, a single year,
  * every year missing, no years at all, and the phone width.
  */
 const meta: Meta<typeof MiniBarChart> = {
@@ -87,6 +87,50 @@ export const Missing: Story = {
 		const result = canvas.getAllByRole("listitem")[4]?.textContent;
 
 		await expect(result).toBe(expectedResult);
+	},
+};
+
+/** Play test: a reported zero draws a 2 px mark on the zero line, so it never reads as a missing year. */
+export const ReportedZero: Story = {
+	args: { series: withValues({ 4: 0 }) },
+	play: async ({ canvasElement }) => {
+		const bar = within(canvasElement)
+			.getAllByRole("listitem")[4]
+			?.querySelector('[data-slot="mini-bar-chart-bar"]');
+
+		const expectedResult = 2;
+
+		const result = Math.round(bar?.getBoundingClientRect().height ?? 0);
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/**
+ * Play test: when every other year is a loss, the zero line is the top edge of
+ * the plot, and a reported zero's mark still draws inside the plot.
+ */
+export const ReportedZeroAmongLosses: Story = {
+	args: {
+		series: withValues({
+			...Object.fromEntries(revenue.points.map((_, index) => [index, -5e9])),
+			4: 0,
+		}),
+	},
+	play: async ({ canvasElement }) => {
+		const item = within(canvasElement).getAllByRole("listitem")[4];
+		const bar = item?.querySelector('[data-slot="mini-bar-chart-bar"]');
+
+		const expectedResult = { insidePlot: true, height: 2 };
+
+		const result = {
+			insidePlot:
+				(bar?.getBoundingClientRect().top ?? -1) >=
+				(item?.getBoundingClientRect().top ?? 0) - 0.5,
+			height: Math.round(bar?.getBoundingClientRect().height ?? 0),
+		};
+
+		await expect(result).toEqual(expectedResult);
 	},
 };
 
