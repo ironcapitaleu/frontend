@@ -99,7 +99,7 @@ describe("BarChart", () => {
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should show the dimmed dash in a stacked column that has no part to draw", () => {
+	it("should show the dimmed dash in a stacked column when the column has no part to draw", () => {
 		const empty: BarTable = {
 			columns: [{ key: "FY26", label: "FY2026", short: "FY26" }],
 			lines: [
@@ -115,6 +115,40 @@ describe("BarChart", () => {
 		const result = within(plot)
 			.getByRole("listitem")
 			.textContent?.replace("FY2026", "");
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should show no dash in a stacked column when one part is missing but another is drawn", () => {
+		render(<BarChart table={stackedTable} format={String} stacked />);
+		const plot = screen.getByRole("list", { name: "Fiscal years" });
+
+		const expectedResult = false;
+
+		const result = within(plot)
+			.getAllByRole("listitem")[1]
+			?.textContent?.includes(MISSING);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should paint a thin part above a negative part on top of it when the negative part is a later line", () => {
+		const table: BarTable = {
+			columns: [{ key: "FY26", label: "FY2026", short: "FY26" }],
+			lines: [
+				{ key: "a", label: "A", points: points(0.1) },
+				{ key: "b", label: "B", points: points(-8) },
+			],
+		};
+		render(<BarChart table={table} format={String} stacked />);
+		const plot = screen.getByRole("list", { name: "Fiscal years" });
+		const [above, below] = within(plot)
+			.getAllByRole("button")
+			.map((bar) => Number(bar.parentElement?.parentElement?.style.zIndex));
+
+		const expectedResult = true;
+
+		const result = Number(above) > Number(below);
 
 		expect(result).toBe(expectedResult);
 	});
