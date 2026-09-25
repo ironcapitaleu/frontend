@@ -123,7 +123,9 @@ export function BarChart({
 									key={group.key}
 									className={cn(
 										"flex flex-1 justify-center gap-px",
-										boxes && "relative",
+										// The parts of a column paint against each other only,
+										// so their ranks leave the zero line on top of them.
+										boxes && "relative isolate",
 									)}
 									style={{ minWidth: groupWidth }}
 								>

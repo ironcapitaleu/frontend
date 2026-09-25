@@ -350,8 +350,8 @@ export const PayTinyParts: Story = {
 
 /**
  * Play test: a negative part draws below the zero line, which rises off the
- * foot of the plot, so the figure still opens its sources, and every trigger
- * stays inside the plot.
+ * foot of the plot and paints over the parts, so the figure still opens its
+ * sources, and every trigger stays inside the plot.
  */
 export const PayNegativePart: Story = {
 	parameters: { companyGateway: latestPayGateway({ stockAwards: -500_000 }) },
@@ -359,11 +359,23 @@ export const PayNegativePart: Story = {
 		const [plot] = await within(canvasElement).findAllByRole("list", {
 			name: "Fiscal years",
 		});
-		const zeroLine = plot.nextElementSibling?.getBoundingClientRect();
+		const line = plot.nextElementSibling as HTMLElement | null;
+		const zeroLine = line?.getBoundingClientRect();
+		// The line takes no pointer, so it lets one through while the test
+		// asks what paints on top down the middle of the latest year.
+		const latest = within(plot).getAllByRole("listitem").at(-1);
+		const middle = latest?.getBoundingClientRect();
+		line?.style.setProperty("pointer-events", "auto");
+		const onTop = document.elementFromPoint(
+			(middle?.left ?? 0) + (middle?.width ?? 0) / 2,
+			(zeroLine?.top ?? 0) + 0.5,
+		);
+		line?.style.removeProperty("pointer-events");
 
 		const expectedResult = {
 			parts: [4, 4],
 			zeroLineAboveFoot: true,
+			zeroLineOnTop: true,
 			targets: BAR_TARGETS_OK,
 		};
 
@@ -374,6 +386,7 @@ export const PayNegativePart: Story = {
 			zeroLineAboveFoot:
 				zeroLine !== undefined &&
 				plot.getBoundingClientRect().bottom - zeroLine.top >= 1,
+			zeroLineOnTop: line !== null && onTop === line,
 			targets: barTargetsOf(plot),
 		};
 
