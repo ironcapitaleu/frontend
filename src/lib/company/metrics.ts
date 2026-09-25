@@ -1706,6 +1706,50 @@ export function payMix(management: ManagementSection): PayMix {
 	return { salary, bonus, stockAwards, other };
 }
 
+/**
+ * Returns the shares that insiders bought minus the shares they sold, from
+ * Form 4, in each whole fiscal year of either series, once each, oldest first.
+ * A year is `null` when a side is missing or not a finite number, so a year
+ * with no Form 4 is missing, not zero. Below zero is net selling.
+ */
+export function netInsiderShares(management: ManagementSection): Series {
+	const { insiderSharesBought: bought, insiderSharesSold: sold } = management;
+	const byYear = new Map(
+		[...bought.periods, ...sold.periods]
+			.filter((period) => Number.isInteger(period.fiscalYear))
+			.map((period) => [period.fiscalYear, period]),
+	);
+	const periods = [...byYear.values()].sort(
+		(a, b) => a.fiscalYear - b.fiscalYear,
+	);
+	const at = ({ periods: all, points }: Series, year: number) =>
+		points[all.findIndex((p) => p.fiscalYear === year)] ?? null;
+	const points = periods.map((period): Figure => {
+		const shares = at(bought, period.fiscalYear);
+		const sales = at(sold, period.fiscalYear);
+		if (!isNumberClaim(shares) || !isNumberClaim(sales)) return null;
+		return {
+			id: `metric.netInsiderShares.FY${period.fiscalYear}`,
+			label: `Net shares bought by insiders in FY${period.fiscalYear}`,
+			value: shares.value - sales.value,
+			unit: "shares",
+			period,
+			source: {
+				kind: "derived",
+				formula: "Shares bought by insiders − Shares sold by insiders",
+				inputs: [shares, sales],
+			},
+		};
+	});
+	return {
+		key: "netInsiderShares",
+		label: "Net shares bought by insiders",
+		unit: "shares",
+		periods,
+		points,
+	};
+}
+
 /** An ISO date, `YYYY-MM-DD`, the only shape `yearsBetween` reads. */
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 

@@ -872,6 +872,26 @@ describe("figureGroupsOf", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should keep the Form 4 of a year in the sources when its other side is missing and no net exists", () => {
+		const { management } = fakeCompanyReport;
+		const sold = management.insiderSharesSold;
+		const partial = completeSections({
+			...fakeCompanyReport,
+			management: {
+				...management,
+				insiderSharesSold: { ...sold, points: [sold.points[0] ?? null, null] },
+			},
+		});
+
+		const expectedResult = "0006666662-25-000304";
+
+		const result = documentIds(
+			claimsOf("insiderBuyingAndSelling", "company", partial),
+		);
+
+		expect(result).toContain(expectedResult);
+	});
+
 	it("should drop the blocks that read the financials when Overview loads without them", () => {
 		const partial = completeSections({
 			...fakeCompanyReport,

@@ -32,7 +32,7 @@ describe("BarChart", () => {
 
 		const expectedResult = [
 			`top: ${a.top}%; height: ${a.height}%;`,
-			`top: calc(${place(0).top}% - 2px); height: 2px;`,
+			`top: max(0px, ${place(0).top}% - 2px); height: 2px;`,
 			`top: ${b.top}%; height: ${b.height}%;`,
 		];
 

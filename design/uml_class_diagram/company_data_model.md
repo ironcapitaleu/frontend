@@ -675,7 +675,7 @@ tab ticket adds its own keys, such as `peRange` and `ceoPay`.
 | Valuation  | `valuationRatios`, `yieldsAgainstTreasury` (each yield, or the inputs of a missing one), `ratioFormulas` |
 | Shareholder returns | `dividendPerShare`, `dividendsAgainstFreeCashFlow` (the inputs of each share), so far |
 | Relationships | `largestFunds`, `insiders`, `ownershipSplit`, `subsidiaries`, `stakes` |
-| Management | `executivesAndBoard`, `ceoPay`, `payMix`, `insiderHoldings`, so far |
+| Management | `executivesAndBoard`, `ceoPay`, `payMix`, `insiderHoldings`, `insiderBuyingAndSelling` (both sides of each year, so a Form 4 stays in the index when no net exists) |
 
 A chart reads the annual table of its statement. A table reads the annual
 table and the completed quarterly table, because the annual and quarterly
