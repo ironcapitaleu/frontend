@@ -9,6 +9,7 @@ import {
 	type SentencePart,
 	sentenceClaims,
 	sentenceOf,
+	sourceLine,
 } from "./ChecksByArea.logic";
 
 const sections = completeSections(fakeCompanyReport);
@@ -152,5 +153,37 @@ describe("sentenceClaims", () => {
 		);
 
 		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("sourceLine", () => {
+	it("should name the one document in the singular when a check reads one", () => {
+		const expectedResult = "Source: 10-K for FY2025";
+
+		const result = sourceLine(["10-K for FY2025"]);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should name both documents when a check reads two", () => {
+		const expectedResult = "Sources: 10-Q for Q2 FY2026 · 10-K for FY2025";
+
+		const result = sourceLine(["10-Q for Q2 FY2026", "10-K for FY2025"]);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should name the first two documents and count the rest when a check reads ten years", () => {
+		const labels = Array.from(
+			{ length: 10 },
+			(_, back) => `10-K for FY${2025 - back}`,
+		);
+
+		const expectedResult =
+			"Sources: 10-K for FY2025 · 10-K for FY2024 and 8 more";
+
+		const result = sourceLine(labels);
+
+		expect(result).toBe(expectedResult);
 	});
 });

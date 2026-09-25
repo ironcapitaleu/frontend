@@ -5,6 +5,7 @@ import { MISSING, MISSING_INK } from "../../../components/screener/format";
 import { CompanyGatewayProvider } from "../../../contexts/CompanyGatewayContext";
 import type { CompanyGateway } from "../../../lib/company/gateway";
 import { meridianOverview } from "../../../lib/company/sample/overview";
+import { MERIDIAN } from "../../../lib/company/sample/sources";
 import { sampleCompanyGateway } from "../../../lib/company/sampleCompanyGateway";
 import { Ticker } from "../../../lib/domain/ticker";
 import { alwaysFailingCompanyGateway } from "../../../test/fixtures/companies/always-failing";
@@ -643,7 +644,7 @@ export const TenYearsSources: Story = {
 
 		const expectedResult = [
 			2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017,
-		].map((year) => `10-K for FY${year}`);
+		].map((year) => `10-K for FY${year}, ${MERIDIAN}`);
 
 		const result = within(popup)
 			.getAllByRole("listitem")
@@ -757,19 +758,108 @@ export const ChecksNotEnoughData: Story = {
 	},
 };
 
-/** Play test: while Valuation loads, V2 has not enough data and says a section has not loaded. */
+/** Play test: while Valuation loads, V2 has not enough data and says a section has no data. */
 export const ChecksValuationLoading: Story = {
 	parameters: { companyGateway: valuationPendingGateway },
 	play: async ({ canvasElement }) => {
 		const card = await checksCard(canvasElement);
 
 		const expectedResult =
-			"The free cash flow yield (2.3%) needs to be above the 10-year Treasury yield (—), but a section has not loaded yet.";
+			"The free cash flow yield (2.3%) needs to be above the 10-year Treasury yield (—), but a section of the page has no data.";
 
 		const result = within(card)
 			.getByText(/^The free cash flow yield/)
 			.closest("p");
 
 		await expect(result).toHaveTextContent(expectedResult);
+	},
+};
+
+/**
+ * Play test: a failed masthead never loads, so the P/E sentence says a
+ * section has no data, and never asks the reader to wait for it.
+ */
+export const ChecksMastheadFailed: Story = {
+	parameters: { companyGateway: mastheadFailingGateway },
+	play: async ({ canvasElement }) => {
+		const card = await checksCard(canvasElement);
+
+		const expectedResult =
+			"The P/E (—) needs to be below its own 10-year median (—), but a section of the page has no data.";
+
+		const result = within(card)
+			.getByText(/^The P\/E/)
+			.closest("p");
+
+		await expect(result).toHaveTextContent(expectedResult);
+	},
+};
+
+/** Play test: card 1.5 says so when the Financials section fails to load. */
+export const ChecksFailed: Story = {
+	parameters: { companyGateway: financialsFailingGateway },
+	play: async ({ canvasElement }) => {
+		const card = await within(canvasElement).findByRole("region", {
+			name: "1.5 Checks by Area",
+		});
+
+		const expectedResult = "The checks did not load. Try again in a moment.";
+
+		const result = await within(card).findByText(/checks did not load/);
+
+		await expect(result).toHaveTextContent(expectedResult);
+	},
+};
+
+/**
+ * Play test: C1 reads ten annual filings, and its source line names two and
+ * counts the rest, so it stays one quiet line.
+ */
+export const ChecksSourceLine: Story = {
+	play: async ({ canvasElement }) => {
+		const card = await checksCard(canvasElement);
+		const item = within(card)
+			.getByText("Free cash flow positive in at least 8 of 10 years")
+			.closest("li") as HTMLElement;
+
+		const expectedResult = true;
+
+		const line = item.querySelector("[data-slot=source-line]")?.textContent;
+		const result =
+			/^Sources: 10-K for FY\d{4}, .+ · 10-K for FY\d{4}, .+ and \d+ more$/.test(
+				line ?? "",
+			);
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/** Returns the lightness and alpha of an `oklch(L C H / A)` color. */
+function oklchOf(color: string): { lightness: number; alpha: number } {
+	const [lightness = Number.NaN, , , alpha = 1] =
+		color.match(/[\d.]+/g)?.map(Number) ?? [];
+	return { lightness, alpha };
+}
+
+/**
+ * Play test: in the light theme the track of each ring stays visible on the
+ * white card. Blended over the card, its lightness differs from the card's by
+ * at least 0.1.
+ */
+export const ChecksLight: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false }, theme: "light" },
+	play: async ({ canvasElement }) => {
+		const card = await checksCard(canvasElement);
+		const track = card.querySelector("[data-slot=ring] circle") as SVGElement;
+		const ink = oklchOf(getComputedStyle(track).stroke);
+		const paper = oklchOf(getComputedStyle(card).backgroundColor);
+
+		const expectedResult = true;
+
+		const blended =
+			ink.alpha * ink.lightness + (1 - ink.alpha) * paper.lightness;
+		const result = Math.abs(paper.lightness - blended) >= 0.1;
+
+		await expect(result).toBe(expectedResult);
 	},
 };

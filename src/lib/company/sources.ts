@@ -156,6 +156,17 @@ export function sectorMedianOf(
 }
 
 /**
+ * Names a document as the page writes it: a filing by its form, period and
+ * filer, such as "10-K for FY2025, Meridian Semiconductor Inc.", or a market
+ * dataset by its name.
+ */
+export function documentLabel(document: SourceDocument): string {
+	return document.kind === "filing"
+		? `${document.form} for ${document.periodLabel}, ${document.filer}`
+		: document.name;
+}
+
+/**
  * Returns the reported sources of `claims`, one group for each filing or
  * market dataset. The filings come first, newest first, and the market data
  * comes last. A claim that two trees share appears once.

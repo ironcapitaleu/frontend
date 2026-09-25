@@ -17,17 +17,18 @@ import {
 	type CheckState,
 	evaluateChecks,
 } from "@/lib/company/checks";
-import { sourcesOf } from "@/lib/company/sources";
+import { documentLabel, sourcesOf } from "@/lib/company/sources";
 import type { CompletedSections } from "@/lib/company/types";
 import { cn } from "@/lib/utils";
 import {
 	type SentencePart,
 	sentenceClaims,
 	sentenceOf,
+	sourceLine,
 } from "./ChecksByArea.logic";
 import { FigureText } from "./FigureCell";
 
-/** The name and icon of each area, in the order of `checkAreas`. */
+/** The name and icon of each area. `evaluateChecks` sets their order. */
 const AREAS: Record<CheckArea, { label: string; icon: LucideIcon }> = {
 	balanceSheet: { label: "Balance sheet", icon: Landmark },
 	profitability: { label: "Profitability", icon: TrendingUp },
@@ -36,13 +37,17 @@ const AREAS: Record<CheckArea, { label: string; icon: LucideIcon }> = {
 	consistency: { label: "Consistency", icon: Repeat },
 };
 
-/** The name, icon and ink of each of the three results. */
+/**
+ * The name, icon and ink of each of the three results. The shape of the icon
+ * tells the result apart, not a color: DESIGN.md §2 keeps the positive and
+ * negative inks for gains and losses in data, and a verdict is state.
+ */
 const RESULTS: Record<
 	CheckState,
 	{ label: string; icon: LucideIcon; ink: string }
 > = {
-	met: { label: "Met", icon: CircleCheck, ink: "text-positive" },
-	notMet: { label: "Not met", icon: CircleX, ink: "text-negative" },
+	met: { label: "Met", icon: CircleCheck, ink: "text-foreground" },
+	notMet: { label: "Not met", icon: CircleX, ink: "text-foreground" },
 	notEnoughData: {
 		label: "Not enough data",
 		icon: CircleDashed,
@@ -58,7 +63,18 @@ const RESULTS: Record<
  * added together.
  */
 export function ChecksByArea({ sections }: { sections: CompletedSections }) {
-	const summaries = React.useMemo(() => evaluateChecks(sections), [sections]);
+	// The sentences resolve their figures, so they are built once per
+	// `sections`, and a re-render of the tab keeps them.
+	const summaries = React.useMemo(
+		() =>
+			evaluateChecks(sections).map((summary) => ({
+				...summary,
+				sentences: summary.results.map((result) =>
+					sentenceOf(result, sections),
+				),
+			})),
+		[sections],
+	);
 	return (
 		<div className="flex flex-col gap-6">
 			<ul aria-label="Results" className="flex flex-wrap gap-x-4 text-sm">
@@ -70,7 +86,7 @@ export function ChecksByArea({ sections }: { sections: CompletedSections }) {
 				))}
 			</ul>
 			<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-				{summaries.map(({ area, results, metCount }) => {
+				{summaries.map(({ area, results, metCount, sentences }) => {
 					const { label, icon: Icon } = AREAS[area];
 					return (
 						<section key={area} aria-label={label}>
@@ -80,11 +96,11 @@ export function ChecksByArea({ sections }: { sections: CompletedSections }) {
 								<Ring met={metCount} total={results.length} />
 							</h3>
 							<ul className="flex flex-col gap-3">
-								{results.map((result) => (
+								{results.map((result, position) => (
 									<CheckItem
 										key={result.check.id}
 										result={result}
-										sentence={sentenceOf(result, sections)}
+										sentence={sentences[position] ?? []}
 									/>
 								))}
 							</ul>
@@ -108,9 +124,12 @@ function CheckItem({
 	sentence: readonly SentencePart[];
 }) {
 	const { icon: Icon, label, ink } = RESULTS[result.state];
-	const sources = sourcesOf(sentenceClaims(sentence)).groups.map(
-		({ document: doc }) =>
-			doc.kind === "filing" ? `${doc.form} for ${doc.periodLabel}` : doc.name,
+	const sources = React.useMemo(
+		() =>
+			sourcesOf(sentenceClaims(sentence)).groups.map(({ document }) =>
+				documentLabel(document),
+			),
+		[sentence],
 	);
 	return (
 		<li className="flex gap-2">
@@ -133,8 +152,8 @@ function CheckItem({
 					)}
 				</p>
 				{sources.length > 0 && (
-					<p className="text-muted-foreground text-sm">
-						Source: {sources.join(" · ")}
+					<p data-slot="source-line" className="text-muted-foreground text-sm">
+						{sourceLine(sources)}
 					</p>
 				)}
 			</div>
@@ -142,14 +161,24 @@ function CheckItem({
 	);
 }
 
-/** A small ring that fills by the share of met checks, with the count beside it. */
+/**
+ * A small ring that fills by the share of met checks, with the count beside
+ * it. The count is out of every check in the area, so a check with not
+ * enough data counts as not met here, and its own line says why. The track
+ * uses a faint foreground so it stays visible on the card in both themes.
+ */
 function Ring({ met, total }: { met: number; total: number }) {
 	const share = total === 0 ? 0 : met / total;
 	return (
 		<span className="ml-auto flex items-center gap-1.5 font-normal text-muted-foreground text-sm">
-			<svg viewBox="0 0 20 20" className="size-5 -rotate-90" aria-hidden>
+			<svg
+				data-slot="ring"
+				viewBox="0 0 20 20"
+				className="size-5 -rotate-90"
+				aria-hidden
+			>
 				{[
-					["stroke-muted", "1 0"],
+					["stroke-muted-foreground/30", "1 0"],
 					["stroke-chart-2", `${share} 1`],
 				].map(([ink, dash]) => (
 					<circle

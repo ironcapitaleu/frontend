@@ -185,3 +185,19 @@ export function sentenceClaims(sentence: readonly SentencePart[]): Claim[] {
 		typeof part !== "string" && part.figure !== null ? [part.figure] : [],
 	);
 }
+
+/** How many documents the source line of a check names before it counts the rest. */
+const NAMED_SOURCES = 2;
+
+/**
+ * Writes the quiet source line under a check from the `labels` of its
+ * documents, newest first. It names the first two and counts the rest, such
+ * as "Sources: 10-K for FY2025 · 10-K for FY2024 and 8 more", so a check that
+ * reads ten years stays one line. Each figure in the sentence opens its own
+ * sources in full.
+ */
+export function sourceLine(labels: readonly string[]): string {
+	const named = labels.slice(0, NAMED_SOURCES).join(" · ");
+	const rest = labels.length - NAMED_SOURCES;
+	return `${labels.length === 1 ? "Source" : "Sources"}: ${named}${rest > 0 ? ` and ${rest} more` : ""}`;
+}
