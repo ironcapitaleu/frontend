@@ -10,7 +10,7 @@ import {
 } from "@/components/screener/format";
 import { RangeBar } from "@/components/ui/range-bar";
 import { useCompany } from "@/hooks/useCompany";
-import { formatDate } from "@/lib/company/dates";
+import { formatDate, localIsoDate } from "@/lib/company/dates";
 import {
 	financialPositionOf,
 	keyFigureKeys,
@@ -30,7 +30,6 @@ import type {
 	CompletedSections,
 	Figure,
 	Filing,
-	IsoDate,
 	MastheadSection,
 } from "@/lib/company/types";
 import type { Ticker } from "@/lib/domain/ticker";
@@ -412,7 +411,7 @@ function SourcesFooter({
 	generatedOn: Date;
 }) {
 	const filings = React.useMemo(() => printedFilings(sections), [sections]);
-	const date = formatDate(generatedOn.toISOString().slice(0, 10) as IsoDate);
+	const date = formatDate(localIsoDate(generatedOn));
 	return (
 		<section
 			aria-label="Sources"
