@@ -14,12 +14,14 @@ import {
 } from "@/components/ui/table";
 import { Text } from "@/components/ui/text";
 import { useCompany } from "../../../hooks/useCompany";
+import { dividendsToFreeCashFlow } from "../../../lib/company/metrics";
 import { figureGroupsOf } from "../../../lib/company/sources";
 import type {
 	BlockKey,
 	Claim,
 	CompletedSections,
 	Series,
+	ShareholderReturnsSection,
 	Unit,
 } from "../../../lib/company/types";
 import type { Ticker } from "../../../lib/domain/ticker";
@@ -28,35 +30,50 @@ import type { BarTable } from "./financialsTable";
 import { BarChart } from "./StatementChart";
 
 /** The blocks this tab draws. The Sources index names only these. */
-const DRAWN_BLOCKS: ReadonlySet<BlockKey> = new Set(["dividendPerShare"]);
+const DRAWN_BLOCKS: ReadonlySet<BlockKey> = new Set([
+	"dividendPerShare",
+	"dividendsAgainstFreeCashFlow",
+]);
 
 /**
  * The Shareholder returns tab of the company page (DESIGN.md §8 "Shareholder
- * returns"). It loads the Shareholder returns section and shows card 4.1,
- * then the sources index.
+ * returns"). It loads the financials and the Shareholder returns section, and
+ * shows cards 4.1 and 4.2, then the sources index.
  */
 export function ShareholderReturnsTab({ ticker }: { ticker: Ticker }) {
+	const financials = useCompany(ticker, "financials");
 	const returns = useCompany(ticker, "shareholderReturns");
 
-	if (returns.status === "loading") {
+	if (financials.status === "loading" || returns.status === "loading") {
 		return (
 			<div className="flex justify-center py-16">
 				<Spinner size="lg" label="Loading shareholder returns" />
 			</div>
 		);
 	}
-	if (returns.status !== "loaded") {
+	if (financials.status !== "loaded" || returns.status !== "loaded") {
 		return (
 			<Text font="sans" size="lg" className="text-left">
 				The shareholder returns figures did not load. Try again in a moment.
 			</Text>
 		);
 	}
-	return <LoadedReturns sections={returns.sections} />;
+	return (
+		<LoadedReturns financials={financials.sections} returns={returns.data} />
+	);
 }
 
-/** Card 4.1 of the loaded tab, then the sources index. */
-function LoadedReturns({ sections }: { sections: CompletedSections }) {
+/** Cards 4.1 and 4.2 of the loaded tab, then the sources index. */
+function LoadedReturns(props: {
+	financials: CompletedSections;
+	returns: ShareholderReturnsSection;
+}) {
+	const { financials, returns } = props;
+	// The same `sections` on each render keeps the memo below.
+	const sections = React.useMemo<CompletedSections>(
+		() => ({ ...financials, shareholderReturns: returns }),
+		[financials, returns],
+	);
 	const groups = React.useMemo(
 		() =>
 			figureGroupsOf("shareholderReturns", sections).filter(({ ref }) =>
@@ -66,18 +83,29 @@ function LoadedReturns({ sections }: { sections: CompletedSections }) {
 	);
 	const claimsOf = (block: BlockKey) =>
 		groups.find(({ ref }) => ref.block === block)?.claims ?? [];
-	const perShare = sections.shareholderReturns?.dividendPerShare;
+	const cashFlow = financials.financials?.cashFlow.annual;
+	const paid = cashFlow?.lines.find(({ key }) => key === "dividendsPaid");
 	return (
 		<div className="flex flex-col gap-10">
 			<CompanyCardGrid>
-				{perShare && (
+				<ChartCard
+					position={1}
+					title="Dividend per Share"
+					caption="Last ten fiscal years · USD per share · Form 10-K"
+					unit="usdPerShare"
+					series={returns.dividendPerShare}
+					paid={returns.dividendPerShare}
+					claims={claimsOf("dividendPerShare")}
+				/>
+				{cashFlow && paid && (
 					<ChartCard
-						position={1}
-						title="Dividend per Share"
-						caption="Last ten fiscal years · USD per share · Form 10-K"
-						unit="usdPerShare"
-						series={perShare}
-						claims={claimsOf("dividendPerShare")}
+						position={2}
+						title="Dividends Paid Against Free Cash Flow"
+						caption="Last ten fiscal years · Percent of free cash flow · Form 10-K"
+						unit="percent"
+						series={dividendsToFreeCashFlow(cashFlow)}
+						paid={paid}
+						claims={claimsOf("dividendsAgainstFreeCashFlow")}
 					/>
 				)}
 			</CompanyCardGrid>
@@ -89,8 +117,8 @@ function LoadedReturns({ sections }: { sections: CompletedSections }) {
 /**
  * A one-line chart card of the tab. It takes one column of the grid on a
  * desktop. The "Data" button swaps the chart for a table of the same
- * figures. A series with no figure above 0 means the company paid no
- * dividend, so one line takes the place of the chart.
+ * figures. When `paid`, the dividends the card reads, has no figure above 0,
+ * the company paid no dividend, so one line takes the place of the chart.
  */
 function ChartCard(props: {
 	position: number;
@@ -98,6 +126,7 @@ function ChartCard(props: {
 	caption: string;
 	unit: Unit;
 	series: Series;
+	paid: Series;
 	claims: readonly Claim[];
 }) {
 	const [data, setData] = React.useState(false);
@@ -110,7 +139,7 @@ function ChartCard(props: {
 		})),
 		lines: [series],
 	};
-	const paysDividend = series.points.some(
+	const paysDividend = props.paid.points.some(
 		(point) => typeof point?.value === "number" && point.value > 0,
 	);
 	return (

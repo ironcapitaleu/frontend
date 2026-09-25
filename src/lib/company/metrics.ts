@@ -1773,6 +1773,52 @@ export function marginOf(line: Series, revenue: Series, name: string): Series {
 	};
 }
 
+/** The cash flow lines that {@link dividendsToFreeCashFlow} reads, in the order of its formula. */
+export const DIVIDEND_COVER_LINES = [
+	"dividendsPaid",
+	"operatingCashFlow",
+	"capitalExpenditure",
+] as const satisfies readonly LineKey[];
+
+/**
+ * Returns the dividends paid as a share of free cash flow, for each fiscal
+ * year of `cashFlow`, the annual cash flow table. Free cash flow is operating
+ * cash flow minus capital expenditure. A point is `null` when an input is
+ * missing or not a finite number, or when free cash flow is not above 0. A
+ * point is also `null` when an input at the same position has another period.
+ */
+export function dividendsToFreeCashFlow(cashFlow: StatementTable): Series {
+	const lines = DIVIDEND_COVER_LINES.map((key) =>
+		cashFlow.lines.find((line) => line.key === key),
+	);
+	const points = cashFlow.periods.map((period, position) => {
+		const inputs = lines.map((line) => line?.points[position] ?? null);
+		if (
+			!inputs.every(
+				(input) => input?.period != null && isSamePeriod(input.period, period),
+			)
+		) {
+			return null;
+		}
+		const at = periodName(period);
+		const payout = share(
+			`metric.dividendsToFreeCashFlow.${periodPart(period)}`,
+			`Dividends paid against free cash flow, ${at}`,
+			`Dividends paid, ${at} ÷ (Operating cash flow, ${at} − Capital expenditure, ${at})`,
+			inputs,
+			([paid, flow, spent]) => [paid, flow - spent],
+		);
+		return isNumberClaim(payout) ? payout : null;
+	});
+	return {
+		key: "dividendsToFreeCashFlow",
+		label: "Share of free cash flow",
+		unit: "percent",
+		periods: cashFlow.periods,
+		points,
+	};
+}
+
 /** Returns the lines `key` reads, through its input metrics, but no market. */
 export function lineKeysOf(key: LineKey | MetricKey): LineKey[] {
 	return isMetricKey(key)

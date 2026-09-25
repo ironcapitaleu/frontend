@@ -477,6 +477,7 @@ export type BlockKey =
 	| "yieldsAgainstTreasury"
 	| "ratioFormulas"
 	| "dividendPerShare"
+	| "dividendsAgainstFreeCashFlow"
 	| "largestFunds"
 	| "insiders"
 	| "ownershipSplit"

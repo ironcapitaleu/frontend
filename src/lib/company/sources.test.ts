@@ -948,14 +948,52 @@ describe("feedsOf", () => {
 });
 
 describe("Shareholder returns blocks", () => {
+	const cover: LineKey[] = [
+		"operatingCashFlow",
+		"capitalExpenditure",
+		"dividendsPaid",
+	];
+
+	it("should read the three inputs of each fiscal year when card 4.2 is read", () => {
+		const expectedResult = claimsIn([statements.cashFlow.annual], cover);
+
+		const result = claimsOf(
+			"dividendsAgainstFreeCashFlow",
+			"company",
+			sections,
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep every filing of card 4.2 when free cash flow is never above 0", () => {
+		const { annual } = statements.cashFlow;
+		const lines = annual.lines.map((line) => {
+			if (line.key !== "capitalExpenditure") return line;
+			const spent = (point: Claim | null) =>
+				point && { ...point, value: Number.MAX_VALUE };
+			return { ...line, points: line.points.map(spent) };
+		});
+		const cashFlow = { ...statements.cashFlow, annual: { ...annual, lines } };
+		const changed = { ...sections, financials: { ...statements, cashFlow } };
+
+		const expectedResult = documentIds(claimsIn([annual], cover));
+
+		const result = documentIds(
+			claimsOf("dividendsAgainstFreeCashFlow", "company", changed),
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should read the dividend per share of each fiscal year when card 4.1 is read", () => {
 		const expectedResult =
 			fakeCompanyReport.shareholderReturns.dividendPerShare.points.map(
 				(point) => point?.id,
 			);
 
-		const result = figureGroupsOf("shareholderReturns", sections).flatMap(
-			({ claims }) => claims.map(({ id }) => id),
+		const result = claimsOf("dividendPerShare", "company", sections).map(
+			({ id }) => id,
 		);
 
 		expect(result).toEqual(expectedResult);

@@ -3,6 +3,7 @@ import {
 	financialPositionInputs,
 	keyFigureKeys,
 	keyFigureOf,
+	DIVIDEND_COVER_LINES,
 	lineKeysOf,
 	metricInputsOf,
 	ownershipShares,
@@ -210,6 +211,7 @@ const blockKeys = [
 	"yieldsAgainstTreasury",
 	"ratioFormulas",
 	"dividendPerShare",
+	"dividendsAgainstFreeCashFlow",
 	"largestFunds",
 	"insiders",
 	"ownershipSplit",
@@ -412,6 +414,20 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		label: "Dividend per Share",
 		company: ({ shareholderReturns }) =>
 			shareholderReturns ? shareholderReturns.dividendPerShare.points : null,
+	},
+	// Card 4.2 draws a share derived from these inputs. The block reads the
+	// inputs, so their filings stay in the index when a share is `null`.
+	dividendsAgainstFreeCashFlow: {
+		tab: "shareholderReturns",
+		label: "Dividends Paid Against Free Cash Flow",
+		company: ({ financials }) =>
+			financials
+				? financials.cashFlow.annual.lines
+						.filter(({ key }) =>
+							DIVIDEND_COVER_LINES.some((each) => each === key),
+						)
+						.flatMap(({ points }) => points)
+				: null,
 	},
 	// The block reads the reported inputs of `fundShare` and `fundChange` for
 	// the rows that card 5.1 lists, so the index names no other fund's 13F.

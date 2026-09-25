@@ -18,6 +18,7 @@ import {
 	keyFigureKeys,
 	keyFigureOf,
 	lineKeysOf,
+	dividendsToFreeCashFlow,
 	marginOf,
 	type MetricResult,
 	type Metric,
@@ -1866,6 +1867,95 @@ describe("marginOf", () => {
 		const expectedResult = null;
 
 		const result = marginOf(line, tiny, "Operating margin").points[9];
+
+		expect(result).toBe(expectedResult);
+	});
+});
+
+describe("dividendsToFreeCashFlow", () => {
+	const annual = cashFlow.annual;
+
+	/** Returns `table` with the FY2025 point, the tenth, of `key` set to `point`. */
+	const tableWith = (key: LineKey, point: Figure, table = annual) => ({
+		...table,
+		lines: table.lines.map((line) =>
+			line.key === key
+				? {
+						...line,
+						points: line.points.map((each, index) =>
+							index === 9 ? point : each,
+						),
+					}
+				: line,
+		),
+	});
+	const amountOf = (key: LineKey) =>
+		Number(annual.lines.find((line) => line.key === key)?.points[9]?.value);
+	const fy2025 = (key: LineKey) =>
+		annual.lines.find((line) => line.key === key)?.points[9] as Claim;
+
+	it("should divide dividends paid by free cash flow of the same year when all three inputs are reported", () => {
+		const expectedResult =
+			amountOf("dividendsPaid") /
+			(amountOf("operatingCashFlow") - amountOf("capitalExpenditure"));
+
+		const result = dividendsToFreeCashFlow(annual).points[9]?.value;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should name the three inputs of the year in the formula when it gives a share", () => {
+		const expectedResult =
+			"Dividends paid, FY2025 ÷ (Operating cash flow, FY2025 − Capital expenditure, FY2025)";
+
+		const point = dividendsToFreeCashFlow(annual).points[9];
+		const result =
+			point?.source.kind === "derived" ? point.source.formula : null;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	const set = (value: Claim["value"]) => (claim: Claim) => ({
+		...claim,
+		value,
+	});
+	const ocf = amountOf("operatingCashFlow");
+
+	it.each<[string, LineKey, (claim: Claim) => Figure]>([
+		["dividends paid are missing", "dividendsPaid", () => null],
+		["operating cash flow is not finite", "operatingCashFlow", set(Number.NaN)],
+		["capital expenditure is not a number", "capitalExpenditure", set("n/a")],
+		["free cash flow is 0", "capitalExpenditure", set(ocf)],
+		["free cash flow is negative", "capitalExpenditure", set(ocf + 1)],
+		[
+			"operating cash flow belongs to the year before",
+			"operatingCashFlow",
+			() =>
+				annual.lines.find(({ key }) => key === "operatingCashFlow")
+					?.points[8] as Claim,
+		],
+	])("should return a null point when %s", (_, key, change) => {
+		const table = tableWith(key, change(fy2025(key)));
+
+		const expectedResult = null;
+
+		const result = dividendsToFreeCashFlow(table).points[9];
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should return a null point when the quotient overflows", () => {
+		const withValue = (key: LineKey, value: number, table = annual) =>
+			tableWith(key, { ...fy2025(key), value }, table);
+		const table = withValue(
+			"dividendsPaid",
+			Number.MAX_VALUE,
+			withValue("capitalExpenditure", 0.5, withValue("operatingCashFlow", 1)),
+		);
+
+		const expectedResult = null;
+
+		const result = dividendsToFreeCashFlow(table).points[9];
 
 		expect(result).toBe(expectedResult);
 	});
