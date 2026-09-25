@@ -367,6 +367,36 @@ describe("claimsOf", () => {
 	});
 });
 
+describe("claimsOf checksByArea", () => {
+	// Without the masthead there is no price, so V1 has no P/E and no median.
+	const noMasthead = { ...sections, masthead: null };
+	const epsLine = financials.income.annual.lines.find(
+		(line) => line.key === "dilutedEps",
+	);
+
+	it("should keep the latest diluted EPS when the masthead has not loaded", () => {
+		const expectedResult = eps2025.id;
+
+		const result = claimsOf("checksByArea", "company", noMasthead).find(
+			(one) => one.id === eps2025.id,
+		)?.id;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should keep the diluted EPS of the first year of the median window when the masthead has not loaded", () => {
+		const eps2016 = claim(epsLine?.points[0]);
+
+		const expectedResult = eps2016.id;
+
+		const result = claimsOf("checksByArea", "company", noMasthead).find(
+			(one) => one.id === eps2016.id,
+		)?.id;
+
+		expect(result).toBe(expectedResult);
+	});
+});
+
 describe("claimsOf financialPosition", () => {
 	it("should read the claims of financialPositionInputs when the company figures of Financial Position are read", () => {
 		const expectedResult = financialPositionInputs(sections);
