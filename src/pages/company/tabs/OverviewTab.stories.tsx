@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, screen, userEvent, within } from "storybook/test";
 
+import { MISSING, MISSING_INK } from "../../../components/screener/format";
 import { CompanyGatewayProvider } from "../../../contexts/CompanyGatewayContext";
 import type { CompanyGateway } from "../../../lib/company/gateway";
 import { meridianOverview } from "../../../lib/company/sample/overview";
@@ -89,6 +90,47 @@ const zeroLiabilitiesGateway = latestBalanceGateway(
 	"totalCurrentLiabilities",
 	0,
 );
+
+/** A gateway whose annual revenue of FY2020 is missing, so card 1.2 has a gap. */
+const missingRevenueGateway: CompanyGateway = {
+	...sampleGateway,
+	getFinancials: async (ticker) => {
+		const financials = await sampleGateway.getFinancials(ticker);
+		const { income } = financials;
+		const { periods, lines } = income.annual;
+		const lines2020 = lines.map((line) =>
+			line.key === "revenue"
+				? {
+						...line,
+						points: line.points.map((point, index) =>
+							periods[index]?.fiscalYear === 2020 ? null : point,
+						),
+					}
+				: line,
+		);
+		return {
+			...financials,
+			income: { ...income, annual: { ...income.annual, lines: lines2020 } },
+		};
+	},
+};
+
+/** Finds card 1.2 once its small charts have drawn. */
+async function tenYearsCard(canvasElement: HTMLElement) {
+	const card = await within(canvasElement).findByRole("region", {
+		name: "1.2 Ten Years at a Glance",
+	});
+	await within(card).findByText("Diluted shares");
+	return card;
+}
+
+/** Presses the "Data" button of card 1.2 and returns its table. */
+async function tenYearsTable(card: HTMLElement) {
+	await userEvent.click(within(card).getByRole("button", { name: "Data" }));
+	return within(card).getByRole("table", {
+		name: "Ten Years at a Glance table",
+	});
+}
 
 /** Where the bar named `name` in card 1.4 sits against its zero line, in px. */
 async function positionBarAt(canvasElement: HTMLElement, name: RegExp) {
@@ -498,6 +540,110 @@ export const FinancialPositionZero: Story = {
 			canvasElement,
 			/^Short term liabilities/,
 		);
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: the "Data" button of card 1.2 swaps the small charts for one
+ * table with the same figures, one row for each chart and one column for
+ * each year it draws.
+ */
+export const TenYearsData: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const card = await tenYearsCard(canvasElement);
+
+		const expectedResult = [
+			...card.querySelectorAll("[data-slot=mini-bar-chart]"),
+		].map((chart) => [
+			chart.querySelector("figcaption span")?.textContent,
+			...within(chart as HTMLElement)
+				.getAllByRole("listitem")
+				.map((item) => item.textContent?.split(": ")[1]),
+		]);
+
+		const table = await tenYearsTable(card);
+		const result = within(table)
+			.getAllByRole("row")
+			.slice(1)
+			.map((row) =>
+				[...row.querySelectorAll("th, td")].map((cell) => cell.textContent),
+			);
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: a missing year in the table of card 1.2 shows the dimmed dash. */
+export const TenYearsDataMissingYear: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	parameters: { companyGateway: missingRevenueGateway },
+	play: async ({ canvasElement }) => {
+		const table = await tenYearsTable(await tenYearsCard(canvasElement));
+		const column = within(table)
+			.getAllByRole("columnheader")
+			.findIndex((head) => head.textContent === "FY2020");
+		const row = within(table).getByRole("row", { name: /^Revenue/ });
+		const cell = row.querySelectorAll("th, td")[column];
+
+		const expectedResult = { text: MISSING, dimmed: true };
+
+		const result = {
+			text: cell?.textContent,
+			dimmed: cell?.querySelector(`span.${CSS.escape(MISSING_INK)}`) !== null,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: the "Sources" chip of card 1.2 opens the 10-Ks behind its charts. */
+export const TenYearsSources: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const card = await tenYearsCard(canvasElement);
+		await userEvent.click(
+			within(card).getByRole("button", { name: "Sources" }),
+		);
+		const popup = await screen.findByRole("dialog", {
+			name: "Sources of the chart",
+		});
+
+		const expectedResult = [
+			2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017,
+		].map((year) => `10-K for FY${year}`);
+
+		const result = within(popup)
+			.getAllByRole("listitem")
+			.map((item) => item.querySelector("p")?.textContent);
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: on a phone the table of card 1.2 scrolls sideways inside the
+ * card, and its first column stays fixed (DESIGN.md §8 "Shared Layout").
+ */
+export const TenYearsDataPhone: Story = {
+	globals: { viewport: { value: "mobile1", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const card = await tenYearsCard(canvasElement);
+		const table = await tenYearsTable(card);
+		const scroller = table.parentElement as HTMLElement;
+		const first = within(table).getByRole("rowheader", { name: "Revenue" });
+		const before = first.getBoundingClientRect().left;
+
+		const expectedResult = { scrolls: true, fixed: true, fits: true };
+
+		scroller.scrollLeft = scroller.scrollWidth;
+		const result = {
+			scrolls: scroller.scrollLeft > 0,
+			fixed: Math.abs(first.getBoundingClientRect().left - before) < 1,
+			fits: card.getBoundingClientRect().right <= window.innerWidth,
+		};
 
 		await expect(result).toEqual(expectedResult);
 	},

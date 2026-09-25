@@ -45,6 +45,14 @@ export const chartLines: Record<keyof FinancialsSection, readonly BarKey[]> = {
 	cashFlow: ["operatingCashFlow", "capitalExpenditure", "shareRepurchases"],
 };
 
+/** The series of Overview card 1.2 "Ten Years at a Glance", in its order. */
+export const tenYearsBars: readonly BarKey[] = [
+	"revenue",
+	"operatingMargin",
+	"freeCashFlow",
+	"dilutedShares",
+];
+
 /**
  * Returns the claims of one kind that `block` draws. The `sector` claims are
  * the ones the block reads from a `SectorBenchmark` field, and the
@@ -275,13 +283,15 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 				),
 			],
 	},
+	// The reported lines behind the four small charts, so the filing of a year
+	// stays in the index when a margin or a free cash flow of that year has no
+	// value.
 	tenYears: {
 		tab: "overview",
 		label: "Ten Years at a Glance",
 		drawn: true,
 		company: ({ financials }) =>
-			financials &&
-			pointsOf(financials.income.annual, ["revenue", "dilutedShares"]),
+			financials && annualPointsOf(financials, tenYearsBars),
 	},
 	keyFigures: {
 		tab: "overview",
@@ -578,16 +588,24 @@ function pointsOf(
 		.flatMap((line) => line.points);
 }
 
-/**
- * Returns the annual points that the chart of `statement` draws: its lines and
- * the lines its metrics read, by {@link lineKeysOf}. So a filing stays in the
- * index when a metric has no value for a year.
- */
+/** Returns the annual points that the chart of `statement` draws. */
 function chartPointsOf(
 	financials: FinancialsSection,
 	statement: keyof FinancialsSection,
 ): readonly Figure[] {
-	const keys = chartLines[statement].flatMap(lineKeysOf);
+	return annualPointsOf(financials, chartLines[statement]);
+}
+
+/**
+ * Returns the annual points of the lines `bars` read: each line, and the
+ * lines each metric reads, by {@link lineKeysOf}. So a filing stays in the
+ * index when a metric has no value for a year.
+ */
+function annualPointsOf(
+	financials: FinancialsSection,
+	bars: readonly BarKey[],
+): readonly Figure[] {
+	const keys = bars.flatMap(lineKeysOf);
 	const { income, balance, cashFlow } = financials;
 	return [income, balance, cashFlow].flatMap(({ annual }) =>
 		pointsOf(annual, keys),
