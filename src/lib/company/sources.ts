@@ -111,6 +111,20 @@ export function isPrintedOnly(ref: FigureGroupRef): boolean {
 	return blocks[ref.block].printed === true;
 }
 
+/** Tells whether a card on the screen draws the block of `ref`. It reads the block's `drawn` marker. */
+export function isDrawn(ref: FigureGroupRef): boolean {
+	return blocks[ref.block].drawn === true;
+}
+
+/**
+ * Tells whether the screen names the filings of `ref`: a drawn block's
+ * company figures. The sources index and the Filings card skip every other
+ * group, so they name no filing that no figure on the screen uses.
+ */
+export function isOnScreen(ref: FigureGroupRef): boolean {
+	return !isSectorBenchmark(ref) && !isPrintedOnly(ref) && isDrawn(ref);
+}
+
 /**
  * Returns the filings behind `claims`, newest first, as {@link sourcesOf}
  * orders them. It leaves out the market data.
@@ -196,6 +210,8 @@ interface Block {
 	readonly sector?: Reader;
 	/** Marks a block that only the printed page draws, never the screen. */
 	readonly printed?: true;
+	/** Marks a block that a card on the screen draws today. A later ticket marks the others. */
+	readonly drawn?: true;
 }
 
 /** The blocks of every tab, in the order of the page. */
@@ -257,6 +273,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	business: {
 		tab: "overview",
 		label: "The Business",
+		drawn: true,
 		company: ({ overview }) =>
 			overview && [
 				overview.business,
@@ -271,12 +288,14 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	tenYears: {
 		tab: "overview",
 		label: "Ten Years at a Glance",
+		drawn: true,
 		company: ({ financials }) =>
 			financials && annualPointsOf(financials, tenYearsBars),
 	},
 	keyFigures: {
 		tab: "overview",
 		label: "Key Figures",
+		drawn: true,
 		company: (sections) =>
 			sections.masthead && sections.financials
 				? keyFigureKeys.map((key) => keyFigureOf(key, sections))
@@ -290,6 +309,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	financialPosition: {
 		tab: "overview",
 		label: "Financial Position",
+		drawn: true,
 		// The reported inputs, not the long-term figures, so a filing stays in
 		// the index when a long-term figure has no value.
 		company: (sections) =>
@@ -330,12 +350,14 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	incomeChart: {
 		tab: "financials",
 		label: "Income statement chart",
+		drawn: true,
 		company: ({ financials }) =>
 			financials && chartPointsOf(financials, "income"),
 	},
 	incomeTable: {
 		tab: "financials",
 		label: "Income statement table",
+		drawn: true,
 		company: ({ financials }) =>
 			financials && [
 				...pointsOf(financials.income.annual),
@@ -345,12 +367,14 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	balanceChart: {
 		tab: "financials",
 		label: "Balance sheet chart",
+		drawn: true,
 		company: ({ financials }) =>
 			financials && chartPointsOf(financials, "balance"),
 	},
 	balanceTable: {
 		tab: "financials",
 		label: "Balance sheet table",
+		drawn: true,
 		company: ({ financials }) =>
 			financials && [
 				...pointsOf(financials.balance.annual),
@@ -360,12 +384,14 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	cashFlowChart: {
 		tab: "financials",
 		label: "Cash flow chart",
+		drawn: true,
 		company: ({ financials }) =>
 			financials && chartPointsOf(financials, "cashFlow"),
 	},
 	cashFlowTable: {
 		tab: "financials",
 		label: "Cash flow table",
+		drawn: true,
 		company: ({ financials }) =>
 			financials && [
 				...pointsOf(financials.cashFlow.annual),
@@ -378,6 +404,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	valuationRatios: {
 		tab: "valuation",
 		label: "Ratios Against Their Own Ten Years and the Sector",
+		drawn: true,
 		company: (sections) =>
 			valuationLoaded(sections)
 				? ratioRanges(sections).flatMap((range) => [
@@ -400,6 +427,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	yieldsAgainstTreasury: {
 		tab: "valuation",
 		label: "Earnings Yield and FCF Yield Next to the 10-Year Treasury",
+		drawn: true,
 		company: (sections) =>
 			valuationLoaded(sections) ? yieldClaimsOf(sections) : null,
 	},
@@ -409,6 +437,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	ratioFormulas: {
 		tab: "valuation",
 		label: "How the Ratios Are Built",
+		drawn: true,
 		company: (sections) =>
 			valuationLoaded(sections)
 				? ratioRanges(sections).flatMap(({ ratio, now }) => [
@@ -422,6 +451,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	largestFunds: {
 		tab: "relationships",
 		label: "Owned By: Largest Funds",
+		drawn: true,
 		company: ({ relationships }) =>
 			relationships && [
 				relationships.ownership.sharesOutstanding,
@@ -434,6 +464,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	insiders: {
 		tab: "relationships",
 		label: "Owned By: Insiders",
+		drawn: true,
 		company: ({ relationships }) =>
 			relationships ? relationships.insiders.map((row) => row.shares) : null,
 	},
@@ -442,6 +473,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	ownershipSplit: {
 		tab: "relationships",
 		label: "Ownership Split",
+		drawn: true,
 		company: ({ relationships }) =>
 			relationships &&
 			Object.values(ownershipShares(relationships, "relationships")),
@@ -449,6 +481,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	subsidiaries: {
 		tab: "relationships",
 		label: "Owns: Subsidiaries",
+		drawn: true,
 		company: ({ relationships }) =>
 			relationships
 				? relationships.subsidiaries.map((row) => row.jurisdiction)
@@ -462,6 +495,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	stakes: {
 		tab: "relationships",
 		label: "Owns: Stakes in Listed Companies",
+		drawn: true,
 		company: ({ relationships }) =>
 			relationships
 				? relationships.stakes.flatMap((row) => [
@@ -475,6 +509,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	executivesAndBoard: {
 		tab: "management",
 		label: "Executives and Board",
+		drawn: true,
 		company: ({ management }) =>
 			management
 				? management.people.flatMap((row) => [row.since, row.independence])
@@ -484,6 +519,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	ceoPay: {
 		tab: "management",
 		label: "CEO Pay by Year",
+		drawn: true,
 		company: ({ management }) =>
 			management?.ceoPay.flatMap((y) => [
 				y.salary,
@@ -497,6 +533,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	payMix: {
 		tab: "management",
 		label: "Pay Mix",
+		drawn: true,
 		company: ({ management }) => {
 			if (!management) return null;
 			const year = management.ceoPay.at(-1);
@@ -508,6 +545,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	insiderHoldings: {
 		tab: "management",
 		label: "Insider Holdings",
+		drawn: true,
 		company: ({ management }) =>
 			management ? management.insiders.map((row) => row.shares) : null,
 	},

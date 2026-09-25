@@ -13,6 +13,7 @@ import {
 	claimsOf,
 	feedsOf,
 	figureGroupsOf,
+	isDrawn,
 	isPrintedOnly,
 	isSectorBenchmark,
 	sectorMedianOf,
@@ -27,6 +28,7 @@ import type {
 	LineKey,
 	StatementTable,
 } from "./types";
+import { COMPANY_TABS } from "./tabs";
 import { ratioRanges, valuationRatios } from "./valuationRatios";
 
 const sections = completeSections(fakeCompanyReport);
@@ -903,6 +905,30 @@ describe("isSectorBenchmark", () => {
 			isSectorBenchmark(ref),
 			isSectorBenchmark({ ...ref, figures: "sector" }),
 		];
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("isDrawn", () => {
+	it("should leave only the blocks of cards not built yet undrawn when every section has loaded", () => {
+		// A new block is undrawn until it says `drawn: true`. So a card that lands
+		// without the marker fails here, before its filings drop out of the
+		// sources index and the Filings card.
+		const expectedResult = [
+			"checksByArea",
+			"ownership",
+			"printedShareholderReturns",
+			"profile",
+		];
+
+		const result = [
+			...new Set(
+				COMPANY_TABS.flatMap(({ key }) => figureGroupsOf(key, sections))
+					.filter(({ ref }) => !isDrawn(ref))
+					.map(({ ref }) => ref.block),
+			),
+		].sort();
 
 		expect(result).toEqual(expectedResult);
 	});
