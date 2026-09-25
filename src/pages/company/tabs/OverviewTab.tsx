@@ -27,7 +27,7 @@ import {
 	type PositionRow,
 } from "@/lib/company/metrics";
 import { figureGroupsOf, isDrawn, sectorMedianOf } from "@/lib/company/sources";
-import type { CompletedSections } from "@/lib/company/types";
+import type { BlockKey, CompletedSections, Series } from "@/lib/company/types";
 import type { Ticker } from "@/lib/domain/ticker";
 import { cn } from "@/lib/utils";
 import { FigureCell, FigureText } from "./FigureCell";
@@ -40,6 +40,9 @@ import {
 	SIDES,
 	tenYearsSeries,
 } from "./OverviewTab.logic";
+
+/** Card 1.2 draws the last ten fiscal years, as `MiniBarChart` does. */
+const TEN_YEARS = 10;
 
 /**
  * The Overview tab of the company page (DESIGN.md §8 "Overview"). It draws
@@ -74,7 +77,10 @@ export function OverviewTab({ ticker }: { ticker: Ticker }) {
 				: [],
 		[sections],
 	);
+	const [tenYearsData, setTenYearsData] = React.useState(false);
 	const [positionData, setPositionData] = React.useState(false);
+	const claimsOfBlock = (block: BlockKey) =>
+		groups.find(({ ref }) => ref.block === block)?.claims ?? [];
 
 	return (
 		<CompanyCardGrid>
@@ -123,9 +129,19 @@ export function OverviewTab({ ticker }: { ticker: Ticker }) {
 				title="Ten Years at a Glance"
 				caption="Last ten fiscal years · USD, percent and shares · Form 10-K"
 				span={2}
+				className="min-w-0"
+				actions={
+					<ChartActions
+						data={tenYearsData}
+						onData={setTenYearsData}
+						claims={claimsOfBlock("tenYears")}
+					/>
+				}
 			>
 				<Loaded state={financials} what="ten-year figures">
-					{({ sections }) => <TenYears sections={sections} />}
+					{({ sections }) => (
+						<TenYears sections={sections} data={tenYearsData} />
+					)}
 				</Loaded>
 			</CompanyCard>
 			<CompanyCard
@@ -148,10 +164,7 @@ export function OverviewTab({ ticker }: { ticker: Ticker }) {
 					<ChartActions
 						data={positionData}
 						onData={setPositionData}
-						claims={
-							groups.find(({ ref }) => ref.block === "financialPosition")
-								?.claims ?? []
-						}
+						claims={claimsOfBlock("financialPosition")}
 					/>
 				}
 			>
@@ -322,11 +335,19 @@ function PositionTable({ rows }: { rows: readonly PositionRow[] }) {
 
 /**
  * The four small charts of card 1.2: two to a row on a phone and four from
- * 768 px, where DESIGN.md §8 "Shared Layout" keeps the desktop layout.
+ * 768 px, where DESIGN.md §8 "Shared Layout" keeps the desktop layout. With
+ * `data`, it draws the same figures as one table instead.
  */
-function TenYears({ sections }: { sections: CompletedSections }) {
+function TenYears({
+	sections,
+	data,
+}: {
+	sections: CompletedSections;
+	data: boolean;
+}) {
 	// The same series on each render keep their claim identities stable.
 	const series = React.useMemo(() => tenYearsSeries(sections), [sections]);
+	if (data) return <TenYearsTable series={series} />;
 	return (
 		<div className="grid grid-cols-2 gap-6 md:grid-cols-4">
 			{series.map((each) => (
@@ -337,6 +358,47 @@ function TenYears({ sections }: { sections: CompletedSections }) {
 				/>
 			))}
 		</div>
+	);
+}
+
+/**
+ * The table behind the Data button of card 1.2: one row for each series and
+ * one column for each fiscal year the charts draw, the last ten.
+ */
+function TenYearsTable({ series }: { series: readonly Series[] }) {
+	const periods = series[0]?.periods ?? [];
+	const offset = Math.max(0, periods.length - TEN_YEARS);
+	// Each annual period is its own fiscal year, so the year keys a column.
+	const years = periods.slice(offset).map(({ fiscalYear }) => fiscalYear);
+	return (
+		<Table aria-label="Ten Years at a Glance table">
+			<TableHeader>
+				<TableRow>
+					<TableHead className={FIXED_COLUMN}>Figure</TableHead>
+					{years.map((year) => (
+						<TableHead key={year} className="text-right">
+							FY{year}
+						</TableHead>
+					))}
+				</TableRow>
+			</TableHeader>
+			<TableBody>
+				{series.map((each) => (
+					<TableRow key={each.key}>
+						<TableHead scope="row" className={FIXED_COLUMN}>
+							{each.label}
+						</TableHead>
+						{years.map((year, column) => (
+							<FigureCell
+								key={year}
+								figure={each.points[offset + column] ?? null}
+								format={(value) => formatInUnit(value, each.unit)}
+							/>
+						))}
+					</TableRow>
+				))}
+			</TableBody>
+		</Table>
 	);
 }
 
