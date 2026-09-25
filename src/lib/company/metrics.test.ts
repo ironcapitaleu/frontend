@@ -971,6 +971,24 @@ describe("evaluateMetric", () => {
 	});
 });
 
+describe("metrics", () => {
+	// The Checks by Area card writes a failed guard as "not above 0", so a
+	// guard of any other kind must change that sentence first.
+	it("should guard every metric with above 0 when the guards are read", () => {
+		const expectedResult: string[] = [];
+
+		const result = Object.values(metrics)
+			.filter(({ guards }) =>
+				guards.some(
+					({ comparison, value }) => comparison !== "above" || value !== 0,
+				),
+			)
+			.map(({ key }) => key);
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
 describe("evaluate", () => {
 	it("should throw MissingGuardInput when a guard names a figure that is not an input of the metric", () => {
 		const guarded: FigureRef = {

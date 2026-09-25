@@ -374,6 +374,17 @@ describe("claimsOf checksByArea", () => {
 		(line) => line.key === "dilutedEps",
 	);
 
+	it("should read no claim when the Financials section has not loaded", () => {
+		const expectedResult: readonly Claim[] = [];
+
+		const result = claimsOf("checksByArea", "company", {
+			...sections,
+			financials: null,
+		});
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should keep the latest diluted EPS when the masthead has not loaded", () => {
 		const expectedResult = eps2025.id;
 
