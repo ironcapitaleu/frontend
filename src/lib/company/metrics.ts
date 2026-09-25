@@ -589,6 +589,15 @@ export const metrics: Record<MetricKey, Metric> = {
 			line("capitalExpenditure", samePeriod),
 		],
 	),
+	dividendsToFreeCashFlow: ratio(
+		"perPeriod",
+		"dividendsToFreeCashFlow",
+		"Dividends paid against free cash flow",
+		"Dividends paid ÷ free cash flow",
+		"percent",
+		line("dividendsPaid", samePeriod),
+		{ from: "metric", key: "freeCashFlow", at: samePeriod },
+	),
 	freeCashFlowYield: ratio(
 		"point",
 		"freeCashFlowYield",
@@ -800,6 +809,7 @@ export const formulas: Record<MetricKey, Formula> = {
 	priceToEarningsAtYearEnd: divide,
 	priceToEarningsMedian10y: ([window]) => median(window),
 	freeCashFlow: ([operating, capital]) => amount(operating) - amount(capital),
+	dividendsToFreeCashFlow: divide,
 	freeCashFlowYield: divide,
 	priceToFreeCashFlow: divide,
 	priceToBook: divide,
@@ -1315,14 +1325,21 @@ function linesOf(
 			);
 }
 
-/** Returns the first point of `series` at the same period as `target`, or `null`. */
+/**
+ * Returns the first point of `series` at the same period as `target`, or
+ * `null`. A point whose own period is not `target` is `null` too, so a line
+ * that is out of step with its columns never pairs one year with another.
+ */
 function pointAtSamePeriod(series: readonly Series[], target: Period): Figure {
 	for (const { periods, points } of series) {
 		const position = periods.findIndex((period) =>
 			isSamePeriod(period, target),
 		);
 		if (position !== -1) {
-			return points[position] ?? null;
+			const point = points[position] ?? null;
+			return point?.period != null && isSamePeriod(point.period, target)
+				? point
+				: null;
 		}
 	}
 	return null;
@@ -1790,6 +1807,34 @@ export function marginOf(line: Series, revenue: Series, name: string): Series {
 		unit: "percent",
 		periods: line.periods,
 		points,
+	};
+}
+
+/**
+ * Returns the dividends paid as a share of free cash flow, for each fiscal
+ * year of the annual cash flow table in `sections`. Each point is the
+ * `dividendsToFreeCashFlow` metric of that year, so free cash flow has the one
+ * definition the rest of the page uses. A point is `null` when the metric
+ * gives no finite value: an input is missing, belongs to another year, or free
+ * cash flow is not above 0.
+ */
+export function dividendsToFreeCashFlow(sections: CompletedSections): Series {
+	const periods = sections.financials?.cashFlow.annual.periods ?? [];
+	return {
+		key: "dividendsToFreeCashFlow",
+		label: "Share of free cash flow",
+		unit: "percent",
+		periods,
+		points: periods.map((period) => {
+			const result = evaluateMetric(
+				"dividendsToFreeCashFlow",
+				sections,
+				period,
+			);
+			return result.kind === "value" && isNumberClaim(result.claim)
+				? result.claim
+				: null;
+		}),
 	};
 }
 

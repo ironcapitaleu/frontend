@@ -236,6 +236,7 @@ const blockKeys = [
 	"yieldsAgainstTreasury",
 	"ratioFormulas",
 	"dividendPerShare",
+	"dividendsAgainstFreeCashFlow",
 	"largestFunds",
 	"insiders",
 	"ownershipSplit",
@@ -461,6 +462,21 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		drawn: true,
 		company: ({ shareholderReturns }) =>
 			shareholderReturns ? shareholderReturns.dividendPerShare.points : null,
+	},
+	// Card 4.2 draws a share derived from these inputs. The block reads the
+	// inputs, so their filings stay in the index when a share is `null`.
+	dividendsAgainstFreeCashFlow: {
+		tab: "shareholderReturns",
+		label: "Dividends Paid Against Free Cash Flow",
+		drawn: true,
+		// The tab draws its cards only when both of its sections load.
+		company: ({ financials, shareholderReturns }) =>
+			financials && shareholderReturns
+				? pointsOf(
+						financials.cashFlow.annual,
+						lineKeysOf("dividendsToFreeCashFlow"),
+					)
+				: null,
 	},
 	// The block reads the reported inputs of `fundShare` and `fundChange` for
 	// the rows that card 5.1 lists, so the index names no other fund's 13F.
