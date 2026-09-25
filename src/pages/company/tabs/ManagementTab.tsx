@@ -1,5 +1,6 @@
 import * as React from "react";
 
+import { ChartActions } from "@/components/company/ChartActions";
 import { CompanyCard, CompanyCardGrid } from "@/components/company/CompanyCard";
 import { ShareBar } from "@/components/company/ShareBar";
 import { SourcesChip } from "@/components/company/SourcesChip";
@@ -17,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Text } from "@/components/ui/text";
 import { useCompany } from "../../../hooks/useCompany";
-import { payMix, tenure } from "../../../lib/company/metrics";
+import { netInsiderShares, payMix, tenure } from "../../../lib/company/metrics";
 import { figureGroupsOf } from "../../../lib/company/sources";
 import type {
 	BlockKey,
@@ -32,12 +33,13 @@ import type { BarTable } from "./financialsTable";
 import { InsiderTable } from "./InsiderTable";
 import { BarChart } from "./StatementChart";
 
-/** The blocks this tab draws so far. The other cards come in later tickets. */
+/** The blocks this tab draws. */
 const DRAWN_BLOCKS: ReadonlySet<BlockKey> = new Set([
 	"executivesAndBoard",
 	"ceoPay",
 	"payMix",
 	"insiderHoldings",
+	"insiderBuyingAndSelling",
 ]);
 
 /**
@@ -79,8 +81,8 @@ const PAY_PARTS = [
 
 /**
  * Card 6.1, the executives and directors, card 6.2, the chief executive's pay
- * by year, then row 3: card 6.3 Pay Mix and card 6.4 Insider Holdings. Then
- * the sources index.
+ * by year, row 3: card 6.3 Pay Mix and card 6.4 Insider Holdings, card 6.5
+ * on insider trades by year, then the sources index.
  */
 function LoadedManagement({
 	management,
@@ -155,6 +157,13 @@ function LoadedManagement({
 				>
 					<InsiderTable insiders={management.insiders} />
 				</CompanyCard>
+				<InsiderTradesCard
+					management={management}
+					claims={
+						groups.find(({ ref }) => ref.block === "insiderBuyingAndSelling")
+							?.claims ?? []
+					}
+				/>
 			</CompanyCardGrid>
 			<SourcesIndex groups={groups} />
 		</div>
@@ -192,8 +201,8 @@ function PayMixCard({ management }: { management: ManagementSection }) {
 	);
 }
 
-/** Writes a pay figure in USD thousands, such as `7,200`, or the dash when it is not a finite number. */
-function formatPay(value: ClaimValue): string {
+/** Writes a figure in thousands, such as `7,200` or `−280`, or the dash when it is not a finite number. */
+function thousands(value: ClaimValue): string {
 	return typeof value === "number" && Number.isFinite(value)
 		? toFixedWithMinus(value / 1e3, 0, true)
 		: MISSING;
@@ -280,7 +289,7 @@ function CeoPayCard({
 									{yearLabel(year.fiscalYear, true)}
 								</TableHead>
 								{PAY_PARTS.map(([key]) => (
-									<FigureCell key={key} figure={year[key]} format={formatPay} />
+									<FigureCell key={key} figure={year[key]} format={thousands} />
 								))}
 							</TableRow>
 						))}
@@ -289,8 +298,82 @@ function CeoPayCard({
 			) : (
 				<BarChart
 					table={table}
-					format={(claim) => formatPay(claim.value)}
+					format={(claim) => thousands(claim.value)}
 					stacked
+				/>
+			)}
+		</CompanyCard>
+	);
+}
+
+/**
+ * Card 6.5: the net shares that insiders bought, above zero, or sold, below
+ * zero, in each fiscal year. "Data" swaps the chart for a table.
+ */
+function InsiderTradesCard({
+	management,
+	claims,
+}: {
+	management: ManagementSection;
+	claims: readonly Claim[];
+}) {
+	const [data, setData] = React.useState(false);
+	const net = netInsiderShares(management);
+	const years = net.periods.map(({ fiscalYear }) => ({
+		key: String(fiscalYear),
+		label: yearLabel(fiscalYear, true),
+		short: yearLabel(fiscalYear, false),
+	}));
+	const [first, last] = [years[0], years.at(-1)];
+	return (
+		<CompanyCard
+			tab="management"
+			position={5}
+			title="Insider Buying and Selling by Year"
+			caption={`${first?.label ?? MISSING}–${last?.label ?? MISSING} · Thousands of shares, net of sales · Form 4 filings of officers and directors`}
+			span={2}
+			className="min-w-0"
+			actions={
+				years.length > 0 ? (
+					<ChartActions data={data} onData={setData} claims={claims} />
+				) : (
+					<SourcesChip claims={claims} />
+				)
+			}
+		>
+			{years.length === 0 ? (
+				<p className="text-muted-foreground">
+					No officer or director reports a trade.
+				</p>
+			) : data ? (
+				<Table aria-label="Insider buying and selling by year">
+					<TableHeader>
+						<TableRow>
+							<TableHead className="sticky left-0 bg-card">Year</TableHead>
+							<TableHead className="text-right">Net shares</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{years.map((year, position) => (
+							<TableRow key={year.key}>
+								<TableHead scope="row" className="sticky left-0 bg-card">
+									{year.label}
+								</TableHead>
+								<FigureCell
+									figure={net.points[position] ?? null}
+									format={thousands}
+								/>
+							</TableRow>
+						))}
+					</TableBody>
+				</Table>
+			) : (
+				<BarChart
+					table={{
+						columns: years,
+						lines: [{ key: "net", label: "Net shares", points: net.points }],
+					}}
+					format={(claim) => thousands(claim.value)}
 				/>
 			)}
 		</CompanyCard>

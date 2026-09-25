@@ -151,9 +151,10 @@ export function BarChart({
 										const room =
 											((negative ? 100 - zero : zero) / 100) * PLOT_HEIGHT;
 										const growsDown = negative === room >= MIN_TARGET;
-										// A reported zero draws a 2 px mark above the zero line,
-										// so it never reads as a missing year.
+										// A reported zero draws a 2 px mark on the side of the zero
+										// line with room, so it never reads as a missing year.
 										const zeroMark = point.value === 0;
+										const markTop = room >= 2 ? `${top}% - 2px` : `${top}%`;
 										return (
 											<div
 												key={line.key}
@@ -179,7 +180,7 @@ export function BarChart({
 														box
 															? { bottom: box.bottom, height: box.height }
 															: zeroMark
-																? { top: `calc(${top}% - 2px)`, height: "2px" }
+																? { top: `calc(${markTop})`, height: "2px" }
 																: { top: `${top}%`, height: `${height}%` }
 													}
 												>

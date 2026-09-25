@@ -483,7 +483,8 @@ export type BlockKey =
 	| "executivesAndBoard"
 	| "ceoPay"
 	| "payMix"
-	| "insiderHoldings";
+	| "insiderHoldings"
+	| "insiderBuyingAndSelling";
 
 /**
  * The kind of figures in a group. `sector` figures come from a

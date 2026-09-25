@@ -57,10 +57,19 @@ const oddPayGateway: CompanyGateway = {
 	},
 };
 
-/** A gateway with no pay and no insider, so cards 6.2, 6.3 and 6.4 show their empty copy. */
+/** A series with no year. */
+const NO_YEARS = { periods: [], points: [] };
+
+/** A gateway with no pay, no insider and no trade, so cards 6.2 to 6.5 show their empty copy. */
 const noPayNoInsidersGateway: CompanyGateway = {
 	...found,
-	getManagement: async () => ({ ...management, ceoPay: [], insiders: [] }),
+	getManagement: async () => ({
+		...management,
+		ceoPay: [],
+		insiders: [],
+		insiderSharesBought: { ...management.insiderSharesBought, ...NO_YEARS },
+		insiderSharesSold: { ...management.insiderSharesSold, ...NO_YEARS },
+	}),
 };
 
 /** Returns a gateway whose latest pay sets each part in `changes` to its value in USD. */
@@ -85,6 +94,38 @@ function latestPayGateway(
 			}),
 		}),
 	};
+}
+
+/** Returns a gateway whose insiders bought `bought` shares in FY2024 and FY2025 and sold 400,000 and 250,000. `null` is a year with no Form 4. */
+function tradesGateway(bought: (number | null)[]): CompanyGateway {
+	const series = management.insiderSharesBought;
+	const points = series.points.map((point, position) => {
+		const value = bought[position];
+		return value === null || point === null ? null : { ...point, value };
+	});
+	return {
+		...found,
+		getManagement: async () => ({
+			...management,
+			insiderSharesBought: { ...series, points },
+		}),
+	};
+}
+
+/** Finds the plot of card 6.5. */
+async function tradesPlotOf(canvasElement: HTMLElement) {
+	const plots = await within(canvasElement).findAllByRole("list", {
+		name: "Fiscal years",
+	});
+	return plots[1] as HTMLElement;
+}
+
+/** Tells, for each bar of `plot`, whether it sits above the zero line. */
+function barsAboveZero(plot: HTMLElement): boolean[] {
+	const zero = plot.nextElementSibling?.getBoundingClientRect().top ?? 0;
+	return within(plot)
+		.getAllByRole("button")
+		.map((bar) => bar.getBoundingClientRect().bottom <= zero + 0.5);
 }
 
 /** A gateway that never answers, so the tab stays in its loading state. */
@@ -132,6 +173,7 @@ export const Loaded: Story = {
 			"6.2 CEO Pay by Year",
 			"6.3 Pay Mix",
 			"6.4 Insider Holdings",
+			"6.5 Insider Buying and Selling by Year",
 		];
 
 		const headings = await canvas.findAllByRole("heading", { level: 2 });
@@ -247,12 +289,12 @@ export const PayMissingParts: Story = {
 	parameters: { companyGateway: oddPayGateway },
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
-		const plot = await canvas.findByRole("list", { name: "Fiscal years" });
+		const [plot] = await canvas.findAllByRole("list", { name: "Fiscal years" });
 		const parts = within(plot)
 			.getAllByRole("listitem")
 			.map((year) => within(year).queryAllByRole("button").length);
 		const targets = barTargetsOf(plot);
-		await userEvent.click(canvas.getByRole("button", { name: "Data" }));
+		await userEvent.click(canvas.getAllByRole("button", { name: "Data" })[0]);
 
 		const expectedResult = {
 			parts: [3, 3, 0],
@@ -282,7 +324,7 @@ export const PayTinyParts: Story = {
 		companyGateway: latestPayGateway({ bonus: 5_000, other: 1_000 }),
 	},
 	play: async ({ canvasElement }) => {
-		const plot = await within(canvasElement).findByRole("list", {
+		const [plot] = await within(canvasElement).findAllByRole("list", {
 			name: "Fiscal years",
 		});
 		const [salary, bonus] = within(plot)
@@ -310,7 +352,7 @@ export const PayTinyParts: Story = {
 export const PayNegativePart: Story = {
 	parameters: { companyGateway: latestPayGateway({ stockAwards: -500_000 }) },
 	play: async ({ canvasElement }) => {
-		const plot = await within(canvasElement).findByRole("list", {
+		const [plot] = await within(canvasElement).findAllByRole("list", {
 			name: "Fiscal years",
 		});
 		const zeroLine = plot.nextElementSibling?.getBoundingClientRect();
@@ -335,17 +377,15 @@ export const PayNegativePart: Story = {
 	},
 };
 
-/** Play test: with no pay, card 6.2 offers no "Data" button, since there is no table to show. */
+/** Play test: with no pay and no trade, cards 6.2 and 6.5 offer no "Data" button, since there is no table to show. */
 export const NoPayActions: Story = {
 	parameters: { companyGateway: noPayNoInsidersGateway },
 	play: async ({ canvasElement }) => {
 		const expectedResult: string[] = [];
 
-		const card = await within(canvasElement).findByRole("region", {
-			name: /^6\.2/,
-		});
-		const result = within(card)
-			.queryAllByRole("button")
+		await within(canvasElement).findByRole("region", { name: /^6\.5/ });
+		const result = within(canvasElement)
+			.queryAllByRole("button", { name: "Data" })
 			.map((button) => button.textContent);
 
 		await expect(result).toEqual(expectedResult);
@@ -356,7 +396,7 @@ export const NoPayActions: Story = {
 export const PayPartsAgree: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
-		const legend = await canvas.findByRole("list", { name: "Legend" });
+		const [legend] = await canvas.findAllByRole("list", { name: "Legend" });
 		const mix = canvas.getByRole("figure", { name: "Pay mix" });
 		const partsOf = (items: HTMLElement[]) =>
 			items.map((item) => ({
@@ -374,9 +414,89 @@ export const PayPartsAgree: Story = {
 	},
 };
 
-/** Card 6.2 in the dark theme. The four parts take `chart-1` to `chart-4` of the dark ramp, each at 3:1 on the card. */
+/** Cards 6.2 and 6.5 in the dark theme. The four parts of pay take `chart-1` to `chart-4` of the dark ramp, and the insider bars take `chart-1`, each at 3:1 on the card. */
 export const PayDark: Story = {
 	globals: { theme: "dark" },
+};
+
+/** Play test: at 320 px, insiders who sell more than they buy draw each year of card 6.5 below the zero line. Every bar is a target at least 24 × 24 px inside the plot that a pointer reaches, and the page does not scroll sideways. */
+export const NetSellingPhone: Story = {
+	globals: { viewport: { value: "mobile1", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const plot = await tradesPlotOf(canvasElement);
+
+		const expectedResult = {
+			above: [false, false],
+			targets: BAR_TARGETS_OK,
+			unreachable: [],
+		};
+
+		const result = {
+			above: barsAboveZero(plot),
+			targets: barTargetsOf(plot),
+			unreachable: unreachableBarsOf(plot),
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: a year with no Form 4 draws the dimmed dash and no bar, and net buying draws above the zero line. */
+export const MissingTradeYear: Story = {
+	parameters: { companyGateway: tradesGateway([null, 450_000]) },
+	play: async ({ canvasElement }) => {
+		const plot = await tradesPlotOf(canvasElement);
+
+		const expectedResult = { missing: "FY2024—", above: [true] };
+
+		const result = {
+			missing: within(plot).getAllByRole("listitem")[0]?.textContent,
+			above: barsAboveZero(plot),
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: a year whose buys and sells cancel draws a 2 px mark, and its trigger is still at least 24 × 24 px inside the plot. */
+export const ZeroTradeYear: Story = {
+	parameters: { companyGateway: tradesGateway([400_000, 60_000]) },
+	play: async ({ canvasElement }) => {
+		const plot = await tradesPlotOf(canvasElement);
+		const [zero] = within(plot).getAllByRole("button");
+
+		const expectedResult = { mark: 2, targets: BAR_TARGETS_OK };
+
+		const result = {
+			mark: zero?.parentElement?.getBoundingClientRect().height,
+			targets: barTargetsOf(plot),
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: "Data" swaps card 6.5 for a table in thousands of shares, and a figure that is not a number shows the dash, never NaN. */
+export const TradesData: Story = {
+	parameters: { companyGateway: tradesGateway([Number.NaN, 60_000]) },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await tradesPlotOf(canvasElement);
+		await userEvent.click(canvas.getAllByRole("button", { name: "Data" })[1]);
+
+		const expectedResult = [
+			["FY2024", "—"],
+			["FY2025", "−190"],
+		];
+
+		const table = canvas.getByRole("table", { name: /^Insider buying/ });
+		const result = within(table)
+			.getAllByRole("row")
+			.slice(1)
+			.map((row) => [...row.children].map((cell) => cell.textContent));
+
+		await expect(result).toEqual(expectedResult);
+	},
 };
 
 /** Play test: the tab shows a spinner while the section loads. */

@@ -26,6 +26,7 @@ import {
 	nestedMetricInputsOf,
 	otherRevenueShare,
 	ownershipShares,
+	netInsiderShares,
 	payMix,
 	priceChangeOneMonth,
 	resolve,
@@ -43,6 +44,7 @@ import type {
 	StatementLine,
 	IsoDate,
 	LineKey,
+	ManagementSection,
 	MetricKey,
 	Period,
 	Statement,
@@ -1943,6 +1945,67 @@ describe("payMix", () => {
 		};
 
 		const result = payMix({ ...section, ceoPay });
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("netInsiderShares", () => {
+	const section = fakeCompanyReport.management;
+	const bought = section.insiderSharesBought;
+	const [first, latest] = bought.points as Claim[];
+	const withBought = (
+		points: Figure[],
+		periods: Period[] = [...bought.periods],
+	): ManagementSection => ({
+		...section,
+		insiderSharesBought: { ...bought, periods, points },
+	});
+
+	it("should subtract the shares sold from the shares bought, giving a reported zero when they cancel", () => {
+		// FY2024: 120,000 − 400,000. FY2025: 250,000 − 250,000.
+		const expectedResult = [-280_000, 0];
+
+		const result = netInsiderShares(
+			withBought([first, { ...latest, value: 250_000 }]),
+		).points.map((point) => point?.value);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should name the bought and the sold claim of the year as inputs when it gives a net", () => {
+		const expectedResult = [
+			"management.insiderSharesBought.FY2025",
+			"management.insiderSharesSold.FY2025",
+		];
+
+		const { source } = netInsiderShares(section).points[1] ?? {};
+		const result =
+			source?.kind === "derived" ? source.inputs.map(({ id }) => id) : [];
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give a year as null, not zero, when it has no Form 4 or a side is not a finite number", () => {
+		const expectedResult = [null, null];
+
+		const odd = { ...first, value: Number.NaN };
+		const result = netInsiderShares(withBought([odd, null])).points;
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should list each whole fiscal year once, oldest first, when a series repeats a year, runs newest first or holds an odd year", () => {
+		const [fy2024, fy2025] = bought.periods as Period[];
+		const odd = { ...fy2025, fiscalYear: 2025.5 };
+		const expectedResult = [2024, 2025];
+
+		const result = netInsiderShares(
+			withBought(
+				[latest, first, latest, latest],
+				[fy2025, fy2024, fy2025, odd],
+			),
+		).periods.map((period) => period.fiscalYear);
 
 		expect(result).toEqual(expectedResult);
 	});
