@@ -483,6 +483,7 @@ export type BlockKey =
 	| "subsidiaries"
 	| "stakes"
 	| "executivesAndBoard"
+	| "ceoPay"
 	| "payMix"
 	| "insiderHoldings";
 
