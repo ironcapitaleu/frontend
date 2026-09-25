@@ -652,3 +652,150 @@ export const Failed: Story = {
 		await expect(result).toHaveTextContent(expectedResult);
 	},
 };
+
+/**
+ * Clicks the "Download CSV" button and returns the name and the rows of the
+ * file it saves. The saved link's click is stopped, so no file lands on disk.
+ */
+async function downloadCsv(canvasElement: HTMLElement) {
+	const doc = canvasElement.ownerDocument;
+	let file: Promise<{ name: string; rows: string[][] }> | undefined;
+	const catchDownload = (event: MouseEvent) => {
+		const link = event.target;
+		if (!(link instanceof HTMLAnchorElement) || !link.download) return;
+		event.preventDefault();
+		file = fetch(link.href)
+			.then((response) => response.text())
+			.then((text) => ({
+				name: link.download,
+				rows: text
+					.trimEnd()
+					.split("\r\n")
+					.map((row) => row.split(",")),
+			}));
+	};
+	doc.addEventListener("click", catchDownload, { capture: true });
+	await userEvent.click(
+		await within(canvasElement).findByRole("button", { name: "Download CSV" }),
+	);
+	doc.removeEventListener("click", catchDownload, { capture: true });
+	return file;
+}
+
+/** Returns the figure cells of `table` as a CSV writes them. */
+function screenCells(table: HTMLElement): string[][] {
+	return within(table)
+		.getAllByRole("row")
+		.map((row) =>
+			[...row.querySelectorAll("th, td")]
+				.slice(1)
+				.map((cell) =>
+					(cell.textContent ?? "")
+						.replace(MISSING, "")
+						.replaceAll(",", "")
+						.replace("−", "-"),
+				),
+		);
+}
+
+/**
+ * Play test: the "Download CSV" button sits on the right of the control row,
+ * next to the unit. It saves the table the switches pick, with the same
+ * columns, CAGR and margin rows included, and the same figures in millions.
+ */
+export const DownloadCsv: Story = {
+	globals: desktop,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.click(
+			await canvas.findByRole("button", { name: "Millions" }),
+		);
+		const table = await canvas.findByRole("table", {
+			name: "Income statement table",
+		});
+		const unit = canvas.getByRole("group", { name: "Unit" });
+		const button = canvas.getByRole("button", { name: "Download CSV" });
+
+		const expectedResult = {
+			name: "MRDN-income-annual.csv",
+			cells: screenCells(table),
+			besideUnit: true,
+		};
+
+		const file = await downloadCsv(canvasElement);
+		const result = {
+			name: file?.name,
+			cells: file?.rows.map((row) => row.slice(1)),
+			besideUnit:
+				button.getBoundingClientRect().left >
+					unit.getBoundingClientRect().right &&
+				button.getBoundingClientRect().bottom <
+					table.getBoundingClientRect().top,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: the quarterly balance sheet saves under its own name, with no
+ * CAGR column, as the table shows it.
+ */
+export const DownloadCsvQuarterly: Story = {
+	globals: desktop,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.click(
+			await canvas.findByRole("button", { name: "Balance sheet" }),
+		);
+		await userEvent.click(canvas.getByRole("button", { name: "Quarterly" }));
+
+		const expectedResult = {
+			name: "MRDN-balance-quarterly.csv",
+			header: canvas
+				.getAllByRole("columnheader")
+				.map(({ textContent }) => textContent),
+		};
+
+		const file = await downloadCsv(canvasElement);
+		const result = { name: file?.name, header: file?.rows[0] };
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: at 390 px the "Download CSV" button sits below the table, at
+ * the full width of the card. The file keeps the oldest year first, although
+ * the phone shows the newest year first.
+ */
+export const PhoneDownloadCsv: Story = {
+	globals: phone,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const table = await canvas.findByRole("table", {
+			name: "Income statement table",
+		});
+		const scroller = table.closest(
+			"[data-slot=table-container]",
+		) as HTMLElement;
+		const button = canvas.getByRole("button", { name: "Download CSV" });
+
+		const expectedResult = {
+			belowTable: true,
+			width: Math.round(scroller.getBoundingClientRect().width),
+			firstYear: "FY2017",
+		};
+
+		const file = await downloadCsv(canvasElement);
+		const result = {
+			belowTable:
+				button.getBoundingClientRect().top >=
+				scroller.getBoundingClientRect().bottom,
+			width: Math.round(button.getBoundingClientRect().width),
+			firstYear: file?.rows[0]?.[1],
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
