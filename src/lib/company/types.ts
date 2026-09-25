@@ -202,7 +202,9 @@ export type MetricKey =
 	| "enterpriseValueToEbitMedian10y"
 	| "earningsYield"
 	| "earningsYieldAtYearEnd"
-	| "freeCashFlowYieldAtYearEnd";
+	| "freeCashFlowYieldAtYearEnd"
+	| "dividendYieldAtYearEnd"
+	| "buybackYieldAtYearEnd";
 
 /** The quartiles of one metric over the company's peer group. */
 export interface SectorBenchmark {
@@ -480,6 +482,8 @@ export type BlockKey =
 	| "dividendPerShare"
 	| "dividendsAgainstFreeCashFlow"
 	| "buybacksNetOfStaffShares"
+	| "shareCount"
+	| "totalShareholderYield"
 	| "largestFunds"
 	| "insiders"
 	| "ownershipSplit"

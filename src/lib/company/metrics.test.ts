@@ -833,6 +833,39 @@ describe("evaluateMetric", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should divide the FY2025 dividends paid by the FY2025 year-end market cap when it evaluates the year-end dividend yield", () => {
+		const sections = completed;
+		const cap = PRICE_FY2025 * valueFY2025(income.annual, "dilutedShares");
+
+		const expectedResult = valueFY2025(cashFlow.annual, "dividendsPaid") / cap;
+
+		const result = numberOf(
+			evaluateMetric("dividendYieldAtYearEnd", sections, YEAR_FY2025),
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give a net buyback yield below zero when the FY2025 proceeds from stock plans exceed the share repurchases", () => {
+		const sections = sectionsWith(
+			"cashFlow",
+			"annual",
+			"shareIssuanceProceeds",
+			[9],
+			valueFY2025(cashFlow.annual, "shareRepurchases") * 3,
+		);
+		const cap = PRICE_FY2025 * valueFY2025(income.annual, "dilutedShares");
+
+		const expectedResult =
+			(valueFY2025(cashFlow.annual, "shareRepurchases") * -2) / cap;
+
+		const result = numberOf(
+			evaluateMetric("buybackYieldAtYearEnd", sections, YEAR_FY2025),
+		);
+
+		expect(result).toBeCloseTo(expectedResult, 12);
+	});
+
 	it("should divide the FY2025 year-end market cap by the equity at the FY2025 year end when it evaluates the year-end P/B", () => {
 		const sections = completed;
 		const cap = PRICE_FY2025 * valueFY2025(income.annual, "dilutedShares");
