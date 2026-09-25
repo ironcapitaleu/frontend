@@ -18,6 +18,7 @@ import {
 	keyFigureKeys,
 	keyFigureOf,
 	lineKeysOf,
+	marginOf,
 	type MetricResult,
 	type Metric,
 	metricInputsOf,
@@ -1767,6 +1768,104 @@ describe("growthPerYear", () => {
 		const expectedResult = null;
 
 		const result = growthPerYear(line);
+
+		expect(result).toBe(expectedResult);
+	});
+});
+
+describe("marginOf", () => {
+	const lineOf = (key: LineKey) =>
+		income.annual.lines.find((line) => line.key === key) as StatementLine;
+	const revenue = lineOf("revenue");
+	const operatingIncome = lineOf("operatingIncome");
+
+	/** Returns `revenue` with its FY2025 point, the tenth, set to `point`. */
+	const revenueWith = (point: Figure) => ({
+		...revenue,
+		points: revenue.points.map((each, index) => (index === 9 ? point : each)),
+	});
+	const fy2025 = revenue.points[9] as Claim;
+
+	it("should divide operating income by revenue of the same year when both are reported", () => {
+		const [part, whole] = [operatingIncome, revenue].map((line) =>
+			Number(line.points[9]?.value),
+		);
+
+		const expectedResult = part / whole;
+
+		const result = marginOf(operatingIncome, revenue, "Operating margin")
+			.points[9]?.value;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should name the line and revenue of the year in the formula when it gives a margin", () => {
+		const expectedResult = "Operating income, FY2025 ÷ Revenue, FY2025";
+
+		const point = marginOf(operatingIncome, revenue, "Operating margin")
+			.points[9];
+		const result =
+			point?.source.kind === "derived" ? point.source.formula : null;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it.each([
+		["revenue is missing", null],
+		["revenue is 0", { ...fy2025, value: 0 }],
+		["revenue is negative", { ...fy2025, value: -1 }],
+		["revenue is not finite", { ...fy2025, value: Number.POSITIVE_INFINITY }],
+		["revenue is not a number", { ...fy2025, value: "n/a" }],
+	])("should return a null point when %s", (_, point) => {
+		const expectedResult = null;
+
+		const result = marginOf(operatingIncome, revenueWith(point), "Margin")
+			.points[9];
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should return a null point when the revenue at that position belongs to the year before", () => {
+		const shifted = {
+			...revenue,
+			points: [null, ...revenue.points.slice(0, -1)],
+		};
+
+		const expectedResult = null;
+
+		const result = marginOf(operatingIncome, shifted, "Operating margin")
+			.points[9];
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should return a null point when the line is not finite", () => {
+		const line = {
+			...operatingIncome,
+			points: operatingIncome.points.map((point) =>
+				point === null ? null : { ...point, value: Number.NaN },
+			),
+		};
+
+		const expectedResult = null;
+
+		const result = marginOf(line, revenue, "Operating margin").points[9];
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should return a null point when the quotient overflows", () => {
+		const line = {
+			...operatingIncome,
+			points: operatingIncome.points.map((point) =>
+				point === null ? null : { ...point, value: Number.MAX_VALUE },
+			),
+		};
+		const tiny = revenueWith({ ...fy2025, value: Number.MIN_VALUE });
+
+		const expectedResult = null;
+
+		const result = marginOf(line, tiny, "Operating margin").points[9];
 
 		expect(result).toBe(expectedResult);
 	});
