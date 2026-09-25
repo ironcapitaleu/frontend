@@ -115,7 +115,7 @@ describe("PrintSummary regions 4 to 6", () => {
 			<PrintSummary
 				masthead={masthead}
 				summary={loaded(completeSections(fakeCompanyReport))}
-				generatedOn={new Date("2026-03-12T15:00:00Z")}
+				generatedOn={new Date(2026, 2, 12, 12, 0)}
 			/>,
 		);
 
