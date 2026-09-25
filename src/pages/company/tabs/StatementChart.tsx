@@ -171,6 +171,17 @@ export function BarChart({
 										// A reported zero draws a 2 px mark above the zero line, kept
 										// inside the plot, so it never reads as a missing year.
 										const zeroMark = point.value === 0;
+										// Triggers of a stacked column paint in plot order, the
+										// higher one on top, so the strip each keeps above the
+										// one below stays in reach. Line order would let a
+										// negative part of a later line cover the part above it.
+										const paintRank =
+											box &&
+											(boxes ?? []).filter(
+												(row) =>
+													(row[column]?.trigger.bottom ?? Number.NaN) <
+													box.trigger.bottom,
+											).length + 1;
 										return (
 											<div
 												key={line.key}
@@ -180,6 +191,7 @@ export function BarChart({
 														? "pointer-events-none absolute inset-x-0 mx-auto"
 														: "relative",
 												)}
+												style={box ? { zIndex: paintRank ?? 1 } : undefined}
 											>
 												<div
 													className={cn(

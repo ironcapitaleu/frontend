@@ -118,4 +118,25 @@ describe("BarChart", () => {
 
 		expect(result).toBe(expectedResult);
 	});
+
+	it("should paint a thin part above a negative part on top of it when the negative part is a later line", () => {
+		const table: BarTable = {
+			columns: [{ key: "FY26", label: "FY2026", short: "FY26" }],
+			lines: [
+				{ key: "a", label: "A", points: points(0.1) },
+				{ key: "b", label: "B", points: points(-8) },
+			],
+		};
+		render(<BarChart table={table} format={String} stacked />);
+		const plot = screen.getByRole("list", { name: "Fiscal years" });
+		const [above, below] = within(plot)
+			.getAllByRole("button")
+			.map((bar) => Number(bar.parentElement?.parentElement?.style.zIndex));
+
+		const expectedResult = true;
+
+		const result = Number(above) > Number(below);
+
+		expect(result).toBe(expectedResult);
+	});
 });
