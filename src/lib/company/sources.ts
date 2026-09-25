@@ -244,6 +244,7 @@ const blockKeys = [
 	"ceoPay",
 	"payMix",
 	"insiderHoldings",
+	"insiderBuyingAndSelling",
 ] as const satisfies readonly BlockKey[];
 
 /**
@@ -572,6 +573,20 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		drawn: true,
 		company: ({ management }) =>
 			management ? management.insiders.map((row) => row.shares) : null,
+	},
+	// Card 6.5 reads both sides of every year, not `netInsiderShares`, so each
+	// Form 4 stays in the index when one side is missing and no net exists.
+	insiderBuyingAndSelling: {
+		tab: "management",
+		label: "Insider Buying and Selling by Year",
+		drawn: true,
+		company: ({ management }) =>
+			management
+				? [
+						...management.insiderSharesBought.points,
+						...management.insiderSharesSold.points,
+					]
+				: null,
 	},
 };
 
