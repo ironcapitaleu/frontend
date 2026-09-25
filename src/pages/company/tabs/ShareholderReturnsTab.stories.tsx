@@ -30,6 +30,30 @@ function financialsWith(
 	return { ...financials, cashFlow };
 }
 
+/**
+ * A gateway whose FY2020 diluted shares, the fifth year, hold the FY2019
+ * claim, so the line is out of step with its columns.
+ */
+const sharesOutOfStepGateway: CompanyGateway = {
+	...alwaysFoundCompanyGateway(),
+	getFinancials: async () => {
+		const { financials } = fakeCompanyReport;
+		const annual = financials.income.annual;
+		const lines = annual.lines.map((line) =>
+			line.key === "dilutedShares"
+				? {
+						...line,
+						points: line.points.map((point, index) =>
+							index === 4 ? (line.points[3] ?? null) : point,
+						),
+					}
+				: line,
+		);
+		const income = { ...financials.income, annual: { ...annual, lines } };
+		return { ...financials, income };
+	},
+};
+
 /** Returns the region of the card titled `title`, once it has loaded. */
 function cardOf(canvasElement: HTMLElement, title: string) {
 	return within(canvasElement).findByRole("region", { name: title });
@@ -450,6 +474,25 @@ export const BuybacksZeroNet: Story = {
 			name: bar.textContent,
 			height: bar.parentElement?.getBoundingClientRect().height,
 		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: card 4.4 reads each point by its own fiscal year, so a point in
+ * the wrong year's slot draws nothing there, never a bar for the wrong year.
+ */
+export const ShareCountOutOfStep: Story = {
+	parameters: { companyGateway: sharesOutOfStepGateway },
+	play: async ({ canvasElement }) => {
+		const plot = await plotOf(canvasElement, SHARE_COUNT);
+
+		const expectedResult = [1, 1, 1, 1, 0, 1, 1, 1, 1, 1];
+
+		const result = within(plot)
+			.getAllByRole("listitem")
+			.map((group) => within(group).queryAllByRole("button").length);
 
 		await expect(result).toEqual(expectedResult);
 	},
