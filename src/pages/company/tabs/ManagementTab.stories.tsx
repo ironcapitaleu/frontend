@@ -114,10 +114,10 @@ function tradesGateway(bought: (number | null)[]): CompanyGateway {
 
 /** Finds the plot of card 6.5. */
 async function tradesPlotOf(canvasElement: HTMLElement) {
-	const plots = await within(canvasElement).findAllByRole("list", {
-		name: "Fiscal years",
+	const card = await within(canvasElement).findByRole("region", {
+		name: /^6\.5/,
 	});
-	return plots[1] as HTMLElement;
+	return within(card).findByRole("list", { name: "Fiscal years" });
 }
 
 /** Tells, for each bar of `plot`, whether it sits above the zero line. */
@@ -383,10 +383,14 @@ export const NoPayActions: Story = {
 	play: async ({ canvasElement }) => {
 		const expectedResult: string[] = [];
 
-		await within(canvasElement).findByRole("region", { name: /^6\.5/ });
-		const result = within(canvasElement)
-			.queryAllByRole("button", { name: "Data" })
-			.map((button) => button.textContent);
+		const cards = await within(canvasElement).findAllByRole("region", {
+			name: /^6\.[25]/,
+		});
+		const result = cards.flatMap((card) =>
+			within(card)
+				.queryAllByRole("button")
+				.map((button) => button.textContent),
+		);
 
 		await expect(result).toEqual(expectedResult);
 	},
@@ -476,9 +480,9 @@ export const ZeroTradeYear: Story = {
 	},
 };
 
-/** Play test: "Data" swaps card 6.5 for a table in thousands of shares, and a figure that is not a number shows the dash, never NaN. */
+/** Play test: "Data" swaps card 6.5 for a table of whole shares, so a net sale of 400 shares reads −400, not 0, and a figure that is not a number shows the dash, never NaN. */
 export const TradesData: Story = {
-	parameters: { companyGateway: tradesGateway([Number.NaN, 60_000]) },
+	parameters: { companyGateway: tradesGateway([Number.NaN, 249_600]) },
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 		await tradesPlotOf(canvasElement);
@@ -486,7 +490,7 @@ export const TradesData: Story = {
 
 		const expectedResult = [
 			["FY2024", "—"],
-			["FY2025", "−190"],
+			["FY2025", "−400"],
 		];
 
 		const table = canvas.getByRole("table", { name: /^Insider buying/ });
@@ -494,6 +498,34 @@ export const TradesData: Story = {
 			.getAllByRole("row")
 			.slice(1)
 			.map((row) => [...row.children].map((cell) => cell.textContent));
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: when no year has both a buy and a sell figure, card 6.5 says so
+ * and draws no chart and no "Data" button.
+ */
+export const NoNetYear: Story = {
+	parameters: { companyGateway: tradesGateway([null, null]) },
+	play: async ({ canvasElement }) => {
+		const card = await within(canvasElement).findByRole("region", {
+			name: /^6\.5/,
+		});
+
+		const expectedResult = {
+			line: "No year has both a buy and a sell figure, so no net can be drawn.",
+			plots: 0,
+			data: 0,
+		};
+
+		const result = {
+			line: within(card).getByText(/no net/).textContent,
+			plots: within(card).queryAllByRole("list", { name: "Fiscal years" })
+				.length,
+			data: within(card).queryAllByRole("button", { name: "Data" }).length,
+		};
 
 		await expect(result).toEqual(expectedResult);
 	},

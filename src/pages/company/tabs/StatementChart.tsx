@@ -51,7 +51,8 @@ export function StatementChart({
  * `table`, such as a fiscal year, and one bar per line, oldest column first.
  * Every bar is a figure: hover or focus previews its sources, and a click or
  * a tap pins them. A missing point draws a dimmed dash on the zero line. A
- * legend names the lines. The year labels are short, such as `FY26`, so ten
+ * reported zero draws a 2 px mark just above the zero line, or just below it
+ * when the line sits at the top of the plot. A legend names the lines. The year labels are short, such as `FY26`, so ten
  * of them fit at 390 px. Each group names its full year to a screen reader.
  * A bar keeps its drawn height, but its trigger is at least 24 px tall, and
  * every bar is 24 px wide, so a small bar can still be tapped. The trigger
@@ -151,10 +152,9 @@ export function BarChart({
 										const room =
 											((negative ? 100 - zero : zero) / 100) * PLOT_HEIGHT;
 										const growsDown = negative === room >= MIN_TARGET;
-										// A reported zero draws a 2 px mark on the side of the zero
-										// line with room, so it never reads as a missing year.
+										// A reported zero draws a 2 px mark above the zero line, kept
+										// inside the plot, so it never reads as a missing year.
 										const zeroMark = point.value === 0;
-										const markTop = room >= 2 ? `${top}% - 2px` : `${top}%`;
 										return (
 											<div
 												key={line.key}
@@ -180,7 +180,10 @@ export function BarChart({
 														box
 															? { bottom: box.bottom, height: box.height }
 															: zeroMark
-																? { top: `calc(${markTop})`, height: "2px" }
+																? {
+																		top: `max(0px, calc(${top}% - 2px))`,
+																		height: "2px",
+																	}
 																: { top: `${top}%`, height: `${height}%` }
 													}
 												>

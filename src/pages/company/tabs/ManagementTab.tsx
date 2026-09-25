@@ -6,7 +6,6 @@ import { ShareBar } from "@/components/company/ShareBar";
 import { SourcesChip } from "@/components/company/SourcesChip";
 import { SourcesIndex } from "@/components/company/SourcesIndex";
 import { MISSING, toFixedWithMinus } from "@/components/screener/format";
-import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
 	Table,
@@ -196,6 +195,13 @@ function thousands(value: ClaimValue): string {
 		: MISSING;
 }
 
+/** Writes a whole share count, such as `−280,000` or `−400`, or the dash when it is not a finite number. */
+function shares(value: ClaimValue): string {
+	return typeof value === "number" && Number.isFinite(value)
+		? toFixedWithMinus(value, 0, true)
+		: MISSING;
+}
+
 /** Writes a fiscal year in full, `FY2026`, or short, `FY26`, or the dash when it is not a whole number. */
 function yearLabel(fiscalYear: number, full: boolean): string {
 	if (!Number.isInteger(fiscalYear)) return MISSING;
@@ -238,19 +244,11 @@ function CeoPayCard({
 			span={2}
 			className="min-w-0"
 			actions={
-				<>
-					{ceoPay.length > 0 && (
-						<Button
-							variant="outline"
-							size="sm"
-							aria-pressed={data}
-							onClick={() => setData(!data)}
-						>
-							Data
-						</Button>
-					)}
+				ceoPay.length > 0 ? (
+					<ChartActions data={data} onData={setData} claims={claims} />
+				) : (
 					<SourcesChip claims={claims} />
-				</>
+				)
 			}
 		>
 			{ceoPay.length === 0 ? (
@@ -296,7 +294,8 @@ function CeoPayCard({
 
 /**
  * Card 6.5: the net shares that insiders bought, above zero, or sold, below
- * zero, in each fiscal year. "Data" swaps the chart for a table.
+ * zero, in each fiscal year. "Data" swaps the chart for a table. With no
+ * net figure in any year, the card shows only its sources.
  */
 function InsiderTradesCard({
 	management,
@@ -313,16 +312,17 @@ function InsiderTradesCard({
 		short: yearLabel(fiscalYear, false),
 	}));
 	const [first, last] = [years[0], years.at(-1)];
+	const hasNet = net.points.some((point) => point !== null);
 	return (
 		<CompanyCard
 			tab="management"
 			position={5}
 			title="Insider Buying and Selling by Year"
-			caption={`${first?.label ?? MISSING}–${last?.label ?? MISSING} · Thousands of shares, net of sales · Form 4 filings of officers and directors`}
+			caption={`${first?.label ?? MISSING}–${last?.label ?? MISSING} · Shares, net of sales · Form 4 filings of officers and directors`}
 			span={2}
 			className="min-w-0"
 			actions={
-				years.length > 0 ? (
+				hasNet ? (
 					<ChartActions data={data} onData={setData} claims={claims} />
 				) : (
 					<SourcesChip claims={claims} />
@@ -332,6 +332,10 @@ function InsiderTradesCard({
 			{years.length === 0 ? (
 				<p className="text-muted-foreground">
 					No officer or director reports a trade.
+				</p>
+			) : !hasNet ? (
+				<p className="text-muted-foreground">
+					No year has both a buy and a sell figure, so no net can be drawn.
 				</p>
 			) : data ? (
 				<Table aria-label="Insider buying and selling by year">
@@ -349,7 +353,7 @@ function InsiderTradesCard({
 								</TableHead>
 								<FigureCell
 									figure={net.points[position] ?? null}
-									format={thousands}
+									format={shares}
 								/>
 							</TableRow>
 						))}
@@ -361,7 +365,7 @@ function InsiderTradesCard({
 						columns: years,
 						lines: [{ key: "net", label: "Net shares", points: net.points }],
 					}}
-					format={(claim) => thousands(claim.value)}
+					format={(claim) => shares(claim.value)}
 				/>
 			)}
 		</CompanyCard>
