@@ -311,9 +311,8 @@ Rules for the screener:
 > which the user approved on 2026-09-24. The made-up figures for Meridian
 > Semiconductor (MRDN) stay on the canvas. The epic covers US companies that
 > file with the SEC. Pages for companies that report elsewhere are a later
-> decision. Whether the six printed regions fit both A4 and Letter is open.
-> The Export milestone of the epic owns the print tickets and records the
-> answer here.
+> decision. The printed summary takes two pages on both A4 and Letter, as
+> "Print Summary" below records with its measurements.
 
 The company page is part of the product machinery, so the modern pole leads.
 The company name in the masthead is in `font-classic`, like the name in the
@@ -672,40 +671,73 @@ Filings has one card:
 
 ### Print Summary
 
-The print stylesheet turns Overview into one page. The printed page holds more
-than Overview shows on screen: the ten-year table and the shareholder-returns
-block. So the Overview route also loads the income, cash flow and
-shareholder-returns figures that the printed page needs. The printed page has
-these regions, from top to bottom:
+The print stylesheet turns Overview into a two-page summary. The printed page
+holds more than Overview shows on screen: the ten-year table and the
+shareholder-returns block. So the Overview route also loads the income, cash
+flow and shareholder-returns figures that the printed page needs. The printed
+page has these regions, from top to bottom:
 
 1. **Masthead.** The Iron Capital wordmark, the company name, the listings,
    sector, country and currency. On the right sit the price, the 52-week range,
    and the date of the closing price.
 2. **Key figures.** One strip of the eight key figures. Each figure except
    market cap shows its sector median.
-3. **The business** and **Checks by area**, side by side. The business holds
-   the company summary, the revenue split by segment, and a bar chart of
-   revenue and free cash flow by fiscal year. Checks by area lists the five
-   areas with their rings and checks.
+3. **The business** and **Checks by area**, side by side. The business takes
+   one third of the width. It holds the company summary, the revenue split by
+   segment, and bar charts of revenue and free cash flow by fiscal year.
+   Checks by area takes two thirds and sets the five areas in two columns,
+   with their rings and checks. A check prints without its line of sources,
+   because the sources footer names the filings.
 4. **Ten years of results.** A table of the main income, cash flow and share
-   lines, one column per fiscal year.
+   lines, one column per fiscal year: revenue, operating income, operating
+   margin, net income, diluted EPS, operating cash flow, capital expenditure,
+   free cash flow, dividends paid, share repurchases and diluted shares.
 5. **Balance sheet**, **Shareholder returns** and **Ownership**, as three short
-   blocks side by side.
-6. **Sources footer.** The filings behind the page, the sample-data notice,
-   the date generated, and the page number.
+   blocks side by side. Balance sheet shows the assets and liabilities of
+   Financial Position, short term and long term. Shareholder returns shows the
+   latest dividend per share and the latest dividend declared, each a dimmed
+   `—` until its section loads. Ownership draws the bar of Who Owns It, with
+   its rules.
+6. **Sources footer.** The filings behind the printed figures, one entry for
+   each form, such as "10-K for FY2017 to FY2026 (10 filings)". It leaves out
+   the sector medians and the Profile, which the paper does not show. Then the
+   sample-data notice and the date generated. The page number, such as "Page 1
+   of 2", sits at the foot of each page, in the margin of the `@page` rule.
 
 The printed page does not show the site navigation, the breadcrumb, the tab
 strip, the Export button, the "Data" buttons, the "Sources" chips, the source
 cards, or the sources index.
 
-`PrintSummary` in `src/pages/company/PrintSummary.tsx` draws regions 1 to 3.
+`PrintSummary` in `src/pages/company/PrintSummary.tsx` draws the six regions.
 It is `hidden` on the screen, and the print stylesheet in `src/index.css`
 shows it in place of Overview. It prints with the light tokens in either
 theme, because paper is white. The stories in `PrintSummary.stories.tsx`
-render it at print media on the printable area of A4 and of Letter, inside a
-12 mm margin. On A4, regions 1 to 3 fill the 1,032 px of one page. On
-Letter they take 993 px, 28 px more than the 965 px of one page. So regions 4
-to 6 need a denser layout or a second page, and STA-260 decides which.
+render it at print media on the printable area of A4 (703 × 1,032 px) and of
+Letter (725 × 965 px), inside a 12 mm margin.
+
+**Type floor.** No printed text is smaller than 7 pt, the floor for tables,
+figures and labels. No printed paragraph is smaller than 8 pt, the floor for
+prose. The print root size is 15px, so `text-xs`, the smallest size in use,
+prints at 7 pt, and the body of the summary, `text-sm`, at 7.7 pt. A
+paragraph prints at 8 pt and sets ragged right. The story
+`PrintsAtTheTypeFloor` checks both floors.
+
+**Fit.** The summary prints on two pages on both papers. Regions 1 to 3 fill
+the first page, and region 4 starts the second with `break-before: page`.
+One page is not possible at a readable size. At the earlier 12px root, the
+body printed at 6.2 pt, and regions 1 to 3 alone took 993 px of the
+summary's own height on both papers, more than the 965 px of a Letter page.
+(The 1,032 px recorded before was the height of the A4 viewport, not of the
+summary.) At the type floor the six regions take 1,265 px on A4 and 1,237 px
+on Letter, more than one page of either. Measured on the summary's
+`scrollHeight`, the pages take:
+
+| Paper  | Page height | First page | Second page |
+| ------ | ----------- | ---------- | ----------- |
+| A4     | 1,032 px    | 844 px     | 421 px      |
+| Letter | 965 px      | 815 px     | 422 px      |
+
+The stories `PrintedOnA4` and `PrintedOnLetter` check that each page fits.
 
 ---
 

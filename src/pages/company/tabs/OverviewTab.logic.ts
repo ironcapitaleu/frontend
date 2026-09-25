@@ -84,6 +84,25 @@ const TEN_YEARS: readonly TenYearsSource[] = [
 ];
 
 /**
+ * The lines and metrics of region 4 "Ten years of results" of the printed
+ * page (DESIGN.md §8 "Print Summary"): the main income, cash flow and share
+ * lines, in this order.
+ */
+const RESULTS: readonly TenYearsSource[] = [
+	{ line: "revenue", label: "Revenue", unit: "usd" },
+	{ line: "operatingIncome", label: "Operating income", unit: "usd" },
+	{ metric: "operatingMargin", label: "Operating margin", unit: "percent" },
+	{ line: "netIncome", label: "Net income", unit: "usd" },
+	{ line: "dilutedEps", label: "Diluted EPS", unit: "usdPerShare" },
+	{ line: "operatingCashFlow", label: "Operating cash flow", unit: "usd" },
+	{ line: "capitalExpenditure", label: "Capital expenditure", unit: "usd" },
+	{ metric: "freeCashFlow", label: "Free cash flow", unit: "usd" },
+	{ line: "dividendsPaid", label: "Dividends paid", unit: "usd" },
+	{ line: "shareRepurchases", label: "Share repurchases", unit: "usd" },
+	{ line: "dilutedShares", label: "Diluted shares", unit: "shares" },
+];
+
+/**
  * Returns the four series of "Ten Years at a Glance" over the fiscal years of
  * the annual income statement. A metric gets one point for each year from
  * `evaluateMetric`, and a year without a value gets a `null` point. A line
@@ -91,13 +110,40 @@ const TEN_YEARS: readonly TenYearsSource[] = [
  * Financials loads.
  */
 export function tenYearsSeries(sections: CompletedSections): Series[] {
+	return annualSeries(TEN_YEARS, sections);
+}
+
+/**
+ * Returns the series of region 4 "Ten years of results" of the printed page,
+ * by the rules of {@link tenYearsSeries}. A line comes from the annual income
+ * statement or the annual cash flow statement.
+ */
+export function resultsSeries(sections: CompletedSections): Series[] {
+	return annualSeries(RESULTS, sections);
+}
+
+/** Returns one series for each of `sources` over the fiscal years of the annual income statement. */
+function annualSeries(
+	sources: readonly TenYearsSource[],
+	sections: CompletedSections,
+): Series[] {
 	const { financials } = sections;
 	if (financials === null) return [];
-	const { periods, lines } = financials.income.annual;
-	return TEN_YEARS.map(({ label, unit, ...source }) => {
+	const { periods } = financials.income.annual;
+	const tables = [financials.income.annual, financials.cashFlow.annual];
+	return sources.map(({ label, unit, ...source }) => {
 		if ("line" in source) {
-			const line = lines.find(({ key }) => key === source.line);
-			const points = line?.points ?? periods.map(() => null);
+			// A cash flow line takes the point of the same fiscal year.
+			const table = tables.find(({ lines }) =>
+				lines.some(({ key }) => key === source.line),
+			);
+			const line = table?.lines.find(({ key }) => key === source.line);
+			const points = periods.map(({ fiscalYear }) => {
+				const at = table?.periods.findIndex(
+					(period) => period.fiscalYear === fiscalYear,
+				);
+				return (at === undefined ? null : line?.points[at]) ?? null;
+			});
 			return { key: source.line, label, unit, periods, points };
 		}
 		const points = periods.map((period) => {

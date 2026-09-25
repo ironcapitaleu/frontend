@@ -419,14 +419,21 @@
 }
 
 /* The print stylesheet (DESIGN.md §8 "Print Summary"). The page prints on A4
-   or Letter, so the margin fits both, and a smaller root size fits the
-   summary on one page. The bars are backgrounds, so they print in color. */
+   or Letter, so the margin fits both, and the page number sits at the foot
+   of each page. At a root size of 15px, the smallest type, `text-xs`, prints
+   at 7pt, the floor for tables and labels. The bars are backgrounds, so they
+   print in color. */
 @media print {
 	@page {
 		margin: 12mm;
+		@bottom-right {
+			content: "Page " counter(page) " of " counter(pages);
+			font-family: var(--font-sans-serif);
+			font-size: 7pt;
+		}
 	}
 	html {
-		font-size: 12px;
+		font-size: 15px;
 		print-color-adjust: exact;
 	}
 }
@@ -441,10 +448,12 @@
 			display: flex !important;
 		}
 	}
-	/* A paragraph of the printed summary takes the size of its region, not the
-	   reading size of the screen, so the summary stays dense. */
+	/* A paragraph of the printed summary is prose, and prints at 8pt, the
+	   floor for prose, not at the reading size of the screen. Its columns
+	   are narrow, so it sets ragged right. */
 	[data-slot="print-summary"] p {
-		font-size: inherit;
+		font-size: 8pt;
 		line-height: 1.4;
+		text-align: left;
 	}
 }

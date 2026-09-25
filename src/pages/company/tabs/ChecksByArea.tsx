@@ -85,11 +85,15 @@ export function ChecksByArea({ sections }: { sections: CompletedSections }) {
 					</li>
 				))}
 			</ul>
-			<div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+			<div className="grid grid-cols-1 gap-6 md:grid-cols-2 print:block print:columns-2">
 				{summaries.map(({ area, results, metCount, sentences }) => {
 					const { label, icon: Icon } = AREAS[area];
 					return (
-						<section key={area} aria-label={label}>
+						<section
+							key={area}
+							aria-label={label}
+							className="print:mb-4 print:break-inside-avoid"
+						>
 							<h3 className="mb-3 flex items-center gap-2 font-medium">
 								<Icon className="size-4 text-muted-foreground" aria-hidden />
 								{label}
@@ -152,7 +156,10 @@ function CheckItem({
 					)}
 				</p>
 				{sources.length > 0 && (
-					<p data-slot="source-line" className="text-muted-foreground text-sm">
+					<p
+						data-slot="source-line"
+						className="text-muted-foreground text-sm print:hidden"
+					>
 						{sourceLine(sources)}
 					</p>
 				)}
