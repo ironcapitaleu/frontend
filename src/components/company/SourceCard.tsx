@@ -161,7 +161,7 @@ function SourceTrigger({
 	// While the figure holds focus, the pointer leaving it keeps the preview open.
 	const focused = React.useRef(false);
 	const triggerClass = cn(
-		"cursor-help rounded-sm underline decoration-muted-foreground decoration-dotted underline-offset-4 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+		"cursor-help rounded-sm underline decoration-muted-foreground decoration-dotted underline-offset-4 outline-none print:no-underline focus-visible:ring-[3px] focus-visible:ring-ring/50",
 		className,
 	);
 
@@ -171,7 +171,7 @@ function SourceTrigger({
 				<SheetTrigger className={triggerClass} style={style}>
 					{children}
 				</SheetTrigger>
-				<SheetContent side="bottom">
+				<SheetContent side="bottom" className="print:hidden">
 					<SheetBody className="flex flex-col gap-3">
 						<SheetTitle className="font-serif text-xl">
 							Sources of {claim.label}
@@ -221,7 +221,7 @@ function SourceTrigger({
 					<Popover.Popup
 						initialFocus={false}
 						aria-label={`Sources of ${claim.label}`}
-						className="w-100 max-w-[calc(100vw-2rem)] rounded-md border border-border bg-popover p-4 text-popover-foreground shadow-md outline-none"
+						className="w-100 max-w-[calc(100vw-2rem)] print:hidden rounded-md border border-border bg-popover p-4 text-popover-foreground shadow-md outline-none"
 					>
 						<SourceCard claim={claim} />
 					</Popover.Popup>

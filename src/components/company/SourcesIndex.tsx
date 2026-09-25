@@ -45,7 +45,7 @@ function SourcesIndex({ groups }: SourcesIndexProps) {
 	}
 
 	return (
-		<Accordion>
+		<Accordion className="print:hidden">
 			<AccordionItem>
 				<AccordionTrigger className="font-serif text-xl">
 					Where these numbers come from

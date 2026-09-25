@@ -25,7 +25,7 @@ function SourcesChip({ claims }: { claims: readonly Claim[] }) {
 			<Popover.Trigger
 				className={cn(
 					buttonVariants({ variant: "outline", size: "sm" }),
-					"rounded-full",
+					"rounded-full print:hidden",
 				)}
 			>
 				Sources

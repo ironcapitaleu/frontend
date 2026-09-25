@@ -47,7 +47,7 @@ function CompanyTabs({
 			data-slot="company-tabs"
 			aria-label="Company sections"
 			className={cn(
-				"relative overflow-x-auto border-b border-border",
+				"relative overflow-x-auto border-b border-border print:hidden",
 				className,
 			)}
 			{...props}
