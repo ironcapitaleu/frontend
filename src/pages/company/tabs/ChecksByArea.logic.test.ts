@@ -50,7 +50,7 @@ describe("sentenceOf", () => {
 
 	it("should say the cash is not above the debt when B1 is not met", () => {
 		const expectedResult =
-			"Cash and short-term investments ($540.0M) is not above total debt ($652.5M).";
+			"Cash and short-term investments ($540.0M) are not above total debt ($652.5M).";
 
 		const result = sentence("B1");
 
@@ -59,16 +59,25 @@ describe("sentenceOf", () => {
 
 	it("should name the missing section when V2 is read before Valuation loads", () => {
 		const expectedResult =
-			"The free cash flow yield (2.7%) needs to be above the 10-year Treasury yield (—), but a section has not loaded yet.";
+			"The free cash flow yield (2.7%) needs to be above the 10-year Treasury yield (—), but a section of the page has no data.";
 
 		const result = sentence("V2", { ...sections, valuation: null });
 
 		expect(result).toBe(expectedResult);
 	});
 
+	it("should give the plural verb and name the compared shares when S1 is read", () => {
+		const expectedResult =
+			"Diluted shares in the latest fiscal year (151.1M) are below diluted shares five fiscal years earlier (158.4M).";
+
+		const result = sentence("S1");
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should name the missing section when C1 is read before Financials loads", () => {
 		const expectedResult =
-			"Free cash flow was above 0 in —. The rule asks for at least 8, but a section has not loaded yet.";
+			"Free cash flow was above 0 in —. The rule asks for at least 8, but a section of the page has no data.";
 
 		const result = sentence("C1", { ...sections, financials: null });
 
