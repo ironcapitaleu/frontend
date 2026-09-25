@@ -225,6 +225,7 @@ const blockKeys = [
 	"valuationRatios",
 	"yieldsAgainstTreasury",
 	"ratioFormulas",
+	"dividendPerShare",
 	"largestFunds",
 	"insiders",
 	"ownershipSplit",
@@ -435,6 +436,13 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 						...metricInputsOf(ratio, sections),
 					])
 				: null,
+	},
+	dividendPerShare: {
+		tab: "shareholderReturns",
+		label: "Dividend per Share",
+		drawn: true,
+		company: ({ shareholderReturns }) =>
+			shareholderReturns ? shareholderReturns.dividendPerShare.points : null,
 	},
 	// The block reads the reported inputs of `fundShare` and `fundChange` for
 	// the rows that card 5.1 lists, so the index names no other fund's 13F.
