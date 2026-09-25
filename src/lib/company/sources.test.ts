@@ -1053,3 +1053,18 @@ describe("feedsOf", () => {
 		expect(result).toEqual(expectedResult);
 	});
 });
+
+describe("Shareholder returns blocks", () => {
+	it("should read the dividend per share of each fiscal year when card 4.1 is read", () => {
+		const expectedResult =
+			fakeCompanyReport.shareholderReturns.dividendPerShare.points.map(
+				(point) => point?.id,
+			);
+
+		const result = figureGroupsOf("shareholderReturns", sections).flatMap(
+			({ claims }) => claims.map(({ id }) => id),
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+});
