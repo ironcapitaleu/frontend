@@ -262,17 +262,21 @@ export interface StackBox {
 
 /**
  * Returns where each part of a stacked chart `plot` px tall sits, as
- * `boxes[line][column]`, first line lowest. A part that is not a finite
- * number, or that is negative, is `null` and draws nothing. The height of a
- * part is its value times one unit for the whole chart, so parts keep their
- * proportions. A reported zero takes a {@link ZERO_MARK} px mark, and the
- * unit leaves room for those marks, so no column overflows the plot.
+ * `boxes[line][column]`, and the zero line, `zero` px up from the foot. A
+ * part that is not a finite number is `null` and draws nothing. Parts of 0 or
+ * more stack up from the zero line, first line lowest, and negative parts
+ * stack down from it, first line highest. The zero line sits as far up as
+ * the deepest negative column reaches, so it is at the foot when no part is
+ * negative. The height of a part is its size times one unit for the whole
+ * chart, so parts keep their proportions. A reported zero takes a
+ * {@link ZERO_MARK} px mark above the zero line, and the unit leaves room for
+ * those marks, so no column overflows the plot.
  *
  * A part keeps its drawn height, but its trigger is at least `least` px
  * tall. Each trigger starts at the foot of its part and grows up. When it
  * meets the trigger below, it moves up, and at the top of the plot it moves
- * down, so it stays inside the plot and never grows below the foot. A later
- * trigger lies above an earlier one. Triggers start at least `least` px
+ * down, so it stays inside the plot and never grows below the foot. A higher
+ * part's trigger lies above a lower one's. Triggers start at least `least` px
  * apart, so each keeps a strip of `least` px that no other trigger covers.
  * When a column has too many parts for that, the triggers start
  * `(plot - least) / (parts - 1)` px apart instead. They then overlap, but
@@ -282,21 +286,26 @@ export function stackScale(
 	table: BarTable,
 	plot: number,
 	least: number,
-): Nullable<StackBox>[][] {
+): { zero: number; boxes: Nullable<StackBox>[][] } {
 	const values = table.lines.map(({ points }) =>
 		table.columns.map((_, column) => {
 			const value = points[column]?.value;
-			return typeof value === "number" && Number.isFinite(value) && value >= 0
-				? value
-				: null;
+			return typeof value === "number" && Number.isFinite(value) ? value : null;
 		}),
 	);
 	const columns = table.columns.map((_, column) =>
 		values.map((row) => row[column] ?? null),
 	);
+	const sumOf = (parts: readonly Nullable<number>[], sign: 1 | -1) =>
+		parts.reduce<number>(
+			(sum, value) => sum + Math.max(0, sign * (value ?? 0)),
+			0,
+		);
+	// The deepest negative column sets the room below the zero line.
+	const depth = Math.max(0, ...columns.map((parts) => sumOf(parts, -1)));
 	// One scale for the chart: the column that fills the plot soonest sets it.
 	const scales = columns.flatMap((parts) => {
-		const total = parts.reduce<number>((sum, value) => sum + (value ?? 0), 0);
+		const total = depth + sumOf(parts, 1);
 		const marks = parts.filter((value) => value === 0).length * ZERO_MARK;
 		return total > 0 ? [{ room: Math.max(0, plot - marks), total }] : [];
 	});
@@ -307,30 +316,44 @@ export function stackScale(
 				: tightest,
 		scales[0] ?? { room: 0, total: 1 },
 	);
+	const heightOf = (value: number) => (Math.abs(value) * room) / total;
+	const zero = heightOf(depth);
 	const boxes = columns.map((parts) =>
-		stackColumn(parts, (value) => (value * room) / total, plot, least),
+		stackColumn(parts, heightOf, zero, plot, least),
 	);
-	return values.map((row, line) =>
-		row.map((_, column) => boxes[column]?.[line] ?? null),
-	);
+	return {
+		zero,
+		boxes: values.map((row, line) =>
+			row.map((_, column) => boxes[column]?.[line] ?? null),
+		),
+	};
 }
 
 /** Returns the boxes of one column of {@link stackScale}, one for each part in `parts`. */
 function stackColumn(
 	parts: readonly Nullable<number>[],
 	heightOf: (value: number) => number,
+	zero: number,
 	plot: number,
 	least: number,
 ): Nullable<StackBox>[] {
-	let foot = 0;
+	let top = zero;
+	let foot = zero;
 	const drawn = parts.map((value) => {
 		if (value === null) return null;
-		const bottom = foot;
+		if (value < 0) {
+			foot -= heightOf(value);
+			return { bottom: foot, height: heightOf(value) };
+		}
+		const bottom = top;
 		const height = value === 0 ? ZERO_MARK : heightOf(value);
-		foot += height;
+		top += height;
 		return { bottom, height };
 	});
-	const known = drawn.filter((box) => box !== null);
+	// Triggers stack in the order of the parts on the plot, lowest first.
+	const known = drawn
+		.filter((box) => box !== null)
+		.sort((a, b) => a.bottom - b.bottom);
 	const step =
 		known.length > 1 ? Math.min(least, (plot - least) / (known.length - 1)) : 0;
 	const lows = known.map(({ bottom }) => bottom);
@@ -342,10 +365,9 @@ function stackColumn(
 			index === lows.length - 1 ? plot - least : (lows[index + 1] ?? 0) - step;
 		lows[index] = Math.max(0, Math.min(lows[index] ?? 0, ceiling));
 	}
-	let position = 0;
 	return drawn.map((box) => {
 		if (box === null) return null;
-		const low = lows[position++] ?? 0;
+		const low = lows[known.indexOf(box)] ?? 0;
 		const height = Math.max(box.bottom + box.height - low, least);
 		return { ...box, trigger: { bottom: low, height } };
 	});
