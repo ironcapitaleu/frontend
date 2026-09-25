@@ -20,7 +20,8 @@ export type SentencePart =
 	| {
 			readonly key: "subject" | "against" | "guard" | "count";
 			readonly figure: Figure;
-			readonly format?: (value: number) => string;
+			/** Writes the figure's number, in the unit of the figure. */
+			readonly format: (value: number) => string;
 	  };
 
 /** The words of each check: its subject, and the figure it is compared with. */
@@ -78,11 +79,7 @@ export function sentenceOf(
 	if (reason === "failedGuard") {
 		return [
 			`${guard?.label ?? subject} is `,
-			{
-				key: "guard",
-				figure: guard,
-				format: (value) => formatInput({ value, unit: guard?.unit ?? "ratio" }),
-			},
+			claimPart("guard", guard),
 			", not above 0, so the check has no reading.",
 		];
 	}
@@ -100,7 +97,7 @@ export function sentenceOf(
 				),
 				format: (count) => `${count} of ${points.length} years`,
 			},
-			`. The rule asks for at least ${required}${state === "notEnoughData" ? `, and ${REASON_WORDS.shortHistory}` : ""}.`,
+			`. The rule asks for at least ${required}${reason ? `, but ${REASON_WORDS[reason]}` : ""}.`,
 		];
 	}
 	const [figure = null, bound = null] = figureRefsOf(check).map((ref) => {
@@ -117,14 +114,30 @@ export function sentenceOf(
 	const tail: SentencePart[] =
 		threshold.kind === "value"
 			? [`the threshold of ${formatInUnit(threshold.value, unit)}`]
-			: [`${against} (`, { key: "against", figure: bound }, ")"];
+			: [`${against} (`, claimPart("against", bound), ")"];
 	return [
 		`${subject} (`,
-		{ key: "subject", figure },
+		claimPart("subject", figure),
 		`) ${verb} ${words} `,
 		...tail,
 		reason ? `, but ${REASON_WORDS[reason]}.` : ".",
 	];
+}
+
+/**
+ * Returns the part of a sentence that holds `figure`, written by
+ * `formatInput` in the figure's own unit, such as `−$1.20` for a loss per
+ * share.
+ */
+function claimPart(
+	key: "subject" | "against" | "guard",
+	figure: Figure,
+): SentencePart {
+	return {
+		key,
+		figure,
+		format: (value) => formatInput({ value, unit: figure?.unit ?? "ratio" }),
+	};
 }
 
 /**

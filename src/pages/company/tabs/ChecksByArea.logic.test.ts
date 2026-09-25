@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { formatInUnit } from "@/components/company/format";
 import { MISSING } from "@/components/screener/format";
 import { type CheckId, checks, evaluateCheck } from "@/lib/company/checks";
 import { completeSections } from "@/lib/company/metrics";
 import type { Claim, CompletedSections } from "@/lib/company/types";
 import { fakeCompanyReport } from "../../../test/fixtures/companies/fake-company-report";
-import { type SentencePart, sentenceOf } from "./ChecksByArea.logic";
+import {
+	type SentencePart,
+	sentenceClaims,
+	sentenceOf,
+} from "./ChecksByArea.logic";
 
 const sections = completeSections(fakeCompanyReport);
 
@@ -23,10 +26,9 @@ function textOf(parts: readonly SentencePart[]): string {
 		.map((part) => {
 			if (typeof part === "string") return part;
 			const { figure, format } = part;
-			if (figure === null || typeof figure.value !== "number") return MISSING;
-			return format
-				? format(figure.value)
-				: formatInUnit(figure.value, figure.unit);
+			return figure === null || typeof figure.value !== "number"
+				? MISSING
+				: format(figure.value);
 		})
 		.join("");
 }
@@ -64,6 +66,38 @@ describe("sentenceOf", () => {
 		expect(result).toBe(expectedResult);
 	});
 
+	it("should name the missing section when C1 is read before Financials loads", () => {
+		const expectedResult =
+			"Free cash flow was above 0 in —. The rule asks for at least 8, but a section has not loaded yet.";
+
+		const result = sentence("C1", { ...sections, financials: null });
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should name the compared figure in every sentence when each check is read", () => {
+		const expectedResult: CheckId[] = [];
+
+		const result = checks
+			.filter(({ id }) => sentence(id).includes("undefined"))
+			.map(({ id }) => id);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should test a metric in every check with a fixed threshold when the check set is read", () => {
+		const expectedResult: CheckId[] = [];
+
+		const result = checks
+			.filter(
+				({ threshold, subject }) =>
+					threshold.kind === "value" && subject.from !== "metric",
+			)
+			.map(({ id }) => id);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should count the years in the sentence when C2 reads a window", () => {
 		const expectedResult =
 			"Net income was above 0 in 10 of 10 years. The rule asks for at least 8.";
@@ -95,5 +129,19 @@ describe("sentenceOf", () => {
 		const result = textOf(sentenceOf(failed, sections));
 
 		expect(result).toBe(expectedResult);
+	});
+});
+
+describe("sentenceClaims", () => {
+	it("should list the two claims that B1 compares when its sentence is read", () => {
+		const checked = evaluateCheck(checkOf("B1"), sections);
+
+		const expectedResult = checked.claims.map(({ id }) => id);
+
+		const result = sentenceClaims(sentenceOf(checked, sections)).map(
+			({ id }) => id,
+		);
+
+		expect(result).toEqual(expectedResult);
 	});
 });
