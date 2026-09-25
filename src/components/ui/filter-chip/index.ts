@@ -1,1 +1,6 @@
-export { FilterChip, type FilterChipProps } from "./filter-chip";
+export {
+	FilterChip,
+	type FilterChipProps,
+	FilterChipToggle,
+	type FilterChipToggleProps,
+} from "./filter-chip";

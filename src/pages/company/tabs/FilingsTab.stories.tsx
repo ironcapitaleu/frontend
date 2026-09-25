@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, within } from "storybook/test";
+import { expect, userEvent, within } from "storybook/test";
 
 import { CompanyGatewayProvider } from "../../../contexts/CompanyGatewayContext";
 import type { CompanyGateway } from "../../../lib/company/gateway";
+import { meridianFilingsSection } from "../../../lib/company/sample/filings";
 import { sampleCompanyGateway } from "../../../lib/company/sampleCompanyGateway";
 import { Ticker } from "../../../lib/domain/ticker";
 import { alwaysFailingCompanyGateway } from "../../../test/fixtures/companies/always-failing";
@@ -34,6 +35,27 @@ async function rowOf(canvasElement: HTMLElement, accession: string) {
 	return canvasElement.querySelector(
 		`li[data-accession="${accession}"]`,
 	) as HTMLElement;
+}
+
+/** The accession numbers of the MRDN 10-Ks, newest first. */
+const tenKs = meridianFilingsSection.filings
+	.filter(({ form }) => form === "10-K")
+	.map(({ accessionNumber }) => accessionNumber);
+
+/** Presses the chip of the 10-Ks once the chips have drawn. */
+async function pressTenK(canvasElement: HTMLElement) {
+	const chip = await within(canvasElement).findByRole("button", {
+		name: `10-K ${tenKs.length}`,
+	});
+	await userEvent.click(chip);
+	return chip;
+}
+
+/** The accession numbers of the rows on screen, top to bottom. */
+function rowAccessions(canvasElement: HTMLElement) {
+	return [...canvasElement.querySelectorAll("li[data-accession]")].map((row) =>
+		row.getAttribute("data-accession"),
+	);
 }
 
 const phone = { viewport: { value: "mobile1", isRotated: false } };
@@ -102,6 +124,33 @@ export const Phone: Story = {
 				(target) => target.getBoundingClientRect().height >= 44,
 			),
 			pageScrolls: document.documentElement.scrollWidth > window.innerWidth,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: at 320 px the chip row scrolls, so it clips what spills out of
+ * it. The first chip sits at least 3 px inside the row on every side, so its
+ * 3 px focus ring shows whole.
+ */
+export const ChipFocusRing: Story = {
+	globals: phone,
+	play: async ({ canvasElement }) => {
+		const row = await within(canvasElement).findByRole("group", {
+			name: "Filter by filing type",
+		});
+		const [chip] = within(row).getAllByRole("button");
+		const outer = row.getBoundingClientRect();
+		const inner = (chip as HTMLElement).getBoundingClientRect();
+
+		const expectedResult = { top: true, bottom: true, left: true };
+
+		const result = {
+			top: inner.top - outer.top >= 3,
+			bottom: outer.bottom - inner.bottom >= 3,
+			left: inner.left - outer.left >= 3,
 		};
 
 		await expect(result).toEqual(expectedResult);
@@ -178,5 +227,77 @@ export const FinancialsFailed: Story = {
 		);
 
 		await expect(result).toHaveTextContent(expectedResult);
+	},
+};
+
+/** Play test: the 10-K chip shows only the 10-Ks, newest first, and reads as pressed. */
+export const Filtered: Story = {
+	play: async ({ canvasElement }) => {
+		const chip = await pressTenK(canvasElement);
+
+		const expectedResult = { rows: tenKs, pressed: "true" };
+
+		const result = {
+			rows: rowAccessions(canvasElement),
+			pressed: chip.getAttribute("aria-pressed"),
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: pressing the selected chip again clears the filter, so every filing shows. */
+export const FilterCleared: Story = {
+	play: async ({ canvasElement }) => {
+		const chip = await pressTenK(canvasElement);
+
+		const expectedResult = {
+			rows: meridianFilingsSection.filings.length,
+			pressed: "false",
+		};
+
+		await userEvent.click(chip);
+		const result = {
+			rows: rowAccessions(canvasElement).length,
+			pressed: chip.getAttribute("aria-pressed"),
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: at 320 px, the chips scroll in one row of 44 px targets, the 10-K chip filters and the page stays still. */
+export const PhoneFiltered: Story = {
+	globals: phone,
+	play: async ({ canvasElement }) => {
+		await pressTenK(canvasElement);
+		const group = within(canvasElement).getByRole("group", {
+			name: "Filter by filing type",
+		});
+		const chips = within(group).getAllByRole("button");
+
+		const expectedResult = {
+			oneRow: true,
+			rowScrolls: true,
+			tapTargets: true,
+			rows: tenKs,
+			pageScrolls: false,
+		};
+
+		const result = {
+			oneRow: chips.every(
+				(chip) =>
+					chip.getBoundingClientRect().top ===
+					chips[0].getBoundingClientRect().top,
+			),
+			rowScrolls: group.scrollWidth > group.clientWidth,
+			tapTargets: chips.every(
+				(chip) => chip.getBoundingClientRect().height >= 44,
+			),
+			rows: rowAccessions(canvasElement),
+			pageScrolls: document.documentElement.scrollWidth > window.innerWidth,
+		};
+
+		await expect(result).toEqual(expectedResult);
 	},
 };
