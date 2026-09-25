@@ -673,7 +673,7 @@ tab ticket adds its own keys, such as `peRange` and `ceoPay`.
 | Overview   | `business`, `tenYears`, `keyFigures`, `financialPosition`, `checksByArea`, `ownership`, `profile`, and the print-only `printedShareholderReturns` |
 | Financials | `incomeChart`, `incomeTable`, `balanceChart`, `balanceTable`, `cashFlowChart`, `cashFlowTable` |
 | Valuation  | `valuationRatios`, `yieldsAgainstTreasury` (each yield, or the inputs of a missing one), `ratioFormulas` |
-| Shareholder returns | `dividendPerShare`, `dividendsAgainstFreeCashFlow` (the inputs of each share), so far |
+| Shareholder returns | `dividendPerShare`, `dividendsAgainstFreeCashFlow` (the inputs of each share), `buybacksNetOfStaffShares` (both sides of each year, so a 10-K stays in the index when no net exists), so far. Each block names no filing until both of the tab's sections load, since the tab draws no card before then |
 | Relationships | `largestFunds`, `insiders`, `ownershipSplit`, `subsidiaries`, `stakes` |
 | Management | `executivesAndBoard`, `ceoPay`, `payMix`, `insiderHoldings`, `insiderBuyingAndSelling` (both sides of each year, so a Form 4 stays in the index when no net exists) |
 
@@ -699,7 +699,8 @@ the name. Both blocks need the Overview section only.
 and `sharesIssuedToStaff` hold the shares bought back and the shares issued
 under staff plans in each fiscal year. Each point is a reported claim from the
 statement of shareholders' equity in the 10-K of that year. They feed
-Shareholder returns card 2, "Buybacks Net of Shares Issued to Staff". They
+Shareholder returns card 4.3, "Buybacks Net of Shares Issued to Staff", and
+`netBuyback` in `metrics.ts` derives the net of each year from them. They
 are series and not statement lines, because the three statements of §4 do not
 hold them.
 

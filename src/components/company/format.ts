@@ -4,8 +4,9 @@ import {
 	formatPercent,
 	formatPrice,
 	MISSING,
+	toFixedWithMinus,
 } from "@/components/screener/format";
-import type { Claim, Unit } from "@/lib/company/types";
+import type { Claim, ClaimValue, Unit } from "@/lib/company/types";
 
 /**
  * The fixed first column of a company table below 1024 px. Its card ink lets
@@ -44,4 +45,14 @@ export function formatInput({
 	return unit === "usdPerShare"
 		? `${amount < 0 ? "−" : ""}${formatPrice(Math.abs(amount))}`
 		: formatInUnit(amount, unit);
+}
+
+/**
+ * Writes a whole share count, such as `−280,000` or `−400`, so a small count
+ * never reads as 0. A value that is not a finite number gives {@link MISSING}.
+ */
+export function formatShares(value: ClaimValue): string {
+	return typeof value === "number" && Number.isFinite(value)
+		? toFixedWithMinus(value, 0, true)
+		: MISSING;
 }

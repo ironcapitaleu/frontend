@@ -479,6 +479,7 @@ export type BlockKey =
 	| "ratioFormulas"
 	| "dividendPerShare"
 	| "dividendsAgainstFreeCashFlow"
+	| "buybacksNetOfStaffShares"
 	| "largestFunds"
 	| "insiders"
 	| "ownershipSplit"

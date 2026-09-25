@@ -17,6 +17,7 @@ import type {
 	Period,
 	RelationshipsSection,
 	Series,
+	ShareholderReturnsSection,
 	Statement,
 	StatementLine,
 	StatementTable,
@@ -1713,41 +1714,80 @@ export function payMix(management: ManagementSection): PayMix {
  * with no Form 4 is missing, not zero. Below zero is net selling.
  */
 export function netInsiderShares(management: ManagementSection): Series {
-	const { insiderSharesBought: bought, insiderSharesSold: sold } = management;
+	return netByYear(
+		"netInsiderShares",
+		"Net shares bought by insiders",
+		"Shares bought by insiders − Shares sold by insiders",
+		management.insiderSharesBought,
+		management.insiderSharesSold,
+	);
+}
+
+/**
+ * Returns the shares bought back minus the shares issued to staff, from the
+ * statement of shareholders' equity, in each whole fiscal year of either
+ * series, once each, oldest first. A year is `null` when a side is missing or
+ * not a finite number, so a missing year never reads as zero. Below zero means
+ * the company issued more shares than it bought back.
+ */
+export function netBuyback(returns: ShareholderReturnsSection): Series {
+	return netByYear(
+		"netBuyback",
+		"Net buyback",
+		"Shares bought back − Shares issued to staff",
+		returns.sharesRepurchased,
+		returns.sharesIssuedToStaff,
+	);
+}
+
+/**
+ * Returns the point of `series` in fiscal year `year`, or `null`. A point
+ * whose own period is another year is `null` too, so a series out of step
+ * with its periods never pairs one year with another.
+ */
+export function pointInYear({ periods, points }: Series, year: number): Figure {
+	const point =
+		points[periods.findIndex((period) => period.fiscalYear === year)] ?? null;
+	return point?.period?.fiscalYear === year ? point : null;
+}
+
+/**
+ * Returns `plus` minus `minus` as derived share counts, in each whole fiscal
+ * year of either series, once each, oldest first.
+ */
+function netByYear(
+	key: string,
+	label: string,
+	formula: string,
+	plus: Series,
+	minus: Series,
+): Series {
 	const byYear = new Map(
-		[...bought.periods, ...sold.periods]
+		[...plus.periods, ...minus.periods]
 			.filter((period) => Number.isInteger(period.fiscalYear))
 			.map((period) => [period.fiscalYear, period]),
 	);
 	const periods = [...byYear.values()].sort(
 		(a, b) => a.fiscalYear - b.fiscalYear,
 	);
-	const at = ({ periods: all, points }: Series, year: number) =>
-		points[all.findIndex((p) => p.fiscalYear === year)] ?? null;
 	const points = periods.map((period): Figure => {
-		const shares = at(bought, period.fiscalYear);
-		const sales = at(sold, period.fiscalYear);
-		if (!isNumberClaim(shares) || !isNumberClaim(sales)) return null;
+		const added = pointInYear(plus, period.fiscalYear);
+		const taken = pointInYear(minus, period.fiscalYear);
+		if (!isNumberClaim(added) || !isNumberClaim(taken)) return null;
 		return {
-			id: `metric.netInsiderShares.FY${period.fiscalYear}`,
-			label: `Net shares bought by insiders in FY${period.fiscalYear}`,
-			value: shares.value - sales.value,
+			id: `metric.${key}.FY${period.fiscalYear}`,
+			label: `${label} in FY${period.fiscalYear}`,
+			value: added.value - taken.value,
 			unit: "shares",
 			period,
 			source: {
 				kind: "derived",
-				formula: "Shares bought by insiders − Shares sold by insiders",
-				inputs: [shares, sales],
+				formula,
+				inputs: [added, taken],
 			},
 		};
 	});
-	return {
-		key: "netInsiderShares",
-		label: "Net shares bought by insiders",
-		unit: "shares",
-		periods,
-		points,
-	};
+	return { key, label, unit: "shares", periods, points };
 }
 
 /** An ISO date, `YYYY-MM-DD`, the only shape `yearsBetween` reads. */

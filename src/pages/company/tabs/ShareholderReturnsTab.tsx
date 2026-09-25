@@ -3,7 +3,11 @@ import * as React from "react";
 import { ChartActions } from "@/components/company/ChartActions";
 import { CompanyCard, CompanyCardGrid } from "@/components/company/CompanyCard";
 import { SourcesIndex } from "@/components/company/SourcesIndex";
-import { FIXED_COLUMN, formatInput } from "@/components/company/format";
+import {
+	FIXED_COLUMN,
+	formatInput,
+	formatShares,
+} from "@/components/company/format";
 import { Spinner } from "@/components/ui/spinner";
 import {
 	Table,
@@ -14,13 +18,18 @@ import {
 } from "@/components/ui/table";
 import { Text } from "@/components/ui/text";
 import { useCompany } from "../../../hooks/useCompany";
-import { dividendsToFreeCashFlow } from "../../../lib/company/metrics";
+import {
+	dividendsToFreeCashFlow,
+	netBuyback,
+	pointInYear,
+} from "../../../lib/company/metrics";
 import { figureGroupsOf, isDrawn } from "../../../lib/company/sources";
 import type {
 	BlockKey,
 	Claim,
 	CompletedSections,
 	Figure,
+	Period,
 	Series,
 	ShareholderReturnsSection,
 } from "../../../lib/company/types";
@@ -32,7 +41,8 @@ import { BarChart } from "./StatementChart";
 /**
  * The Shareholder returns tab of the company page (DESIGN.md §8 "Shareholder
  * returns"). It loads the financials and the Shareholder returns section, and
- * shows cards 4.1 and 4.2, then the sources index.
+ * shows cards 4.1 and 4.2 side by side, card 4.3 across both columns below
+ * them, then the sources index.
  */
 export function ShareholderReturnsTab({ ticker }: { ticker: Ticker }) {
 	const financials = useCompany(ticker, "financials");
@@ -57,7 +67,7 @@ export function ShareholderReturnsTab({ ticker }: { ticker: Ticker }) {
 	);
 }
 
-/** Cards 4.1 and 4.2 of the loaded tab, then the sources index. */
+/** Cards 4.1 to 4.3 of the loaded tab, then the sources index. */
 function LoadedReturns(props: {
 	financials: CompletedSections;
 	returns: ShareholderReturnsSection;
@@ -107,6 +117,10 @@ function LoadedReturns(props: {
 						claims={claimsOf("dividendsAgainstFreeCashFlow")}
 					/>
 				)}
+				<BuybacksCard
+					returns={returns}
+					claims={claimsOf("buybacksNetOfStaffShares")}
+				/>
 			</CompanyCardGrid>
 			<SourcesIndex groups={groups} />
 		</div>
@@ -132,11 +146,7 @@ function ChartCard(props: {
 	const [data, setData] = React.useState(false);
 	const { series, title } = props;
 	const table: BarTable = {
-		columns: series.periods.map((period) => ({
-			key: period.endsOn,
-			label: `FY${period.fiscalYear}`,
-			short: `FY${String(period.fiscalYear).slice(-2)}`,
-		})),
+		columns: columnsOf(series.periods),
 		lines: [series],
 	};
 	const reported = props.paid.flatMap((point) =>
@@ -158,27 +168,11 @@ function ChartCard(props: {
 			}
 		>
 			{data ? (
-				<Table aria-label={`${title} table`} className="text-base">
-					<TableHeader>
-						<TableRow>
-							<TableHead className={FIXED_COLUMN}>Fiscal year</TableHead>
-							<TableHead className="text-right">{series.label}</TableHead>
-						</TableRow>
-					</TableHeader>
-					<TableBody>
-						{table.columns.map((column, index) => (
-							<TableRow key={column.key}>
-								<TableHead scope="row" className={FIXED_COLUMN}>
-									{column.label}
-								</TableHead>
-								<FigureCell
-									figure={series.points[index] ?? null}
-									format={(value) => formatInput({ value, unit: series.unit })}
-								/>
-							</TableRow>
-						))}
-					</TableBody>
-				</Table>
+				<DataTable
+					title={title}
+					table={table}
+					format={(value) => formatInput({ value, unit: series.unit })}
+				/>
 			) : paidNothing ? (
 				<p className="text-base text-muted-foreground">
 					The company paid no dividend in these fiscal years.
@@ -187,5 +181,109 @@ function ChartCard(props: {
 				<BarChart table={table} format={formatInput} />
 			)}
 		</CompanyCard>
+	);
+}
+
+/**
+ * Card 4.3: the shares bought back, above zero, the shares issued to staff,
+ * below zero, and the net buyback, in each fiscal year. It takes both columns
+ * on a desktop. A year with no figure draws the dimmed dash, never a zero bar.
+ * The "Data" table shows the same signed figures as the chart.
+ */
+function BuybacksCard(props: {
+	returns: ShareholderReturnsSection;
+	claims: readonly Claim[];
+}) {
+	const [data, setData] = React.useState(false);
+	const { sharesRepurchased: bought, sharesIssuedToStaff: issued } =
+		props.returns;
+	const net = netBuyback(props.returns);
+	const inYear = (series: Series) =>
+		net.periods.map(({ fiscalYear }) => pointInYear(series, fiscalYear));
+	const title = "Buybacks Net of Shares Issued to Staff";
+	const table: BarTable = {
+		columns: columnsOf(net.periods),
+		lines: [
+			{ key: bought.key, label: bought.label, points: inYear(bought) },
+			// The chart draws the shares issued below zero. Only the drawn value
+			// flips, so each bar still opens the reported claim's sources.
+			{
+				key: issued.key,
+				label: issued.label,
+				points: inYear(issued).map((point) =>
+					typeof point?.value === "number"
+						? { ...point, value: -point.value }
+						: point,
+				),
+			},
+			net,
+		],
+	};
+	return (
+		<CompanyCard
+			tab="shareholderReturns"
+			position={3}
+			title={title}
+			caption="Last ten fiscal years · Shares · Statement of shareholders' equity, Form 10-K"
+			span={2}
+			className="min-w-0"
+			actions={
+				<ChartActions data={data} onData={setData} claims={props.claims} />
+			}
+		>
+			{data ? (
+				<DataTable title={title} table={table} format={formatShares} />
+			) : (
+				<BarChart table={table} format={(claim) => formatShares(claim.value)} />
+			)}
+		</CompanyCard>
+	);
+}
+
+/** Returns the fiscal year columns of a chart, `FY2026` in full and `FY26` short. */
+function columnsOf(periods: readonly Period[]): BarTable["columns"] {
+	return periods.map((period) => ({
+		key: period.endsOn,
+		label: `FY${period.fiscalYear}`,
+		short: `FY${String(period.fiscalYear).slice(-2)}`,
+	}));
+}
+
+/** The "Data" table of a card: one row for each fiscal year and one column for each line of `table`. */
+function DataTable(props: {
+	title: string;
+	table: BarTable;
+	format: (value: number) => string;
+}) {
+	const { table } = props;
+	return (
+		<Table aria-label={`${props.title} table`} className="text-base">
+			<TableHeader>
+				<TableRow>
+					<TableHead className={FIXED_COLUMN}>Fiscal year</TableHead>
+					{table.lines.map((line) => (
+						<TableHead key={line.key} className="text-right">
+							{line.label}
+						</TableHead>
+					))}
+				</TableRow>
+			</TableHeader>
+			<TableBody>
+				{table.columns.map((column, index) => (
+					<TableRow key={column.key}>
+						<TableHead scope="row" className={FIXED_COLUMN}>
+							{column.label}
+						</TableHead>
+						{table.lines.map((line) => (
+							<FigureCell
+								key={line.key}
+								figure={line.points[index] ?? null}
+								format={props.format}
+							/>
+						))}
+					</TableRow>
+				))}
+			</TableBody>
+		</Table>
 	);
 }

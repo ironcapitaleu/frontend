@@ -1209,6 +1209,44 @@ describe("Shareholder returns blocks", () => {
 
 		expect(result).toEqual(expectedResult);
 	});
+	it("should read no claim for card 4.1 when the Financials section has not loaded", () => {
+		// The tab draws no card without its financials, so the Filings card
+		// names no 10-K as feeding card 4.1.
+		const changed = { ...sections, financials: null };
+
+		const expectedResult: readonly Claim[] = [];
+
+		const result = claimsOf("dividendPerShare", "company", changed);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should read both sides of every fiscal year when card 4.3 is read", () => {
+		const { sharesRepurchased, sharesIssuedToStaff } =
+			fakeCompanyReport.shareholderReturns;
+		const expectedResult = [
+			...sharesRepurchased.points,
+			...sharesIssuedToStaff.points,
+		].map((point) => point?.id);
+
+		const result = claimsOf(
+			"buybacksNetOfStaffShares",
+			"company",
+			sections,
+		).map(({ id }) => id);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should read no claim for card 4.3 when the Financials section has not loaded", () => {
+		const changed = { ...sections, financials: null };
+
+		const expectedResult: readonly Claim[] = [];
+
+		const result = claimsOf("buybacksNetOfStaffShares", "company", changed);
+
+		expect(result).toEqual(expectedResult);
+	});
 });
 
 describe("documentLabel", () => {
