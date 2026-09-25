@@ -46,6 +46,15 @@ describe("sentenceOf", () => {
 		expect(result).toBe(expectedResult);
 	});
 
+	it("should say the cash is not above the debt when B1 is not met", () => {
+		const expectedResult =
+			"Cash and short-term investments ($540.0M) is not above total debt ($652.5M).";
+
+		const result = sentence("B1");
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should name the missing section when V2 is read before Valuation loads", () => {
 		const expectedResult =
 			"The free cash flow yield (2.7%) needs to be above the 10-year Treasury yield (—), but a section has not loaded yet.";
