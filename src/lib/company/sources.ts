@@ -451,6 +451,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	dividendsAgainstFreeCashFlow: {
 		tab: "shareholderReturns",
 		label: "Dividends Paid Against Free Cash Flow",
+		drawn: true,
 		company: ({ financials }) =>
 			financials
 				? financials.cashFlow.annual.lines
