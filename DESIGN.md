@@ -524,11 +524,25 @@ Overview has these cards, from top to bottom:
    names the first two documents behind it and counts the rest.
 5. **Who Owns It** and **Profile**, side by side on a desktop. Who Owns It
    shows the ownership split as a bar of shares, with a link to Relationships.
-   Profile lists the founding year, headquarters, employees, chief executive,
-   auditor and website.
+   Profile lists the founding year, headquarters, employees, chief executive
+   with the year they started, auditor and website. A missing fact is a
+   dimmed `—`.
 
 Overview has no side column. On a desktop, the paired cards in rows 3 and 5
 each take one column.
+
+The ownership bar of Who Owns It is the bar of Ownership Split on
+Relationships, built from the same shares, so the two cards always agree. Two
+cases need a rule:
+
+- **No public share.** The public holds what institutions and insiders do not.
+  When the two hold more than the shares outstanding, or a count is missing,
+  the public share has no value. It prints a dimmed `—` and draws no segment,
+  never 0% and never a negative share.
+- **Institutions above 100%.** 13F filings can count one share twice, for
+  example when a fund lends a share that another fund reports. The label
+  prints the true share, such as 105.0%, so the reader sees the double count.
+  The segments shrink in step so the bar never overflows its track.
 
 On a phone, the cards stack in the order above. The segment and region splits
 stack. The small charts of Ten Years at a Glance sit two to a row instead of

@@ -18,12 +18,14 @@ export const FIXED_COLUMN =
 
 /**
  * Writes a figure in its unit: `$212.0B` for dollars, `24.5B` for a share
- * count, `18.4` for a ratio and `31.2%` for a percent, which the figure holds
- * as a fraction. A loss takes a true minus, such as `−$4.0B`.
+ * count, `18.4` for a ratio, `31.2%` for a percent, which the figure holds
+ * as a fraction, and `1993` for a year. A loss takes a true minus, such as
+ * `−$4.0B`.
  */
 export function formatInUnit(value: number, unit: Unit): string {
 	if (unit === "percent") return formatPercent(value * 100);
 	if (unit === "ratio") return formatNumber(value);
+	if (unit === "year") return String(value);
 	const sign = value < 0 ? "−" : "";
 	const amount = formatMarketCap(Math.abs(value));
 	return `${sign}${unit === "usd" ? amount : amount.slice(1)}`;

@@ -7,7 +7,6 @@ import {
 	lineKeysOf,
 	metricInputsOf,
 	nestedInputsOf,
-	ownershipShares,
 } from "./metrics";
 import type {
 	BlockKey,
@@ -24,6 +23,7 @@ import type {
 	MastheadSection,
 	MetricKey,
 	Nullable,
+	OwnershipSummary,
 	ReportedSource,
 	ShareholderReturnsSection,
 	SourceDocument,
@@ -353,19 +353,19 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 				figureRefsOf(check).flatMap((ref) => nestedInputsOf(ref, sections)),
 			),
 	},
+	// The reported counts behind the three shares, not the shares: without the
+	// shares outstanding every share is null, and reading the shares would drop
+	// the 13F-HR and the Form 4 behind the counts from the index.
 	ownership: {
 		tab: "overview",
 		label: "Who Owns It",
-		company: ({ overview }) =>
-			overview && [
-				overview.ownership.sharesOutstanding,
-				overview.ownership.institutionShares,
-				overview.ownership.insiderShares,
-			],
+		drawn: true,
+		company: ({ overview }) => overview && ownershipCounts(overview.ownership),
 	},
 	profile: {
 		tab: "overview",
 		label: "Profile",
+		drawn: true,
 		company: ({ overview }) => overview && Object.values(overview.profile),
 	},
 	// The printed page only. It shows the latest dividend per share and the
@@ -565,13 +565,13 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	},
 	// The three shares that card 5.3 draws. The institutions share reaches the
 	// 13F-HR of every fund, because its share count sums all funds.
+	// Reads the counts, as the Who Owns It block does, for the same reason.
 	ownershipSplit: {
 		tab: "relationships",
 		label: "Ownership Split",
 		drawn: true,
 		company: ({ relationships }) =>
-			relationships &&
-			Object.values(ownershipShares(relationships, "relationships")),
+			relationships && ownershipCounts(relationships.ownership),
 	},
 	subsidiaries: {
 		tab: "relationships",
@@ -696,6 +696,18 @@ function returnsLoaded(
 		sections.financials !== null &&
 		sections.shareholderReturns !== null
 	);
+}
+
+/**
+ * Returns the three reported counts that the ownership shares divide: the
+ * shares outstanding, and the shares that institutions and insiders hold.
+ */
+function ownershipCounts(ownership: OwnershipSummary): Figure[] {
+	return [
+		ownership.sharesOutstanding,
+		ownership.institutionShares,
+		ownership.insiderShares,
+	];
 }
 
 /** Returns the points of the lines `keys` of `table`, or of every line when `keys` is absent. */

@@ -167,13 +167,13 @@ describe("SourcesIndex", () => {
 		["there are no groups", []],
 		["the only group is a sector group", groups.slice(2)],
 		[
-			"the only group is a card the screen does not draw",
+			"the only group is a card only the printed page draws",
 			[
 				{
 					ref: {
 						tab: "overview",
-						block: "ownership",
-						label: "Who Owns It",
+						block: "printedShareholderReturns",
+						label: "Shareholder returns, printed page",
 						figures: "company",
 					},
 					claims: [annual],

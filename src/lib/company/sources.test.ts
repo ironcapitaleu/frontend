@@ -699,16 +699,51 @@ describe("figureGroupsOf", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should read the three drawn shares when the Ownership Split group is built", () => {
+	it("should keep the counts that institutions and insiders hold when the shares outstanding of the Who Owns It group have no value", () => {
+		// Without the shares outstanding every derived share is null, so reading
+		// the shares would drop the 13F-HR and the Form 4 from the index.
+		const { ownership } = overview;
+		const withoutOutstanding = completeSections({
+			...fakeCompanyReport,
+			overview: {
+				...overview,
+				ownership: { ...ownership, sharesOutstanding: null },
+			},
+		});
+
 		const expectedResult = [
-			"metric.ownershipShares.relationships.institutions",
-			"metric.ownershipShares.relationships.insiders",
-			"metric.ownershipShares.relationships.public",
+			claim(ownership.institutionShares).id,
+			claim(ownership.insiderShares).id,
 		];
 
-		const result = claimsOf("ownershipSplit", "company", sections).map(
+		const result = claimsOf("ownership", "company", withoutOutstanding).map(
 			({ id }) => id,
 		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep the counts that institutions and insiders hold when the shares outstanding of the Ownership Split group have no value", () => {
+		const { relationships } = fakeCompanyReport;
+		const { ownership } = relationships;
+		const withoutOutstanding = completeSections({
+			...fakeCompanyReport,
+			relationships: {
+				...relationships,
+				ownership: { ...ownership, sharesOutstanding: null },
+			},
+		});
+
+		const expectedResult = [
+			claim(ownership.institutionShares).id,
+			claim(ownership.insiderShares).id,
+		];
+
+		const result = claimsOf(
+			"ownershipSplit",
+			"company",
+			withoutOutstanding,
+		).map(({ id }) => id);
 
 		expect(result).toEqual(expectedResult);
 	});
@@ -979,11 +1014,7 @@ describe("isDrawn", () => {
 		// A new block is undrawn until it says `drawn: true`. So a card that lands
 		// without the marker fails here, before its filings drop out of the
 		// sources index and the Filings card.
-		const expectedResult = [
-			"ownership",
-			"printedShareholderReturns",
-			"profile",
-		];
+		const expectedResult = ["printedShareholderReturns"];
 
 		const result = [
 			...new Set(
