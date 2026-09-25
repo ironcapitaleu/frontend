@@ -3,7 +3,6 @@ import {
 	financialPositionInputs,
 	keyFigureKeys,
 	keyFigureOf,
-	DIVIDEND_COVER_LINES,
 	lineKeysOf,
 	metricInputsOf,
 	ownershipShares,
@@ -452,13 +451,13 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		tab: "shareholderReturns",
 		label: "Dividends Paid Against Free Cash Flow",
 		drawn: true,
-		company: ({ financials }) =>
-			financials
-				? financials.cashFlow.annual.lines
-						.filter(({ key }) =>
-							DIVIDEND_COVER_LINES.some((each) => each === key),
-						)
-						.flatMap(({ points }) => points)
+		// The tab draws its cards only when both of its sections load.
+		company: ({ financials, shareholderReturns }) =>
+			financials && shareholderReturns
+				? pointsOf(
+						financials.cashFlow.annual,
+						lineKeysOf("dividendsToFreeCashFlow"),
+					)
 				: null,
 	},
 	// The block reads the reported inputs of `fundShare` and `fundChange` for

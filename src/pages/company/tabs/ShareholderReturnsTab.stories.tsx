@@ -65,6 +65,18 @@ const missingYearGateway: CompanyGateway = {
 		),
 };
 
+/** A gateway whose cash flow statement has no dividends paid line. */
+const noPaidLineGateway: CompanyGateway = {
+	...alwaysFoundCompanyGateway(),
+	getFinancials: async () => {
+		const { financials } = fakeCompanyReport;
+		const annual = financials.cashFlow.annual;
+		const lines = annual.lines.filter(({ key }) => key !== "dividendsPaid");
+		const cashFlow = { ...financials.cashFlow, annual: { ...annual, lines } };
+		return { ...financials, cashFlow };
+	},
+};
+
 /** A gateway whose filings report no dividend figure in any year. */
 const noFiguresGateway: CompanyGateway = {
 	...alwaysFoundCompanyGateway(),
@@ -182,7 +194,8 @@ function dataTableOf(title: string): Story["play"] {
 			.map((group) => group.textContent?.replace(/^.*: /, ""));
 
 		await userEvent.click(card.getByRole("button", { name: "Data" }));
-		const table = await card.findByRole("table");
+		const name = `${title.replace(/^\d+\.\d+ /, "")} table`;
+		const table = await card.findByRole("table", { name });
 		const result = within(table)
 			.getAllByRole("cell")
 			.map((cell) => cell.textContent);
@@ -204,6 +217,25 @@ export const PayoutMissingYear: Story = {
 		const plot = await plotOf(canvasElement, PAYOUT);
 
 		const expectedResult = [1, 1, 1, 1, 0, 1, 1, 1, 1, 1];
+
+		const result = within(plot)
+			.getAllByRole("listitem")
+			.map((group) => within(group).queryAllByRole("button").length);
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: with no dividends paid line, card 4.2 still draws, and its chart
+ * shows a dash for every year rather than the no-dividend line.
+ */
+export const PayoutNoPaidLine: Story = {
+	parameters: { companyGateway: noPaidLineGateway },
+	play: async ({ canvasElement }) => {
+		const plot = await plotOf(canvasElement, PAYOUT);
+
+		const expectedResult = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
 		const result = within(plot)
 			.getAllByRole("listitem")

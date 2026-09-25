@@ -1873,12 +1873,17 @@ describe("marginOf", () => {
 });
 
 describe("dividendsToFreeCashFlow", () => {
-	const annual = cashFlow.annual;
+	const annual = completed.financials?.cashFlow.annual as StatementTable;
 
-	/** Returns `table` with the FY2025 point, the tenth, of `key` set to `point`. */
-	const tableWith = (key: LineKey, point: Figure, table = annual) => ({
-		...table,
-		lines: table.lines.map((line) =>
+	/** Returns the sections with the FY2025 point, the tenth, of `key` set to `point`. */
+	const sectionsWith = (
+		key: LineKey,
+		point: Figure,
+		sections: CompletedSections = completed,
+	): CompletedSections => {
+		const financials = sections.financials as FinancialsSection;
+		const table = financials.cashFlow.annual;
+		const lines = table.lines.map((line) =>
 			line.key === key
 				? {
 						...line,
@@ -1887,8 +1892,10 @@ describe("dividendsToFreeCashFlow", () => {
 						),
 					}
 				: line,
-		),
-	});
+		);
+		const cashFlow = { ...financials.cashFlow, annual: { ...table, lines } };
+		return { ...sections, financials: { ...financials, cashFlow } };
+	};
 	const amountOf = (key: LineKey) =>
 		Number(annual.lines.find((line) => line.key === key)?.points[9]?.value);
 	const fy2025 = (key: LineKey) =>
@@ -1899,20 +1906,23 @@ describe("dividendsToFreeCashFlow", () => {
 			amountOf("dividendsPaid") /
 			(amountOf("operatingCashFlow") - amountOf("capitalExpenditure"));
 
-		const result = dividendsToFreeCashFlow(annual).points[9]?.value;
+		const result = dividendsToFreeCashFlow(completed).points[9]?.value;
 
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should name the three inputs of the year in the formula when it gives a share", () => {
+	it("should read free cash flow from the freeCashFlow metric of the year when it gives a share", () => {
+		const period = annual.periods[9];
+		const freeCashFlow = evaluateMetric("freeCashFlow", completed, period);
+
 		const expectedResult =
-			"Dividends paid, FY2025 ÷ (Operating cash flow, FY2025 − Capital expenditure, FY2025)";
+			freeCashFlow.kind === "value" ? freeCashFlow.claim : null;
 
-		const point = dividendsToFreeCashFlow(annual).points[9];
+		const point = dividendsToFreeCashFlow(completed).points[9];
 		const result =
-			point?.source.kind === "derived" ? point.source.formula : null;
+			point?.source.kind === "derived" ? point.source.inputs[1] : null;
 
-		expect(result).toBe(expectedResult);
+		expect(result).toEqual(expectedResult);
 	});
 
 	const set = (value: Claim["value"]) => (claim: Claim) => ({
@@ -1935,19 +1945,38 @@ describe("dividendsToFreeCashFlow", () => {
 					?.points[8] as Claim,
 		],
 	])("should return a null point when %s", (_, key, change) => {
-		const table = tableWith(key, change(fy2025(key)));
+		const sections = sectionsWith(key, change(fy2025(key)));
 
 		const expectedResult = null;
 
-		const result = dividendsToFreeCashFlow(table).points[9];
+		const result = dividendsToFreeCashFlow(sections).points[9];
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should find no free cash flow when operating cash flow in the year's column belongs to the year before", () => {
+		const shifted = annual.lines.find(({ key }) => key === "operatingCashFlow")
+			?.points[8] as Claim;
+		const sections = sectionsWith("operatingCashFlow", shifted);
+
+		const expectedResult = "missingInput";
+
+		const result = evaluateMetric(
+			"freeCashFlow",
+			sections,
+			annual.periods[9],
+		).kind;
 
 		expect(result).toBe(expectedResult);
 	});
 
 	it("should return a null point when the quotient overflows", () => {
-		const withValue = (key: LineKey, value: number, table = annual) =>
-			tableWith(key, { ...fy2025(key), value }, table);
-		const table = withValue(
+		const withValue = (
+			key: LineKey,
+			value: number,
+			sections: CompletedSections = completed,
+		) => sectionsWith(key, { ...fy2025(key), value }, sections);
+		const sections = withValue(
 			"dividendsPaid",
 			Number.MAX_VALUE,
 			withValue("capitalExpenditure", 0.5, withValue("operatingCashFlow", 1)),
@@ -1955,7 +1984,7 @@ describe("dividendsToFreeCashFlow", () => {
 
 		const expectedResult = null;
 
-		const result = dividendsToFreeCashFlow(table).points[9];
+		const result = dividendsToFreeCashFlow(sections).points[9];
 
 		expect(result).toBe(expectedResult);
 	});

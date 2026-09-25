@@ -1040,6 +1040,16 @@ describe("Shareholder returns blocks", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should read no claim for card 4.2 when the Shareholder returns section has not loaded", () => {
+		const changed = { ...sections, shareholderReturns: null };
+
+		const expectedResult: readonly Claim[] = [];
+
+		const result = claimsOf("dividendsAgainstFreeCashFlow", "company", changed);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should read the dividend per share of each fiscal year when card 4.1 is read", () => {
 		const expectedResult =
 			fakeCompanyReport.shareholderReturns.dividendPerShare.points.map(

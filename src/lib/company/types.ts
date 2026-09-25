@@ -186,6 +186,7 @@ export type MetricKey =
 	| "priceToEarningsAtYearEnd"
 	| "priceToEarningsMedian10y"
 	| "freeCashFlow"
+	| "dividendsToFreeCashFlow"
 	| "freeCashFlowYield"
 	| "priceToFreeCashFlow"
 	| "priceToBook"

@@ -20,6 +20,7 @@ import type {
 	BlockKey,
 	Claim,
 	CompletedSections,
+	Figure,
 	Series,
 	ShareholderReturnsSection,
 } from "../../../lib/company/types";
@@ -77,7 +78,14 @@ function LoadedReturns(props: {
 	const claimsOf = (block: BlockKey) =>
 		groups.find(({ ref }) => ref.block === block)?.claims ?? [];
 	const cashFlow = financials.financials?.cashFlow.annual;
-	const paid = cashFlow?.lines.find(({ key }) => key === "dividendsPaid");
+	// A cash flow table with no dividends paid line reports no figure, so
+	// card 4.2 draws its dashes, as card 4.1 does.
+	const paid =
+		cashFlow?.lines.find(({ key }) => key === "dividendsPaid")?.points ?? [];
+	const payout = React.useMemo(
+		() => dividendsToFreeCashFlow(sections),
+		[sections],
+	);
 	return (
 		<div className="flex flex-col gap-10">
 			<CompanyCardGrid>
@@ -86,15 +94,15 @@ function LoadedReturns(props: {
 					title="Dividend per Share"
 					caption="Last ten fiscal years · USD per share · Form 10-K"
 					series={returns.dividendPerShare}
-					paid={returns.dividendPerShare}
+					paid={returns.dividendPerShare.points}
 					claims={claimsOf("dividendPerShare")}
 				/>
-				{cashFlow && paid && (
+				{cashFlow && (
 					<ChartCard
 						position={2}
 						title="Dividends Paid Against Free Cash Flow"
 						caption="Last ten fiscal years · Percent of free cash flow · Form 10-K"
-						series={dividendsToFreeCashFlow(cashFlow)}
+						series={payout}
 						paid={paid}
 						claims={claimsOf("dividendsAgainstFreeCashFlow")}
 					/>
@@ -108,7 +116,7 @@ function LoadedReturns(props: {
 /**
  * A one-line chart card of the tab. It takes one column of the grid on a
  * desktop. The "Data" button swaps the chart for a table of the same
- * figures. `paid` is the dividends the card reads. One line takes the place
+ * figures. `paid` is the dividend figures the card reads. One line takes the place
  * of the chart only when `paid` reports figures and every one of them is 0
  * or less. A series with no figure at all is missing data, not a zero
  * dividend, so the chart draws its dashes.
@@ -118,7 +126,7 @@ function ChartCard(props: {
 	title: string;
 	caption: string;
 	series: Series;
-	paid: Series;
+	paid: readonly Figure[];
 	claims: readonly Claim[];
 }) {
 	const [data, setData] = React.useState(false);
@@ -131,7 +139,7 @@ function ChartCard(props: {
 		})),
 		lines: [series],
 	};
-	const reported = props.paid.points.flatMap((point) =>
+	const reported = props.paid.flatMap((point) =>
 		typeof point?.value === "number" && Number.isFinite(point.value)
 			? [point.value]
 			: [],
