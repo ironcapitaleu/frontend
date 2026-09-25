@@ -1738,19 +1738,28 @@ export const MARGINS = [
 /**
  * Returns the margin row `name` of `line`: for each period, the figure of
  * `line` divided by the revenue of the same period. `line` and `revenue` come
- * from one table, so they share their periods. A point is `null` when either
- * figure is missing or not a finite number, or when revenue is not above 0.
+ * from one table. A point is `null` when either figure is missing or not a
+ * finite number, or when revenue is not above 0. A point is also `null` when
+ * the revenue figure at the same position has another period.
  */
 export function marginOf(line: Series, revenue: Series, name: string): Series {
 	const points = line.points.map((point, position) => {
 		const period = line.periods[position];
-		if (period === undefined) return null;
+		const sales = revenue.points[position] ?? null;
+		if (
+			period === undefined ||
+			sales === null ||
+			sales.period === null ||
+			!isSamePeriod(sales.period, period)
+		) {
+			return null;
+		}
 		const at = periodName(period);
 		const margin = share(
 			`metric.margin.${line.key}.${periodPart(period)}`,
 			`${name}, ${at}`,
 			`${line.label}, ${at} ÷ ${revenue.label}, ${at}`,
-			[point, revenue.points[position] ?? null],
+			[point, sales],
 			([part, whole]) => [part, whole],
 		);
 		return isNumberClaim(margin) ? margin : null;

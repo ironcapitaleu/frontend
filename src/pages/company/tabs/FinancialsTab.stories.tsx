@@ -572,6 +572,36 @@ export const MissingMargin: Story = {
 };
 
 /**
+ * Play test: a margin row is muted and indented one level deeper than the
+ * line it divides by revenue.
+ */
+export const MarginRowStyle: Story = {
+	globals: desktop,
+	play: async ({ canvasElement }) => {
+		const table = await within(canvasElement).findByRole("table", {
+			name: "Income statement table",
+		});
+		const style = (name: string) =>
+			getComputedStyle(within(table).getByRole("rowheader", { name }));
+		const [line, margin] = [
+			style("Operating income"),
+			style("Operating margin"),
+		];
+
+		const expectedResult = { deeper: true, muted: true };
+
+		const result = {
+			deeper:
+				Number.parseFloat(margin.paddingLeft) >
+				Number.parseFloat(line.paddingLeft),
+			muted: margin.color !== line.color,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
  * Play test: on a phone, the margin rows run newest first and read as a
  * percent in the annual and the quarterly view. The annual row ends in the
  * empty cell of the growth column.
@@ -587,16 +617,18 @@ export const PhoneMargins: Story = {
 		const percents = (values: string[]) =>
 			values.every((value) => value === MISSING || /%$/.test(value));
 
-		const expectedResult = { annual: true, quarterly: true };
+		const expectedResult = { annual: true, growth: "", quarterly: true };
 
-		const annual = percents((await texts()).slice(0, -1));
+		const annualTexts = await texts();
+		const annual = percents(annualTexts.slice(0, -1));
+		const growth = annualTexts.at(-1);
 		await userEvent.click(canvas.getByRole("combobox", { name: "Period" }));
 		await userEvent.click(
 			await within(canvasElement.ownerDocument.body).findByRole("option", {
 				name: "Quarterly",
 			}),
 		);
-		const result = { annual, quarterly: percents(await texts()) };
+		const result = { annual, growth, quarterly: percents(await texts()) };
 
 		await expect(result).toEqual(expectedResult);
 	},

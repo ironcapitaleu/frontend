@@ -1825,6 +1825,20 @@ describe("marginOf", () => {
 		expect(result).toBe(expectedResult);
 	});
 
+	it("should return a null point when the revenue at that position belongs to the year before", () => {
+		const shifted = {
+			...revenue,
+			points: [null, ...revenue.points.slice(0, -1)],
+		};
+
+		const expectedResult = null;
+
+		const result = marginOf(operatingIncome, shifted, "Operating margin")
+			.points[9];
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should return a null point when the line is not finite", () => {
 		const line = {
 			...operatingIncome,
