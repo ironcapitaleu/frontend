@@ -1002,26 +1002,48 @@ export function metricInputsOf(
  * Returns the input claims of metric `key` at `period` like
  * {@link metricInputsOf}, but an input metric with no value gives its own
  * inputs in its place, at every depth. So a missing FCF yield keeps the
- * operating cash flow of a year whose free cash flow is missing.
+ * operating cash flow of a year whose free cash flow is missing. Unlike
+ * {@link metricInputsOf}, a window input gives each of its years, through
+ * {@link nestedInputsOf}, not `null`.
  */
 export function nestedMetricInputsOf(
 	key: MetricKey,
 	sections: CompletedSections,
 	period: Nullable<Period> = null,
 ): Figure[] {
-	return metrics[key].inputs.flatMap((ref) => {
-		const result = resolve(ref, sections, period);
-		if (!isWindow(result) && result.kind === "value") {
-			return [result.claim];
-		}
-		if (isWindow(result) || ref.from !== "metric") {
-			return [null];
-		}
-		const at = ref.at === null ? null : targetPeriod(ref.at, sections, period);
-		return ref.at !== null && at === null
-			? [null]
-			: nestedMetricInputsOf(ref.key, sections, at);
-	});
+	return metrics[key].inputs.flatMap((ref) =>
+		nestedInputsOf(ref, sections, period),
+	);
+}
+
+/**
+ * Returns the claim of `ref` at `period`. A metric with no value gives its
+ * inputs in its place, at every depth, as {@link nestedMetricInputsOf} does,
+ * and a window gives each of its years this way. So a check with no reading
+ * keeps the filings of its inputs.
+ */
+export function nestedInputsOf(
+	ref: FigureRef,
+	sections: CompletedSections,
+	period: Nullable<Period> = null,
+): Figure[] {
+	if (ref.at?.kind === "lastFiscalYears") {
+		const single: FigureRef = { ...ref, at: samePeriod };
+		return windowYears(sections, ref.at.count).flatMap((year) =>
+			year === null ? [null] : nestedInputsOf(single, sections, year),
+		);
+	}
+	const result = resolve(ref, sections, period);
+	if (!isWindow(result) && result.kind === "value") {
+		return [result.claim];
+	}
+	if (ref.from !== "metric") {
+		return [null];
+	}
+	const at = ref.at === null ? null : targetPeriod(ref.at, sections, period);
+	return ref.at !== null && at === null
+		? [null]
+		: nestedMetricInputsOf(ref.key, sections, at);
 }
 
 /**

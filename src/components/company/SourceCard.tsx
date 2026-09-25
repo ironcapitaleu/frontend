@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/sheet";
 import { usePhone } from "@/hooks/usePhone";
 import { formatDate } from "@/lib/company/dates";
+import { documentLabel } from "@/lib/company/sources";
 import type { Claim, ClaimId } from "@/lib/company/types";
 import { cn } from "@/lib/utils";
 
@@ -92,11 +93,7 @@ function SourceOf({
 		<div className="flex flex-col gap-2">
 			<dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
 				<dt className="text-muted-foreground">{filing ? "Filing" : "Data"}</dt>
-				<dd>
-					{filing
-						? `${document.form} for ${document.periodLabel}, ${document.filer}`
-						: document.name}
-				</dd>
+				<dd>{documentLabel(document)}</dd>
 				<dt className="text-muted-foreground">{filing ? "Filed" : "As of"}</dt>
 				<dd>
 					{formatDate(

@@ -516,7 +516,12 @@ Overview has these cards, from top to bottom:
    bars share one scale that holds zero, so a negative figure draws below the
    zero line, and a small figure keeps a least height.
 4. **Checks by Area.** The five areas, each with its icon, its ring of met
-   checks, and its checks. A legend names the three results.
+   checks, and its checks. A legend names the three results. The ring counts
+   met checks out of every check in its area, so a check with not enough data
+   counts as not met there, and its own line says why. The shape of each
+   result icon tells the results apart, not the positive and negative inks,
+   which are for gains and losses in data. Under each check, a quiet line
+   names the first two documents behind it and counts the rest.
 5. **Who Owns It** and **Profile**, side by side on a desktop. Who Owns It
    shows the ownership split as a bar of shares, with a link to Relationships.
    Profile lists the founding year, headquarters, employees, chief executive

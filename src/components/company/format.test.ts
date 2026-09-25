@@ -33,6 +33,16 @@ describe("formatInput", () => {
 		expect(result).toBe(expectedResult);
 	});
 
+	it("should write a true minus before the dollar sign when a loss per share is read", () => {
+		const input = { value: -1.2, unit: "usdPerShare" } as const;
+
+		const expectedResult = "−$1.20";
+
+		const result = formatInput(input);
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should write dollars in billions when the unit is dollars", () => {
 		const input = { value: 212_000_000_000, unit: "usd" } as const;
 
