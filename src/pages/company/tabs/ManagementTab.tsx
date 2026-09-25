@@ -182,12 +182,10 @@ function PayMixCard({ management }: { management: ManagementSection }) {
 			) : (
 				<ShareBar
 					aria-label="Pay mix"
-					parts={[
-						{ label: "Salary", share: mix.salary },
-						{ label: "Bonus", share: mix.bonus },
-						{ label: "Stock", share: mix.stockAwards },
-						{ label: "Other", share: mix.other },
-					]}
+					parts={PAY_PARTS.map(([key, label]) => ({
+						label,
+						share: mix[key],
+					}))}
 				/>
 			)}
 		</CompanyCard>
@@ -207,7 +205,10 @@ function yearLabel(fiscalYear: number, full: boolean): string {
 	return `FY${full ? fiscalYear : String(fiscalYear).slice(-2)}`;
 }
 
-/** Card 6.2: the chief executive's pay in each year, stacked by part. "Data" swaps the chart for a table. */
+/**
+ * Card 6.2: the chief executive's pay in each year, stacked by part. "Data"
+ * swaps the chart for a table. With no pay, the card shows only its sources.
+ */
 function CeoPayCard({
 	management,
 	claims,
@@ -241,14 +242,16 @@ function CeoPayCard({
 			className="min-w-0"
 			actions={
 				<>
-					<Button
-						variant="outline"
-						size="sm"
-						aria-pressed={data}
-						onClick={() => setData(!data)}
-					>
-						Data
-					</Button>
+					{ceoPay.length > 0 && (
+						<Button
+							variant="outline"
+							size="sm"
+							aria-pressed={data}
+							onClick={() => setData(!data)}
+						>
+							Data
+						</Button>
+					)}
 					<SourcesChip claims={claims} />
 				</>
 			}

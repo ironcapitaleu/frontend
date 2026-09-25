@@ -45,12 +45,45 @@ describe("BarChart", () => {
 		render(<BarChart table={table} format={String} stacked />);
 
 		const expectedResult = [
-			"bottom: 0px; height: 176px;",
-			"bottom: 176px; height: 2px;",
+			"bottom: 0px; height: 222px;",
+			"bottom: 222px; height: 2px;",
 		];
 
 		const result = barStyles();
 
 		expect(result).toEqual(expectedResult);
+	});
+
+	it("should start the part above a zero on top of its 2 px mark when the zero sits in the middle of a column", () => {
+		const middle: BarTable = {
+			columns: [{ key: "FY26", label: "FY26", short: "FY26" }],
+			lines: ["a", "b", "c"].map((key, index) => ({
+				key,
+				label: key,
+				points: points([10, 0, 10][index] ?? null),
+			})),
+		};
+		render(<BarChart table={middle} format={String} stacked />);
+
+		const expectedResult = [
+			"bottom: 0px; height: 111px;",
+			"bottom: 111px; height: 2px;",
+			"bottom: 113px; height: 111px;",
+		];
+
+		const result = barStyles();
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should draw the zero line at the foot of the plot when a stacked part is negative", () => {
+		render(<BarChart table={table} format={String} stacked />);
+
+		const expectedResult = "top: 100%;";
+
+		const plot = screen.getByRole("list", { name: "Fiscal years" });
+		const result = plot.nextElementSibling?.getAttribute("style");
+
+		expect(result).toBe(expectedResult);
 	});
 });

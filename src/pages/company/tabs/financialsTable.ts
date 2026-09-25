@@ -223,17 +223,40 @@ export function barScale(table: BarTable | RowTable): {
 	};
 }
 
+/** The height in px of the mark a reported zero draws in a stacked chart. */
+export const ZERO_MARK = 2;
+
+/** Where a part of a stacked chart sits, in px up from the foot of the plot. */
+export interface StackBox {
+	readonly bottom: number;
+	readonly height: number;
+	/** Where the trigger of the part sits, in px up from the foot. */
+	readonly trigger: { readonly bottom: number; readonly height: number };
+}
+
 /**
  * Returns where each part of a stacked chart `plot` px tall sits, as
- * `boxes[line][column]` in px up from the foot, first line lowest. A part that is not a finite
- * number of at least 0 is `null`. A part is at least `least` px tall, so it
- * can be tapped, and the scale leaves that room so the tallest column fits.
+ * `boxes[line][column]`, first line lowest. A part that is not a finite
+ * number, or that is negative, is `null` and draws nothing. The height of a
+ * part is its value times one unit for the whole chart, so parts keep their
+ * proportions. A reported zero takes a {@link ZERO_MARK} px mark, and the
+ * unit leaves room for those marks, so no column overflows the plot.
+ *
+ * A part keeps its drawn height, but its trigger is at least `least` px
+ * tall. Each trigger starts at the foot of its part and grows up. When it
+ * meets the trigger below, it moves up, and at the top of the plot it moves
+ * down, so it stays inside the plot and never grows below the foot. A later
+ * trigger lies above an earlier one. Triggers start at least `least` px
+ * apart, so each keeps a strip of `least` px that no other trigger covers.
+ * When a column has too many parts for that, the triggers start
+ * `(plot - least) / (parts - 1)` px apart instead. They then overlap, but
+ * each part still keeps a strip of its own that a pointer can reach.
  */
 export function stackScale(
 	table: BarTable,
 	plot: number,
 	least: number,
-): Nullable<{ bottom: number; height: number }>[][] {
+): Nullable<StackBox>[][] {
 	const values = table.lines.map(({ points }) =>
 		table.columns.map((_, column) => {
 			const value = points[column]?.value;
@@ -242,18 +265,62 @@ export function stackScale(
 				: null;
 		}),
 	);
-	const bottoms = table.columns.map(() => 0);
-	const totals = bottoms.map((_, column) =>
-		values.reduce((sum, row) => sum + (row[column] ?? 0), 0),
+	const columns = table.columns.map((_, column) =>
+		values.map((row) => row[column] ?? null),
 	);
-	const unit = (plot - least * values.length) / (Math.max(0, ...totals) || 1);
-	return values.map((row) =>
-		row.map((value, column) => {
-			if (value === null) return null;
-			const bottom = bottoms[column] ?? 0;
-			const height = Math.max(least, value * unit);
-			bottoms[column] = bottom + height;
-			return { bottom, height };
-		}),
+	// One scale for the chart: the column that fills the plot soonest sets it.
+	const scales = columns.flatMap((parts) => {
+		const total = parts.reduce<number>((sum, value) => sum + (value ?? 0), 0);
+		const marks = parts.filter((value) => value === 0).length * ZERO_MARK;
+		return total > 0 ? [{ room: Math.max(0, plot - marks), total }] : [];
+	});
+	const { room, total } = scales.reduce(
+		(tightest, scale) =>
+			scale.room / scale.total < tightest.room / tightest.total
+				? scale
+				: tightest,
+		scales[0] ?? { room: 0, total: 1 },
 	);
+	const boxes = columns.map((parts) =>
+		stackColumn(parts, (value) => (value * room) / total, plot, least),
+	);
+	return values.map((row, line) =>
+		row.map((_, column) => boxes[column]?.[line] ?? null),
+	);
+}
+
+/** Returns the boxes of one column of {@link stackScale}, one for each part in `parts`. */
+function stackColumn(
+	parts: readonly Nullable<number>[],
+	heightOf: (value: number) => number,
+	plot: number,
+	least: number,
+): Nullable<StackBox>[] {
+	let foot = 0;
+	const drawn = parts.map((value) => {
+		if (value === null) return null;
+		const bottom = foot;
+		const height = value === 0 ? ZERO_MARK : heightOf(value);
+		foot += height;
+		return { bottom, height };
+	});
+	const known = drawn.filter((box) => box !== null);
+	const step =
+		known.length > 1 ? Math.min(least, (plot - least) / (known.length - 1)) : 0;
+	const lows = known.map(({ bottom }) => bottom);
+	for (let index = 1; index < lows.length; index++) {
+		lows[index] = Math.max(lows[index] ?? 0, (lows[index - 1] ?? 0) + step);
+	}
+	for (let index = lows.length - 1; index >= 0; index--) {
+		const ceiling =
+			index === lows.length - 1 ? plot - least : (lows[index + 1] ?? 0) - step;
+		lows[index] = Math.max(0, Math.min(lows[index] ?? 0, ceiling));
+	}
+	let position = 0;
+	return drawn.map((box) => {
+		if (box === null) return null;
+		const low = lows[position++] ?? 0;
+		const height = Math.max(box.bottom + box.height - low, least);
+		return { ...box, trigger: { bottom: low, height } };
+	});
 }

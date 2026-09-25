@@ -1,4 +1,5 @@
 import { SourceTrigger } from "@/components/company/SourceCard";
+import { SHARE_FILLS } from "@/components/company/ShareBar";
 import { MISSING, MISSING_INK } from "@/components/screener/format";
 import type { Claim } from "@/lib/company/types";
 import { cn } from "@/lib/utils";
@@ -17,9 +18,6 @@ import {
  * apart. A line past the last fill starts the list again.
  */
 const INKS = ["bg-chart-1", "bg-chart-3", "bg-chart-5"];
-
-/** The fills of a stacked chart, the steps `ShareBar` gives four parts. */
-const STACK_INKS = ["bg-chart-1", "bg-chart-2", "bg-chart-3", "bg-chart-4"];
 
 /** The height of the plot in px. It matches the `h-56` class of the plot. */
 const PLOT_HEIGHT = 224;
@@ -67,8 +65,11 @@ export function StatementChart({
  * Layout"), and the year labels scroll with their groups. A table with no
  * column or no line draws one line that says so. `format` writes a figure.
  *
- * With `stacked`, a column stacks its parts, first line lowest, each a target
- * at least 24 px tall. A missing, negative or odd part draws nothing.
+ * With `stacked`, a column stacks its parts, first line lowest, in the fills
+ * of `ShareBar`, and the zero line sits at the foot of the plot. Each part is
+ * as tall as its value, and its trigger is at least 24 px tall and stays
+ * inside the plot (see `stackScale`). A reported zero draws a 2 px mark. A
+ * missing, negative or odd part draws nothing.
  */
 export function BarChart({
 	table,
@@ -153,25 +154,30 @@ export function BarChart({
 										// A reported zero draws a 2 px mark above the zero line,
 										// so it never reads as a missing year.
 										const zeroMark = point.value === 0;
-										const stackHeight = zeroMark ? 2 : box?.height;
 										return (
 											<div
 												key={line.key}
 												className={cn(
 													"h-full w-6 shrink-0",
-													box ? "absolute inset-x-0 mx-auto" : "relative",
+													box
+														? "pointer-events-none absolute inset-x-0 mx-auto"
+														: "relative",
 												)}
 											>
 												<div
 													className={cn(
 														"absolute inset-x-0",
 														inkOf(index, stacked),
-														box && !zeroMark && "border-t border-card",
+														// A shadow, not a border, splits the parts, so a part
+														// thinner than 1 px keeps its true height.
+														box &&
+															!zeroMark &&
+															"shadow-[inset_0_1px_0_var(--color-card)]",
 														negative ? "rounded-b-[2px]" : "rounded-t-[2px]",
 													)}
 													style={
 														box
-															? { bottom: box.bottom, height: stackHeight }
+															? { bottom: box.bottom, height: box.height }
 															: zeroMark
 																? { top: `calc(${top}% - 2px)`, height: "2px" }
 																: { top: `${top}%`, height: `${height}%` }
@@ -180,9 +186,18 @@ export function BarChart({
 													<SourceTrigger
 														claim={point}
 														className={cn(
-															"absolute inset-x-0 block h-full min-h-6 rounded-none",
-															growsDown ? "top-0" : "bottom-0",
+															"absolute inset-x-0 block rounded-none",
+															box ? "pointer-events-auto" : "h-full min-h-6",
+															!box && (growsDown ? "top-0" : "bottom-0"),
 														)}
+														style={
+															box
+																? {
+																		bottom: box.trigger.bottom - box.bottom,
+																		height: box.trigger.height,
+																	}
+																: undefined
+														}
 													>
 														<span className="sr-only">
 															{`${line.label}: ${format(point)}`}
@@ -198,7 +213,7 @@ export function BarChart({
 						<div
 							aria-hidden="true"
 							className="pointer-events-none absolute inset-x-0 h-px bg-muted-foreground/50"
-							style={{ top: `${zero}%` }}
+							style={{ top: `${boxes ? 100 : zero}%` }}
 						/>
 					</div>
 					<div
@@ -223,6 +238,6 @@ export function BarChart({
 
 /** Returns the fill of the line at `index`, from the stacked fills when `stacked`. */
 function inkOf(index: number, stacked: boolean): string {
-	const inks = stacked ? STACK_INKS : INKS;
+	const inks = stacked ? SHARE_FILLS : INKS;
 	return inks[index % inks.length] ?? "";
 }

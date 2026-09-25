@@ -4,7 +4,11 @@ import { expect, userEvent, within } from "storybook/test";
 import { CompanyGatewayProvider } from "../../../contexts/CompanyGatewayContext";
 import type { CompanyGateway } from "../../../lib/company/gateway";
 import { Ticker } from "../../../lib/domain/ticker";
-import { BAR_TARGETS_OK, barTargetsOf } from "../../../test/barTargets";
+import {
+	BAR_TARGETS_OK,
+	barTargetsOf,
+	unreachableBarsOf,
+} from "../../../test/barTargets";
 import { alwaysFailingCompanyGateway } from "../../../test/fixtures/companies/always-failing";
 import { alwaysFoundCompanyGateway } from "../../../test/fixtures/companies/always-found";
 import { fakeCompanyReport } from "../../../test/fixtures/companies/fake-company-report";
@@ -58,6 +62,30 @@ const noPayNoInsidersGateway: CompanyGateway = {
 	...found,
 	getManagement: async () => ({ ...management, ceoPay: [], insiders: [] }),
 };
+
+/** Returns a gateway whose latest pay sets each part in `changes` to its value in USD. */
+function latestPayGateway(
+	changes: Partial<
+		Record<"salary" | "bonus" | "stockAwards" | "other", number>
+	>,
+): CompanyGateway {
+	return {
+		...found,
+		getManagement: async () => ({
+			...management,
+			ceoPay: management.ceoPay.map((year, position, years) => {
+				if (position !== years.length - 1) return year;
+				const changed = { ...year };
+				for (const [key, value] of Object.entries(changes)) {
+					const part = key as keyof typeof changes;
+					const claim = year[part];
+					changed[part] = claim && { ...claim, value };
+				}
+				return changed;
+			}),
+		}),
+	};
+}
 
 /** A gateway that never answers, so the tab stays in its loading state. */
 const loadingGateway: CompanyGateway = {
@@ -242,6 +270,105 @@ export const PayMissingParts: Story = {
 			.slice(1)
 			.map((row) => [...row.children].map((cell) => cell.textContent));
 		const result = { parts, targets, rows };
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: at 320 px, a tiny bonus and a tiny other part sit beside the large parts. Each part is as tall as its value, yet each trigger is at least 24 × 24 px, stays inside the plot, and keeps a strip that a pointer reaches. */
+export const PayTinyParts: Story = {
+	globals: { viewport: { value: "mobile1", isRotated: false } },
+	parameters: {
+		companyGateway: latestPayGateway({ bonus: 5_000, other: 1_000 }),
+	},
+	play: async ({ canvasElement }) => {
+		const plot = await within(canvasElement).findByRole("list", {
+			name: "Fiscal years",
+		});
+		const [salary, bonus] = within(plot)
+			.getAllByRole("button")
+			.slice(4)
+			.map((bar) => bar.parentElement?.getBoundingClientRect().height ?? 0);
+
+		const expectedResult = {
+			targets: BAR_TARGETS_OK,
+			unreachable: [],
+			proportional: true,
+		};
+
+		const result = {
+			targets: barTargetsOf(plot),
+			unreachable: unreachableBarsOf(plot),
+			proportional: Math.abs((bonus ?? 0) / (salary ?? 1) - 5 / 1000) < 0.01,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: a negative part draws nothing. The zero line stays at the foot of the plot, and every trigger stays inside it. */
+export const PayNegativePart: Story = {
+	parameters: { companyGateway: latestPayGateway({ stockAwards: -500_000 }) },
+	play: async ({ canvasElement }) => {
+		const plot = await within(canvasElement).findByRole("list", {
+			name: "Fiscal years",
+		});
+		const zeroLine = plot.nextElementSibling?.getBoundingClientRect();
+
+		const expectedResult = {
+			parts: [4, 3],
+			zeroLineAtFoot: true,
+			targets: BAR_TARGETS_OK,
+		};
+
+		const result = {
+			parts: within(plot)
+				.getAllByRole("listitem")
+				.map((year) => within(year).queryAllByRole("button").length),
+			zeroLineAtFoot:
+				Math.abs((zeroLine?.top ?? 0) - plot.getBoundingClientRect().bottom) <
+				1,
+			targets: barTargetsOf(plot),
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: with no pay, card 6.2 offers no "Data" button, since there is no table to show. */
+export const NoPayActions: Story = {
+	parameters: { companyGateway: noPayNoInsidersGateway },
+	play: async ({ canvasElement }) => {
+		const expectedResult: string[] = [];
+
+		const card = await within(canvasElement).findByRole("region", {
+			name: /^6\.2/,
+		});
+		const result = within(card)
+			.queryAllByRole("button")
+			.map((button) => button.textContent);
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: each part of the pay has the same name and the same fill in card 6.2 and card 6.3. */
+export const PayPartsAgree: Story = {
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const legend = await canvas.findByRole("list", { name: "Legend" });
+		const mix = canvas.getByRole("figure", { name: "Pay mix" });
+		const partsOf = (items: HTMLElement[]) =>
+			items.map((item) => ({
+				label: item.textContent?.replace(/\d.*$/, "").replace("—", ""),
+				fill: [...(item.firstElementChild?.classList ?? [])].find((name) =>
+					name.startsWith("bg-chart-"),
+				),
+			}));
+
+		const expectedResult = partsOf(within(legend).getAllByRole("listitem"));
+
+		const result = partsOf(within(mix).getAllByRole("listitem"));
 
 		await expect(result).toEqual(expectedResult);
 	},
