@@ -534,7 +534,7 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		label: "Total Shareholder Yield",
 		drawn: true,
 		company: (sections) =>
-			returnsLoaded(sections)
+			yieldLoaded(sections)
 				? [
 						...annualPointsOf(sections.financials, shareholderYields),
 						...sections.masthead.priceAtFiscalYearEnds.points,
@@ -680,22 +680,31 @@ function valuationLoaded({
 }
 
 /**
- * Tells whether the three sections of the Shareholder returns tab have
- * loaded. The tab draws no card otherwise, so its blocks name no filing until
- * then.
+ * Tells whether both sections of the Shareholder returns tab have loaded. The
+ * tab draws no card otherwise, so its blocks name no filing until then.
  */
 function returnsLoaded(
+	sections: CompletedSections,
+): sections is CompletedSections & {
+	financials: FinancialsSection;
+	shareholderReturns: ShareholderReturnsSection;
+} {
+	return sections.financials !== null && sections.shareholderReturns !== null;
+}
+
+/**
+ * Tells whether card 4.5 can draw: both sections of the tab and the masthead,
+ * for its year-end prices, have loaded. The other cards of the tab draw
+ * without the masthead.
+ */
+function yieldLoaded(
 	sections: CompletedSections,
 ): sections is CompletedSections & {
 	masthead: MastheadSection;
 	financials: FinancialsSection;
 	shareholderReturns: ShareholderReturnsSection;
 } {
-	return (
-		sections.masthead !== null &&
-		sections.financials !== null &&
-		sections.shareholderReturns !== null
-	);
+	return returnsLoaded(sections) && sections.masthead !== null;
 }
 
 /**

@@ -48,7 +48,8 @@ import { BarChart } from "./StatementChart";
 /**
  * The Shareholder returns tab of the company page (DESIGN.md §8 "Shareholder
  * returns"). It loads the masthead, for the year-end prices of card 4.5, the
- * financials and the Shareholder returns section. It shows cards 4.1 and 4.2
+ * financials and the Shareholder returns section, and draws without the
+ * masthead when only the masthead fails. It shows cards 4.1 and 4.2
  * side by side, card 4.3 across both columns below them, cards 4.4 and 4.5
  * side by side below that, then the sources index.
  */
@@ -66,11 +67,7 @@ export function ShareholderReturnsTab({ ticker }: { ticker: Ticker }) {
 			</div>
 		);
 	}
-	if (
-		masthead.status !== "loaded" ||
-		financials.status !== "loaded" ||
-		returns.status !== "loaded"
-	) {
+	if (financials.status !== "loaded" || returns.status !== "loaded") {
 		return (
 			<Text font="sans" size="lg" className="text-left">
 				The shareholder returns figures did not load. Try again in a moment.
@@ -79,16 +76,20 @@ export function ShareholderReturnsTab({ ticker }: { ticker: Ticker }) {
 	}
 	return (
 		<LoadedReturns
-			masthead={masthead.data}
+			masthead={masthead.status === "loaded" ? masthead.data : null}
 			financials={financials.sections}
 			returns={returns.data}
 		/>
 	);
 }
 
-/** Cards 4.1 to 4.5 of the loaded tab, then the sources index. */
+/**
+ * Cards 4.1 to 4.5 of the loaded tab, then the sources index. Card 4.5 needs
+ * the year-end prices of the masthead, so it is left out when the masthead
+ * did not load, and the other cards still draw.
+ */
 function LoadedReturns(props: {
-	masthead: MastheadSection;
+	masthead: MastheadSection | null;
 	financials: CompletedSections;
 	returns: ShareholderReturnsSection;
 }) {
@@ -157,14 +158,16 @@ function LoadedReturns(props: {
 					lines={shares}
 					claims={claimsOf("shareCount")}
 				/>
-				<ChartCard
-					position={5}
-					title="Total Shareholder Yield"
-					caption="Last ten fiscal years · Percent of market cap at fiscal year end · Form 10-K"
-					lines={yields}
-					stacked
-					claims={claimsOf("totalShareholderYield")}
-				/>
+				{masthead && (
+					<ChartCard
+						position={5}
+						title="Total Shareholder Yield"
+						caption="Last ten fiscal years · Percent of market cap at fiscal year end · 10-K filings and daily prices"
+						lines={yields}
+						stacked
+						claims={claimsOf("totalShareholderYield")}
+					/>
+				)}
 			</CompanyCardGrid>
 			<SourcesIndex groups={groups} />
 		</div>

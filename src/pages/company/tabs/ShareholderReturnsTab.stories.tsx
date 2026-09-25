@@ -245,6 +245,47 @@ export const Loaded: Story = {
 };
 
 /**
+ * Play test: when the masthead does not load, cards 4.1 to 4.4 still draw,
+ * and card 4.5, which needs the year-end prices, is left out.
+ */
+export const MastheadFailed: Story = {
+	parameters: {
+		companyGateway: {
+			...alwaysFoundCompanyGateway(),
+			getMasthead: failingGateway.getMasthead,
+		},
+	},
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+
+		const expectedResult = [PER_SHARE, PAYOUT, BUYBACKS, SHARE_COUNT];
+
+		const headings = await canvas.findAllByRole("heading", { level: 2 });
+		const result = headings
+			.map((heading) => heading.textContent)
+			.filter((title) => /^\d+\.\d+ /.test(title ?? ""));
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: the caption of card 4.5 names the daily prices beside the 10-K
+ * filings, since the market cap of each year reads the year-end price.
+ */
+export const YieldCaption: Story = {
+	play: async ({ canvasElement }) => {
+		const card = await cardOf(canvasElement, YIELD);
+
+		const expectedResult = true;
+
+		const result = /10-K filings and daily prices/.test(card.textContent ?? "");
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/**
  * Play test: on a desktop, cards 4.4 and 4.5 sit side by side, and every bar
  * of both has a tap target at least 24 px wide and tall inside the plot.
  */

@@ -1221,6 +1221,18 @@ describe("Shareholder returns blocks", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should read the dividend per share for card 4.1 when the masthead has not loaded", () => {
+		// Only card 4.5 needs the masthead, so the other cards keep their 10-Ks
+		// in the index when it fails.
+		const changed = { ...sections, masthead: null };
+
+		const expectedResult = claimsOf("dividendPerShare", "company", sections);
+
+		const result = claimsOf("dividendPerShare", "company", changed);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should read both sides of every fiscal year when card 4.3 is read", () => {
 		const { sharesRepurchased, sharesIssuedToStaff } =
 			fakeCompanyReport.shareholderReturns;
