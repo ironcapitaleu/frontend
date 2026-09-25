@@ -1,16 +1,8 @@
-import { MISSING } from "@/components/screener/format";
-import { formatDate } from "@/lib/company/dates";
-import {
-	feedsOf,
-	figureGroupsOf,
-	isPrintedOnly,
-	isSectorBenchmark,
-} from "@/lib/company/sources";
+import { feedsOf, figureGroupsOf, isOnScreen } from "@/lib/company/sources";
 import { COMPANY_TABS } from "@/lib/company/tabs";
 import type {
 	Claim,
 	CompletedSections,
-	Filing,
 	FigureGroup,
 	FigureGroupRef,
 } from "@/lib/company/types";
@@ -24,13 +16,13 @@ export interface FedFigure {
 
 /**
  * Returns the company figure groups of the six other tabs. Like the sources
- * index, it leaves out the sector groups and the groups only the printed page
- * draws, so no row names a peer filing or a figure the screen never shows.
+ * index, it keeps only the groups `isOnScreen` keeps, so no row names a peer
+ * filing or a card the screen does not draw.
  */
 export function filingsGroupsOf(sections: CompletedSections): FigureGroup[] {
 	return COMPANY_TABS.flatMap(({ key }) =>
 		figureGroupsOf(key, sections),
-	).filter(({ ref }) => !isSectorBenchmark(ref) && !isPrintedOnly(ref));
+	).filter(({ ref }) => isOnScreen(ref));
 }
 
 /**
@@ -53,14 +45,4 @@ export function fedFiguresOf(
 		}
 	}
 	return fed;
-}
-
-/** Writes a filing date as the page prints it, or the dash when it is not a real `YYYY-MM-DD` date. */
-export function filedOnText(date: string): string {
-	const parsed = new Date(`${date}T00:00:00Z`);
-	const valid =
-		/^\d{4}-\d{2}-\d{2}$/.test(date) &&
-		!Number.isNaN(parsed.getTime()) &&
-		parsed.toISOString().startsWith(date);
-	return valid ? formatDate(date as Filing["filedOn"]) : MISSING;
 }

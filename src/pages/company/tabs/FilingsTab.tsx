@@ -6,13 +6,13 @@ import { MISSING } from "@/components/screener/format";
 import { Spinner } from "@/components/ui/spinner";
 import { Text } from "@/components/ui/text";
 import { useCompany } from "@/hooks/useCompany";
+import { formatDate } from "@/lib/company/dates";
 import { COMPANY_TABS } from "@/lib/company/tabs";
 import type { Filing } from "@/lib/company/types";
 import type { Ticker } from "@/lib/domain/ticker";
 import {
 	type FedFigure,
 	fedFiguresOf,
-	filedOnText,
 	filingsGroupsOf,
 } from "./FilingsTab.logic";
 import { joinSections, loadedSections } from "./OverviewTab.logic";
@@ -98,9 +98,11 @@ function FilingRow({
 			</p>
 			<p className="text-muted-foreground">
 				Filed{" "}
-				<span className="font-monospace">{filedOnText(filing.filedOn)}</span>
+				<span className="font-monospace">{formatDate(filing.filedOn)}</span>
 			</p>
-			{fed.length > 0 && (
+			{fed.length === 0 ? (
+				<p className="text-muted-foreground">Feeds no figure on this screen</p>
+			) : (
 				<p>
 					Feeds{" "}
 					{fed.map(({ ref, claim }, position) => (

@@ -15,22 +15,14 @@ import {
 import { Text } from "@/components/ui/text";
 import { useCompany } from "../../../hooks/useCompany";
 import { payMix, tenure } from "../../../lib/company/metrics";
-import { figureGroupsOf } from "../../../lib/company/sources";
+import { figureGroupsOf, isDrawn } from "../../../lib/company/sources";
 import type {
-	BlockKey,
 	CompletedSections,
 	ManagementSection,
 } from "../../../lib/company/types";
 import type { Ticker } from "../../../lib/domain/ticker";
 import { ClaimCell, FigureCell } from "./FigureCell";
 import { InsiderTable } from "./InsiderTable";
-
-/** The blocks this tab draws so far. The other cards come in later tickets. */
-const DRAWN_BLOCKS: ReadonlySet<BlockKey> = new Set([
-	"executivesAndBoard",
-	"payMix",
-	"insiderHoldings",
-]);
 
 /**
  * The Management tab of the company page (DESIGN.md §8 "Management"). It
@@ -76,9 +68,7 @@ function LoadedManagement({
 	// The same `groups` on each render lets `SourcesIndex` keep its memo.
 	const groups = React.useMemo(
 		() =>
-			figureGroupsOf("management", sections).filter(({ ref }) =>
-				DRAWN_BLOCKS.has(ref.block),
-			),
+			figureGroupsOf("management", sections).filter(({ ref }) => isDrawn(ref)),
 		[sections],
 	);
 	return (

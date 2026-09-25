@@ -10,7 +10,7 @@ import { meridianRelationships } from "@/lib/company/sample/relationships";
 import { meridianShareholderReturns } from "@/lib/company/sample/shareholderReturns";
 import { meridianValuation } from "@/lib/company/sample/valuation";
 import type { CompanySections } from "@/lib/company/types";
-import { fedFiguresOf, filedOnText, filingsGroupsOf } from "./FilingsTab.logic";
+import { fedFiguresOf, filingsGroupsOf } from "./FilingsTab.logic";
 
 /** The made-up accession number of the MRDN 10-K for FY2026 (data-model note §7). */
 const TEN_K_FY2026 = "0001234567-26-000012";
@@ -64,25 +64,17 @@ describe("fedFiguresOf", () => {
 
 		expect(result).toBe(expectedResult);
 	});
-});
 
-describe("filedOnText", () => {
-	it("should print the day, month and year when the date is valid", () => {
-		const expectedResult = "12 Mar 2026";
+	it("should name neither Who Owns It nor Profile when the rows are built from every section, since no card draws them yet", () => {
+		const expectedResult: string[] = [];
 
-		const result = filedOnText("2026-03-12");
+		const result = [
+			...fedFiguresOf(filingsGroupsOf(completeSections(meridian))).values(),
+		]
+			.flat()
+			.map(({ ref }) => ref.label)
+			.filter((label) => label === "Who Owns It" || label === "Profile");
 
-		expect(result).toBe(expectedResult);
+		expect(result).toEqual(expectedResult);
 	});
-
-	it.each(["", "12/03/2026", "2026-02-30", "2026-13-01"])(
-		"should give the dash when the date is %j",
-		(date) => {
-			const expectedResult = "—";
-
-			const result = filedOnText(date);
-
-			expect(result).toBe(expectedResult);
-		},
-	);
 });
