@@ -66,11 +66,13 @@ export function StatementChart({
  * Layout"), and the year labels scroll with their groups. A table with no
  * column or no line draws one line that says so. `format` writes a figure.
  *
- * With `stacked`, a column stacks its parts, first line lowest, in the fills
- * of `ShareBar`, and the zero line sits at the foot of the plot. Each part is
- * as tall as its value, and its trigger is at least 24 px tall and stays
- * inside the plot (see `stackScale`). A reported zero draws a 2 px mark. A
- * missing, negative or odd part draws nothing.
+ * With `stacked`, a column stacks its parts in the fills of `ShareBar`:
+ * parts of 0 or more up from the zero line, first line lowest, and negative
+ * parts down from it. The zero line sits at the foot of the plot unless a
+ * part is negative. Each part is as tall as its value, and its trigger is at
+ * least 24 px tall and stays inside the plot (see `stackScale`). A reported
+ * zero draws a 2 px mark. A missing or odd part draws nothing, and a column
+ * with no part to draw shows the dimmed dash on the zero line.
  */
 export function BarChart({
 	table,
@@ -82,7 +84,10 @@ export function BarChart({
 	stacked?: boolean;
 }) {
 	const { zero, place } = barScale(table);
-	const boxes = stacked ? stackScale(table, PLOT_HEIGHT, MIN_TARGET) : null;
+	const stack = stacked ? stackScale(table, PLOT_HEIGHT, MIN_TARGET) : null;
+	const boxes = stack?.boxes ?? null;
+	// The zero line, in percent of the plot height from the top.
+	const zeroLine = stack ? 100 - (stack.zero / PLOT_HEIGHT) * 100 : zero;
 	const width = boxes ? 1 : table.lines.length;
 	// A group and its year label take the same width, so the two rows line up.
 	const groupWidth = `calc(${width} * 1.5rem + ${width - 1}px)`;
@@ -123,6 +128,17 @@ export function BarChart({
 									style={{ minWidth: groupWidth }}
 								>
 									<span className="sr-only">{group.label}</span>
+									{boxes?.every((row) => !row[column]) && (
+										<span
+											className={cn(
+												"absolute inset-x-0 text-center text-xs",
+												MISSING_INK,
+											)}
+											style={{ top: `calc(${zeroLine}% - 0.5rem)` }}
+										>
+											{MISSING}
+										</span>
+									)}
 									{table.lines.map((line, index) => {
 										const point = line.points[column] ?? null;
 										const box = boxes?.[index]?.[column];
@@ -217,7 +233,7 @@ export function BarChart({
 						<div
 							aria-hidden="true"
 							className="pointer-events-none absolute inset-x-0 h-px bg-muted-foreground/50"
-							style={{ top: `${boxes ? 100 : zero}%` }}
+							style={{ top: `${zeroLine}%` }}
 						/>
 					</div>
 					<div

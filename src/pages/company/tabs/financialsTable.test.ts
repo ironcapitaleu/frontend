@@ -404,7 +404,7 @@ describe("stackScale", () => {
 			{ bottom: ZERO_MARK, height: ZERO_MARK },
 		];
 
-		const result = drawn(stackScale(table, plot, least));
+		const result = drawn(stackScale(table, plot, least).boxes);
 
 		expect(result).toEqual(expectedResult);
 	});
@@ -418,7 +418,7 @@ describe("stackScale", () => {
 			{ bottom: 112, height: 112 },
 		];
 
-		const result = drawn(stackScale(table, plot, least));
+		const result = drawn(stackScale(table, plot, least).boxes);
 
 		expect(result).toEqual(expectedResult);
 	});
@@ -428,7 +428,7 @@ describe("stackScale", () => {
 
 		const expectedResult = 1 / 1000;
 
-		const [[big], [small]] = stackScale(table, plot, least);
+		const [[big], [small]] = stackScale(table, plot, least).boxes;
 		const result = (small?.height ?? 0) / (big?.height ?? 1);
 
 		expect(result).toBeCloseTo(expectedResult, 12);
@@ -443,25 +443,58 @@ describe("stackScale", () => {
 			{ bottom: 113, height: 111 },
 		];
 
-		const result = drawn(stackScale(table, plot, least));
+		const result = drawn(stackScale(table, plot, least).boxes);
 
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should draw nothing for a part when the part is negative", () => {
-		const table = column(100, -50);
+	it("should draw a negative part down from a raised zero line when a part is negative", () => {
+		const table = column(150, -74);
 
-		const expectedResult = [{ bottom: 0, height: plot }, null];
+		const expectedResult = {
+			zero: 74,
+			boxes: [
+				{ bottom: 74, height: 150 },
+				{ bottom: 0, height: 74 },
+			],
+		};
 
-		const result = drawn(stackScale(table, plot, least));
+		const { zero, boxes } = stackScale(table, plot, least);
+		const result = { zero, boxes: drawn(boxes) };
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep the zero line at the foot when no part is negative", () => {
+		const table = column(100, 0, 100);
+
+		const expectedResult = 0;
+
+		const result = stackScale(table, plot, least).zero;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should keep a tiny negative part's trigger inside the plot and below the trigger above when the zero line sits near the foot", () => {
+		const [[above], [below]] = stackScale(column(1000, -1), plot, least).boxes;
+
+		const expectedResult = { inside: true, belowAbove: true };
+
+		const result = {
+			inside: (below?.trigger.bottom ?? -1) >= 0,
+			belowAbove:
+				(below?.trigger.bottom ?? 0) + least <= (above?.trigger.bottom ?? 0),
+		};
 
 		expect(result).toEqual(expectedResult);
 	});
 
 	it("should keep every part and trigger inside the plot with a strip of each trigger uncovered when the column has more lines than the plot fits", () => {
-		const boxes = stackScale(column(...Array(12).fill(1)), plot, least).map(
-			([box]) => box as StackBox,
-		);
+		const boxes = stackScale(
+			column(...Array(12).fill(1)),
+			plot,
+			least,
+		).boxes.map(([box]) => box as StackBox);
 
 		const expectedResult = {
 			partsFit: true,
@@ -489,7 +522,7 @@ describe("stackScale", () => {
 	});
 
 	it("should give a tiny part a trigger of its own at least 24 px tall when it sits between two large parts", () => {
-		const boxes = stackScale(column(1000, 1, 1000), plot, least).map(
+		const boxes = stackScale(column(1000, 1, 1000), plot, least).boxes.map(
 			([box]) => box as StackBox,
 		);
 

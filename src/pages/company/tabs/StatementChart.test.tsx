@@ -16,6 +16,15 @@ const table: BarTable = {
 	],
 };
 
+/** The table above with a negative part that gives whole pixels when stacked. */
+const stackedTable: BarTable = {
+	...table,
+	lines: [
+		{ key: "a", label: "A", points: points(30, -7) },
+		{ key: "b", label: "B", points: points(0, null) },
+	],
+};
+
 /** Returns the inline style of every drawn bar, in chart order. */
 function barStyles() {
 	const plot = screen.getByRole("list", { name: "Fiscal years" });
@@ -41,12 +50,13 @@ describe("BarChart", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should draw no segment for a negative or missing part and a 2 px mark for a zero when the chart is stacked", () => {
-		render(<BarChart table={table} format={String} stacked />);
+	it("should draw a negative part below the zero line, no segment for a missing part and a 2 px mark for a zero when the chart is stacked", () => {
+		render(<BarChart table={stackedTable} format={String} stacked />);
 
 		const expectedResult = [
-			"bottom: 0px; height: 222px;",
+			"bottom: 42px; height: 180px;",
 			"bottom: 222px; height: 2px;",
+			"bottom: 0px; height: 42px;",
 		];
 
 		const result = barStyles();
@@ -76,10 +86,10 @@ describe("BarChart", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should draw the zero line at the foot of the plot when a stacked part is negative", () => {
-		render(<BarChart table={table} format={String} stacked />);
+	it("should raise the zero line above the foot of the plot by the deepest negative part when a stacked part is negative", () => {
+		render(<BarChart table={stackedTable} format={String} stacked />);
 
-		const expectedResult = "top: 100%;";
+		const expectedResult = "top: 81.25%;";
 
 		const plot = screen.getByRole("list", { name: "Fiscal years" });
 		const result = plot.nextElementSibling?.getAttribute("style");
