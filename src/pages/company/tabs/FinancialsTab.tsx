@@ -2,11 +2,10 @@ import { useMemo, useState } from "react";
 
 import { CompanyCard, CompanyCardGrid } from "@/components/company/CompanyCard";
 import { SourceTrigger } from "@/components/company/SourceCard";
-import { SourcesChip } from "@/components/company/SourcesChip";
+import { ChartActions } from "@/components/company/ChartActions";
 import { SourcesIndex } from "@/components/company/SourcesIndex";
 import { FIXED_COLUMN } from "@/components/company/format";
 import { MISSING, MISSING_INK } from "@/components/screener/format";
-import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
 import {
 	Select,
@@ -172,17 +171,7 @@ export function FinancialsTab({ ticker }: { ticker: Ticker }) {
 					span={2}
 					className="min-w-0"
 					actions={
-						<>
-							<Button
-								variant="outline"
-								size="sm"
-								aria-pressed={data}
-								onClick={() => setData(!data)}
-							>
-								Data
-							</Button>
-							<SourcesChip claims={chartClaims} />
-						</>
+						<ChartActions data={data} onData={setData} claims={chartClaims} />
 					}
 				>
 					{data ? (
