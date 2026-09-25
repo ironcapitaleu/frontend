@@ -138,7 +138,7 @@ export const Empty: Story = {
 	play: async ({ canvasElement }) => {
 		const expectedResult = "This company has no filings on SEC EDGAR yet.";
 
-		const result = await within(canvasElement).findByText(/No filing/);
+		const result = await within(canvasElement).findByText(/no filings/);
 
 		await expect(result).toHaveTextContent(expectedResult);
 	},
