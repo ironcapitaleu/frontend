@@ -46,7 +46,7 @@ export const chartLines: Record<keyof FinancialsSection, readonly BarKey[]> = {
 };
 
 /** The series of Overview card 1.2 "Ten Years at a Glance", in its order. */
-const tenYearsBars: readonly BarKey[] = [
+export const tenYearsBars: readonly BarKey[] = [
 	"revenue",
 	"operatingMargin",
 	"freeCashFlow",
