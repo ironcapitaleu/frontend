@@ -660,20 +660,25 @@ export const Failed: Story = {
 async function downloadCsv(canvasElement: HTMLElement) {
 	const doc = canvasElement.ownerDocument;
 	let file:
-		| Promise<{ name: string; bom: boolean; rows: string[][] }>
+		| Promise<{ name: string; type: string; bom: boolean; rows: string[][] }>
 		| undefined;
 	const catchDownload = (event: MouseEvent) => {
 		const link = event.target;
 		if (!(link instanceof HTMLAnchorElement) || !link.download) return;
 		event.preventDefault();
 		file = fetch(link.href)
-			.then((response) => response.arrayBuffer())
-			.then((buffer) => ({
+			.then(async (response) => ({
+				type: response.headers.get("Content-Type") ?? "",
+				buffer: await response.arrayBuffer(),
+			}))
+			.then(({ type, buffer }) => ({
+				type,
 				bytes: new Uint8Array(buffer),
 				text: new TextDecoder().decode(buffer),
 			}))
-			.then(({ bytes, text }) => ({
+			.then(({ type, bytes, text }) => ({
 				name: link.download,
+				type,
 				bom: bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf,
 				rows: text
 					.trimEnd()
@@ -745,18 +750,19 @@ export const DownloadCsv: Story = {
 };
 
 /**
- * Play test: the file starts with a UTF-8 byte order mark, so Excel reads a
- * name or figure outside ASCII as UTF-8, not as the system code page.
+ * Play test: the file is typed as UTF-8 CSV and starts with a UTF-8 byte
+ * order mark, so Excel reads a name or figure outside ASCII as UTF-8, not as
+ * the system code page.
  */
 export const DownloadCsvUtf8: Story = {
 	globals: desktop,
 	play: async ({ canvasElement }) => {
-		const expectedResult = true;
+		const expectedResult = { type: "text/csv;charset=utf-8", bom: true };
 
 		const file = await downloadCsv(canvasElement);
-		const result = file?.bom;
+		const result = { type: file?.type, bom: file?.bom };
 
-		await expect(result).toBe(expectedResult);
+		await expect(result).toEqual(expectedResult);
 	},
 };
 
