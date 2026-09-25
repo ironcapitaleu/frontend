@@ -89,17 +89,16 @@ describe("CompanyPage", () => {
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should name the tab in its empty panel when the masthead loads at the returns route", async () => {
+	it("should name the tab in its empty panel when the masthead loads at the filings route", async () => {
 		render(<App />, {
 			companyGateway: alwaysFoundCompanyGateway(),
-			initialEntries: ["/companies/MRDN/returns"],
+			initialEntries: ["/companies/MRDN/filings"],
 		});
 
-		const expectedResult = "The Shareholder returns tab has no content yet.";
+		const expectedResult = "The Filings tab has no content yet.";
 
-		const result = (
-			await screen.findByRole("region", { name: "Shareholder returns" })
-		).textContent;
+		const result = (await screen.findByRole("region", { name: "Filings" }))
+			.textContent;
 
 		expect(result).toBe(expectedResult);
 	});
