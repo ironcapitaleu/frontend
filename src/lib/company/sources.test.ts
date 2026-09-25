@@ -11,6 +11,7 @@ import {
 } from "./metrics";
 import {
 	claimsOf,
+	documentLabel,
 	feedsOf,
 	figureGroupsOf,
 	isDrawn,
@@ -25,7 +26,9 @@ import type {
 	Filing,
 	FigureGroup,
 	FigureGroupRef,
+	IsoDate,
 	LineKey,
+	MarketDataset,
 	StatementTable,
 } from "./types";
 import { COMPANY_TABS } from "./tabs";
@@ -367,6 +370,47 @@ describe("claimsOf", () => {
 	});
 });
 
+describe("claimsOf checksByArea", () => {
+	// Without the masthead there is no price, so V1 has no P/E and no median.
+	const noMasthead = { ...sections, masthead: null };
+	const epsLine = financials.income.annual.lines.find(
+		(line) => line.key === "dilutedEps",
+	);
+
+	it("should read no claim when the Financials section has not loaded", () => {
+		const expectedResult: readonly Claim[] = [];
+
+		const result = claimsOf("checksByArea", "company", {
+			...sections,
+			financials: null,
+		});
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep the latest diluted EPS when the masthead has not loaded", () => {
+		const expectedResult = eps2025.id;
+
+		const result = claimsOf("checksByArea", "company", noMasthead).find(
+			(one) => one.id === eps2025.id,
+		)?.id;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should keep the diluted EPS of the first year of the median window when the masthead has not loaded", () => {
+		const eps2016 = claim(epsLine?.points[0]);
+
+		const expectedResult = eps2016.id;
+
+		const result = claimsOf("checksByArea", "company", noMasthead).find(
+			(one) => one.id === eps2016.id,
+		)?.id;
+
+		expect(result).toBe(expectedResult);
+	});
+});
+
 describe("claimsOf financialPosition", () => {
 	it("should read the claims of financialPositionInputs when the company figures of Financial Position are read", () => {
 		const expectedResult = financialPositionInputs(sections);
@@ -655,16 +699,51 @@ describe("figureGroupsOf", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should read the three drawn shares when the Ownership Split group is built", () => {
+	it("should keep the counts that institutions and insiders hold when the shares outstanding of the Who Owns It group have no value", () => {
+		// Without the shares outstanding every derived share is null, so reading
+		// the shares would drop the 13F-HR and the Form 4 from the index.
+		const { ownership } = overview;
+		const withoutOutstanding = completeSections({
+			...fakeCompanyReport,
+			overview: {
+				...overview,
+				ownership: { ...ownership, sharesOutstanding: null },
+			},
+		});
+
 		const expectedResult = [
-			"metric.ownershipShares.relationships.institutions",
-			"metric.ownershipShares.relationships.insiders",
-			"metric.ownershipShares.relationships.public",
+			claim(ownership.institutionShares).id,
+			claim(ownership.insiderShares).id,
 		];
 
-		const result = claimsOf("ownershipSplit", "company", sections).map(
+		const result = claimsOf("ownership", "company", withoutOutstanding).map(
 			({ id }) => id,
 		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep the counts that institutions and insiders hold when the shares outstanding of the Ownership Split group have no value", () => {
+		const { relationships } = fakeCompanyReport;
+		const { ownership } = relationships;
+		const withoutOutstanding = completeSections({
+			...fakeCompanyReport,
+			relationships: {
+				...relationships,
+				ownership: { ...ownership, sharesOutstanding: null },
+			},
+		});
+
+		const expectedResult = [
+			claim(ownership.institutionShares).id,
+			claim(ownership.insiderShares).id,
+		];
+
+		const result = claimsOf(
+			"ownershipSplit",
+			"company",
+			withoutOutstanding,
+		).map(({ id }) => id);
 
 		expect(result).toEqual(expectedResult);
 	});
@@ -935,12 +1014,7 @@ describe("isDrawn", () => {
 		// A new block is undrawn until it says `drawn: true`. So a card that lands
 		// without the marker fails here, before its filings drop out of the
 		// sources index and the Filings card.
-		const expectedResult = [
-			"checksByArea",
-			"ownership",
-			"printedShareholderReturns",
-			"profile",
-		];
+		const expectedResult = ["printedShareholderReturns"];
 
 		const result = [
 			...new Set(
@@ -1172,5 +1246,32 @@ describe("Shareholder returns blocks", () => {
 		const result = claimsOf("buybacksNetOfStaffShares", "company", changed);
 
 		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("documentLabel", () => {
+	it("should name the form, the period and the filer when a filing is named", () => {
+		const document = filingOf(eps2025);
+
+		const expectedResult = `${document.form} for ${document.periodLabel}, ${document.filer}`;
+
+		const result = documentLabel(document);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should give the name of the dataset when a market dataset is named", () => {
+		const document: MarketDataset = {
+			kind: "market",
+			name: "10-year Treasury yield",
+			asOf: "2026-09-24" as IsoDate,
+			url: "https://example.com/treasury",
+		};
+
+		const expectedResult = "10-year Treasury yield";
+
+		const result = documentLabel(document);
+
+		expect(result).toBe(expectedResult);
 	});
 });

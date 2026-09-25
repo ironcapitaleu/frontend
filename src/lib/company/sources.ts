@@ -1,3 +1,4 @@
+import { checks, figureRefsOf } from "./checks";
 import { listedFundPositions } from "./holdings";
 import {
 	financialPositionInputs,
@@ -5,7 +6,7 @@ import {
 	keyFigureOf,
 	lineKeysOf,
 	metricInputsOf,
-	ownershipShares,
+	nestedInputsOf,
 } from "./metrics";
 import type {
 	BlockKey,
@@ -21,6 +22,7 @@ import type {
 	LineKey,
 	MetricKey,
 	Nullable,
+	OwnershipSummary,
 	ReportedSource,
 	ShareholderReturnsSection,
 	SourceDocument,
@@ -155,6 +157,17 @@ export function sectorMedianOf(
 }
 
 /**
+ * Names a document as the page writes it: a filing by its form, period and
+ * filer, such as "10-K for FY2025, Meridian Semiconductor Inc.", or a market
+ * dataset by its name.
+ */
+export function documentLabel(document: SourceDocument): string {
+	return document.kind === "filing"
+		? `${document.form} for ${document.periodLabel}, ${document.filer}`
+		: document.name;
+}
+
+/**
  * Returns the reported sources of `claims`, one group for each filing or
  * market dataset. The filings come first, newest first, and the market data
  * comes last. A claim that two trees share appears once.
@@ -272,8 +285,6 @@ const valuationKeyFigures: ReadonlySet<MetricKey> = new Set<MetricKey>([
 	"priceToBook",
 ]);
 
-// A later part of STA-226 adds the checks, so "Checks by Area" reads no
-// figure yet.
 const blocks: Readonly<Record<BlockKey, Block>> = {
 	business: {
 		tab: "overview",
@@ -320,24 +331,32 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		company: (sections) =>
 			sections.financials && financialPositionInputs(sections),
 	},
+	// Every figure that card 1.5 compares, or the inputs of a figure with no
+	// value, so the filing behind a check with not enough data stays in the
+	// index.
 	checksByArea: {
 		tab: "overview",
 		label: "Checks by Area",
-		company: ({ overview, financials }) => overview && financials && [],
+		drawn: true,
+		company: (sections) =>
+			sections.financials &&
+			checks.flatMap((check) =>
+				figureRefsOf(check).flatMap((ref) => nestedInputsOf(ref, sections)),
+			),
 	},
+	// The reported counts behind the three shares, not the shares: without the
+	// shares outstanding every share is null, and reading the shares would drop
+	// the 13F-HR and the Form 4 behind the counts from the index.
 	ownership: {
 		tab: "overview",
 		label: "Who Owns It",
-		company: ({ overview }) =>
-			overview && [
-				overview.ownership.sharesOutstanding,
-				overview.ownership.institutionShares,
-				overview.ownership.insiderShares,
-			],
+		drawn: true,
+		company: ({ overview }) => overview && ownershipCounts(overview.ownership),
 	},
 	profile: {
 		tab: "overview",
 		label: "Profile",
+		drawn: true,
 		company: ({ overview }) => overview && Object.values(overview.profile),
 	},
 	// The printed page only. It shows the latest dividend per share and the
@@ -512,13 +531,13 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 	},
 	// The three shares that card 5.3 draws. The institutions share reaches the
 	// 13F-HR of every fund, because its share count sums all funds.
+	// Reads the counts, as the Who Owns It block does, for the same reason.
 	ownershipSplit: {
 		tab: "relationships",
 		label: "Ownership Split",
 		drawn: true,
 		company: ({ relationships }) =>
-			relationships &&
-			Object.values(ownershipShares(relationships, "relationships")),
+			relationships && ownershipCounts(relationships.ownership),
 	},
 	subsidiaries: {
 		tab: "relationships",
@@ -637,6 +656,18 @@ function returnsLoaded(
 	shareholderReturns: ShareholderReturnsSection;
 } {
 	return sections.financials !== null && sections.shareholderReturns !== null;
+}
+
+/**
+ * Returns the three reported counts that the ownership shares divide: the
+ * shares outstanding, and the shares that institutions and insiders hold.
+ */
+function ownershipCounts(ownership: OwnershipSummary): Figure[] {
+	return [
+		ownership.sharesOutstanding,
+		ownership.institutionShares,
+		ownership.insiderShares,
+	];
 }
 
 /** Returns the points of the lines `keys` of `table`, or of every line when `keys` is absent. */

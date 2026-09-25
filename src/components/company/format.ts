@@ -18,12 +18,14 @@ export const FIXED_COLUMN =
 
 /**
  * Writes a figure in its unit: `$212.0B` for dollars, `24.5B` for a share
- * count, `18.4` for a ratio and `31.2%` for a percent, which the figure holds
- * as a fraction. A loss takes a true minus, such as `−$4.0B`.
+ * count, `18.4` for a ratio, `31.2%` for a percent, which the figure holds
+ * as a fraction, and `1993` for a year. A loss takes a true minus, such as
+ * `−$4.0B`.
  */
 export function formatInUnit(value: number, unit: Unit): string {
 	if (unit === "percent") return formatPercent(value * 100);
 	if (unit === "ratio") return formatNumber(value);
+	if (unit === "year") return String(value);
 	const sign = value < 0 ? "−" : "";
 	const amount = formatMarketCap(Math.abs(value));
 	return `${sign}${unit === "usd" ? amount : amount.slice(1)}`;
@@ -31,7 +33,8 @@ export function formatInUnit(value: number, unit: Unit): string {
 
 /**
  * Writes an input of a ratio in its unit, such as `$82.75` for a price or
- * `$212.0B` for dollars. A value that is not a number gives {@link MISSING}.
+ * `$212.0B` for dollars. A loss takes a true minus, such as `−$1.20`. A value
+ * that is not a number gives {@link MISSING}.
  */
 export function formatInput({
 	value,
@@ -40,7 +43,7 @@ export function formatInput({
 	const amount = Number(value);
 	if (typeof value !== "number" || !Number.isFinite(amount)) return MISSING;
 	return unit === "usdPerShare"
-		? formatPrice(amount)
+		? `${amount < 0 ? "−" : ""}${formatPrice(Math.abs(amount))}`
 		: formatInUnit(amount, unit);
 }
 

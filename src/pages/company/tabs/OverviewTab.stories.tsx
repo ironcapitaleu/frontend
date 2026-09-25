@@ -1,11 +1,19 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, screen, userEvent, within } from "storybook/test";
+import { MemoryRouter } from "react-router";
 
 import { MISSING, MISSING_INK } from "../../../components/screener/format";
 import { CompanyGatewayProvider } from "../../../contexts/CompanyGatewayContext";
 import type { CompanyGateway } from "../../../lib/company/gateway";
+import type { Claim, OverviewSection } from "../../../lib/company/types";
 import { meridianOverview } from "../../../lib/company/sample/overview";
+import { MERIDIAN } from "../../../lib/company/sample/sources";
 import { sampleCompanyGateway } from "../../../lib/company/sampleCompanyGateway";
+import {
+	type CompanyTab,
+	COMPANY_TABS,
+	tabPath,
+} from "../../../lib/company/tabs";
 import { Ticker } from "../../../lib/domain/ticker";
 import { alwaysFailingCompanyGateway } from "../../../test/fixtures/companies/always-failing";
 import { OverviewTab } from "./OverviewTab";
@@ -115,6 +123,83 @@ const missingRevenueGateway: CompanyGateway = {
 	},
 };
 
+/** A gateway whose masthead fails, so V1, V2 and S2 have no price. */
+const mastheadFailingGateway: CompanyGateway = {
+	...sampleGateway,
+	getMasthead: failingGateway.getMasthead,
+};
+/** A gateway whose Valuation load never answers. */
+const valuationPendingGateway: CompanyGateway = {
+	...sampleGateway,
+	getValuation: pending,
+};
+
+/** Finds card 1.5 once its checks have drawn. */
+async function checksCard(canvasElement: HTMLElement) {
+	const card = await within(canvasElement).findByRole("region", {
+		name: "1.5 Checks by Area",
+	});
+	await within(card).findByRole("region", { name: "Consistency" });
+	return card;
+}
+
+/** Returns the result named by the icon of the check `name` in card 1.5. */
+function checkResult(card: HTMLElement, name: string) {
+	return within(card)
+		.getByText(name)
+		.closest("li")
+		?.querySelector("[role=img]")
+		?.getAttribute("aria-label");
+}
+
+/** A gateway whose Overview section is the sample one changed by `change`. */
+function overviewGateway(
+	change: (overview: OverviewSection) => OverviewSection,
+): CompanyGateway {
+	return {
+		...sampleGateway,
+		getOverview: async (ticker) =>
+			change(await sampleGateway.getOverview(ticker)),
+	};
+}
+
+/** A gateway whose profile names no auditor. */
+const noAuditorGateway = overviewGateway((overview) => ({
+	...overview,
+	profile: { ...overview.profile, auditor: null },
+}));
+
+/** A gateway whose profile names no chief executive. */
+const noChiefExecutiveGateway = overviewGateway((overview) => ({
+	...overview,
+	profile: { ...overview.profile, chiefExecutive: null },
+}));
+
+/** A gateway whose institutions hold `share` of the shares outstanding. */
+function institutionsGateway(share: number): CompanyGateway {
+	return overviewGateway((overview) => {
+		const { ownership } = overview;
+		const institutions = ownership.institutionShares as Claim;
+		const outstanding = Number(ownership.sharesOutstanding?.value);
+		return {
+			...overview,
+			ownership: {
+				...ownership,
+				institutionShares: { ...institutions, value: share * outstanding },
+			},
+		};
+	});
+}
+
+/** Finds card `title` of the tab once the Overview section has drawn it. */
+async function overviewCard(canvasElement: HTMLElement, title: string) {
+	const card = await within(canvasElement).findByRole("region", {
+		name: title,
+	});
+	await within(card).findByText(/Institutions|Founded/);
+	return card;
+}
+
 /** Finds card 1.2 once its small charts have drawn. */
 async function tenYearsCard(canvasElement: HTMLElement) {
 	const card = await within(canvasElement).findByRole("region", {
@@ -163,9 +248,11 @@ const meta: Meta<typeof OverviewTab> = {
 	parameters: { layout: "padded" },
 	decorators: [
 		(Story, { parameters }) => (
-			<CompanyGatewayProvider gateway={parameters.companyGateway}>
-				<Story />
-			</CompanyGatewayProvider>
+			<MemoryRouter>
+				<CompanyGatewayProvider gateway={parameters.companyGateway}>
+					<Story />
+				</CompanyGatewayProvider>
+			</MemoryRouter>
 		),
 	],
 };
@@ -185,6 +272,9 @@ export const Loaded: Story = {
 			"1.2 Ten Years at a Glance",
 			"1.3 Key Figures",
 			"1.4 Financial Position",
+			"1.5 Checks by Area",
+			"1.6 Who Owns It",
+			"1.7 Profile",
 		];
 
 		const result = canvas
@@ -360,7 +450,7 @@ export const KeyFiguresNeedFinancials: Story = {
 export const Loading: Story = {
 	parameters: { companyGateway: neverAnsweringGateway },
 	play: async ({ canvasElement }) => {
-		const expectedResult = 4;
+		const expectedResult = 7;
 
 		const result = within(canvasElement).getAllByRole("status").length;
 
@@ -613,7 +703,7 @@ export const TenYearsSources: Story = {
 
 		const expectedResult = [
 			2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017,
-		].map((year) => `10-K for FY${year}`);
+		].map((year) => `10-K for FY${year}, ${MERIDIAN}`);
 
 		const result = within(popup)
 			.getAllByRole("listitem")
@@ -643,6 +733,351 @@ export const TenYearsDataPhone: Story = {
 			scrolls: scroller.scrollLeft > 0,
 			fixed: Math.abs(first.getBoundingClientRect().left - before) < 1,
 			fits: card.getBoundingClientRect().right <= window.innerWidth,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: card 1.5 draws the five areas in the order of DESIGN.md §8, a
+ * legend of the three results, and a ring count for each area.
+ */
+export const ChecksDesktop: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const card = await checksCard(canvasElement);
+		const inCard = within(card);
+
+		const expectedResult = {
+			areas: [
+				"Balance sheet",
+				"Profitability",
+				"Valuation",
+				"Shareholder returns",
+				"Consistency",
+			],
+			legend: ["Met", "Not met", "Not enough data"],
+			rings: [
+				"2 of 2 met",
+				"1 of 2 met",
+				"1 of 2 met",
+				"2 of 3 met",
+				"2 of 2 met",
+			],
+		};
+
+		const result = {
+			areas: inCard
+				.getAllByRole("region")
+				.map((area) => area.getAttribute("aria-label")),
+			legend: within(inCard.getByRole("list", { name: "Results" }))
+				.getAllByRole("listitem")
+				.map((item) => item.textContent),
+			rings: [...card.querySelectorAll("[data-slot=ring-count]")].map(
+				(ring) => ring.textContent,
+			),
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: at 320 px, the areas of card 1.5 stack and the page does not scroll sideways. */
+export const ChecksPhone: Story = {
+	globals: { viewport: { value: "mobile1", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const card = await checksCard(canvasElement);
+		const areas = within(card).getAllByRole("region");
+
+		const expectedResult = { columns: 1, pageScrolls: false };
+
+		const result = {
+			columns: new Set(
+				areas.map((area) => Math.round(area.getBoundingClientRect().left)),
+			).size,
+			pageScrolls: document.documentElement.scrollWidth > window.innerWidth,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: with no masthead there is no price, so the P/E check has not enough data. */
+export const ChecksNotEnoughData: Story = {
+	parameters: { companyGateway: mastheadFailingGateway },
+	play: async ({ canvasElement }) => {
+		const card = await checksCard(canvasElement);
+
+		const expectedResult = "Not enough data";
+
+		const result = checkResult(card, "P/E below its own 10-year median");
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/** Play test: while Valuation loads, V2 has not enough data and says a section has no data. */
+export const ChecksValuationLoading: Story = {
+	parameters: { companyGateway: valuationPendingGateway },
+	play: async ({ canvasElement }) => {
+		const card = await checksCard(canvasElement);
+
+		const expectedResult =
+			"The free cash flow yield (2.3%) needs to be above the 10-year Treasury yield (—), but a section of the page has no data.";
+
+		const result = within(card)
+			.getByText(/^The free cash flow yield/)
+			.closest("p");
+
+		await expect(result).toHaveTextContent(expectedResult);
+	},
+};
+
+/**
+ * Play test: a failed masthead never loads, so the P/E sentence says a
+ * section has no data, and never asks the reader to wait for it.
+ */
+export const ChecksMastheadFailed: Story = {
+	parameters: { companyGateway: mastheadFailingGateway },
+	play: async ({ canvasElement }) => {
+		const card = await checksCard(canvasElement);
+
+		const expectedResult =
+			"The P/E (—) needs to be below its own 10-year median (—), but a section of the page has no data.";
+
+		const result = within(card)
+			.getByText(/^The P\/E/)
+			.closest("p");
+
+		await expect(result).toHaveTextContent(expectedResult);
+	},
+};
+
+/** Play test: card 1.5 says so when the Financials section fails to load. */
+export const ChecksFailed: Story = {
+	parameters: { companyGateway: financialsFailingGateway },
+	play: async ({ canvasElement }) => {
+		const card = await within(canvasElement).findByRole("region", {
+			name: "1.5 Checks by Area",
+		});
+
+		const expectedResult = "The checks did not load. Try again in a moment.";
+
+		const result = await within(card).findByText(/checks did not load/);
+
+		await expect(result).toHaveTextContent(expectedResult);
+	},
+};
+
+/**
+ * Play test: C1 reads ten annual filings, and its source line names two and
+ * counts the rest, so it stays one quiet line.
+ */
+export const ChecksSourceLine: Story = {
+	play: async ({ canvasElement }) => {
+		const card = await checksCard(canvasElement);
+		const item = within(card)
+			.getByText("Free cash flow positive in at least 8 of 10 years")
+			.closest("li") as HTMLElement;
+
+		const expectedResult = true;
+
+		const line = item.querySelector("[data-slot=source-line]")?.textContent;
+		const result =
+			/^Sources: 10-K for FY\d{4}, .+ · 10-K for FY\d{4}, .+ and \d+ more$/.test(
+				line ?? "",
+			);
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/** Returns the lightness and alpha of an `oklch(L C H / A)` color. */
+function oklchOf(color: string): { lightness: number; alpha: number } {
+	const [lightness = Number.NaN, , , alpha = 1] =
+		color.match(/[\d.]+/g)?.map(Number) ?? [];
+	return { lightness, alpha };
+}
+
+/**
+ * Play test: in the light theme the track of each ring stays visible on the
+ * white card. Blended over the card, its lightness differs from the card's by
+ * at least 0.1.
+ */
+export const ChecksLight: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false }, theme: "light" },
+	play: async ({ canvasElement }) => {
+		const card = await checksCard(canvasElement);
+		const track = card.querySelector("[data-slot=ring] circle") as SVGElement;
+		const ink = oklchOf(getComputedStyle(track).stroke);
+		const paper = oklchOf(getComputedStyle(card).backgroundColor);
+
+		const expectedResult = true;
+
+		const blended =
+			ink.alpha * ink.lightness + (1 - ink.alpha) * paper.lightness;
+		const result = Math.abs(paper.lightness - blended) >= 0.1;
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/**
+ * Play test: on a desktop, card 1.6 "Who Owns It" and card 1.7 "Profile" sit
+ * side by side, one column each. The link opens Relationships, and the
+ * founding year prints as a year.
+ */
+export const OwnershipAndProfile: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const owners = await overviewCard(canvasElement, "1.6 Who Owns It");
+		const profile = await overviewCard(canvasElement, "1.7 Profile");
+		const left = owners.getBoundingClientRect();
+		const right = profile.getBoundingClientRect();
+
+		const expectedResult = {
+			sideBySide: true,
+			href: tabPath(
+				"MRDN",
+				COMPANY_TABS.find(({ key }) => key === "relationships") as CompanyTab,
+			),
+			founded: "1993",
+		};
+
+		const result = {
+			sideBySide: left.top === right.top && left.right < right.left,
+			href: within(owners).getByRole("link").getAttribute("href"),
+			founded: within(profile).getByText("Founded").nextSibling?.textContent,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: at 320 px, card 1.7 stacks below card 1.6, the page does not
+ * scroll sideways, and the Relationships link is a 44 px tap target.
+ */
+export const OwnershipAndProfilePhone: Story = {
+	globals: { viewport: { value: "mobile1", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const owners = await overviewCard(canvasElement, "1.6 Who Owns It");
+		const profile = await overviewCard(canvasElement, "1.7 Profile");
+		const link = within(owners).getByRole("link").getBoundingClientRect();
+
+		const expectedResult = {
+			stacked: true,
+			pageScrolls: false,
+			tapTarget: true,
+		};
+
+		const result = {
+			stacked:
+				profile.getBoundingClientRect().top >=
+				owners.getBoundingClientRect().bottom,
+			pageScrolls: document.documentElement.scrollWidth > window.innerWidth,
+			tapTarget: link.height >= 44,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: a profile with no auditor shows the dimmed dash for it. */
+export const ProfileMissingAuditor: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	parameters: { companyGateway: noAuditorGateway },
+	play: async ({ canvasElement }) => {
+		const profile = await overviewCard(canvasElement, "1.7 Profile");
+
+		const expectedResult = { text: MISSING, dimmed: true };
+
+		const dash = within(profile).getByText("Auditor").nextSibling
+			?.firstChild as HTMLElement;
+		const result = {
+			text: dash.textContent,
+			dimmed: dash.classList.contains(MISSING_INK),
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: a profile with no chief executive shows the dimmed dash alone,
+ * with no ", since" and no start year after it.
+ */
+export const ProfileMissingChiefExecutive: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	parameters: { companyGateway: noChiefExecutiveGateway },
+	play: async ({ canvasElement }) => {
+		const profile = await overviewCard(canvasElement, "1.7 Profile");
+
+		const expectedResult = MISSING;
+
+		const result =
+			within(profile).getByText("Chief executive").nextSibling?.textContent;
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/**
+ * Play test: when institutions hold 105% of the shares outstanding, the
+ * institutions label prints 105.0% and the public prints the dimmed dash,
+ * and the bar stays inside its track (DESIGN.md §8 "Overview").
+ */
+export const OwnershipOverflow: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	parameters: { companyGateway: institutionsGateway(1.05) },
+	play: async ({ canvasElement }) => {
+		const owners = await overviewCard(canvasElement, "1.6 Who Owns It");
+		const track = owners.querySelector("[data-slot=share-bar] > div");
+		const segments = [
+			...owners.querySelectorAll("[data-slot=share-bar-segment]"),
+		];
+		const items = within(owners).getAllByRole("listitem");
+
+		const expectedResult = {
+			institutions: "Institutions105.0%",
+			public: `Public${MISSING}`,
+			segments: 2,
+			fits: true,
+		};
+
+		const bar = track?.getBoundingClientRect();
+		const result = {
+			institutions: items[0]?.textContent,
+			public: items[2]?.textContent,
+			segments: segments.length,
+			fits: segments.every(
+				(segment) =>
+					segment.getBoundingClientRect().right <= (bar?.right ?? 0) + 0.5,
+			),
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: when institutions hold 99.9% and insiders hold the rest and
+ * more, the public prints the dimmed dash and draws no segment, never 0% or
+ * a negative share (DESIGN.md §8 "Overview").
+ */
+export const OwnershipPublicMissing: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	parameters: { companyGateway: institutionsGateway(0.999) },
+	play: async ({ canvasElement }) => {
+		const owners = await overviewCard(canvasElement, "1.6 Who Owns It");
+		const items = within(owners).getAllByRole("listitem");
+
+		const expectedResult = { public: `Public${MISSING}`, segments: 2 };
+
+		const result = {
+			public: items[2]?.textContent,
+			segments: owners.querySelectorAll("[data-slot=share-bar-segment]").length,
 		};
 
 		await expect(result).toEqual(expectedResult);

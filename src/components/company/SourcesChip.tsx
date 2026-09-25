@@ -3,7 +3,7 @@ import { useMemo } from "react";
 
 import { buttonVariants } from "@/components/ui/button/variants";
 import { formatDate } from "@/lib/company/dates";
-import { filingsOf } from "@/lib/company/sources";
+import { documentLabel, filingsOf } from "@/lib/company/sources";
 import type { Claim } from "@/lib/company/types";
 import { cn } from "@/lib/utils";
 
@@ -39,9 +39,7 @@ function SourcesChip({ claims }: { claims: readonly Claim[] }) {
 						<ul className="flex flex-col gap-3 text-base">
 							{filings.map((filing) => (
 								<li key={filing.accessionNumber}>
-									<p className="font-medium">
-										{filing.form} for {filing.periodLabel}
-									</p>
+									<p className="font-medium">{documentLabel(filing)}</p>
 									<p className="text-muted-foreground">
 										Filed {formatDate(filing.filedOn)}
 									</p>

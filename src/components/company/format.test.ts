@@ -10,6 +10,8 @@ describe("formatInUnit", () => {
 		[24_500_000_000, "24.5B", "shares"],
 		[18.44, "18.4", "ratio"],
 		[0.312, "31.2%", "percent"],
+		[1993, "1993", "year"],
+		[36_000, "36,000", "count"],
 	] as const)(
 		"should write %s as %s when the unit is %s",
 		(value, expectedResult, unit) => {
@@ -25,6 +27,16 @@ describe("formatInput", () => {
 		const input = { value: 82.75, unit: "usdPerShare" } as const;
 
 		const expectedResult = "$82.75";
+
+		const result = formatInput(input);
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should write a true minus before the dollar sign when a loss per share is read", () => {
+		const input = { value: -1.2, unit: "usdPerShare" } as const;
+
+		const expectedResult = "−$1.20";
 
 		const result = formatInput(input);
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { shareSegments } from "@/components/company/ShareBar";
 import { completeSections, type PositionRow } from "@/lib/company/metrics";
 import { tenYearsBars } from "@/lib/company/sources";
 import type { Claim, OverviewSection } from "@/lib/company/types";
@@ -10,6 +11,7 @@ import { Ticker } from "@/lib/domain/ticker";
 import {
 	heldBack,
 	joinSections,
+	ownershipParts,
 	positionBars,
 	revenueParts,
 	tenYearsSeries,
@@ -35,6 +37,57 @@ function latestIncome(key: string): number {
 	const line = financials.income.annual.lines.find((each) => each.key === key);
 	return Number(line?.points.at(-1)?.value);
 }
+
+/** The overview whose institutions hold `share` of the shares outstanding. */
+function institutionsHolding(share: number): OverviewSection {
+	const { ownership } = overview;
+	const outstanding = Number(ownership.sharesOutstanding?.value);
+	const institutions = ownership.institutionShares as Claim;
+	return {
+		...overview,
+		ownership: {
+			...ownership,
+			institutionShares: { ...institutions, value: share * outstanding },
+		},
+	};
+}
+
+describe("ownershipParts", () => {
+	it("should give the public no share and no segment when institutions and insiders hold more than the shares outstanding", () => {
+		const expectedResult = { share: null, width: null };
+
+		const segment = shareSegments(
+			ownershipParts(institutionsHolding(1.05), "overview"),
+		)[2];
+		const result = { share: segment?.share, width: segment?.width };
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should print the true institutions share and keep the bar within its width when institutions hold more than 100%", () => {
+		const expectedResult = { share: 1.05, total: 100 };
+
+		const segments = shareSegments(
+			ownershipParts(institutionsHolding(1.05), "overview"),
+		);
+		const result = {
+			share: Number(segments[0]?.share?.toFixed(2)),
+			total: Math.round(
+				segments.reduce((sum, { width }) => sum + (width ?? 0), 0),
+			),
+		};
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should name the claims after the owner when Relationships draws the bar", () => {
+		const expectedResult = "metric.ownershipShares.relationships.public";
+
+		const result = ownershipParts(overview, "relationships")[2]?.share?.id;
+
+		expect(result).toBe(expectedResult);
+	});
+});
 
 describe("revenueParts", () => {
 	it("should give each part the claim of its share of revenue when the list is the regions", () => {

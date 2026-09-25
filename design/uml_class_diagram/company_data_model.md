@@ -685,8 +685,15 @@ lines it draws, as `chartLines` in `sources.ts` lists them. The
 `ShareholderReturnsSection`, and gives no group until that section loads.
 The company figures of `keyFigures` are the eight claims of `keyFigureOf`, the
 figures card 1.3 draws. Its sector figures are the medians of the benchmark
-rows, and `sectorMedianOf` picks one for the card. `checksByArea` reads no
-claim until the checks land.
+rows, and `sectorMedianOf` picks one for the card. `checksByArea` reads every
+figure the checks compare, or the inputs of a figure with no value. The
+`ownership` block of card 1.6 "Who Owns It" and the `ownershipSplit` block of
+card 5.3 read the three counts of `OwnershipSummary`, not the shares of
+`ownershipShares`. Without the shares outstanding every share is null, so
+reading the shares would drop the 13F-HR and the Form 4 behind the counts
+from the index. The `profile` block of card 1.7 "Profile" reads the seven facts
+of `Profile`, since the card prints the chief executive's start year after
+the name. Both blocks need the Overview section only.
 
 **Share counts for buybacks.** `ShareholderReturnsSection.sharesRepurchased`
 and `sharesIssuedToStaff` hold the shares bought back and the shares issued
@@ -1352,8 +1359,11 @@ details:
   a section that exists. V2 lists the masthead, the Financials and the
   Valuation sections. Until the Valuation section loads, V2 reads "not
   enough data", reason `missingSection`.
-- `Check.rule`, `CheckResult.sentence` and the count claim
-  `check.{id}.count` wait for the ticket that draws the check card.
+- `CheckResult` has no `sentence`, and `Check` has no `rule`, because
+  `Check.name` states the rule. Card 1.5 builds each sentence with
+  `sentenceOf` in `src/pages/company/tabs/ChecksByArea.logic.ts`, from the
+  words of each check, which say whether its subject is plural. A period
+  count also builds the claim `check.{id}.count` there.
 - `CheckResult.claims` holds the claims that decide the state: the subject and
   the threshold figure, the input claim of a failed guard, or the points of a
   window.
@@ -1718,6 +1728,10 @@ The sample adapter fills `OverviewSection.ownership` and
 31 Mar 2026 instead, with 15.90B shares, so the bar shows 65.2%. Both copies
 carry valid sources. The STA-227 test compares the copies field by field and
 fails on `asOf` first: `2026-06-30` against `2026-03-31`.
+
+Overview card 1.6 and Relationships card 5.3 each build their bar with
+`ownershipParts` in `src/pages/company/tabs/OverviewTab.logic.ts`, from their
+own copy. So the two bars differ only when the copies differ.
 
 The type test of §9 walks `OwnershipSummary` like this:
 
