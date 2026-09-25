@@ -673,7 +673,7 @@ tab ticket adds its own keys, such as `peRange` and `ceoPay`.
 | Overview   | `business`, `tenYears`, `keyFigures`, `financialPosition`, `checksByArea`, `ownership`, `profile`, and the print-only `printedShareholderReturns` |
 | Financials | `incomeChart`, `incomeTable`, `balanceChart`, `balanceTable`, `cashFlowChart`, `cashFlowTable` |
 | Valuation  | `valuationRatios`, `yieldsAgainstTreasury` (each yield, or the inputs of a missing one), `ratioFormulas` |
-| Shareholder returns | `dividendPerShare`, `dividendsAgainstFreeCashFlow` (the inputs of each share), `buybacksNetOfStaffShares` (both sides of each year, so a 10-K stays in the index when no net exists), so far. Each block names no filing until both of the tab's sections load, since the tab draws no card before then |
+| Shareholder returns | `dividendPerShare`, `dividendsAgainstFreeCashFlow` (the inputs of each share), `buybacksNetOfStaffShares` (both sides of each year, so a 10-K stays in the index when no net exists), `shareCount`, `totalShareholderYield` (the reported inputs of each yield: dividends paid, share repurchases, proceeds from stock plans, diluted shares and the year-end price). Each block names no filing until the financials and the Shareholder returns section load, since the tab draws no card before then. `totalShareholderYield` also waits for the masthead, since card 4.5 draws only with its year-end prices |
 | Relationships | `largestFunds`, `insiders`, `ownershipSplit`, `subsidiaries`, `stakes` |
 | Management | `executivesAndBoard`, `ceoPay`, `payMix`, `insiderHoldings`, `insiderBuyingAndSelling` (both sides of each year, so a Form 4 stays in the index when no net exists) |
 
@@ -703,6 +703,16 @@ Shareholder returns card 4.3, "Buybacks Net of Shares Issued to Staff", and
 `netBuyback` in `metrics.ts` derives the net of each year from them. They
 are series and not statement lines, because the three statements of §4 do not
 hold them.
+
+**The yields of card 4.5.** `dividendYieldAtYearEnd` is `dividendsPaid @
+samePeriod` ÷ `marketCapAtYearEnd @ samePeriod`. `buybackYieldAtYearEnd` is
+(`shareRepurchases @ samePeriod` − `shareIssuanceProceeds @ samePeriod`) ÷
+`marketCapAtYearEnd @ samePeriod`, the per-year form of `buybackYield`. Both
+guard the market cap above 0. They divide a fiscal year's cash by the market
+cap at the end of that year, as the Valuation yields do, so no year mixes its
+cash with today's price. A net buyback yield below 0 means the company took
+in more from stock plans than it spent on buybacks, and card 4.5 draws it
+below the zero line.
 
 **The share count of a stake.** `Stake.sharesHeld` comes from the company's
 own 13F information table. The 13F does not report the shares outstanding of
