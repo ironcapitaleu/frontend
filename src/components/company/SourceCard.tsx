@@ -130,6 +130,8 @@ interface SourceTriggerProps {
 	/** The figure, as the page draws it. */
 	children: React.ReactNode;
 	className?: string;
+	/** Places the trigger, such as a stacked bar whose trigger is taller than the bar. */
+	style?: React.CSSProperties;
 }
 
 /** A closed card, a preview that hover or focus opened, or a card that a click pinned. */
@@ -142,7 +144,12 @@ type CardState = "closed" | "preview" | "pinned";
  * click, `Enter` or `Space` pins it, and `Escape` closes it. On a phone, a
  * tap opens the card as a bottom sheet with a close button.
  */
-function SourceTrigger({ claim, children, className }: SourceTriggerProps) {
+function SourceTrigger({
+	claim,
+	children,
+	className,
+	style,
+}: SourceTriggerProps) {
 	const phone = usePhone();
 	const [state, setState] = React.useState<CardState>("closed");
 	// A change of layout closes the card, so a card pinned on a desktop does
@@ -164,7 +171,9 @@ function SourceTrigger({ claim, children, className }: SourceTriggerProps) {
 	if (phone) {
 		return (
 			<Sheet>
-				<SheetTrigger className={triggerClass}>{children}</SheetTrigger>
+				<SheetTrigger className={triggerClass} style={style}>
+					{children}
+				</SheetTrigger>
 				<SheetContent side="bottom">
 					<SheetBody className="flex flex-col gap-3">
 						<SheetTitle className="font-serif text-xl">
@@ -197,6 +206,7 @@ function SourceTrigger({ claim, children, className }: SourceTriggerProps) {
 				openOnHover
 				delay={200}
 				className={triggerClass}
+				style={style}
 				onFocus={() => {
 					focused.current = true;
 					if (state === "closed" && !closedByKey.current) setState("preview");
