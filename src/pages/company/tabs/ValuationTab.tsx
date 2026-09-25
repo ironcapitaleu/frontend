@@ -1,8 +1,8 @@
 import * as React from "react";
 
+import { ChartActions } from "@/components/company/ChartActions";
 import { CompanyCard, CompanyCardGrid } from "@/components/company/CompanyCard";
 import { SourceTrigger } from "@/components/company/SourceCard";
-import { SourcesChip } from "@/components/company/SourcesChip";
 import { SourcesIndex } from "@/components/company/SourcesIndex";
 import { FIXED_COLUMN, formatInput } from "@/components/company/format";
 import {
@@ -24,9 +24,8 @@ import { Text } from "@/components/ui/text";
 import { cn } from "@/lib/utils";
 import { useCompany } from "../../../hooks/useCompany";
 import { metricInputsOf, metrics } from "../../../lib/company/metrics";
-import { figureGroupsOf } from "../../../lib/company/sources";
+import { figureGroupsOf, isDrawn } from "../../../lib/company/sources";
 import type {
-	BlockKey,
 	CompletedSections,
 	Figure,
 	MastheadSection,
@@ -38,16 +37,13 @@ import {
 	ratioRanges,
 	ratioScale,
 } from "../../../lib/company/valuationRatios";
-import { yieldTable } from "../../../lib/company/valuationYields";
+import {
+	type YieldTable,
+	yieldTable,
+} from "../../../lib/company/valuationYields";
 import type { Ticker } from "../../../lib/domain/ticker";
+import { FigureCell } from "./FigureCell";
 import { BarChart } from "./StatementChart";
-
-/** The blocks this tab draws. The Sources index names only these. */
-const DRAWN_BLOCKS: ReadonlySet<BlockKey> = new Set([
-	"valuationRatios",
-	"yieldsAgainstTreasury",
-	"ratioFormulas",
-]);
 
 /**
  * The Valuation tab of the company page (DESIGN.md §8 "Valuation"). It loads
@@ -106,11 +102,10 @@ function LoadedValuation(props: {
 	const yields = React.useMemo(() => yieldTable(sections), [sections]);
 	const groups = React.useMemo(
 		() =>
-			figureGroupsOf("valuation", sections).filter(({ ref }) =>
-				DRAWN_BLOCKS.has(ref.block),
-			),
+			figureGroupsOf("valuation", sections).filter(({ ref }) => isDrawn(ref)),
 		[sections],
 	);
+	const [yieldData, setYieldData] = React.useState(false);
 	return (
 		<div className="flex flex-col gap-10">
 			<CompanyCardGrid>
@@ -135,7 +130,9 @@ function LoadedValuation(props: {
 					title="Earnings Yield and FCF Yield Next to the 10-Year Treasury"
 					caption="Each fiscal year end and now. Percent, from 10-K filings, daily prices and Treasury par yields."
 					actions={
-						<SourcesChip
+						<ChartActions
+							data={yieldData}
+							onData={setYieldData}
 							claims={
 								groups.find(({ ref }) => ref.block === "yieldsAgainstTreasury")
 									?.claims ?? []
@@ -143,7 +140,11 @@ function LoadedValuation(props: {
 						/>
 					}
 				>
-					<BarChart table={yields} format={formatInput} />
+					{yieldData ? (
+						<YieldGrid table={yields} />
+					) : (
+						<BarChart table={yields} format={formatInput} />
+					)}
 				</CompanyCard>
 				<CompanyCard
 					tab="valuation"
@@ -186,6 +187,46 @@ function LoadedValuation(props: {
 			</CompanyCardGrid>
 			<SourcesIndex groups={groups} />
 		</div>
+	);
+}
+
+/**
+ * The table behind the "Data" button of card 3.2: one row per yield, one
+ * column per fiscal year end and a last column for now. A missing yield
+ * shows the dimmed dash.
+ */
+function YieldGrid({ table }: { table: YieldTable }) {
+	return (
+		<Table
+			aria-label="Earnings Yield and FCF Yield Next to the 10-Year Treasury table"
+			className="text-base"
+		>
+			<TableHeader>
+				<TableRow>
+					<TableHead className={FIXED_COLUMN}>Yield</TableHead>
+					{table.columns.map(({ key, label }) => (
+						<TableHead key={key} className="text-right">
+							{label}
+						</TableHead>
+					))}
+				</TableRow>
+			</TableHeader>
+			<TableBody>
+				{table.lines.map((line) => (
+					<TableRow key={line.key}>
+						<TableHead scope="row" className={FIXED_COLUMN}>
+							{line.label}
+						</TableHead>
+						{line.points.map((point, position) => (
+							<FigureCell
+								key={table.columns[position]?.key ?? position}
+								figure={point}
+							/>
+						))}
+					</TableRow>
+				))}
+			</TableBody>
+		</Table>
 	);
 }
 

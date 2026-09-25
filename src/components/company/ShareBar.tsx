@@ -28,7 +28,10 @@ interface ShareBarProps
 	parts: readonly SharePart[];
 }
 
-/** The fill of each part, in order (DESIGN.md §8). */
+/**
+ * The fill of each part, in order (DESIGN.md §8). The stacked `BarChart`
+ * takes the same fills, so a part keeps its color from chart to chart.
+ */
 const FILLS = [
 	"bg-chart-1",
 	"bg-chart-2",
@@ -155,6 +158,7 @@ function ShareBar({ parts, className, ...props }: ShareBarProps) {
 }
 
 export {
+	FILLS as SHARE_FILLS,
 	ShareBar,
 	type ShareBarProps,
 	type SharePart,
