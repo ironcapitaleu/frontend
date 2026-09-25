@@ -1,6 +1,8 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
+import { MISSING } from "@/components/screener/format";
+
 import { type BarTable, barScale } from "./financialsTable";
 import { BarChart } from "./StatementChart";
 
@@ -93,6 +95,26 @@ describe("BarChart", () => {
 
 		const plot = screen.getByRole("list", { name: "Fiscal years" });
 		const result = plot.nextElementSibling?.getAttribute("style");
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should show the dimmed dash in a stacked column that has no part to draw", () => {
+		const empty: BarTable = {
+			columns: [{ key: "FY26", label: "FY2026", short: "FY26" }],
+			lines: [
+				{ key: "a", label: "A", points: points(null) },
+				{ key: "b", label: "B", points: points(null) },
+			],
+		};
+		render(<BarChart table={empty} format={String} stacked />);
+		const plot = screen.getByRole("list", { name: "Fiscal years" });
+
+		const expectedResult = MISSING;
+
+		const result = within(plot)
+			.getByRole("listitem")
+			.textContent?.replace("FY2026", "");
 
 		expect(result).toBe(expectedResult);
 	});
