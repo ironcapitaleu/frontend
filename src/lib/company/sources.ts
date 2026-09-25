@@ -22,6 +22,7 @@ import type {
 	MetricKey,
 	Nullable,
 	ReportedSource,
+	ShareholderReturnsSection,
 	SourceDocument,
 	SourceGroup,
 	SourceSet,
@@ -235,6 +236,7 @@ const blockKeys = [
 	"ratioFormulas",
 	"dividendPerShare",
 	"dividendsAgainstFreeCashFlow",
+	"buybacksNetOfStaffShares",
 	"largestFunds",
 	"insiders",
 	"ownershipSplit",
@@ -453,8 +455,10 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		tab: "shareholderReturns",
 		label: "Dividend per Share",
 		drawn: true,
-		company: ({ shareholderReturns }) =>
-			shareholderReturns ? shareholderReturns.dividendPerShare.points : null,
+		company: (sections) =>
+			returnsLoaded(sections)
+				? sections.shareholderReturns.dividendPerShare.points
+				: null,
 	},
 	// Card 4.2 draws a share derived from these inputs. The block reads the
 	// inputs, so their filings stay in the index when a share is `null`.
@@ -462,13 +466,26 @@ const blocks: Readonly<Record<BlockKey, Block>> = {
 		tab: "shareholderReturns",
 		label: "Dividends Paid Against Free Cash Flow",
 		drawn: true,
-		// The tab draws its cards only when both of its sections load.
-		company: ({ financials, shareholderReturns }) =>
-			financials && shareholderReturns
+		company: (sections) =>
+			returnsLoaded(sections)
 				? pointsOf(
-						financials.cashFlow.annual,
+						sections.financials.cashFlow.annual,
 						lineKeysOf("dividendsToFreeCashFlow"),
 					)
+				: null,
+	},
+	// Card 4.3 reads both sides of every year, not `netBuyback`, so each 10-K
+	// stays in the index when one side is missing and no net exists.
+	buybacksNetOfStaffShares: {
+		tab: "shareholderReturns",
+		label: "Buybacks Net of Shares Issued to Staff",
+		drawn: true,
+		company: (sections) =>
+			returnsLoaded(sections)
+				? [
+						...sections.shareholderReturns.sharesRepurchased.points,
+						...sections.shareholderReturns.sharesIssuedToStaff.points,
+					]
 				: null,
 	},
 	// The block reads the reported inputs of `fundShare` and `fundChange` for
@@ -607,6 +624,19 @@ function valuationLoaded({
 	valuation,
 }: CompletedSections): boolean {
 	return masthead !== null && financials !== null && valuation !== null;
+}
+
+/**
+ * Tells whether both sections of the Shareholder returns tab have loaded. The
+ * tab draws no card otherwise, so its blocks name no filing until then.
+ */
+function returnsLoaded(
+	sections: CompletedSections,
+): sections is CompletedSections & {
+	financials: FinancialsSection;
+	shareholderReturns: ShareholderReturnsSection;
+} {
+	return sections.financials !== null && sections.shareholderReturns !== null;
 }
 
 /** Returns the points of the lines `keys` of `table`, or of every line when `keys` is absent. */

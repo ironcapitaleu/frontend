@@ -160,7 +160,9 @@ export const FeedsNoFigure: Story = {
 
 /**
  * Play test: when the Financials section fails, the FY2026 10-K row keeps the
- * figures of the sections that loaded and names no Financials figure.
+ * figures of the sections that loaded and names no Financials figure. The
+ * Shareholder returns tab draws no card without its financials, so the row
+ * names none of its cards either.
  */
 export const FinancialsFailed: Story = {
 	parameters: { companyGateway: financialsFailingGateway },
@@ -168,7 +170,7 @@ export const FinancialsFailed: Story = {
 		const row = await rowOf(canvasElement, "0001234567-26-000012");
 
 		const expectedResult =
-			"Feeds Overview: The Business, Shareholder returns: Dividend per Share, Relationships: Owns: Subsidiaries";
+			"Feeds Overview: The Business, Relationships: Owns: Subsidiaries";
 
 		const result = await within(row).findByText(
 			(_, element) =>

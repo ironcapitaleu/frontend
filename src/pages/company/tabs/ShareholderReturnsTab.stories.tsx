@@ -40,6 +40,24 @@ async function plotOf(canvasElement: HTMLElement, title: string) {
 
 const PER_SHARE = "4.1 Dividend per Share";
 const PAYOUT = "4.2 Dividends Paid Against Free Cash Flow";
+const BUYBACKS = "4.3 Buybacks Net of Shares Issued to Staff";
+
+/**
+ * A gateway with no FY2020 shares issued to staff, and as many shares issued
+ * as bought back in FY2021, so FY2021 nets to zero.
+ */
+const buybackGapGateway: CompanyGateway = {
+	...alwaysFoundCompanyGateway(),
+	getShareholderReturns: async () => {
+		const returns = fakeCompanyReport.shareholderReturns;
+		const bought = returns.sharesRepurchased.points;
+		const series = returns.sharesIssuedToStaff;
+		const points = series.points.map((point, index) =>
+			index === 4 ? null : index === 5 ? (bought[5] ?? null) : point,
+		);
+		return { ...returns, sharesIssuedToStaff: { ...series, points } };
+	},
+};
 
 /** A gateway for a company that paid no dividend in any fiscal year. */
 const noDividendGateway: CompanyGateway = {
@@ -125,8 +143,10 @@ const gapAndZeroGateway: CompanyGateway = {
  * fixtures unless a story sets its own (DESIGN.md §8 "Shareholder returns").
  * Card 4.1 draws the dividend per share declared for each fiscal year. Card
  * 4.2 sits beside it on a desktop and draws dividends paid as a share of free
- * cash flow. On a phone the two cards stack, 4.1 first. The sources
- * index at the foot lists the filings behind the tab.
+ * cash flow. On a phone the two cards stack, 4.1 first. Card 4.3 takes both
+ * columns below them and draws the shares bought back, the shares issued to
+ * staff and the net buyback. The sources index at the foot lists the filings
+ * behind the tab.
  */
 const meta: Meta<typeof ShareholderReturnsTab> = {
 	title: "Pages/CompanyPage/ShareholderReturnsTab",
@@ -151,7 +171,7 @@ export const Loaded: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 
-		const expectedResult = [PER_SHARE, PAYOUT];
+		const expectedResult = [PER_SHARE, PAYOUT, BUYBACKS];
 
 		const headings = await canvas.findAllByRole("heading", { level: 2 });
 		const result = headings
@@ -163,7 +183,7 @@ export const Loaded: Story = {
 };
 
 /**
- * Play test: on a phone, every bar of cards 4.1 and 4.2 has a tap target at
+ * Play test: at 320 px, every bar of cards 4.1 to 4.3 has a tap target at
  * least 24 px wide and tall inside the plot, every bar draws, and each chart
  * scrolls inside its card, so the page does not scroll sideways.
  */
@@ -173,9 +193,10 @@ export const LoadedOnPhone: Story = {
 		const plots = [
 			await plotOf(canvasElement, PER_SHARE),
 			await plotOf(canvasElement, PAYOUT),
+			await plotOf(canvasElement, BUYBACKS),
 		];
 
-		const expectedResult = [BAR_TARGETS_OK, BAR_TARGETS_OK];
+		const expectedResult = [BAR_TARGETS_OK, BAR_TARGETS_OK, BAR_TARGETS_OK];
 
 		const result = plots.map(barTargetsOf);
 
@@ -209,6 +230,82 @@ export const DataTable: Story = { play: dataTableOf(PER_SHARE) };
 
 /** Play test: the "Data" table of card 4.2 shows the shares its chart draws, year by year. */
 export const PayoutDataTable: Story = { play: dataTableOf(PAYOUT) };
+
+/**
+ * Play test: the "Data" table of card 4.3 shows, year by year, the three
+ * figures its chart draws, the dimmed dash included.
+ */
+export const BuybacksDataTable: Story = {
+	parameters: { companyGateway: buybackGapGateway },
+	play: async ({ canvasElement }) => {
+		const card = within(await cardOf(canvasElement, BUYBACKS));
+		const plot = await card.findByRole("list", { name: "Fiscal years" });
+
+		const expectedResult = within(plot)
+			.getAllByRole("listitem")
+			.map((group) =>
+				[...group.children]
+					.slice(1)
+					.map((bar) => bar.textContent?.replace(/^.*: /, "")),
+			);
+
+		await userEvent.click(card.getByRole("button", { name: "Data" }));
+		const table = await card.findByRole("table", {
+			name: "Buybacks Net of Shares Issued to Staff table",
+		});
+		const result = within(table)
+			.getAllByRole("row")
+			.slice(1)
+			.map((row) =>
+				within(row)
+					.getAllByRole("cell")
+					.map((cell) => cell.textContent),
+			);
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: with no FY2020 shares issued to staff, card 4.3 draws a dash,
+ * not a bar, for that side and for the net of FY2020.
+ */
+export const BuybacksMissingYear: Story = {
+	parameters: { companyGateway: buybackGapGateway },
+	play: async ({ canvasElement }) => {
+		const plot = await plotOf(canvasElement, BUYBACKS);
+
+		const expectedResult = [3, 3, 3, 3, 1, 3, 3, 3, 3, 3];
+
+		const result = within(plot)
+			.getAllByRole("listitem")
+			.map((group) => within(group).queryAllByRole("button").length);
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: a net buyback of zero in FY2021 draws the 2 px mark, which opens
+ * the sources of the net.
+ */
+export const BuybacksZeroNet: Story = {
+	parameters: { companyGateway: buybackGapGateway },
+	play: async ({ canvasElement }) => {
+		const plot = await plotOf(canvasElement, BUYBACKS);
+		const group = within(plot).getAllByRole("listitem")[5] as HTMLElement;
+		const bar = within(group).getByRole("button", { name: /^Net buyback/ });
+
+		const expectedResult = { name: "Net buyback: 0", height: 2 };
+
+		const result = {
+			name: bar.textContent,
+			height: bar.parentElement?.getBoundingClientRect().height,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
 
 /** Play test: a missing FY2020 operating cash flow leaves a gap with no bar in card 4.2. */
 export const PayoutMissingYear: Story = {

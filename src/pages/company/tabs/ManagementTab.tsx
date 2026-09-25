@@ -5,6 +5,7 @@ import { CompanyCard, CompanyCardGrid } from "@/components/company/CompanyCard";
 import { ShareBar } from "@/components/company/ShareBar";
 import { SourcesChip } from "@/components/company/SourcesChip";
 import { SourcesIndex } from "@/components/company/SourcesIndex";
+import { formatShares } from "@/components/company/format";
 import { MISSING, toFixedWithMinus } from "@/components/screener/format";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -195,13 +196,6 @@ function thousands(value: ClaimValue): string {
 		: MISSING;
 }
 
-/** Writes a whole share count, such as `−280,000` or `−400`, or the dash when it is not a finite number. */
-function shares(value: ClaimValue): string {
-	return typeof value === "number" && Number.isFinite(value)
-		? toFixedWithMinus(value, 0, true)
-		: MISSING;
-}
-
 /** Writes a fiscal year in full, `FY2026`, or short, `FY26`, or the dash when it is not a whole number. */
 function yearLabel(fiscalYear: number, full: boolean): string {
 	if (!Number.isInteger(fiscalYear)) return MISSING;
@@ -353,7 +347,7 @@ function InsiderTradesCard({
 								</TableHead>
 								<FigureCell
 									figure={net.points[position] ?? null}
-									format={shares}
+									format={formatShares}
 								/>
 							</TableRow>
 						))}
@@ -365,7 +359,7 @@ function InsiderTradesCard({
 						columns: years,
 						lines: [{ key: "net", label: "Net shares", points: net.points }],
 					}}
-					format={(claim) => shares(claim.value)}
+					format={(claim) => formatShares(claim.value)}
 				/>
 			)}
 		</CompanyCard>

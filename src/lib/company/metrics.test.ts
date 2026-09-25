@@ -27,6 +27,7 @@ import {
 	nestedMetricInputsOf,
 	otherRevenueShare,
 	ownershipShares,
+	netBuyback,
 	netInsiderShares,
 	payMix,
 	priceChangeOneMonth,
@@ -48,6 +49,8 @@ import type {
 	ManagementSection,
 	MetricKey,
 	Period,
+	Series,
+	ShareholderReturnsSection,
 	Statement,
 	StatementTable,
 } from "./types";
@@ -2125,6 +2128,67 @@ describe("netInsiderShares", () => {
 				[fy2025, fy2024, fy2025, odd],
 			),
 		).periods.map((period) => period.fiscalYear);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give a year as null when a point's own period is another fiscal year", () => {
+		// The points run newest first while the periods run oldest first.
+		const expectedResult = [null, null];
+
+		const result = netInsiderShares(withBought([latest, first])).points;
+
+		expect(result).toEqual(expectedResult);
+	});
+});
+
+describe("netBuyback", () => {
+	const section = fakeCompanyReport.shareholderReturns;
+	const { sharesRepurchased: bought, sharesIssuedToStaff: issued } = section;
+	const set = (series: Series, values: readonly (number | null)[]) => ({
+		...series,
+		points: series.points.map((point, position) => {
+			const value = values[position];
+			return value === null || point === null ? null : { ...point, value };
+		}),
+	});
+	const withValues = (
+		boughtValues: readonly (number | null)[],
+		issuedValues: readonly (number | null)[],
+	): ShareholderReturnsSection => ({
+		...section,
+		sharesRepurchased: set(bought, boughtValues),
+		sharesIssuedToStaff: set(issued, issuedValues),
+	});
+
+	it("should subtract the shares issued to staff from the shares bought back, giving a reported zero when they cancel", () => {
+		const expectedResult = [3_000, 0, -400];
+
+		const result = netBuyback(
+			withValues([5_000, 3_000, 100], [2_000, 3_000, 500]),
+		)
+			.points.slice(0, 3)
+			.map((point) => point?.value);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should name the bought-back and the issued claim of the year as inputs when it gives a net", () => {
+		const expectedResult = [bought.points[9]?.id, issued.points[9]?.id];
+
+		const { source } = netBuyback(section).points[9] ?? {};
+		const result =
+			source?.kind === "derived" ? source.inputs.map(({ id }) => id) : [];
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should give a year as null, not zero, when one side of that year is missing", () => {
+		const expectedResult = [null, null];
+
+		const result = netBuyback(
+			withValues([null, 1_000], [1_000, null]),
+		).points.slice(0, 2);
 
 		expect(result).toEqual(expectedResult);
 	});
