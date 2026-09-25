@@ -1,19 +1,19 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, within } from "storybook/test";
+import { expect, fn, within } from "storybook/test";
 
 import { meridianMasthead } from "@/lib/company/sample/masthead";
 import { CompanyMasthead } from "./CompanyMasthead";
 
 /**
  * The masthead of the company page for the sample company Meridian
- * Semiconductor. The stories cover the desktop and the phone width and a
- * masthead with missing figures.
+ * Semiconductor. The stories cover the desktop and the phone width, the
+ * Export button at both widths, and a masthead with missing figures.
  */
 const meta: Meta<typeof CompanyMasthead> = {
 	title: "Company/CompanyMasthead",
 	component: CompanyMasthead,
 	tags: ["autodocs"],
-	args: { masthead: meridianMasthead },
+	args: { masthead: meridianMasthead, onExport: fn() },
 	decorators: [
 		(Story) => (
 			<div className="p-6">
@@ -62,6 +62,38 @@ export const Phone: Story = {
 		};
 
 		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** On a desktop the Export button shows its icon and its label. */
+export const ExportOnDesktop: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+
+		const expectedResult = "Export";
+
+		const result = canvas
+			.getByRole("button", { name: "Export" })
+			.innerText.trim();
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/** On a phone the Export button shows its icon only, and keeps its name for a screen reader. */
+export const ExportOnPhone: Story = {
+	globals: { viewport: { value: "mobile1", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+
+		const expectedResult = "";
+
+		const result = canvas
+			.getByRole("button", { name: "Export" })
+			.innerText.trim();
+
+		await expect(result).toBe(expectedResult);
 	},
 };
 

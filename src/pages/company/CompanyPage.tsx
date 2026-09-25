@@ -7,9 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
 import { Spinner } from "@/components/ui/spinner";
 import { Text } from "@/components/ui/text";
+import { usePrint } from "../../contexts/PrintContext";
 import { useCompany } from "../../hooks/useCompany";
 import { type CompanyTab, findTab, tabPath } from "../../lib/company/tabs";
 import { Ticker } from "../../lib/domain/ticker";
+import { cn } from "../../lib/utils";
+import { PrintSummary } from "./PrintSummary";
 import { TAB_PANELS } from "./tabs";
 
 /**
@@ -24,8 +27,9 @@ import { TAB_PANELS } from "./tabs";
  * loading, missing, failed or loaded state.
  *
  * The loaded state shows the masthead, the tab strip and the panel of the
- * active tab from `TAB_PANELS`. Relationships shows its cards. The other
- * panels stay empty until their tab tickets fill them.
+ * active tab from `TAB_PANELS`. On Overview, the masthead has the Export
+ * button, which opens the print dialog, and the printed page shows
+ * `PrintSummary` in place of the tab.
  */
 function CompanyPage() {
 	const { symbol = "", tab: segment } = useParams();
@@ -45,7 +49,9 @@ function CompanyPage() {
 
 function CompanyContent({ ticker, tab }: { ticker: Ticker; tab: CompanyTab }) {
 	const state = useCompany(ticker, "masthead");
+	const print = usePrint();
 	const Panel = TAB_PANELS[tab.key];
+	const overview = tab.key === "overview";
 
 	switch (state.status) {
 		case "loading":
@@ -64,12 +70,18 @@ function CompanyContent({ ticker, tab }: { ticker: Ticker; tab: CompanyTab }) {
 			);
 		case "loaded":
 			return (
-				<div className="w-full max-w-6xl mx-auto px-4 py-10 flex flex-col">
-					<CompanyMasthead masthead={state.data} />
-					<CompanyTabs symbol={ticker.value} activeTab={tab.key} />
-					<section aria-label={tab.label} className="py-10">
-						<Panel ticker={ticker} />
-					</section>
+				<div className="w-full max-w-6xl mx-auto px-4 py-10 flex flex-col print:p-0">
+					<div className={cn("flex flex-col", overview && "print:hidden")}>
+						<CompanyMasthead
+							masthead={state.data}
+							onExport={overview ? print : undefined}
+						/>
+						<CompanyTabs symbol={ticker.value} activeTab={tab.key} />
+						<section aria-label={tab.label} className="py-10">
+							<Panel ticker={ticker} />
+						</section>
+					</div>
+					{overview && <PrintSummary ticker={ticker} masthead={state.data} />}
 				</div>
 			);
 	}

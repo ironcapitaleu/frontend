@@ -3,6 +3,7 @@ import { useLocation, useNavigationType } from "react-router";
 import { describe, expect, it } from "vitest";
 
 import App from "../../App";
+import { PrintProvider } from "../../contexts/PrintContext";
 import { alwaysFailingCompanyGateway } from "../../test/fixtures/companies/always-failing";
 import { alwaysFoundCompanyGateway } from "../../test/fixtures/companies/always-found";
 import { alwaysMissingCompanyGateway } from "../../test/fixtures/companies/always-missing";
@@ -288,5 +289,40 @@ describe("CompanyPage", () => {
 		const result = await screen.findByRole("heading", { level: 1 });
 
 		expect(result).toHaveTextContent(expectedResult);
+	});
+
+	it("should open the print dialog once when the reader presses Export on the Overview tab", async () => {
+		const prints: string[] = [];
+		render(
+			<PrintProvider print={() => prints.push("print")}>
+				<App />
+			</PrintProvider>,
+			{
+				companyGateway: alwaysFoundCompanyGateway(),
+				initialEntries: ["/companies/MRDN"],
+			},
+		);
+		const user = userEvent.setup();
+
+		const expectedResult = ["print"];
+
+		await user.click(await screen.findByRole("button", { name: "Export" }));
+		const result = prints;
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should show no Export button when the masthead loads on the Financials tab", async () => {
+		render(<App />, {
+			companyGateway: alwaysFoundCompanyGateway(),
+			initialEntries: ["/companies/MRDN/financials"],
+		});
+
+		const expectedResult = null;
+
+		await screen.findByRole("heading", { level: 1 });
+		const result = screen.queryByRole("button", { name: "Export" });
+
+		expect(result).toBe(expectedResult);
 	});
 });

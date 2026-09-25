@@ -1,5 +1,7 @@
+import { Download } from "lucide-react";
 import type * as React from "react";
 
+import { Button } from "@/components/ui/button";
 import { RangeBar } from "@/components/ui/range-bar";
 import { priceChangeOneMonth } from "@/lib/company/metrics";
 import type { Figure, MastheadSection } from "@/lib/company/types";
@@ -16,6 +18,8 @@ import {
 /** Props for {@link CompanyMasthead}. */
 interface CompanyMastheadProps extends React.ComponentProps<"header"> {
 	masthead: MastheadSection;
+	/** Called when the Export button is pressed. Without it, the masthead shows no Export button. */
+	onExport?: () => void;
 }
 
 const CHIP =
@@ -30,13 +34,15 @@ const CHIP =
  *
  * Every figure is a claim, and the masthead shows its value. A missing figure
  * is a dimmed `—`. The source card of each figure comes with `SourceCard` in a
- * later ticket. The Export button waits for the Export milestone.
+ * later ticket. With `onExport`, the Export button sits under the range. It
+ * shows its icon only on a phone, and the printed page hides it.
  *
  * On a phone the masthead shows the first listing with a count of the others,
  * such as "+2 listings", and drops the fiscal year end.
  */
 function CompanyMasthead({
 	masthead,
+	onExport,
 	className,
 	...props
 }: CompanyMastheadProps) {
@@ -130,6 +136,17 @@ function CompanyMasthead({
 				<span className="text-sm text-muted-foreground" aria-hidden="true">
 					52-week range
 				</span>
+				{onExport && (
+					<Button
+						variant="outline"
+						aria-label="Export"
+						onClick={onExport}
+						className="min-h-11 min-w-11 self-start md:min-h-0 md:min-w-0 md:self-end print:hidden"
+					>
+						<Download aria-hidden="true" />
+						<span className="hidden md:inline">Export</span>
+					</Button>
+				)}
 			</div>
 		</header>
 	);

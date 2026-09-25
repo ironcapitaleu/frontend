@@ -25,6 +25,7 @@ function ChartActions({ data, onData, claims }: ChartActionsProps) {
 			<Button
 				variant="outline"
 				size="sm"
+				className="print:hidden"
 				aria-pressed={data}
 				onClick={() => onData(!data)}
 			>

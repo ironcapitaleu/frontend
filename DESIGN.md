@@ -298,8 +298,8 @@ Rules for the screener:
 
 > **Target state.** This section records the decided rules for the company
 > page (Linear epic P-STA-10 "Company Page"). The routes, the page states,
-> the masthead and the tab strip are built, except the masthead's Export
-> button, which lands with the Export milestone. The source card is built as
+> the masthead and the tab strip are built. The masthead's Export button
+> shows on Overview, where it opens the print dialog. The source card is built as
 > `SourceCard`, and each tab ticket makes its figures open it. The card of
 > region 3 is built as `CompanyCard` in a `CompanyCardGrid`, and the sources
 > index of region 4 as `SourcesIndex`. `TAB_PANELS` in
@@ -697,6 +697,14 @@ these regions, from top to bottom:
 The printed page does not show the site navigation, the breadcrumb, the tab
 strip, the Export button, the "Data" buttons, the "Sources" chips, the source
 cards, or the sources index.
+
+`PrintSummary` in `src/pages/company/PrintSummary.tsx` draws regions 1 to 3.
+It is `hidden` on the screen, and the print stylesheet in `src/index.css`
+shows it in place of Overview. It prints with the light tokens in either
+theme, because paper is white. The stories in `PrintSummary.stories.tsx`
+render it at print media on the printable area of A4 and of Letter, inside a
+12 mm margin. On A4, regions 1 to 3 already take about 990 of the 1,032 px of
+one page, so regions 4 to 6 need a denser layout or a second page.
 
 ---
 
