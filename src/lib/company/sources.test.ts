@@ -701,6 +701,34 @@ describe("figureGroupsOf", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should read the four parts of every year when the CEO Pay by Year group is built", () => {
+		const expectedResult = ["FY2024", "FY2025"].flatMap((year) =>
+			["salary", "bonus", "stockAwards", "other"].map(
+				(part) => `management.ceoPay.${part}.${year}`,
+			),
+		);
+
+		const result = claimsOf("ceoPay", "company", sections).map(({ id }) => id);
+
+		expect(result).toEqual(expectedResult);
+	});
+
+	it("should keep each year's DEF 14A in the sources when a pay part is missing", () => {
+		const { management } = fakeCompanyReport;
+		const [first, latest] = management.ceoPay;
+		const ceoPay = [{ ...first, salary: null }, latest];
+		const partial = completeSections({
+			...fakeCompanyReport,
+			management: { ...management, ceoPay },
+		});
+
+		const expectedResult = ["0001999999-26-000014", "0001999999-25-000014"];
+
+		const result = documentIds(claimsOf("ceoPay", "company", partial));
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should read the four parts of the latest pay when the Pay Mix group is built", () => {
 		const expectedResult = [
 			"management.ceoPay.salary.FY2025",
