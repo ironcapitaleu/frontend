@@ -36,11 +36,10 @@ export default defineConfig({
 			// runs the `unit` project, so `ui/*` primitives covered by Storybook
 			// play tests count as uncovered here and hold the global numbers
 			// down. The floors keep a margin of about 2 points under the baseline
-			// measured on 2026-09-26 (statements 84.52, branches 78.89, functions
-			// 81.28, lines 84.67). A component that ships with a story and no
-			// unit test, which AGENTS.md allows, then cannot fail the build on its
-			// own. Ratchet them upward as coverage grows — never downward to make
-			// a red build pass. TESTING.md §7 holds the same numbers.
+			// measured on 2026-09-26. TESTING.md §7 holds the baseline and what the
+			// margin absorbs, and `npm run check:coverage-doc` fails when its table
+			// disagrees with these floors. Ratchet them upward as coverage grows —
+			// never downward to make a red build pass.
 			thresholds: {
 				statements: 82,
 				branches: 77,
