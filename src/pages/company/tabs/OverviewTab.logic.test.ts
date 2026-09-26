@@ -154,6 +154,38 @@ describe("tenYearsSeries", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
+	it("should give each series only the fiscal years of the income statement when the company has fewer than ten years", () => {
+		// A company listed four years ago: its income statement has four fiscal
+		// years, while the cash flow table still holds ten.
+		const { financials } = fakeCompanyReport;
+		const annual = financials.income.annual;
+		const income = {
+			...financials.income,
+			annual: {
+				...annual,
+				periods: annual.periods.slice(-4),
+				lines: annual.lines.map((line) => ({
+					...line,
+					points: line.points.slice(-4),
+				})),
+			},
+		};
+		const short = completeSections({
+			...fakeCompanyReport,
+			financials: { ...financials, income },
+		});
+
+		const expectedResult = tenYearsBars.map(() =>
+			annual.periods.slice(-4).map(({ fiscalYear }) => fiscalYear),
+		);
+
+		const result = tenYearsSeries(short).map(({ periods }) =>
+			periods.map(({ fiscalYear }) => fiscalYear),
+		);
+
+		expect(result).toEqual(expectedResult);
+	});
+
 	it("should draw the series the Sources block reads when Financials has loaded", () => {
 		// The block lists the filings of these series. If the card draws a series
 		// the block does not read, its filings drop out of the Sources index.
