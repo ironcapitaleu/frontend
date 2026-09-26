@@ -40,10 +40,10 @@ export default defineConfig({
 			// them upward as coverage grows — never downward to make a red build
 			// pass.
 			thresholds: {
-				statements: 66,
-				branches: 57,
-				functions: 58,
-				lines: 65,
+				statements: 84,
+				branches: 78,
+				functions: 81,
+				lines: 84,
 			},
 		},
 		projects: [
