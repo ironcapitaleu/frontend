@@ -466,27 +466,38 @@ that test cleanly with a single `toEqual`, leaving the component a thin shell.
 Coverage is measured by the v8 provider and **gated** via
 `coverage.thresholds` (both configured in [`vite.config.ts`](./vite.config.ts)).
 `npm run test:ci` runs with `--coverage`, so a drop below any floor **fails the
-build**. The current floors sit just below the coverage the unit tests reach
-today:
+build**. The floors keep a margin of about 2 points under the coverage the
+unit tests reached on 2026-09-26:
 
-| Metric | Floor |
-| --- | --- |
-| Statements | 66% |
-| Branches | 57% |
-| Functions | 58% |
-| Lines | 65% |
+| Metric | Baseline (2026-09-26) | Floor |
+| --- | --- | --- |
+| Statements | 84.52% | 82% |
+| Branches | 78.89% | 77% |
+| Functions | 81.28% | 79% |
+| Lines | 84.67% | 82% |
 
 Working with the gate:
 
 - **Ratchet upward, never down.** As coverage grows, raise the floors to lock in
   the gain. Never lower a floor to make a red build pass — that defeats the gate.
   Prefer a floor that holds the line over an aspirational number that blocks
-  every PR.
+  every PR. Keep a margin of about 2 points under the baseline.
+- **The margin is a budget, not a promise.** On 2026-09-26 it absorbs about
+  95 uncovered statements, 56 uncovered branches, 40 uncovered functions or
+  92 uncovered lines. A small component that ships with a story and no unit
+  test stays inside it. A large untested file does not, and the answer then is
+  unit tests, not a lower floor. Removing well-covered code, such as the sample
+  data in `src/lib/company/sample/`, also spends the margin.
+- **This table and `coverage.thresholds` must agree.** `npm run
+  check:coverage-doc` fails in CI when the Floor column differs from the
+  config. When you raise a floor, update both and re-measure the baseline.
+- **The floors are raised by hand.** Vitest's `thresholds.autoUpdate` would
+  rewrite `vite.config.ts` on every local run and set each floor to the exact
+  baseline, with no margin. Raising them in a reviewed PR keeps the margin.
 - **These floors measure layer 1 only.** `test:ci` runs the `unit` project, so
   `ui/*` primitives covered by Storybook play tests (layer 2) count as
-  uncovered here and hold the global numbers down. That is why the floors look
-  low relative to how well-tested the components actually are — do not read the
-  global percentage as the whole story.
+  uncovered here and hold the global numbers down, unless a page test renders
+  them. Do not read the global percentage as the whole story.
 - **Story coverage is the layer-2 metric.** Every component's meaningful states
   having stories is the coverage measure for layer 2, and the matrix the visual
   gate reads (§3). Both are checked in review — not by this gate.

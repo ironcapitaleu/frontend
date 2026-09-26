@@ -70,6 +70,9 @@ jobs:
     - name: Story Presence Check
       run: npm run check:stories
 
+    - name: Coverage Doc Check
+      run: npm run check:coverage-doc
+
     - name: Unit Tests
       run: npm run test:ci
 

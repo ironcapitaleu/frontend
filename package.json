@@ -24,6 +24,7 @@
 		"setup": "npm install && npx playwright install",
 		"test:storybook": "vitest --run --project storybook",
 		"check:stories": "node scripts/check-stories.mjs",
+		"check:coverage-doc": "node scripts/check-coverage-doc.mjs",
 		"preview": "vite preview"
 	},
 	"dependencies": {
