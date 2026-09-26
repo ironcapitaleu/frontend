@@ -166,6 +166,7 @@ describe("tenYearsSeries", () => {
 				periods: annual.periods.slice(-4),
 				lines: annual.lines.map((line) => ({
 					...line,
+					periods: line.periods.slice(-4),
 					points: line.points.slice(-4),
 				})),
 			},
