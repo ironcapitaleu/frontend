@@ -22,6 +22,7 @@ import {
 import {
 	CHANGE_TONE_CLASS,
 	METRICS,
+	MISSING_INK,
 	type MetricField,
 	changeTone,
 	formatMetric,
@@ -59,6 +60,12 @@ interface CompanyPreviewProps {
 	stock: Stock | null;
 	/** The active filters. The "Why it matched" list reads from them. */
 	filters: FilterState;
+	/**
+	 * Whether `/companies/:symbol` shows this company. Without a page, the
+	 * footer shows the link as unavailable instead of leading to the missing
+	 * state.
+	 */
+	hasCompanyPage: boolean;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 }
@@ -70,15 +77,18 @@ interface CompanyPreviewProps {
  * The name is the one serif title in the sheet (`font-classic`). Below it sit
  * the price and 1M change, a `md` `RangeBar` for the 52-week range, the "Why
  * it matched" list, and a grid of eight key figures. The footer links to the
- * company page.
+ * company page, or shows a disabled button and "Company page coming soon"
+ * when the company has no page yet.
  */
 function CompanyPreview({
 	stock,
 	filters,
+	hasCompanyPage,
 	open,
 	onOpenChange,
 }: CompanyPreviewProps) {
 	const headingId = useId();
+	const unavailableId = useId();
 	if (!stock) return null;
 	const reasons = describeActiveFilters(filters);
 
@@ -168,7 +178,7 @@ function CompanyPreview({
 									<dd
 										className={cn(
 											"font-monospace text-lg",
-											stock[field] === null && "text-muted-foreground/60",
+											stock[field] === null && MISSING_INK,
 										)}
 									>
 										{formatMetric(stock[field], field)}
@@ -179,16 +189,37 @@ function CompanyPreview({
 					</section>
 				</SheetBody>
 				<footer className="border-t border-border p-6">
-					{/* `Button` renders the router link, so the element keeps its
-					    link role. Passing `nativeButton={false}` here gives it the
-					    button role instead. */}
-					<Button
-						variant="inverted"
-						className="btn-tactile h-11 w-full text-lg"
-						render={<Link to={`/companies/${stock.symbol}`} />}
-					>
-						Open company page
-					</Button>
+					{hasCompanyPage ? (
+						// `Button` renders the router link, so the element keeps its
+						// link role. Passing `nativeButton={false}` here gives it the
+						// button role instead.
+						<Button
+							variant="inverted"
+							className="btn-tactile h-11 w-full text-lg"
+							render={<Link to={`/companies/${stock.symbol}`} />}
+						>
+							Open company page
+						</Button>
+					) : (
+						<div className="flex flex-col gap-2">
+							{/* No `.btn-tactile` here: it carries `cursor-pointer` and a
+							    hover lift, and `:hover` still matches a disabled button. */}
+							<Button
+								variant="inverted"
+								className="h-11 w-full text-lg"
+								disabled
+								aria-describedby={unavailableId}
+							>
+								Open company page
+							</Button>
+							<p
+								id={unavailableId}
+								className="text-center text-base text-muted-foreground"
+							>
+								Company page coming soon
+							</p>
+						</div>
+					)}
 				</footer>
 			</SheetContent>
 		</Sheet>

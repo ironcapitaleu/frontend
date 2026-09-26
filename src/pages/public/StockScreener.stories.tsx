@@ -34,6 +34,7 @@ const meta: Meta<typeof StockScreener> = {
 	],
 	argTypes: {
 		stocks: { control: { disable: true } },
+		hasCompanyPage: { control: { disable: true } },
 	},
 };
 
@@ -104,7 +105,7 @@ export const Empty: Story = {
 	play: async ({ canvasElement }) => {
 		const canvas = within(canvasElement);
 
-		const expectedResult = "0 of 12 companies";
+		const expectedResult = "0 of 13 companies";
 
 		await userEvent.type(
 			canvas.getByRole("searchbox", { name: "Search by ticker or company" }),

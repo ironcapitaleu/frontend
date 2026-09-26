@@ -106,6 +106,7 @@ describe("CompanyPreview", () => {
 			<CompanyPreview
 				stock={alfa}
 				filters={{ ...EMPTY_FILTERS, peMax: "25" }}
+				hasCompanyPage
 				open
 				onOpenChange={() => {}}
 			/>,
@@ -125,6 +126,7 @@ describe("CompanyPreview", () => {
 			<CompanyPreview
 				stock={alfa}
 				filters={EMPTY_FILTERS}
+				hasCompanyPage
 				open
 				onOpenChange={onOpenChange}
 			/>,
@@ -143,6 +145,7 @@ describe("CompanyPreview", () => {
 			<CompanyPreview
 				stock={null}
 				filters={EMPTY_FILTERS}
+				hasCompanyPage={false}
 				open
 				onOpenChange={() => {}}
 			/>,
@@ -156,11 +159,12 @@ describe("CompanyPreview", () => {
 		expect(result).toBe(expectedResult);
 	});
 
-	it("should link to the company page when it opens", () => {
+	it("should link to the company page when the stock has one", () => {
 		render(
 			<CompanyPreview
 				stock={alfa}
 				filters={EMPTY_FILTERS}
+				hasCompanyPage
 				open
 				onOpenChange={() => {}}
 			/>,
@@ -173,5 +177,34 @@ describe("CompanyPreview", () => {
 			.getAttribute("href");
 
 		expect(result).toBe(expectedResult);
+	});
+
+	it("should show the company page as unavailable, not as a link, when the stock has no page", () => {
+		render(
+			<CompanyPreview
+				stock={alfa}
+				filters={EMPTY_FILTERS}
+				hasCompanyPage={false}
+				open
+				onOpenChange={() => {}}
+			/>,
+		);
+
+		const expectedResult = {
+			link: null,
+			disabled: true,
+			description: "Company page coming soon",
+		};
+
+		const button = screen.getByRole("button", { name: "Open company page" });
+		const result = {
+			link: screen.queryByRole("link", { name: "Open company page" }),
+			disabled: button.hasAttribute("disabled"),
+			description: document.getElementById(
+				button.getAttribute("aria-describedby") ?? "",
+			)?.textContent,
+		};
+
+		expect(result).toEqual(expectedResult);
 	});
 });

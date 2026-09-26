@@ -39,6 +39,7 @@ import {
 	SheetContent,
 	SheetTitle,
 } from "@/components/ui/sheet";
+import { hasCompanyPage as hasSampleCompanyPage } from "@/lib/company/sampleCompanies";
 import { cn } from "@/lib/utils";
 
 import { SAMPLE_STOCKS } from "./StockScreener.sample";
@@ -82,6 +83,12 @@ interface StockScreenerProps {
 	 * the screener's behaviour stays independent of the data it happens to show.
 	 */
 	stocks?: readonly Stock[];
+	/**
+	 * Tells whether a symbol has a company page. Defaults to the sample
+	 * adapter's answer, so the preview never links to a missing company. A
+	 * test passes its own answer for its fake dataset.
+	 */
+	hasCompanyPage?: (symbol: string) => boolean;
 }
 
 /**
@@ -96,6 +103,7 @@ interface StockScreenerProps {
  */
 export default function StockScreener({
 	stocks = SAMPLE_STOCKS,
+	hasCompanyPage = hasSampleCompanyPage,
 }: StockScreenerProps) {
 	const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
 	const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
@@ -295,6 +303,9 @@ export default function StockScreener({
 			<CompanyPreview
 				stock={selectedStock}
 				filters={filters}
+				hasCompanyPage={
+					selectedStock !== null && hasCompanyPage(selectedStock.symbol)
+				}
 				open={previewOpen}
 				onOpenChange={setPreviewOpen}
 			/>

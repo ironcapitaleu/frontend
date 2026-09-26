@@ -137,7 +137,7 @@ light/dark theming keeps working.
 | `destructive`           | Errors and dangerous actions (red).                    |
 | `positive` / `negative` | Gains and losses in data. Not for UI state.            |
 | `border` / `input` / `ring` | Hairlines, field borders, focus rings.             |
-| `chart-1` … `chart-5`   | Data-visualization series (blue-violet ramp).          |
+| `chart-1` … `chart-5`   | Data-visualization series (blue-violet ramp). Each step reaches 3:1 on the card in both themes. The light ramp darkens from 1 to 5 and the dark ramp lightens, so `chart-1` is the quietest step in both. |
 | `sidebar-*`             | Sidebar-specific surface/accent variants.              |
 
 `bg-input-opaque` paints the `input` fill as an opaque layer over the page
@@ -287,10 +287,463 @@ Rules for the screener:
   bordered frames. Only the preview sheet casts a shadow.
 - **Column groups carry meaning.** The table groups its columns under
   Valuation, Balance sheet, Shareholder yield, and Price.
+- **The preview never links to a missing page.** For a company without a
+  company page, the footer shows the "Open company page" button disabled, with
+  "Company page coming soon" below it in `muted-foreground`. §8 names the
+  source of that answer.
 
 ---
 
-## 8. Quick reference for contributors
+## 8. The Company Page
+
+> **Target state.** This section records the decided rules for the company
+> page (Linear epic P-STA-10 "Company Page"). The routes, the page states,
+> the masthead and the tab strip are built. The masthead's Export button
+> shows on Overview, where it opens the print dialog. The source card is built as
+> `SourceCard`, and each tab ticket makes its figures open it. The card of
+> region 3 is built as `CompanyCard` in a `CompanyCardGrid`, and the sources
+> index of region 4 as `SourcesIndex`. `TAB_PANELS` in
+> `src/pages/company/tabs/index.ts` maps each tab to its panel, one file for
+> each tab. Each panel shows an empty state until its tab ticket fills it. Audit the live page against this section
+> once the epic's Page Shell milestone lands. The layout below records
+> Version 5 of the
+> [company page design canvas](https://claude.ai/artifact/CwP59tuPZtXasw8dg7vpco),
+> which the user approved on 2026-09-24. The made-up figures for Meridian
+> Semiconductor (MRDN) stay on the canvas. The epic covers US companies that
+> file with the SEC. Pages for companies that report elsewhere are a later
+> decision. The printed summary takes two pages on both A4 and Letter, as
+> "Print Summary" below records with its measurements.
+
+The company page is part of the product machinery, so the modern pole leads.
+The company name in the masthead is in `font-classic`, like the name in the
+screener's company preview. The name speaks about the company as a whole, so it
+takes the classical voice. The card titles are serif and numbered, such as
+"1.2 Ten Years at a Glance". The first number is the tab's row in the table
+below. The second number counts the cards inside that tab, as the shared layout
+below defines.
+
+Overview is the landing tab. Each of the seven tabs has its own URL. The order
+of the table is the order of the tab strip. A change to that order is a design
+change, because it renumbers every card title.
+
+| Tab                 | URL                                |
+| ------------------- | ---------------------------------- |
+| Overview            | `/companies/:symbol`               |
+| Financials          | `/companies/:symbol/financials`    |
+| Valuation           | `/companies/:symbol/valuation`     |
+| Shareholder returns | `/companies/:symbol/returns`       |
+| Relationships       | `/companies/:symbol/relationships` |
+| Management          | `/companies/:symbol/management`    |
+| Filings             | `/companies/:symbol/filings`       |
+
+The "Open company page" link in the screener's company preview opens Overview.
+`hasCompanyPage(symbol)` in `src/lib/company/sampleCompanies.ts` tells the
+screener which companies have a page. The sample adapter asks the same module
+before it serves a ticker, so the two cannot disagree, and the screener never
+imports the gateway. Today only MRDN has a page. The screener sample derives
+its MRDN row from the company sample, so the row and the page show the same
+figures. Company pages are routes with a parameter, so the sitemap does not
+list them: `src/pages/company/` sits outside the sitemap's page discovery.
+On a phone, the tab strip scrolls sideways.
+
+Rules for the company page:
+
+- **Fundamentals only.** The page shows past facts from filings. It never shows
+  news, forecasts, analyst ratings, price targets, a fair value, community
+  content, insider-sale alerts, or buy and sell calls. The page never presents
+  one figure as the answer, such as "25.5% undervalued".
+- **Figures follow §2 and §7.** They are mono, and a missing figure is a dimmed
+  `—`. In a table column, figures are right-aligned.
+- **Every figure is a claim that shows its own sources.** Hovering a figure
+  previews its source card. A click or a tap pins the card: a popover on a
+  desktop, a bottom sheet on a phone. For a reported figure, the card names the
+  filing type, filing date, line label, and XBRL tag, and links to the filing.
+  A document that reports no XBRL fact, such as a 13F information table, a
+  Form 4 or a 10-K exhibit, names the line alone.
+  A derived figure, such as a margin or a growth rate, shows its formula and
+  the source of each input. A reader can trace any figure back to reported
+  filing lines. With a keyboard, focus on a figure previews its card, `Enter`
+  or `Space` pins it, and `Escape` closes it.
+- **Charts and checks show sources at two levels.** Hovering, focusing, or
+  tapping a point of a chart shows the sources of that point. A "Sources" chip
+  on the chart shows the grouped sources behind the whole chart. A check shows
+  the sources of every figure in its sentence.
+- **Short or empty history shows as it is.** A company with fewer than ten
+  fiscal years shows the years it has. A growth rate or a 10-year range needs at
+  least two years, and otherwise shows a dimmed `—`. A card with no figures,
+  such as dividends for a company that pays none, shows one line that says so.
+- **Every chart has a "Data" button.** The button shows the same figures as a
+  table.
+- **Charts draw yearly data as bars or steps, never as smoothed curves.** Chart
+  series use the `chart-1` … `chart-5` tokens.
+- **The page groups its checks in five areas.** The areas are Balance sheet,
+  Profitability, Valuation, Shareholder returns, and Consistency. Each area has
+  an icon and a small ring that counts its met checks. There is no overall
+  score and no snowflake chart.
+- **A check shows its evidence.** Each check states its rule with the
+  threshold, the company's figure, and the source. The figure sits inside the
+  sentence, such as "Current assets ($197.4B) are 4.6 times current
+  liabilities ($43.0B), at least the threshold of 1.5". Each check has one
+  of three results: met, not met, or not enough data.
+- **A check name carries no verdict.** The name states the rule and never
+  judges the company. The page never shows a name such as "Notable Dividend"
+  next to a red cross.
+- **Export is a print stylesheet and CSV.** The print stylesheet formats the
+  Overview tab as a one-page summary on A4 and Letter paper, in the Value Line
+  style. The user saves the summary through the browser's "Save as PDF" option.
+  Each financial statement table downloads as CSV. There is no server-side PDF.
+
+The page reads its data through the `CompanyGateway` port (AGENTS.md
+"Dependency Injection & Ports"). The types behind the port, the claims and
+the checks are in
+[`design/uml_class_diagram/company_data_model.md`](design/uml_class_diagram/company_data_model.md).
+Until the backend adapter exists in a later epic, the sample adapter
+`sampleCompanyGateway` serves made-up data for Meridian Semiconductor (MRDN).
+It is a real adapter in the sense of AGENTS.md: production wires it, and its
+data source is the sample files in the repository, as for the screener. The
+named fakes (`always{Behaviour}CompanyGateway`) stay test-only.
+`CompanyGatewayProvider` injects the adapter into `useCompany`.
+
+A `:symbol` that `Ticker.parse` rejects renders the missing state, the same
+state an unknown ticker reaches. The `:tab` segment matches without regard to
+case. A segment in another spelling redirects, with `replace`, to the tab's own
+URL: `/companies/:symbol/Financials` goes to `/companies/:symbol/financials`,
+and `/companies/:symbol/overview` goes to `/companies/:symbol`. For a valid
+`Ticker`, any other unknown tab renders the no-such-tab state. Its copy does
+not blame the ticker, and it links to the company's Overview. For a valid
+`Ticker` and a known tab, `useCompany` returns a loading, loaded, missing, or
+failed state.
+
+```mermaid
+flowchart TD
+    route["Route param :symbol"] --> parse["Ticker.parse"]
+    parse -->|Ticker| hook["useCompany"]
+    parse -.->|InvalidTicker| states["Page states"]
+    provider["CompanyGatewayProvider"] -->|injects the adapter| hook
+    hook -->|asks| port["CompanyGateway port"]
+    sample["sampleCompanyGateway (sample adapter)"] -->|implements| port
+    backend["Backend adapter (later epic)"] -.->|implements| port
+    hook -->|"loading, missing, failed"| states["Page states"]
+    hook -->|loaded| sections["Company sections"]
+    sections --> checks["Check evaluation"]
+    sections --> tabs["Seven tabs"]
+    checks -->|results by area| tabs
+```
+
+### Shared Layout
+
+The layout changes at two widths, the same widths as the screener in §7. A
+desktop is 1024 px and wider. A phone is narrower than 768 px. Between the
+two widths, the cards stack in one column and the rest of the desktop layout
+holds. The approved mockup draws a 1440 px and a 390 px board only, so this
+middle width follows the screener, not a drawing.
+
+Below 1024 px, every table that does not fit its card scrolls sideways, and its
+first column stays fixed. This rule holds on every tab and covers every table.
+
+Every tab shares these regions, from top to bottom:
+
+1. **Masthead.** The company name in `font-classic`, then the listings, sector,
+   country, reporting currency, and fiscal year end. On the right sit the price
+   with its change over one month, the 52-week range as a bar between its low
+   and high, and the Export button.
+2. **Tab strip.** The seven tabs sit in one row directly below the masthead,
+   above a hairline.
+3. **Cards.** Each tab shows its content in cards. Each card title is in
+   `font-serif` and carries a number, such as "4.3 Buybacks Net of Shares
+   Issued to Staff". The first number is the tab's row in the URL table. The
+   second number is the card's position in the tab, read top to bottom and then
+   left to right, so two cards side by side take consecutive numbers. A tab can
+   carry controls above its cards, such as the switches on Financials. Controls
+   are not a card and carry no number. A muted caption under the title names
+   the period, the unit, and the filing. On a desktop, the cards fill a grid of
+   two equal columns. A card takes one column or both. Each tab's list below
+   numbers the rows of its layout, not its cards. A row that holds two cards
+   side by side uses two card numbers. `CompanyCard` in
+   `src/components/company/CompanyCard.tsx` draws one card, and
+   `CompanyCardGrid` draws the grid.
+4. **Sources index.** The last region of every tab is a collapsed index, "Where
+   these numbers come from". It lists the filings behind the tab, with the
+   date, the figures each filing feeds, and a link to the filing. It is an
+   index, not the main place to find sources, because every figure shows its
+   own. The Filings tab has no separate index, because its one card is the
+   full list. `SourcesIndex` in `src/components/company/SourcesIndex.tsx`
+   draws it from the tab's figure groups.
+
+A test in `src/lib/company/tabs.test.ts` fails when the tab strip leaves the
+order of the URL table. The type check fails when `COMPANY_TABS` in
+`src/lib/company/tabs.ts` misses a `TabKey` or names one that does not exist.
+The card numbers are documentation only
+for now. Each tab ticket adds a story test that checks its card titles against
+this section.
+
+
+Rules for the shared layout:
+
+- **The "Data" button sits in the card header, next to the "Sources" chip.**
+  Both sit at the right of the card title. The "Data" button swaps the chart
+  for a table of the same figures.
+- **The source card opens next to its figure.** On a desktop, the card is a
+  popover 400 px wide. It opens below the figure, or above the figure near the
+  bottom of the page. On a phone, a tap opens the card as a bottom sheet, with
+  a close button.
+
+On a phone:
+
+- The site navigation folds into a menu button, and a "← Screener" link
+  replaces the breadcrumb.
+- The masthead shows the first listing with a count of the others, such as
+  "+2 listings", and drops the fiscal year end. The Export button shows its
+  icon only.
+- The cards stack in one column. The "Data" button sits above the "Sources"
+  chip.
+
+### Overview
+
+Overview has these cards, from top to bottom:
+
+1. **The Business.** What the company does, then its revenue split by segment
+   and by region as two bars of shares.
+2. **Ten Years at a Glance.** Small bar charts, one bar per fiscal year, for
+   revenue, operating margin, free cash flow and diluted shares. Each shows its
+   latest figure.
+3. **Key Figures** and **Financial Position**, side by side on a desktop. Key
+   Figures shows market cap, P/E, P/FCF, P/B, operating margin, return on
+   equity, dividend yield and buyback yield. Each figure except market cap
+   shows the sector median in muted ink. Financial Position draws assets
+   against liabilities as side-by-side bars, short term and long term. The
+   bars share one scale that holds zero, so a negative figure draws below the
+   zero line, and a small figure keeps a least height.
+4. **Checks by Area.** The five areas, each with its icon, its ring of met
+   checks, and its checks. A legend names the three results. The ring counts
+   met checks out of every check in its area, so a check with not enough data
+   counts as not met there, and its own line says why. The shape of each
+   result icon tells the results apart, not the positive and negative inks,
+   which are for gains and losses in data. Under each check, a quiet line
+   names the first two documents behind it and counts the rest.
+5. **Who Owns It** and **Profile**, side by side on a desktop. Who Owns It
+   shows the ownership split as a bar of shares, with a link to Relationships.
+   Profile lists the founding year, headquarters, employees, chief executive
+   with the year they started, auditor and website. A missing fact is a
+   dimmed `—`.
+
+Overview has no side column. On a desktop, the paired cards in rows 3 and 5
+each take one column.
+
+The ownership bar of Who Owns It is the bar of Ownership Split on
+Relationships, built from the same shares, so the two cards always agree. Two
+cases need a rule:
+
+- **No public share.** The public holds what institutions and insiders do not.
+  When the two hold more than the shares outstanding, or a count is missing,
+  the public share has no value. It prints a dimmed `—` and draws no segment,
+  never 0% and never a negative share.
+- **Institutions above 100%.** 13F filings can count one share twice, for
+  example when a fund lends a share that another fund reports. The label
+  prints the true share, such as 105.0%, so the reader sees the double count.
+  The segments shrink in step so the bar never overflows its track.
+
+On a phone, the cards stack in the order above. The segment and region splits
+stack. The small charts of Ten Years at a Glance sit two to a row instead of
+four.
+
+### Financials
+
+Financials has a row of controls above its cards. The statement switch (Income
+statement, Balance sheet, Cash flow) and the annual and quarterly switch sit
+on the left. The unit and the "Download CSV" button sit on the right.
+
+Financials has these cards, from top to bottom:
+
+1. **Chart.** One bar chart per statement, with one group of bars per fiscal
+   year. For the income statement, it draws revenue, net income and free
+   cash flow. For the balance sheet, it draws total assets,
+   total liabilities and equity. For cash flow, it draws operating cash flow,
+   capital expenditure and share repurchases. The chart draws the fiscal
+   years whatever the annual and quarterly switch says.
+   The lines use `chart-1`, `chart-3` and `chart-5`. A reported zero draws
+   a thin mark on the zero line, so it never reads as a missing year. Each
+   bar's tap target is at least 24 × 24 px. This is an exception to the
+   44 × 44 px rule in AGENTS.md "Navigation — Mobile Patterns": three
+   44 px bars for each of ten years would make every chart scroll sideways
+   on a desktop, so a bar keeps the 24 × 24 px minimum of WCAG 2.5.8
+   instead. Below 1024 px, a chart that does not fit its card scrolls
+   sideways, and the year labels scroll with their groups.
+2. **Statement table.** The 10-year table of the selected statement, one
+   column per fiscal year, and a last column for growth per year (CAGR) in
+   the annual view. The growth rate spans the earliest and the latest year
+   with a figure, so two years with figures are enough. Both figures must be
+   above zero, or the cell shows the dimmed dash. Operating margin and net
+   margin sit as muted rows under the line they divide, and read as a
+   percent. A margin shows the dimmed dash when its line or revenue is
+   missing, or revenue is not above zero. A margin row has no growth rate.
+   The data has no gross profit line, so the table has no gross margin.
+
+On a phone, the two switches become two select menus. The table shows the
+newest years first. The "Download CSV" button moves below the table, at full
+width.
+
+### Valuation
+
+Valuation has these cards, from top to bottom:
+
+1. **Ratios Against Their Own Ten Years and the Sector.** P/E, P/FCF, P/B and
+   EV/EBIT. Each ratio has two range bars: the company's own 10-year range with
+   its median, and the sector's quartiles with its median. The current figure
+   sits on both bars.
+2. **Earnings Yield and FCF Yield Next to the 10-Year Treasury.** Bars for the
+   three yields at each fiscal year end, and now.
+3. **How the Ratios Are Built.** A table of each ratio with its formula, its
+   inputs, and its current figure.
+
+On a phone, the range bars stack under the ratio name, and the legend uses
+shorter labels.
+
+### Shareholder returns
+
+"Shareholder returns" on the company page covers dividends, buybacks and share
+count history. That scope is wider than the screener's "Shareholder yield"
+column group in §7, so the different name is on purpose.
+
+Shareholder returns has these cards, from top to bottom:
+
+1. **Dividend per Share** and **Dividends Paid Against Free Cash Flow**, side
+   by side on a desktop. The first draws the dividend per share declared for
+   each fiscal year. The second draws dividends paid as a share of free cash
+   flow.
+2. **Buybacks Net of Shares Issued to Staff.** Shares bought back above zero,
+   shares issued to staff below zero, and the net buyback, by fiscal year.
+3. **Share Count Over Ten Years** and **Total Shareholder Yield**, side by side
+   on a desktop. The first draws diluted shares by fiscal year. The second
+   stacks dividend yield and net buyback yield by fiscal year.
+
+On a phone, the cards stack in the order above.
+
+### Relationships
+
+Relationships has these cards, from top to bottom:
+
+1. **Owned By: Largest Funds.** The largest funds from 13F filings, with their
+   shares, their percent of the company, and the change against the quarter
+   before.
+2. **Owned By: Insiders** and **Ownership Split**, side by side on a desktop.
+   The first lists officers and directors from their latest Form 4. The second
+   shows institutions, insiders, and the public as a bar of shares.
+3. **Owns: Subsidiaries** and **Owns: Stakes in Listed Companies**, side by
+   side on a desktop. The first lists subsidiaries from 10-K Exhibit 21. The
+   second lists the company's stakes in other listed companies from its own
+   13F filing.
+
+A company name in the stakes table links to the page of that company when
+that page exists. Otherwise the name is plain text. Subsidiaries are not
+listed, so they have no link.
+
+On a phone, the cards stack in the order above.
+
+### Management
+
+Management has these cards, from top to bottom:
+
+1. **Executives and Board.** The CEO, the other executives and the directors,
+   with role, tenure in years, and independence. Data comes from the proxy
+   statement (DEF 14A).
+2. **CEO Pay by Year.** Pay stacked by salary, bonus, stock and other, from the
+   summary compensation table of each year's DEF 14A.
+3. **Pay Mix** and **Insider Holdings**, side by side on a desktop. The first
+   shows the latest year's pay as a bar of shares. The second lists the shares
+   each officer and director holds, from their latest Form 4.
+4. **Insider Buying and Selling by Year.** Net shares bought above zero or sold
+   below zero by officers and directors, from Form 4.
+
+On a phone, the cards stack in the order above.
+
+### Filings
+
+Filings has one card:
+
+1. **Filings We Read.** A row of filter chips by filing type, each with its
+   count, above the list of filings, newest first. On a phone, the chips
+   scroll sideways in one row. Each row of the list shows the type, the
+   period, the filing date, the figures the filing feeds, and a link to SEC
+   EDGAR.
+
+
+
+### Print Summary
+
+The print stylesheet turns Overview into a two-page summary. The printed page
+holds more than Overview shows on screen: the ten-year table and the
+shareholder-returns block. So the Overview route also loads the income, cash
+flow and shareholder-returns figures that the printed page needs. The printed
+page has these regions, from top to bottom:
+
+1. **Masthead.** The Iron Capital wordmark, the company name, the listings,
+   sector, country and currency. On the right sit the price, the 52-week range,
+   and the date of the closing price.
+2. **Key figures.** One strip of the eight key figures. Each figure except
+   market cap shows its sector median.
+3. **The business** and **Checks by area**, side by side. The business takes
+   one third of the width. It holds the company summary, the revenue split by
+   segment, and bar charts of revenue and free cash flow by fiscal year.
+   Checks by area takes two thirds and sets the five areas in two columns,
+   with their rings and checks. A check prints without its line of sources,
+   because the sources footer names the filings.
+4. **Ten years of results.** A table of the main income, cash flow and share
+   lines, one column per fiscal year: revenue, operating income, operating
+   margin, net income, diluted EPS, operating cash flow, capital expenditure,
+   free cash flow, dividends paid, share repurchases and diluted shares.
+5. **Balance sheet**, **Shareholder returns** and **Ownership**, as three short
+   blocks side by side. Balance sheet shows the assets and liabilities of
+   Financial Position, short term and long term. Shareholder returns shows the
+   latest dividend per share and the latest dividend declared, each a dimmed
+   `—` until its section loads. Ownership draws the bar of Who Owns It, with
+   its rules.
+6. **Sources footer.** The filings behind the printed figures, one entry for
+   each form, such as "10-K for FY2017 to FY2026 (10 filings)". It leaves out
+   the sector medians and the Profile, which the paper does not show. Then the
+   sample-data notice and the date generated. The page number, such as "Page 1
+   of 2", sits at the foot of each page, in a margin box of the `@page` rule.
+   Chrome and Edge print margin boxes from version 131. Firefox and Safari
+   skip them and show their own page footer when the reader turns it on.
+
+The printed page does not show the site navigation, the breadcrumb, the tab
+strip, the Export button, the "Data" buttons, the "Sources" chips, the source
+cards, or the sources index.
+
+`PrintSummary` in `src/pages/company/PrintSummary.tsx` draws the six regions.
+It is `hidden` on the screen, and the print stylesheet in `src/index.css`
+shows it in place of Overview. It prints with the light tokens in either
+theme, because paper is white. The stories in `PrintSummary.stories.tsx`
+render it at print media on the printable area of A4 (703 × 1,032 px) and of
+Letter (725 × 965 px), inside a 12 mm margin.
+
+**Type floor.** No printed text is smaller than 7 pt, the floor for tables,
+figures and labels. No printed paragraph is smaller than 8 pt, the floor for
+prose. The print root size is 15px, so `text-xs`, the smallest size in use,
+prints at 7 pt, and the body of the summary, `text-sm`, at 7.7 pt. A
+paragraph prints at 8 pt and sets ragged right. The story
+`PrintsAtTheTypeFloor` checks both floors.
+
+**Fit.** The summary prints on two pages on both papers. Regions 1 to 3 fill
+the first page, and region 4 starts the second with `break-before: page`.
+One page is not possible at a readable size. At the earlier 12px root, the
+body printed at 6.2 pt, and regions 1 to 3 alone took 993 px of the
+summary's own height on both papers, more than the 965 px of a Letter page.
+(The 1,032 px recorded before was the height of the A4 viewport, not of the
+summary.) At the type floor the six regions take 1,265 px on A4 and 1,237 px
+on Letter, more than one page of either. Measured on the summary's
+`scrollHeight`, the pages take:
+
+| Paper  | Page height | First page | Second page |
+| ------ | ----------- | ---------- | ----------- |
+| A4     | 1,032 px    | 844 px     | 421 px      |
+| Letter | 965 px      | 815 px     | 422 px      |
+
+The stories `PrintedOnA4` and `PrintedOnLetter` check that each page fits.
+
+---
+
+## 9. Quick reference for contributors
 
 - **Hold the dual mandate:** classical foundation, modern spark. Ask of any
   screen — does it feel _timeless AND modern, trustworthy AND elegant_? If it's

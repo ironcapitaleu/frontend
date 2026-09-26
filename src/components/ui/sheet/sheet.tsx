@@ -48,8 +48,8 @@ function SheetContent({
 			<SheetPrimitive.Backdrop
 				data-slot="sheet-overlay"
 				// The tint matches AlertDialog. The fade runs as long as the slide,
-				// so the page dims while the panel travels.
-				className="data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 fixed inset-0 z-50 bg-black/10 duration-200 supports-backdrop-filter:backdrop-blur-xs"
+				// so the page dims while the panel travels. Paper gets no tint.
+				className="data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 fixed inset-0 z-50 bg-black/10 duration-200 supports-backdrop-filter:backdrop-blur-xs print:hidden"
 			/>
 			<SheetPrimitive.Popup
 				data-slot="sheet-content"

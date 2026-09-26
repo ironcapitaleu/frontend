@@ -1,0 +1,836 @@
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, userEvent, within } from "storybook/test";
+
+import { MISSING, MISSING_INK } from "@/components/screener/format";
+import { CompanyGatewayProvider } from "../../../contexts/CompanyGatewayContext";
+import type { CompanyGateway } from "../../../lib/company/gateway";
+import { Ticker } from "../../../lib/domain/ticker";
+import { alwaysFailingCompanyGateway } from "../../../test/fixtures/companies/always-failing";
+import { alwaysFoundCompanyGateway } from "../../../test/fixtures/companies/always-found";
+import { fakeCompanyReport } from "../../../test/fixtures/companies/fake-company-report";
+import { sampleCompanyGateway } from "../../../lib/company/sampleCompanyGateway";
+import { BAR_TARGETS_OK, barTargetsOf } from "../../../test/barTargets";
+import { FinancialsTab } from "./FinancialsTab";
+
+const desktop = { viewport: { value: "desktop", isRotated: false } };
+const phone = { viewport: { value: "mobile1", isRotated: false } };
+
+const pending = (): Promise<never> => new Promise(() => {});
+const sampleGateway = sampleCompanyGateway();
+
+/** A gateway whose Financials section never answers, so the tab stays loading. */
+const neverAnsweringGateway: CompanyGateway = {
+	getMasthead: pending,
+	getOverview: pending,
+	getFinancials: pending,
+	getValuation: pending,
+	getShareholderReturns: pending,
+	getRelationships: pending,
+	getManagement: pending,
+	getFilings: pending,
+};
+
+/**
+ * A gateway whose income statement lacks its annual table. The test fixture
+ * leaves each fourth quarter empty, and without the fiscal year the page
+ * cannot derive it, so each fourth quarter stays missing.
+ */
+const missingFourthQuartersGateway: CompanyGateway = {
+	...alwaysFoundCompanyGateway(),
+	getFinancials: async () => {
+		const { financials } = fakeCompanyReport;
+		return {
+			...financials,
+			income: { ...financials.income, annual: { periods: [], lines: [] } },
+		};
+	},
+};
+
+/**
+ * The Financials tab for Meridian Semiconductor (MRDN), from the sample
+ * gateway. The control row picks the statement, the annual or quarterly view
+ * and the unit. The statement table card shows the chosen table, and every
+ * cell opens the sources of its figure.
+ */
+const meta: Meta<typeof FinancialsTab> = {
+	title: "Pages/CompanyPage/FinancialsTab",
+	component: FinancialsTab,
+	tags: ["autodocs"],
+	args: { ticker: Ticker.parse("MRDN") },
+	parameters: { companyGateway: undefined },
+	decorators: [
+		(Story, { parameters }) => (
+			<CompanyGatewayProvider gateway={parameters.companyGateway}>
+				<Story />
+			</CompanyGatewayProvider>
+		),
+	],
+};
+
+export default meta;
+type Story = StoryObj<typeof FinancialsTab>;
+
+/**
+ * Play test: the card titles follow the statement switch. The chart is card
+ * 2.1 and the statement table card 2.2 (DESIGN.md §8).
+ */
+export const Default: Story = {
+	globals: desktop,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const title = async () =>
+			(await canvas.findAllByRole("heading", { name: /^2\.\d / }))
+				.map(({ textContent }) => textContent)
+				.join(", ");
+
+		const expectedResult = [
+			"2.1 Income Statement Chart, 2.2 Income Statement",
+			"2.1 Balance Sheet Chart, 2.2 Balance Sheet",
+			"2.1 Cash Flow Chart, 2.2 Cash Flow",
+		];
+
+		const result = [await title()];
+		await userEvent.click(
+			canvas.getByRole("button", { name: "Balance sheet" }),
+		);
+		result.push(await title());
+		await userEvent.click(canvas.getByRole("button", { name: "Cash flow" }));
+		result.push(await title());
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: the quarterly view shows eight quarter columns, newest last. */
+export const Quarterly: Story = {
+	globals: desktop,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.click(
+			await canvas.findByRole("button", { name: "Quarterly" }),
+		);
+
+		const expectedResult = 8;
+
+		const result = canvas
+			.getAllByRole("columnheader")
+			.filter((header) =>
+				/^Q\d FY\d{4}$/.test(header.textContent ?? ""),
+			).length;
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/** Play test: a click on a figure pins its source card. */
+export const FigureSources: Story = {
+	globals: desktop,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const line = await canvas.findByRole("rowheader", { name: "Revenue" });
+		const figure = within(line.closest("tr") as HTMLElement).getAllByRole(
+			"button",
+		)[0];
+
+		const expectedResult = "Sources of Revenue";
+
+		await userEvent.click(figure);
+		const result = await within(canvasElement.ownerDocument.body).findByRole(
+			"dialog",
+		);
+
+		await expect(result).toHaveAccessibleName(expectedResult);
+	},
+};
+
+/**
+ * Play test: at 390 px the page does not scroll sideways. The table scrolls
+ * inside its card, and the line names stay fixed at its left edge.
+ */
+export const Phone: Story = {
+	globals: phone,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const line = await canvas.findByRole("rowheader", { name: "Revenue" });
+		const scroller = line.closest("[data-slot=table-container]") as HTMLElement;
+		const left = line.getBoundingClientRect().left;
+		scroller.scrollLeft = scroller.scrollWidth;
+		await new Promise(requestAnimationFrame);
+
+		const expectedResult = {
+			pageScrolls: false,
+			tableScrolls: true,
+			fixed: left,
+		};
+
+		const result = {
+			pageScrolls: document.documentElement.scrollWidth > window.innerWidth,
+			tableScrolls: scroller.scrollLeft > 0,
+			fixed: line.getBoundingClientRect().left,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: at 1024 px and wider the line names have no ink of their own, so
+ * the row hover reaches the first column.
+ */
+export const WideFirstColumn: Story = {
+	globals: desktop,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const line = await canvas.findByRole("rowheader", { name: "Revenue" });
+
+		const expectedResult = "rgba(0, 0, 0, 0)";
+
+		const result = getComputedStyle(line).backgroundColor;
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/**
+ * Play test: a quarter the filings do not give shows the dimmed dash and
+ * opens no sources.
+ */
+export const MissingFigure: Story = {
+	globals: desktop,
+	parameters: { companyGateway: missingFourthQuartersGateway },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.click(
+			await canvas.findByRole("button", { name: "Quarterly" }),
+		);
+		const row = (
+			await canvas.findByRole("rowheader", { name: "Revenue" })
+		).closest("tr") as HTMLElement;
+
+		const expectedResult = { dimmedDashes: 2, figures: 6 };
+
+		const result = {
+			dimmedDashes: within(row)
+				.getAllByRole("cell")
+				.filter(
+					(cell) =>
+						cell.textContent === MISSING &&
+						cell.querySelector(`[class="${MISSING_INK}"]`) !== null,
+				).length,
+			figures: within(row).getAllByRole("button").length,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: with no annual table, the chart card says so in one line
+ * instead of drawing an empty plot (DESIGN.md §8).
+ */
+export const EmptyChart: Story = {
+	globals: desktop,
+	parameters: { companyGateway: missingFourthQuartersGateway },
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+
+		const expectedResult = "No fiscal years to chart.";
+
+		const result = await canvas.findByText(expectedResult);
+
+		await expect(result).toBeVisible();
+	},
+};
+
+/**
+ * Opens the chart of `statement` and checks every bar: each of the ten years
+ * draws three bars, a trigger is at least 24 px wide and tall and inside the
+ * plot, the bar draws, and the page does not scroll sideways.
+ */
+async function checkBarTargets(
+	canvasElement: HTMLElement,
+	statement = "Cash flow",
+) {
+	const canvas = within(canvasElement);
+	const body = within(canvasElement.ownerDocument.body);
+	await userEvent.click(
+		await canvas.findByRole("combobox", { name: "Statement" }),
+	);
+	await userEvent.click(await body.findByRole("option", { name: statement }));
+	const plot = await canvas.findByRole("list", { name: "Fiscal years" });
+
+	const expectedResult = { ...BAR_TARGETS_OK, barsPerYear: Array(10).fill(3) };
+
+	const result = {
+		...barTargetsOf(plot),
+		barsPerYear: within(plot)
+			.getAllByRole("listitem")
+			.map((year) => within(year).queryAllByRole("button").length),
+	};
+
+	await expect(result).toEqual(expectedResult);
+}
+
+/**
+ * Play test: every bar of the cash flow chart can be tapped on a phone. Each
+ * bar's trigger is at least 24 px wide and 24 px tall, even when the bar is
+ * drawn smaller, and it stays inside the plot. Every bar draws, including the
+ * years that report zero share repurchases. The chart scrolls inside its
+ * card, so the page does not scroll sideways.
+ */
+export const BarTargets: Story = {
+	globals: phone,
+	play: ({ canvasElement }) => checkBarTargets(canvasElement),
+};
+
+/**
+ * Play test: every bar of the income chart can be tapped on a phone,
+ * including the free cash flow bars, the third line of the chart.
+ */
+export const IncomeBarTargets: Story = {
+	globals: phone,
+	play: ({ canvasElement }) =>
+		checkBarTargets(canvasElement, "Income statement"),
+};
+
+/**
+ * A gateway whose cash flow statement reports capital expenditure as a small
+ * negative number, so the zero line sits near the foot of the chart.
+ */
+const negativeCapexGateway: CompanyGateway = {
+	...sampleGateway,
+	getFinancials: async () => {
+		const financials = await sampleGateway.getFinancials(Ticker.parse("MRDN"));
+		const { annual } = financials.cashFlow;
+		const lines = annual.lines.map((line) =>
+			line.key === "capitalExpenditure"
+				? {
+						...line,
+						points: line.points.map((point) =>
+							point !== null && typeof point.value === "number"
+								? { ...point, value: -point.value / 20 }
+								: point,
+						),
+					}
+				: line,
+		);
+		return {
+			...financials,
+			cashFlow: { ...financials.cashFlow, annual: { ...annual, lines } },
+		};
+	},
+};
+
+/**
+ * Play test: with a small negative capital expenditure the zero line sits
+ * near the foot of the plot, so a capex bar has less than 24 px below it.
+ * Its trigger grows up across the zero line and stays inside the plot.
+ */
+export const BarTargetsNearTheEdge: Story = {
+	globals: phone,
+	parameters: { companyGateway: negativeCapexGateway },
+	play: ({ canvasElement }) => checkBarTargets(canvasElement),
+};
+
+/**
+ * The chart in the dark theme. Each line's fill comes from the dark chart
+ * ramp and reaches 3:1 on the dark card, so the three lines read apart.
+ */
+export const ChartDark: Story = {
+	globals: { ...desktop, theme: "dark" },
+};
+
+/**
+ * Play test: a click on a bar pins its sources, and the "Data" button swaps
+ * the chart for a table of the same figures.
+ */
+export const ChartSourcesAndData: Story = {
+	globals: desktop,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const body = within(canvasElement.ownerDocument.body);
+
+		const expectedResult = { sources: "Sources of Revenue", table: true };
+
+		const bars = await canvas.findAllByRole("button", { name: /^Revenue: / });
+		await userEvent.click(bars[0] as HTMLElement);
+		const sources = (await body.findByRole("dialog")).getAttribute(
+			"aria-label",
+		);
+		await userEvent.keyboard("{Escape}");
+		await userEvent.click(canvas.getByRole("button", { name: "Data" }));
+		const result = {
+			sources,
+			table:
+				canvas.queryByRole("table", {
+					name: "Income statement chart table",
+				}) !== null,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Play test: the Sources index names the statement tables and the charts. */
+export const SourcesNameCharts: Story = {
+	globals: desktop,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.click(
+			await canvas.findByRole("button", {
+				name: "Where these numbers come from",
+			}),
+		);
+		const feeds = (await canvas.findAllByText(/^Feeds /))
+			.map((line) => line.textContent)
+			.join(" ");
+
+		const expectedResult = { namesTable: true, namesChart: true };
+
+		const result = {
+			namesTable: feeds.includes("Income statement table"),
+			namesChart: feeds.includes("Income statement chart"),
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: at 390 px the statement and period switches are select menus,
+ * and picking a statement from the menu changes the card.
+ */
+export const PhoneMenus: Story = {
+	globals: phone,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const body = within(canvasElement.ownerDocument.body);
+		const statement = await canvas.findByRole("combobox", {
+			name: "Statement",
+		});
+
+		const expectedResult = {
+			periodMenu: true,
+			toggles: false,
+			title: "2.2 Balance Sheet",
+		};
+
+		await userEvent.click(statement);
+		await userEvent.click(
+			await body.findByRole("option", { name: "Balance sheet" }),
+		);
+		const result = {
+			periodMenu: canvas.queryByRole("combobox", { name: "Period" }) !== null,
+			toggles: canvas.queryByRole("button", { name: "Quarterly" }) !== null,
+			title: (await canvas.findByRole("heading", { name: /^2\.2 Balance/ }))
+				.textContent,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: at 390 px the table shows the newest fiscal year first, and the
+ * caption still names the periods oldest to newest.
+ */
+export const PhoneNewestFirst: Story = {
+	globals: phone,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await canvas.findByRole("rowheader", { name: "Revenue" });
+
+		const expectedResult = {
+			columns: ["FY2026", "FY2025"],
+			caption: true,
+		};
+
+		const result = {
+			columns: canvas
+				.getAllByRole("columnheader")
+				.slice(1, 3)
+				.map((header) => header.textContent),
+			caption: canvas.queryAllByText(/^FY2017–FY2026 · /).length === 2,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** Returns the cells of the row of `line` in the table of `statement`. */
+async function cellsOf(
+	canvasElement: HTMLElement,
+	line: string,
+	statement = "Income statement",
+) {
+	const canvas = within(canvasElement);
+	const table = await canvas.findByRole("table", {
+		name: `${statement} table`,
+	});
+	const row = within(table).getByRole("rowheader", { name: line });
+	return within(row.closest("tr") as HTMLElement).getAllByRole("cell");
+}
+
+/**
+ * Play test: the last column of the annual table is the growth per year
+ * over ten years (CAGR), and a click on it opens the sources of the growth
+ * rate.
+ */
+export const GrowthColumn: Story = {
+	globals: desktop,
+	play: async ({ canvasElement }) => {
+		const cells = await cellsOf(canvasElement, "Revenue");
+		const growth = within(cells.at(-1) as HTMLElement).getByRole("button");
+
+		const expectedResult = "Sources of Revenue growth per year";
+
+		await userEvent.click(growth);
+		const result = await within(canvasElement.ownerDocument.body).findByRole(
+			"dialog",
+		);
+
+		await expect(result).toHaveAccessibleName(expectedResult);
+	},
+};
+
+/**
+ * Play test: a growth rate needs figures above zero in two years. The capital
+ * expenditure of this gateway is negative, so its CAGR cell shows the dimmed
+ * dash.
+ */
+export const MissingGrowth: Story = {
+	globals: desktop,
+	parameters: { companyGateway: negativeCapexGateway },
+	play: async ({ canvasElement }) => {
+		const statement = "Cash flow";
+		await userEvent.click(
+			await within(canvasElement).findByRole("button", { name: statement }),
+		);
+		const cells = await cellsOf(
+			canvasElement,
+			"Capital expenditure",
+			statement,
+		);
+		const cell = cells.at(-1);
+
+		const expectedResult = MISSING_INK;
+
+		const result = cell?.querySelector("span")?.className;
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
+/**
+ * A gateway whose revenue for FY2026 is 0, so both margins of that year have
+ * no value.
+ */
+const zeroRevenueGateway: CompanyGateway = {
+	...sampleGateway,
+	getFinancials: async () => {
+		const financials = await sampleGateway.getFinancials(Ticker.parse("MRDN"));
+		const { annual } = financials.income;
+		const lines = annual.lines.map((line) =>
+			line.key === "revenue"
+				? {
+						...line,
+						points: line.points.map((point, position) =>
+							point !== null && position === line.points.length - 1
+								? { ...point, value: 0 }
+								: point,
+						),
+					}
+				: line,
+		);
+		return {
+			...financials,
+			income: { ...financials.income, annual: { ...annual, lines } },
+		};
+	},
+};
+
+/**
+ * Play test: a margin reads as a percent, and a margin whose revenue is 0
+ * shows the dimmed dash. The margin row has no growth rate.
+ */
+export const MissingMargin: Story = {
+	globals: desktop,
+	parameters: { companyGateway: zeroRevenueGateway },
+	play: async ({ canvasElement }) => {
+		const cells = await cellsOf(canvasElement, "Operating margin");
+
+		const expectedResult = { percent: true, latest: MISSING, growth: "" };
+
+		const result = {
+			percent: /^\d+\.\d%$/.test(cells.at(-3)?.textContent ?? ""),
+			latest: cells.at(-2)?.textContent,
+			growth: cells.at(-1)?.textContent,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: a margin row is muted and indented one level deeper than the
+ * line it divides by revenue.
+ */
+export const MarginRowStyle: Story = {
+	globals: desktop,
+	play: async ({ canvasElement }) => {
+		const table = await within(canvasElement).findByRole("table", {
+			name: "Income statement table",
+		});
+		const style = (name: string) =>
+			getComputedStyle(within(table).getByRole("rowheader", { name }));
+		const [line, margin] = [
+			style("Operating income"),
+			style("Operating margin"),
+		];
+
+		const expectedResult = { deeper: true, muted: true };
+
+		const result = {
+			deeper:
+				Number.parseFloat(margin.paddingLeft) >
+				Number.parseFloat(line.paddingLeft),
+			muted: margin.color !== line.color,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: on a phone, the margin rows run newest first and read as a
+ * percent in the annual and the quarterly view. The annual row ends in the
+ * empty cell of the growth column.
+ */
+export const PhoneMargins: Story = {
+	globals: phone,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const texts = async () =>
+			(await cellsOf(canvasElement, "Net margin")).map(
+				({ textContent }) => textContent ?? "",
+			);
+		const percents = (values: string[]) =>
+			values.every((value) => value === MISSING || /%$/.test(value));
+
+		const expectedResult = { annual: true, growth: "", quarterly: true };
+
+		const annualTexts = await texts();
+		const annual = percents(annualTexts.slice(0, -1));
+		const growth = annualTexts.at(-1);
+		await userEvent.click(canvas.getByRole("combobox", { name: "Period" }));
+		await userEvent.click(
+			await within(canvasElement.ownerDocument.body).findByRole("option", {
+				name: "Quarterly",
+			}),
+		);
+		const result = { annual, growth, quarterly: percents(await texts()) };
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/** The Financials section is still loading. */
+export const Loading: Story = {
+	parameters: { companyGateway: neverAnsweringGateway },
+};
+
+/** Play test: a failed load says so in a heading, as the page does. */
+export const Failed: Story = {
+	parameters: { companyGateway: alwaysFailingCompanyGateway() },
+	play: async ({ canvasElement }) => {
+		const expectedResult = "The financial statements did not load.";
+
+		const result = await within(canvasElement).findByRole("heading", {
+			name: expectedResult,
+		});
+
+		await expect(result).toHaveTextContent(expectedResult);
+	},
+};
+
+/**
+ * Clicks the "Download CSV" button and returns the name and the rows of the
+ * file it saves. The saved link's click is stopped, so no file lands on disk.
+ */
+async function downloadCsv(canvasElement: HTMLElement) {
+	const doc = canvasElement.ownerDocument;
+	let file:
+		| Promise<{ name: string; type: string; bom: boolean; rows: string[][] }>
+		| undefined;
+	const catchDownload = (event: MouseEvent) => {
+		const link = event.target;
+		if (!(link instanceof HTMLAnchorElement) || !link.download) return;
+		event.preventDefault();
+		file = fetch(link.href)
+			.then(async (response) => ({
+				type: response.headers.get("Content-Type") ?? "",
+				buffer: await response.arrayBuffer(),
+			}))
+			.then(({ type, buffer }) => ({
+				type,
+				bytes: new Uint8Array(buffer),
+				text: new TextDecoder().decode(buffer),
+			}))
+			.then(({ type, bytes, text }) => ({
+				name: link.download,
+				type,
+				bom: bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf,
+				rows: text
+					.trimEnd()
+					.split("\r\n")
+					.map((row) => row.split(",")),
+			}));
+	};
+	doc.addEventListener("click", catchDownload, { capture: true });
+	await userEvent.click(
+		await within(canvasElement).findByRole("button", { name: "Download CSV" }),
+	);
+	doc.removeEventListener("click", catchDownload, { capture: true });
+	return file;
+}
+
+/** Returns the figure cells of `table` as a CSV writes them. */
+function screenCells(table: HTMLElement): string[][] {
+	return within(table)
+		.getAllByRole("row")
+		.map((row) =>
+			[...row.querySelectorAll("th, td")]
+				.slice(1)
+				.map((cell) =>
+					(cell.textContent ?? "")
+						.replace(MISSING, "")
+						.replaceAll(",", "")
+						.replace("−", "-"),
+				),
+		);
+}
+
+/**
+ * Play test: the "Download CSV" button sits on the right of the control row,
+ * next to the unit. It saves the table the switches pick, with the same
+ * columns, CAGR and margin rows included, and the same figures in millions.
+ */
+export const DownloadCsv: Story = {
+	globals: desktop,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.click(
+			await canvas.findByRole("button", { name: "Millions" }),
+		);
+		const table = await canvas.findByRole("table", {
+			name: "Income statement table",
+		});
+		const unit = canvas.getByRole("group", { name: "Unit" });
+		const button = canvas.getByRole("button", { name: "Download CSV" });
+
+		const expectedResult = {
+			name: "MRDN-income-annual.csv",
+			cells: screenCells(table),
+			besideUnit: true,
+		};
+
+		const file = await downloadCsv(canvasElement);
+		const result = {
+			name: file?.name,
+			cells: file?.rows.map((row) => row.slice(1)),
+			besideUnit:
+				button.getBoundingClientRect().left >
+					unit.getBoundingClientRect().right &&
+				button.getBoundingClientRect().bottom <
+					table.getBoundingClientRect().top,
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: the file is typed as UTF-8 CSV and starts with a UTF-8 byte
+ * order mark, so Excel reads a name or figure outside ASCII as UTF-8, not as
+ * the system code page.
+ */
+export const DownloadCsvUtf8: Story = {
+	globals: desktop,
+	play: async ({ canvasElement }) => {
+		const expectedResult = { type: "text/csv;charset=utf-8", bom: true };
+
+		const file = await downloadCsv(canvasElement);
+		const result = { type: file?.type, bom: file?.bom };
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: the quarterly balance sheet saves under its own name, with no
+ * CAGR column, as the table shows it.
+ */
+export const DownloadCsvQuarterly: Story = {
+	globals: desktop,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		await userEvent.click(
+			await canvas.findByRole("button", { name: "Balance sheet" }),
+		);
+		await userEvent.click(canvas.getByRole("button", { name: "Quarterly" }));
+
+		// The file header names the unit that the table caption reads.
+		const unit = canvas
+			.getByText(/ · 10-Q and 10-K$/)
+			.textContent?.split(" · ")[1];
+		const [line, ...periods] = canvas
+			.getAllByRole("columnheader")
+			.map(({ textContent }) => textContent);
+
+		const expectedResult = {
+			name: "MRDN-balance-quarterly.csv",
+			header: [`${line} (${unit})`, ...periods],
+		};
+
+		const file = await downloadCsv(canvasElement);
+		const result = { name: file?.name, header: file?.rows[0] };
+
+		await expect(result).toEqual(expectedResult);
+	},
+};
+
+/**
+ * Play test: at 390 px the "Download CSV" button sits below the table, at
+ * the full width of the card. The file keeps the oldest year first, although
+ * the phone shows the newest year first.
+ */
+export const PhoneDownloadCsv: Story = {
+	globals: phone,
+	play: async ({ canvasElement }) => {
+		const canvas = within(canvasElement);
+		const table = await canvas.findByRole("table", {
+			name: "Income statement table",
+		});
+		const scroller = table.closest(
+			"[data-slot=table-container]",
+		) as HTMLElement;
+		const button = canvas.getByRole("button", { name: "Download CSV" });
+
+		const expectedResult = {
+			belowTable: true,
+			width: Math.round(scroller.getBoundingClientRect().width),
+			firstYear: "FY2017",
+		};
+
+		const file = await downloadCsv(canvasElement);
+		const result = {
+			belowTable:
+				button.getBoundingClientRect().top >=
+				scroller.getBoundingClientRect().bottom,
+			width: Math.round(button.getBoundingClientRect().width),
+			firstYear: file?.rows[0]?.[1],
+		};
+
+		await expect(result).toEqual(expectedResult);
+	},
+};

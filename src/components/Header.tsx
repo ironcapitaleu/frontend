@@ -27,7 +27,7 @@ function Header() {
 	}, []);
 
 	return (
-		<header className="border-b border-border">
+		<header className="border-b border-border print:hidden">
 			<div className="max-w-6xl mx-auto px-4">
 				<nav
 					aria-label="Main navigation"
