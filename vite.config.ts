@@ -35,15 +35,17 @@ export default defineConfig({
 			// The coverage gate. These floors measure layer 1 only — `test:ci`
 			// runs the `unit` project, so `ui/*` primitives covered by Storybook
 			// play tests count as uncovered here and hold the global numbers
-			// down. The floors sit just below the current baseline: they hold the
-			// line against regressions without blocking unrelated PRs. Ratchet
-			// them upward as coverage grows — never downward to make a red build
-			// pass.
+			// down. The floors keep a margin of about 2 points under the baseline
+			// measured on 2026-09-26 (statements 84.52, branches 78.89, functions
+			// 81.28, lines 84.67). A component that ships with a story and no
+			// unit test, which AGENTS.md allows, then cannot fail the build on its
+			// own. Ratchet them upward as coverage grows — never downward to make
+			// a red build pass. TESTING.md §7 holds the same numbers.
 			thresholds: {
-				statements: 66,
-				branches: 57,
-				functions: 58,
-				lines: 65,
+				statements: 82,
+				branches: 77,
+				functions: 79,
+				lines: 82,
 			},
 		},
 		projects: [
