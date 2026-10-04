@@ -343,6 +343,27 @@ describe("SourceTrigger", () => {
 		expect(result).toBe(expectedResult);
 	});
 
+	it("should preview the card when the figure takes focus after a press on it ends elsewhere", async () => {
+		const user = userEvent.setup();
+		renderTrigger();
+		const figure = screen.getByRole("button", { name: "$84.20" });
+
+		const expectedResult = true;
+
+		await user.pointer([
+			{ keys: "[MouseLeft>]", target: figure },
+			{
+				keys: "[/MouseLeft]",
+				target: screen.getByRole("button", { name: "Next" }),
+			},
+		]);
+		act(() => screen.getByRole("button", { name: "Next" }).focus());
+		await user.tab({ shift: true });
+		const result = cardOpen();
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should name the sheet after the figure when the window is a phone", async () => {
 		stubWidth(375);
 		const user = userEvent.setup();
