@@ -92,8 +92,8 @@ This is a separate question from voice. See "Voice: Repo Text and Chat Replies D
 5. **Put the condition before the command,** separated by a comma: "If the build fails, read the
    log." Never "Read the log if the build fails."
 6. **One new fact per sentence** in descriptive text. One topic per paragraph. Six sentences per
-   paragraph at most. A split must keep the link between the facts. Three short sentences that no
-   longer say how they connect are worse than one 25-word sentence that does, so cut the words that
+   paragraph at most. A split must keep the link between the facts. Three short sentences that
+   lose their connection are worse than one 25-word sentence that keeps it. Cut the words that
    carry no meaning, never the words that carry the logic.
 7. **Use a list for three or more steps, conditions, or options.** Do not bury a sequence in prose.
    Do not nest lists. Do not mix instructions and facts in one list.

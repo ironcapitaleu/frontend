@@ -570,8 +570,8 @@ answer: when a skill below opens with a questionnaire, read the skill for its ru
 diff as the scope. An uncertain finding still goes in the list, with the uncertainty stated.
 
 On a pull request the review job restores `.claude/` from the base branch and parks the PR's copy
-in `.claude-pr/`. Apply the rules from the copy each pass below links. When the PR changes a file
-there, review the version in `.claude-pr/`.
+in `.claude-pr/.claude/`. Apply the rules from the copy each pass below links. When the PR changes a
+file under `.claude/`, review its version in `.claude-pr/.claude/`.
 
 ### Review Passes
 

@@ -28,7 +28,7 @@ round must request a fresh review with an `@claude review` comment that names th
 Guidelines.
 
 **When the PR opens with no review at all.** An open sometimes produces no run, and the cause is
-unknown. Nothing recovers it by itself. Here is why, and what a person can do about it.
+unknown. Nothing recovers it by itself.
 
 The auto-review fires on two `pull_request` types, `opened` and `reopened`. Neither fires twice by
 itself. So if the open produces no workflow run, only a reopen starts the auto-review. A push does
@@ -68,9 +68,9 @@ reopen cannot help.
 If the reopen gives no review either, stop and tell the human the review cannot be started, rather
 than repeating either step. **If you escalated a reopen and the human has not done it, the
 procedure is waiting, not finished.** Say that instead, and name the reopen as the outstanding
-action. Both paths failing puts the cause outside the trigger configuration — a disabled workflow,
-an expired token, exhausted Actions minutes — so a third attempt costs a round without testing
-anything new.
+action. If both paths fail, the cause lies outside the trigger configuration. Examples are a
+disabled workflow, an expired token, or exhausted Actions minutes. A third attempt costs a round
+and tests nothing new.
 
 Never assume the review ran. Check the Checks tab, or ask for it: `gh pr checks` in a local session,
 `mcp__github__pull_request_read` with method `get_check_runs` in a remote one. Both report a failed
