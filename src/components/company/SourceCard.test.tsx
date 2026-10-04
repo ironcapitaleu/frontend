@@ -343,6 +343,25 @@ describe("SourceTrigger", () => {
 		expect(result).toBe(expectedResult);
 	});
 
+	it("should close the preview when the pointer leaves the figure after a click pins and unpins the card", async () => {
+		const user = userEvent.setup();
+		renderTrigger();
+		const figure = screen.getByRole("button", { name: "$84.20" });
+
+		const expectedResult = false;
+
+		await user.click(figure);
+		await user.click(figure);
+		await user.unhover(figure);
+		await user.hover(figure);
+		await screen.findByRole("dialog");
+		await user.unhover(figure);
+		await new Promise((resolve) => setTimeout(resolve, 300));
+		const result = cardOpen();
+
+		expect(result).toBe(expectedResult);
+	});
+
 	it("should name the sheet after the figure when the window is a phone", async () => {
 		stubWidth(375);
 		const user = userEvent.setup();
