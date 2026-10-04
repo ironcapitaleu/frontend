@@ -233,6 +233,10 @@ function SourceTrigger({
 				<Popover.Positioner side="bottom" sideOffset={8} className="z-50">
 					<Popover.Popup
 						initialFocus={false}
+						// Focus returns to the figure only after a key closes the card.
+						// After a click away, that focus would reopen the card as a
+						// preview that hover could not close.
+						finalFocus={(closeType) => closeType === "keyboard"}
 						aria-label={`Sources of ${claim.label}`}
 						className="w-100 max-w-[calc(100vw-2rem)] print:hidden rounded-md border border-border bg-popover p-4 text-popover-foreground shadow-md outline-none"
 					>
