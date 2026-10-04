@@ -108,13 +108,13 @@ export const ClickAway: Story = {
 	play: async ({ canvasElement }) => {
 		await openCard(canvasElement);
 		await userEvent.click(canvasElement);
-
-		const expectedResult = null;
-
 		await cardClosed();
-		// The bug reopened the card a moment after it closed.
-		await new Promise((resolve) => setTimeout(resolve, 300));
-		const result = screen.queryByRole("dialog");
+
+		const expectedResult = false;
+
+		// The bug returned focus to the figure, and that focus reopened the card.
+		const result =
+			within(canvasElement).getByRole("button") === document.activeElement;
 
 		await expect(result).toBe(expectedResult);
 	},
