@@ -178,12 +178,17 @@ describe("DatePicker", () => {
 		expect(result).toBeNull();
 	});
 
-	it("should open the calendar on the month of the chosen date when the reader opens it", async () => {
+	it("should show the month of the chosen date again when the reader navigates away and reopens the calendar", async () => {
 		const user = userEvent.setup();
 		render(<DatePicker defaultValue={new Date(2019, 2, 14)} />);
 
 		const expectedResult = "March 2019";
 
+		await user.click(screen.getByRole("button"));
+		await user.click(
+			screen.getByRole("button", { name: "Go to the Next Month" }),
+		);
+		await user.keyboard("{Escape}");
 		await user.click(screen.getByRole("button"));
 		const result = await screen.findByText(expectedResult);
 
