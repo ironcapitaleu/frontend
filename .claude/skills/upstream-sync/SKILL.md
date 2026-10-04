@@ -50,7 +50,7 @@ Read `.claude/upstream-sync.json` for the last-synced arkad commit. Then:
 ```bash
 git -C ~/Projects/gold/arkad fetch origin main 2>/dev/null || true
 git -C ~/Projects/gold/arkad log <lastSyncedCommit>..origin/main --oneline -- \
-  .github/workflows/ .claude/ AGENTS.md CLAUDE.md .github/pull_request_template.md
+  .github/workflows/ .claude/ AGENTS.md .github/pull_request_template.md
 ```
 
 If the local clone is missing, use `gh api repos/ironcapitaleu/arkad/commits` instead.

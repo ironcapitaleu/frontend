@@ -6,7 +6,10 @@ on:
   pull_request_review_comment:
     types: [created]
   pull_request:
-    types: [opened]
+    # A PR sometimes gets no workflow runs on open. With `opened` alone, no
+    # later `pull_request` event starts the auto-review. `reopened` adds one.
+    # `synchronize` is absent, because it reviews every push.
+    types: [opened, reopened]
 
 permissions:
   contents: write
@@ -15,7 +18,7 @@ permissions:
 
 env:
   # Model used by both Claude jobs. Defined once so the two jobs cannot drift.
-  CLAUDE_MODEL: claude-opus-5
+  CLAUDE_MODEL: claude-opus-5-5
 
 jobs:
   claude:
@@ -27,9 +30,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 1
+          # A review diffs the PR against its base, which needs the merge base.
+          # A shallow fetch holds it only while the branch is level with the
+          # base, so a later review would read a wrong diff and not say so.
+          fetch-depth: 0
 
-      - uses: anthropics/claude-code-action@v1.0.235
+      - uses: anthropics/claude-code-action@v1.0.237
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -37,7 +43,12 @@ jobs:
           allowed_bots: "claude[bot]"
 
   claude-auto-review:
-    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
+    # Test the PR author, not `github.actor`. On a `reopened` event
+    # `github.actor` is whoever reopened the PR, so an actor test lets a human
+    # reopen of a dependabot PR through.
+    if: |
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -45,7 +56,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: anthropics/claude-code-action@v1.0.235
+      - uses: anthropics/claude-code-action@v1.0.237
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -53,39 +64,6 @@ jobs:
           allowed_bots: "claude[bot]"
           track_progress: true
           prompt: |
-            You are an adversarial code reviewer. Start from the assumption that
-            this PR contains at least one defect, gap, or unjustified decision,
-            and try hard to find it before concluding otherwise. Interrogate the
-            change rather than affirming it. Concluding "no material issues" is a
-            valid result — but only after you have completed the verdict chain and
-            adversarial pass below and stated the residual risk. Do not invent
-            findings to avoid an empty list.
+            You are an adversarial code reviewer for this pull request.
 
             Apply the "PR Review Guidelines" section of AGENTS.md exactly.
-
-            1. Summary: 2-3 bullets on what the change does.
-
-            2. Verdict chain (required): work the DoD → Test Plan → per-item
-               verdict. For each DoD item, state whether the diff actually proves
-               it, and how you checked. Name anything you could NOT verify. If the
-               PR has no linked ticket/DoD, use the PR's Test Plan (or, absent
-               that, the stated Type of change) as the DoD and say so explicitly.
-
-            3. Findings: reference the specific file and line. Categorize:
-               - 🔴 Bug / security / correctness (must fix)
-               - 🟡 Improvement / performance / design (should fix)
-               - 🟣 Nit / minor (optional)
-               For each 🔴/🟡, give a concrete failure scenario (inputs → wrong
-               result), then a code block with the fix.
-
-            4. Adversarial pass: list the edge cases, error paths, and concurrency
-               or ordering assumptions the author most likely did not test. State
-               which are covered and which are not.
-
-            5. If you genuinely find no material issues, you must still state
-               explicitly what you verified and what residual risk remains — never
-               approve by silence. Requesting a split for anything over the LoC
-               ceiling is always valid.
-
-            Do not raise findings for rules not in AGENTS.md, and do not nitpick
-            trivial formatting.
