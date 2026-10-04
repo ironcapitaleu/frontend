@@ -158,8 +158,11 @@ function SourceTrigger({
 	}
 	// Escape returns focus to the figure. That focus does not reopen the card.
 	const closedByKey = React.useRef(false);
-	// While the figure holds focus, the pointer leaving it keeps the preview open.
+	// While the figure holds keyboard focus, the pointer leaving it keeps the
+	// preview open. Focus that a press gives does not count, or a figure once
+	// clicked would keep every later hover preview open until focus left it.
 	const focused = React.useRef(false);
+	const pressing = React.useRef(false);
 	const triggerClass = cn(
 		"cursor-help rounded-sm underline decoration-muted-foreground decoration-dotted underline-offset-4 outline-none print:no-underline focus-visible:ring-[3px] focus-visible:ring-ring/50",
 		className,
@@ -204,7 +207,17 @@ function SourceTrigger({
 				delay={200}
 				className={triggerClass}
 				style={style}
+				onPointerDown={() => {
+					pressing.current = true;
+				}}
+				onPointerUp={() => {
+					pressing.current = false;
+				}}
+				onPointerCancel={() => {
+					pressing.current = false;
+				}}
 				onFocus={() => {
+					if (pressing.current) return;
 					focused.current = true;
 					if (state === "closed" && !closedByKey.current) setState("preview");
 				}}
@@ -220,6 +233,10 @@ function SourceTrigger({
 				<Popover.Positioner side="bottom" sideOffset={8} className="z-50">
 					<Popover.Popup
 						initialFocus={false}
+						// Focus returns to the figure only after a key closes the card.
+						// After a click away, that focus would reopen the card as a
+						// preview that hover could not close.
+						finalFocus={(closeType) => closeType === "keyboard"}
 						aria-label={`Sources of ${claim.label}`}
 						className="w-100 max-w-[calc(100vw-2rem)] print:hidden rounded-md border border-border bg-popover p-4 text-popover-foreground shadow-md outline-none"
 					>
