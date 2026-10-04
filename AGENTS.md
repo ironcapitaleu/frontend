@@ -550,11 +550,76 @@ without a per-item verdict is not a review.
 - **Never approve what you did not read.** If you reviewed only part, say which part, and approve
   only that scope — or ask for a split.
 - **Review against the Definition of Done, not against vibes.** The ticket's DoD lists verifiable
-  assertions; the PR's Test Plan says how to check them. Confirm each item holds.
+  assertions; the PR's Test Plan says how to check them. Confirm each item holds. This chain —
+  **DoD → Test Plan → per-item verdict** — is what makes an approval mean something.
 - **Requesting a split is always legitimate.** A PR over the ceiling with no declared exception
-  should be sent back to be sliced, however good the code is. Reviewability is part of done.
-- **Raise the finding you are unsure about.** Ask the question rather than silently deferring to
-  the author.
+  must be sent back to be sliced, however good the code is. Reviewability is part of done.
+- **Raise the finding you are unsure about.** Put it in the list with the uncertainty stated,
+  rather than silently deferring to the author.
+
+### Review Stance
+
+Start from the assumption that the PR contains at least one defect, gap, or unjustified decision.
+Interrogate the change rather than affirm it. "No material issues" is a valid result, but only
+after all four passes below run and the review states the residual risk. Never invent a finding to
+fill an empty list. Never approve by silence: a review that finds nothing still names what it
+verified and what risk remains.
+
+A review does not interrupt to ask. It never calls `AskUserQuestion` and never waits for an
+answer: when a skill below opens with a questionnaire, read the skill for its rules and take the
+diff as the scope. An uncertain finding still goes in the list, with the uncertainty stated.
+
+On a pull request the review job restores `.claude/` from the base branch and parks the PR's copy
+in `.claude-pr/`. Apply the rules from the copy each pass below links. When the PR changes a file
+there, review the version in `.claude-pr/`.
+
+### Review Passes
+
+Run four passes in this order: code, tests, documentation, wording. On the first review of a PR,
+run all four. On every later round, run the code pass in full, then run the test, documentation,
+and wording passes on the files that changed since the commit the last review named. When no
+earlier review names one, or the commit it names is not reachable from `HEAD`, use the full diff
+against the PR's base branch (`origin/dev` for a feature PR, `origin/main` for a release) and say
+that you did.
+
+**Pass 1 — Code.** Apply the "Review Budget & Rubber-Stamping", "Code Quality Review",
+"Performance", "Correctness & Safety", and "Security" sections, and "Design Language Review" for a
+user-facing change. Report:
+
+1. **Summary** — 2-3 bullets on what the change does.
+2. **Verdict chain** (required) — follow the chain DoD → Test Plan → per-item verdict. For each DoD
+   item, state whether the diff proves it, and how you checked. Name anything you did not verify.
+   If the PR links no ticket, use its Test Plan. If it carries no Test Plan, use the stated Type of
+   change. Say which one you used.
+3. **Adversarial pass** — list the edge cases, error paths, and ordering assumptions the author
+   most likely did not test. State which are covered and which are not.
+
+**Pass 2 — Tests.** Apply the [`testing` skill](.claude/skills/testing/SKILL.md) in Review mode and
+the "Testing Review" section below. A test that passes for a reason unrelated to the property it
+names is a 🔴 finding.
+
+**Pass 3 — Documentation.** Apply the [`documentation` skill](.claude/skills/documentation/SKILL.md)
+in Check mode against [`DOCUMENTATION.md`](./DOCUMENTATION.md) and the "Style & Documentation" and
+"Documentation Consistency" sections below.
+
+Report excess, not only absence. Documentation that repeats the signature, restates the code, or
+explains a decision the reader cannot act on is a finding, and the fix is a deletion. Quote the
+lines to delete.
+
+**Pass 4 — Wording.** Apply the [`plain-english` skill](.claude/skills/plain-english/SKILL.md),
+which picks its mode from the destination of the text. Read the changed files, the PR description,
+and the commit messages in the diff you reviewed. Report the sentence and the rewrite.
+
+### Findings
+
+Report one list for all four passes. Reference the specific file and line.
+
+- 🔴 Bug, security, correctness, or a guard that passes for the wrong reason (must fix)
+- 🟡 Improvement, performance, design, or documentation excess (fix or justify)
+- 🟣 Nit (optional)
+
+For each 🔴 and 🟡, give a concrete failure scenario (inputs → wrong result, or reader → wrong
+conclusion), then a code block with the fix. End the review by naming the commit you reviewed.
 
 ### Code Quality Review
 
@@ -640,9 +705,12 @@ The full doctrine lives in [TESTING.md](./TESTING.md); review against it:
 
 ### What NOT to Do
 
-- Avoid nitpicks on trivial formatting  
-- Do not suggest unnecessary rewrites if code is clear and correct  
-- Do not enforce rules not listed in these guidelines  
+- Avoid nitpicks on trivial formatting
+- Do not raise whitespace, line breaks, or anything else Biome owns
+- Do not suggest unnecessary rewrites if code is clear and correct
+- Do not enforce rules outside these guidelines, [`DOCUMENTATION.md`](./DOCUMENTATION.md),
+  [`TESTING.md`](./TESTING.md), [`DESIGN.md`](./DESIGN.md), and the `testing`, `documentation`,
+  and `plain-english` skills
 
 ---
 

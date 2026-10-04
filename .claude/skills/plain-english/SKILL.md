@@ -92,7 +92,9 @@ This is a separate question from voice. See "Voice: Repo Text and Chat Replies D
 5. **Put the condition before the command,** separated by a comma: "If the build fails, read the
    log." Never "Read the log if the build fails."
 6. **One new fact per sentence** in descriptive text. One topic per paragraph. Six sentences per
-   paragraph at most.
+   paragraph at most. A split must keep the link between the facts. Three short sentences that no
+   longer say how they connect are worse than one 25-word sentence that does, so cut the words that
+   carry no meaning, never the words that carry the logic.
 7. **Use a list for three or more steps, conditions, or options.** Do not bury a sequence in prose.
    Do not nest lists. Do not mix instructions and facts in one list.
 8. **Split dense sentences.** If the reader must backtrack to parse it, it is two sentences.
@@ -121,19 +123,23 @@ This is a separate question from voice. See "Voice: Repo Text and Chat Replies D
     for the request", not "the request timeout configuration value".
 17. **Give every pronoun a clear referent.** Prefer "this error" over a bare "this".
 
+18. **Describe the category, not its members.** When a type, module, or list names its own parts
+    directly below, the prose above it states what the parts have in common. "Separates the kinds of
+    button variant" beats naming each variant, which goes stale the moment one is added.
+
 ### Vocabulary
 
-18. **One word, one meaning, one part of speech.** Pick one term per concept and repeat it through
+19. **One word, one meaning, one part of speech.** Pick one term per concept and repeat it through
     the whole document. Never rotate synonyms to sound varied. The reader cannot tell whether
     "the user", "the customer", and "the client" are one thing or three.
-19. **Follow the terms this project already fixed.** `AGENTS.md` fixes the commit types and the
+20. **Follow the terms this project already fixed.** `AGENTS.md` fixes the commit types and the
     error naming patterns (Adjective-First `[Adjective][Noun]`, Failed-First `Failed[Action]`).
     `DOCUMENTATION.md` fixes the domain vocabulary and the W-Fragen framework. Those choices win.
-20. **Pick the plainest common word.** `use` not `utilize` or `leverage`, `help` not `facilitate`,
+21. **Pick the plainest common word.** `use` not `utilize` or `leverage`, `help` not `facilitate`,
     `many` not `numerous`, `if` not `in the event that`, `but` not `however`, `so` not `therefore`,
     `because` not `since`, `do` not `perform`, `for example` not `e.g.`, `that is` not `i.e.`.
-21. **Delete `etc.`** Name the items, or write "and more".
-22. **Keep domain nouns and verbs.** `component`, `prop`, `hook`, `story`, `token`, `variant`,
+22. **Delete `etc.`** Name the items, or write "and more".
+23. **Keep domain nouns and verbs.** `component`, `prop`, `hook`, `story`, `token`, `variant`,
     `render`, `serialize`, and `deploy` are exact. Define a term once if it is not common in this
     codebase.
 
