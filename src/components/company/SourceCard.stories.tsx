@@ -102,6 +102,24 @@ export const Derived: Story = {
 	},
 };
 
+/** Play test: a click away closes a pinned card, and the card stays closed. */
+export const ClickAway: Story = {
+	globals: { viewport: { value: "desktop", isRotated: false } },
+	play: async ({ canvasElement }) => {
+		await openCard(canvasElement);
+		await userEvent.click(canvasElement);
+
+		const expectedResult = null;
+
+		await cardClosed();
+		// The bug reopened the card a moment after it closed.
+		await new Promise((resolve) => setTimeout(resolve, 300));
+		const result = screen.queryByRole("dialog");
+
+		await expect(result).toBe(expectedResult);
+	},
+};
+
 /**
  * Play test: resting the pointer on a price previews its card. A price is
  * market data, so the card names the dataset and no XBRL tag.
