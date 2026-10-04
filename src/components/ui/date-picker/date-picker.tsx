@@ -146,6 +146,7 @@ function DatePicker(props: DatePickerProps) {
 						<DayPicker
 							mode="single"
 							selected={selectedDate}
+							defaultMonth={selectedDate}
 							onSelect={handleSelect}
 							showOutsideDays
 							classNames={calendarClassNames}
