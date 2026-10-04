@@ -27,6 +27,7 @@ npm run lint:check
 npm run typing:check
 npm run build
 npm run check:stories
+npm run check:coverage-doc
 npm run test:ci
 ```
 
