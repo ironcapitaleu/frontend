@@ -1,5 +1,9 @@
 {
 	"$schema": "https://biomejs.dev/schemas/2.5.12/schema.json",
+	// Biome 2.6 formats Markdown and YAML. Its Markdown formatter removes the
+	// indent from the folded `description: >` front matter in every
+	// .claude/skills/*/SKILL.md, which makes it invalid YAML. Biome 2.5 never
+	// checked these files, so keep them out.
 	"files": {
 		"includes": ["**", "!**/*.md", "!**/*.yaml", "!**/*.yml"]
 	},

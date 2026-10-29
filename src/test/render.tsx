@@ -20,10 +20,11 @@ interface RenderOptions {
 }
 
 /**
- * Renders `ui` inside the app's real provider tree — `AuthProvider` (with an
- * injected {@link AuthGateway}), `CompanyGatewayProvider` (with an injected
- * {@link CompanyGateway}) and a `MemoryRouter` — so unit and integration tests
- * exercise auth, company data and routing exactly as production does.
+ * Renders `ui` inside the app's real provider tree — `ThemeProvider`,
+ * `AuthProvider` (with an injected {@link AuthGateway}),
+ * `CompanyGatewayProvider` (with an injected {@link CompanyGateway}) and a
+ * `MemoryRouter` — so unit and integration tests exercise theme, auth, company
+ * data and routing exactly as production does.
  *
  * Pass `gateway` to arrange the auth world, `companyGateway` to arrange the
  * company data, and `initialEntries` to place the router on the route under
