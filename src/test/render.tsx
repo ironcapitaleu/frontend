@@ -38,21 +38,40 @@ export function render(
 		initialEntries = ["/"],
 	}: RenderOptions = {},
 ) {
-	function Wrapper({ children }: { children: ReactNode }) {
-		return (
-			<ThemeProvider>
-				<AuthProvider gateway={gateway}>
-					<CompanyGatewayProvider gateway={companyGateway}>
-						<MemoryRouter initialEntries={initialEntries}>
-							{children}
-						</MemoryRouter>
-					</CompanyGatewayProvider>
-				</AuthProvider>
-			</ThemeProvider>
-		);
-	}
+	return rtlRender(ui, {
+		wrapper: ({ children }) => (
+			<AppProviders
+				gateway={gateway}
+				companyGateway={companyGateway}
+				initialEntries={initialEntries}
+			>
+				{children}
+			</AppProviders>
+		),
+	});
+}
 
-	return rtlRender(ui, { wrapper: Wrapper });
+interface AppProvidersProps extends Required<RenderOptions> {
+	children: ReactNode;
+}
+
+function AppProviders({
+	gateway,
+	companyGateway,
+	initialEntries,
+	children,
+}: AppProvidersProps) {
+	return (
+		<ThemeProvider>
+			<AuthProvider gateway={gateway}>
+				<CompanyGatewayProvider gateway={companyGateway}>
+					<MemoryRouter initialEntries={initialEntries}>
+						{children}
+					</MemoryRouter>
+				</CompanyGatewayProvider>
+			</AuthProvider>
+		</ThemeProvider>
+	);
 }
 
 export * from "@testing-library/react";
