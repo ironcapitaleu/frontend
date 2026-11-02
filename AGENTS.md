@@ -13,6 +13,8 @@
   - Unit tests (`npm run test:ci`)
   - Integration tests
   - Type checking (`npm run typing:check`)
+- Every bug fix ships with a regression test that fails on the old code (see the `testing` skill,
+  "Regression Tests").
 
 ### Pre-Push Verification
 
@@ -429,6 +431,8 @@ When creating a pull request, always use the repository's PR template located at
 5. **Checklist** — confirm guidelines are followed
 
 Never use a freeform PR body or a different structure.
+
+After opening a PR, run the `pr-iterate` skill.
 
 ### PR Size Budget
 

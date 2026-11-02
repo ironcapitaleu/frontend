@@ -3,10 +3,10 @@ name: testing
 description: >
   This skill should be used when the user asks to "review tests", "add tests", "check test coverage",
   "write play tests", "add interaction tests", "test responsiveness", "re-test a page", "test recent
-  components", "review testing strategy", or reports a bug/regression that needs a test so it can't
-  recur. Covers writing, reviewing, or improving unit tests, Storybook play tests, and
-  visual/responsive coverage for a component, page, hook, or utility.
-version: 0.1.0
+  components", "review testing strategy", "fix a bug", "address a review finding", or reports a
+  bug/regression that needs a test so it can't recur. Covers writing, reviewing, or improving unit
+  tests, Storybook play tests, and visual/responsive coverage for a component, page, hook, or utility.
+version: 0.2.0
 argument-hint: "[target-path or 'recent' or 'review']"
 allowed-tools: [Read, Write, Edit, Bash, AskUserQuestion]
 ---
@@ -313,6 +313,22 @@ mobile menu), not a fixed device list. Give each variant a story so it is exerci
 tests and read at the visual gate. Test motion by its
 **endpoints** (menu closed → click → menu open). No automated check covers the transition
 itself, so the Storybook catalog and review carry it.
+
+## Regression Tests
+
+If you fix a bug in code, add a regression test in the same change as the fix. This rule covers a
+bug that a reviewer finds, a bug that a user reports, and a bug that you find yourself. If this
+skill loads for a bug fix, apply only this section and Conventions (Quick Reference). Skip the rest
+of the skill.
+
+1. Write a test that fails on the code before the fix.
+2. Prove that the test fails. Undo the code change and keep the test. Run the test and confirm that
+   it fails. Then restore the code change.
+3. Name the test after the behavior that the fix restores, not after the bug. The name still reads
+   `should … when …`.
+4. If a review found the bug, name the test in your reply to that review.
+
+A fix without a test that fails on the old code is not done.
 
 ## Proactive Behavior
 
