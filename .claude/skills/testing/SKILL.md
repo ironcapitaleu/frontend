@@ -325,7 +325,7 @@ of the skill.
 2. Prove that the test fails. Undo the code change and keep the test. Run the test and confirm that
    it fails. Then restore the code change.
 3. Name the test after the behavior that the fix restores, not after the bug. The name still reads
-   `should … when …`.
+   `should … when …`. For a play test, name the story after the restored behavior.
 4. If a review found the bug, name the test in your reply to that review.
 
 A fix without a test that fails on the old code is not done.

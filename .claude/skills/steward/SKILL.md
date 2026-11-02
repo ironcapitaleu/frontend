@@ -1,7 +1,8 @@
 ---
 name: steward
 description: >
-  Use right after opening a PR, and on every review event on a PR you own.
+  Use right after you open a PR, and on every review event on a PR you opened. Never use it
+  inside a PR review job.
 version: 0.1.0
 ---
 

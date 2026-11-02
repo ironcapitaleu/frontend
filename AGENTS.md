@@ -14,7 +14,9 @@
   - Integration tests
   - Type checking (`npm run typing:check`)
 - Every bug fix ships with a regression test that fails on the old code (see the `testing` skill,
-  "Regression Tests").
+  "Regression Tests"). This rule stops at level 2 of the Enforcement Ladder. No script can tell
+  that a test fails on the old code without reverting the fix, so the `testing` skill loads on
+  every bug fix instead.
 
 ### Pre-Push Verification
 
