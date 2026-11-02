@@ -6,7 +6,7 @@ description: >
   note", or invokes `/handoff`. Compacts the current conversation into a self-contained handoff:
   a prompt for a fresh agent session, or a state-of-play note on the In Progress Linear ticket for
   a human takeover.
-version: 0.2.0
+version: 0.3.0
 argument-hint: "[what the next session will do]"
 allowed-tools: [Read, Write, Bash, AskUserQuestion]
 ---
@@ -68,6 +68,26 @@ or module in scope.>
 - In flight: <open branches, open PRs with numbers, tickets In Progress>
 - Blocked / undecided: <anything waiting on a decision, and what would unblock it>
 
+# Roadmap
+
+<Only when the ticket belongs to an ordered set (see Procedure step 3). One row per ticket, in
+working order. Mark the successor's ticket with ▶.>
+
+Project <name>, milestone <name>. All tickets link to <design ticket>. Statuses as of <YYYY-MM-DD>.
+
+| # | Ticket | Scope | Blocked by | Status |
+| - | ------ | ----- | ---------- | ------ |
+| 1 | STA-xxx | <three to six words> | none | Done |
+| 2 | STA-xxx | <three to six words> | none | In Review (merged, #N) |
+| 3 | ▶ STA-xxx | <three to six words> | STA-xxx | Backlog |
+
+A ticket is finished when it is Done or its PR has merged. Every other ticket is open.
+
+Critical path: <the longest chain of open tickets linked by blockers, as STA-xxx → STA-xxx → …>
+Unblocked now: <every ticket in Backlog or Todo whose blockers are all finished>
+
+If the successor's ticket sits off the critical path, add one line that says how much slack it has.
+
 # Key Decisions
 
 <Each decision the successor must respect, one line each, with a link to the ADR, design doc, or
@@ -96,6 +116,9 @@ ticket that records it. Reference — never restate the full content.>
 <The constraints the successor must hold: the branch it must push to, the AGENTS.md rules that
 apply, and any "never" from this session. State each as `must` or `never`.>
 
+- You must push to `<branch name>`. If the session assigns another branch, such as `claude/*`,
+  never push to it. If the push to `<branch name>` fails, stop and report the blocker.
+
 # Reporting
 
 <When and how to report back: report on completion or on a blocker it cannot resolve.>
@@ -106,11 +129,19 @@ apply, and any "never" from this session. State each as `must` or `never`.>
 1. **Read the argument.** If the user gave no focus, ask the user once. Ask what the next session
    will do. Ask whether it ends at a branch, a merged PR, or a report.
 2. **Compile the document** from the conversation, following the template. Reference every artifact
-   by path or URL. Do not paste file contents the successor can read itself.
-3. **Redact secrets.** Remove API keys, tokens, passwords, and personal data. Reference the
+   by path or URL. Do not paste file contents the successor can read itself. Pick the branch name
+   with the `AGENTS.md` "Branch Naming" convention.
+3. **Add the Roadmap** if the ticket belongs to an ordered set: an epic (a Linear project), a
+   project milestone, or the "Implementation Tickets" list of a design doc. Read every ticket's
+   status, blockers, and linked PR through the `linear` skill at the time you write the handoff.
+   Never copy a roadmap from an earlier handoff without this check. Recompute the critical path
+   and the unblocked tickets from the fresh data. If Linear is unreachable, leave the Roadmap out
+   and say so under "Blocked / undecided". The Linear note carries the Roadmap too, with its date,
+   so a reader can tell how old the statuses are.
+4. **Redact secrets.** Remove API keys, tokens, passwords, and personal data. Reference the
    secret's location instead, never its value.
-4. **Choose the destination** — a fresh agent session, a Linear note, or both (see Destinations).
-5. **Deliver:**
+5. **Choose the destination** — a fresh agent session, a Linear note, or both (see Destinations).
+6. **Deliver:**
    - **Agent session** — print the whole document in the chat reply, inside one fenced code block
      tagged `markdown`. Put nothing else inside the block. Count the longest run of backticks that
      opens a fence in the document. Open and close the outer block with one more backtick than that
@@ -129,12 +160,17 @@ apply, and any "never" from this session. State each as `must` or `never`.>
 - **Self-contained.** The successor sees only this prompt. If a fact is not in it, the successor
   does not have it.
 - **Reference, do not duplicate.** Link tickets, PRs, branches, and docs. Never copy their bodies.
+  The Roadmap table is an index, not a copy.
 - **Redact before writing.** No secret value reaches the document. This matters most for the Linear
   note, which persists and other people read.
 - **Never in the repository.** The agent-session prompt goes to the chat, plus a temporary file if
   one is needed. The Linear note goes to the ticket. A handoff is not a committed design doc.
 - **One copyable block.** The agent-session prompt is one fenced code block, so one tap copies all
   of it.
+- **Branch convention.** A new branch follows the `AGENTS.md` "Branch Naming" convention,
+  `<type>/<short-description>`, branched from the latest `dev`. Never name a session-assigned
+  branch, such as `claude/*`, for new work. If the work continues an open PR, name that PR's head
+  branch as it is.
 - **Plain English.** The `plain-english` skill applies. State the mission, the state, and the next
   steps as facts and instructions.
 
