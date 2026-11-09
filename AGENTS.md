@@ -427,8 +427,7 @@ sitemap is correct, not merely that someone remembered to touch the files.
 task changes the repository, commit the work and push the branch. If the branch has no open PR,
 open one against `dev`. If the branch has an open PR, push to it and open no new PR. Then run the
 `pr-iterate` skill until a review finds nothing new, and report to the owner. A CI job that an
-`@claude` comment starts runs no `pr-iterate`: it pushes and reports in its own comment. The merge
-follows the `pr-iterate` skill, "Proactive Propagation".
+`@claude` comment starts runs no `pr-iterate`: it pushes and reports in its own comment.
 
 Open a PR only when the task changes files in the repository. A ticket whose output lives outside
 the repository gets no PR. For example, a SPIKE that ends in a Linear document reports its findings
