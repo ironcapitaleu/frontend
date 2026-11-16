@@ -6,7 +6,7 @@ description: >
   last-synced marker in .claude/upstream-sync.json is older than 7 days at the start
   of a session. It reviews what changed in the arkad repo (the gold-standard repo for
   cross-cutting conventions) and adapts relevant changes into this repository.
-version: 0.1.0
+version: 0.1.1
 argument-hint: "[check|sync]"
 ---
 
@@ -35,7 +35,7 @@ upstreaming, flag it to the human — never edit the arkad repo from here.
 | Category | Files in arkad | Sync mode |
 | --- | --- | --- |
 | Claude CI workflows | `.github/workflows/claude.yaml` | **Adapt** — carry over fixes (action config, triggers, job conditions), keep frontend specifics (two-branch dev/main flow) |
-| Shared skills | `.claude/skills/linear/`, `.claude/skills/pr-iterate/` | **Adapt** — carry over structural/process improvements, keep frontend-specific content (FRONTEND template, dev-branch targeting, propagation rules, AGENTS.md guideline links, frontend few-shot examples) |
+| Shared skills | `.claude/skills/linear/`, `.claude/skills/pr-iterate/`, `.claude/skills/adr/` | **Adapt** — carry over structural/process improvements, keep frontend-specific content (FRONTEND template, dev-branch targeting, propagation rules, AGENTS.md guideline links, frontend few-shot examples) |
 | Repo-specific skills | `.claude/skills/state-*`, `xbrl-accounting`, `domain-concept`, etc. | **Skip** — Rust/backend-specific. But note *patterns* worth imitating (e.g., if arkad grows a scaffold skill pattern that would fit React components) |
 | Permission settings | `.claude/settings.json` | **Adapt** — mirror the *shape* (read-only allowlist philosophy), swap cargo commands for this repo's equivalents (`npm run test:ci`, `npm run lint:check`, `npm run typing:check`, `npm run format:check`) |
 | AGENTS.md | `AGENTS.md` | **Adapt selectively** — general sections (General Rules, Error Naming, Commit Guidelines, PR Creation, PR Review Guidelines, Deviations) tend to evolve in parallel; diff them for improvements. Rust-specific sections: skip, but consider whether the *idea* has a TypeScript analog worth proposing |
