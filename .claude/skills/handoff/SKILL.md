@@ -23,8 +23,8 @@ The same compacted content serves two destinations: a fresh agent session, or a 
 comment on the Linear ticket for a human takeover. This skill writes the content and stops. It does
 not spawn a session or take over a ticket itself.
 
-The skill also brings the ticket up to date with a comment (see "Update the Ticket"). A successor
-reads the ticket first. A stale ticket sends it the wrong way, even if the handoff is right.
+The skill also posts a comment that names the stale points of the ticket (see "Update the Ticket").
+A successor reads the ticket first. A stale ticket sends it the wrong way, even if the handoff is right.
 
 ## When to Use
 
