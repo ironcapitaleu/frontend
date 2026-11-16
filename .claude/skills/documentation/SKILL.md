@@ -6,7 +6,7 @@ description: >
   frontend — JSDoc, Storybook stories, or the root documents (README.md, DESIGN.md, TESTING.md).
   Supports documenting a specific component, module, recently written code, or running a
   compliance check against the documentation conventions.
-version: 0.2.0
+version: 0.2.1
 argument-hint: "[target-path or 'check' or 'recent']"
 allowed-tools: [Read, Write, Edit, Bash, AskUserQuestion, Agent]
 ---
@@ -73,7 +73,8 @@ These are loaded from `DOCUMENTATION.md` but summarized here for speed:
 - **Never name consumers** in a reusable component's docs; naming the external system an item
   serves (Supabase in `lib/supabase`) is fine.
 - **No temporal coupling** — describe what an item is now, never *when*. No "later", "deferred",
-  "first/minimal slice", "for now", "arrives with", or ticket/PR IDs. State a deliberate boundary
+  "first/minimal slice", "for now", "arrives with", ticket/PR IDs, or what an item or document
+  replaced ("formerly X", "replaced Y", "changed from"). State a deliberate boundary
   as a timeless property ("renders no data of its own").
 - **No positional / consumption coupling** — say what an item *is or does*, never where it sits
   ("top-level wrapper", "innermost element") or how it is consumed ("shared across every page",
@@ -136,8 +137,9 @@ Docs drift is a review item. The binding rules:
    - Exported components/hooks/utilities without JSDoc, or without a proper summary line
    - `@example` blocks in JSDoc (examples belong in stories)
    - Consumer names in a reusable component's docs (coupling)
-   - Temporal / roadmap references ("later", "deferred", "for now", "first slice", ticket/PR IDs) —
-     docs describe the current contract, not a timeline
+   - Temporal / roadmap references ("later", "deferred", "for now", "first slice", ticket/PR IDs,
+     "formerly X", "replaced Y", "changed from") — docs describe the current contract, not a
+     timeline or a replaced document
    - Positional / consumption references (where an item sits, or how it is consumed) instead of what
      it is
    - Docs that restate the signature (narrating an optional prop, a type guard, or a default value)
