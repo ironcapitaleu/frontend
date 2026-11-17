@@ -55,6 +55,10 @@ codebase for all instances before considering the change complete.
   - JSDoc comments
   - Design documents (if applicable, e.g., mermaid diagrams)
 - **Documentation must be version controlled**.
+- **Describe the current state.** Every kind of documentation, such as JSDoc, comments, Storybook
+  descriptions, design documents, READMEs, and skills, says what an item is and does now. It never
+  says what the item or a cited standard replaced, or what changed from an earlier version. Commits
+  and PRs hold that history.
 - **All English text must follow the [`plain-english`](.claude/skills/plain-english/SKILL.md)
   skill.** This covers JSDoc, inline comments, Storybook descriptions, commit messages, PR titles
   and bodies, and error and toast strings. **Never** ship AI-slop wording. That means: an em dash
