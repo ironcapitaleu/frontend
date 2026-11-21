@@ -804,6 +804,8 @@ All commits must follow the following format:
 - **`revert`**: Reverts a previous commit
 - **`chore`**: Catchall commit type. For routine maintenance tasks not affecting app logic, CI/CD, or build output (e.g., updating files such as `.gitignore`, LICENSE files, generic project management templates, or updating automation scripts like `Makefile` files or similar.)
 
+A change to `.claude/` (skills, routines, settings) is tooling for agents, not product code. Its type is `chore`, never `feat` or `fix` (owner decision, 2026-11-21).
+
 ### Scope (Optional)
 
 Add scope for area-specific changes when it helps understanding:
