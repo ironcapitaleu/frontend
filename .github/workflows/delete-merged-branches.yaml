@@ -1,0 +1,63 @@
+name: Delete merged branches
+
+# Deletes a branch once its pull request has merged and nothing was pushed
+# to it after the merge. `main`, `dev`, and every protected branch are never
+# touched. GitHub's "Automatically delete head branches" setting is not used,
+# because it would also delete `dev` as the head of each release PR.
+
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "List the branches without deleting them"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  delete:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Delete merged branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/$REPO/branches?per_page=100" \
+            --jq '.[] | [.name, .commit.sha, (.protected | tostring)] | @tsv' |
+          while IFS=$'\t' read -r branch sha protected; do
+            case "$branch" in
+              main|dev) continue ;;
+            esac
+            if [ "$protected" = "true" ]; then
+              continue
+            fi
+            open=$(gh pr list --repo "$REPO" --head "$branch" --state open --json number --jq 'length')
+            if [ "$open" != "0" ]; then
+              continue
+            fi
+            merged=$(gh pr list --repo "$REPO" --head "$branch" --state merged --limit 1 \
+              --json number,headRefOid --jq '.[0] | select(. != null) | "\(.number) \(.headRefOid)"')
+            if [ -z "$merged" ]; then
+              continue
+            fi
+            number=${merged%% *}
+            head_sha=${merged##* }
+            if [ "$head_sha" != "$sha" ]; then
+              echo "Keep $branch: pushed to after #$number merged"
+              continue
+            fi
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "Would delete $branch (#$number)"
+            else
+              gh api -X DELETE "repos/$REPO/git/refs/heads/$branch"
+              echo "Deleted $branch (#$number)"
+            fi
+          done
