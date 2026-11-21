@@ -35,7 +35,7 @@ upstreaming, flag it to the human — never edit the arkad repo from here.
 | Category | Files in arkad | Sync mode |
 | --- | --- | --- |
 | Claude CI workflows | `.github/workflows/claude.yaml` | **Adapt** — carry over fixes (action config, triggers, job conditions), keep frontend specifics (two-branch dev/main flow) |
-| Process skills | Every skill in `.claude/skills/` that says how agents or people work, whatever the language: today `linear`, `pr-iterate`, `steward`, `handoff`, `epic`, `plain-english`, `adr`, `routine`, `testing`, `documentation` | **Adapt** — carry over each change. Port a new process skill that arkad adds, and ask the owner before the merge (Step 2). Keep frontend-specific content (see Step 3). Never sync `.claude/routines/`: each repository holds its own routine prompts |
+| Process skills | Every skill in `.claude/skills/` that says how agents or people work, whatever the language: today `linear`, `pr-iterate`, `steward`, `handoff`, `epic`, `plain-english`, `adr`, `routine`, `testing`, `documentation` | **Adapt** — carry over each change. Port a new process skill that arkad adds in its own PR, which waits for the owner (Step 2). Keep frontend-specific content (see Step 3). Never sync `.claude/routines/`: each repository holds its own routine prompts |
 | Domain skills | Skills about Rust, the state machine, or the data domain: `state-*`, `transition-*`, `domain-concept`, `xbrl-standardization`, `accounting`, `performance` | **Skip** — Rust/backend-specific. But note *patterns* worth imitating (e.g., if arkad grows a scaffold skill pattern that would fit React components) |
 | Permission settings | `.claude/settings.json` | **Adapt** — mirror the *shape* (read-only allowlist philosophy), swap cargo commands for this repo's equivalents (`npm run test:ci`, `npm run lint:check`, `npm run typing:check`, `npm run format:check`) |
 | AGENTS.md | `AGENTS.md` | **Adapt selectively** — general sections (General Rules, Architecture Decision Records, Writing Style, Error Naming, Commit Guidelines, Branching & PR Size, PR Creation, PR Review Guidelines, Skills, Routines, Deviations) tend to evolve in parallel; diff them for improvements, and port a new general section. Rust-specific sections: skip, but consider whether the *idea* has a TypeScript analog worth proposing |
@@ -57,20 +57,24 @@ If the local clone is missing, use `gh api repos/ironcapitaleu/arkad/commits` in
 
 Then compare the process skills in arkad's `.claude/skills/` and the general sections of its
 `AGENTS.md` with this repository. Each one missing here is a new item for Step 2, even if no
-commit since the marker touched it.
+commit since the marker touched it. A section counts as present when this repository covers its
+rules under any heading. Then port only the missing rules, into the section that holds the
+topic. Skip an item that an open `chore/upstream-port-*` PR already ports.
 
 If nothing relevant changed and nothing is missing, update the marker's `lastSyncedAt` and
 stop — report "already in sync".
 
 ### Step 2: Review each relevant commit
 
-For each commit touching the synced categories, read the diff and classify:
+For each relevant commit, and each missing item from Step 1, read the diff and classify:
 
 - **Cross-cutting fix/improvement** → adapt it here (translate repo specifics)
-- **New process skill or general `AGENTS.md` section** → port it in its own commit, then hold
-  the sync PR and ask the owner. Merge the PR only after the owner approves. A new skill can
-  change how agents merge or release, so it needs a person to read it first. A change to a
-  skill or section this repository already has needs no approval
+- **New process skill or general `AGENTS.md` section** → port it in its own PR into `dev`, on a
+  branch `chore/upstream-port-<name>`, with the `needs-human` label, and hand it off. The owner
+  approves by removing the label. Never merge a PR that carries `needs-human`, and never remove
+  the label yourself. A new skill can change how agents merge or release, so a person reads it
+  first. The sync PR carries the other items and merges as usual, so a new item never holds back
+  a clear one. A change to a skill or section this repository already has needs no approval
 - **Unnamed skill** → the skills the table names keep their row. For a skill the table does not
   name, ask: does it still apply if the code were TypeScript? If yes, it is a process skill
 - **Backend-specific** → skip, but record it in the sync report
