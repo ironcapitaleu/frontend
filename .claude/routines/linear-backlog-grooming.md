@@ -30,7 +30,7 @@ Help keep the Linear workspace of the `STA` team under the 250-issue limit of th
 - If the API answers 401, or 400 about the key, do no Linear write. Hand it off.
 - Why issues pile up: the team auto-archives closed issues after 1 month, but only once their project is closed. Long projects such as Frontend Maintenance stay open for months.
 - Linear archives an issue's documents with it, and refuses to unarchive a document whose issue is archived. So a document must move to the project before its issue is archived.
-- Fog tickets: a frontend project whose description holds a list "Tickets to create later" has a fog log. Each entry names a ticket and its trigger. The section "Open Questions (Fog)" of the `epic` skill holds questions with no trigger, so this routine creates no ticket from it. A project with neither list has no fog tickets.
+- Fog tickets: a frontend project whose description holds a list "Tickets to create later" has a fog log. Each entry names a ticket and its trigger. The section "Open Questions (Fog)" of the `epic` skill holds questions with no trigger, so this routine creates no ticket from it. A project with no list "Tickets to create later" has no fog tickets.
 - Parked ideas: each project keeps one document "Parked Ideas". It holds tickets nobody pursues, so they leave the backlog but stay readable and searchable. Documents do not count toward the issue limit. Create the document when a project needs its first entry.
 - Conventions: read `AGENTS.md` and the `linear`, `epic`, `routine`, and `plain-english` skills in `.claude/skills/` on `main`. They win over this prompt on conventions. Load `plain-english` before you write any text.
 - Earlier work: the arkad grooming wrote the first archive index on 2026-11-21, the document "Archived Issues Index (Temporary, 2026-11-21)" on MVP Data Pt. 2. Read it to see the format.
@@ -108,9 +108,9 @@ Open issues, In Progress, In Review, Backlog, and Todo are never archived. An op
 
 # Dwell rule
 
-`AGENTS.md`, "PR Size Budget": one ticket, one branch, one PR, merged in about 2 days and 5 at most. A ticket that stays in a started status much longer has a cause. Find the cause before you ask.
+`AGENTS.md`, "PR Size Budget": one ticket, one branch, one PR, merged in about 2 working days and 5 at most. A ticket that stays in a started status much longer has a cause. Find the cause before you ask.
 
-1. **Limits.** Count the days since the issue entered its current status (`issue.history`, or `startedAt` for In Progress):
+1. **Limits.** Count the working days (Monday to Friday) since the issue entered its current status (`issue.history`, or `startedAt` for In Progress):
    - In Progress, SPIKE and DESIGN tickets (label or title prefix): 10 days. This limit is a proposal of 2026-11-21. No guideline sets it.
    - In Progress, every other ticket, with or without a label: 5 days.
    - In Review, every type: 3 days.
@@ -146,7 +146,7 @@ An open issue (Backlog, Todo, In Progress, or In Review) in a project with miles
    - The issue blocks at least one open issue, and every open issue it blocks sits in one and the same milestone of the issue's project.
    Comment on the issue: `[routine] milestone set to <name>: <the fact>`. List the change in the report under "Milestones set", so the owner can undo it.
 3. **Propose.** If no fact decides, but the issue's scope fits one milestone by its description or by the Definition of Done of the milestone, propose that milestone with a one-line reason. Key: `<identifier> milestone`. If two milestones fit, name both and recommend one. The form of step 14 offers both, and a comment answer `approve <n>` takes the recommended one.
-4. **No project.** Propose the project whose epic description or fog log covers the issue, and the milestone in it by point 2 or 3. Key: `<identifier> project`. Never set a project alone. If no project fits, list the issue in the report with no proposal.
+4. **No project.** Propose Frontend Maintenance or MVP Integration, the one whose description or "Tickets to create later" list covers the issue, and the milestone in it by point 2 or 3. Key: `<identifier> project`. Never set a project alone. If neither fits, list the issue in the report with no proposal.
 5. **Report.** Give the count of open issues without a milestone per project, before and after this run, next to the capacity numbers.
 
 # Steps
@@ -156,7 +156,7 @@ An open issue (Backlog, Todo, In Progress, or In Review) in a project with miles
 3. Apply "Capacity rule", points 1 to 4: measure, forecast, and set the zone and the backlog pressure of this run. They set the day counts and the order of the steps below.
 4. Find the issues that match "Archive rule". For each, read its documents, files, parent, children, relations, and comments.
    - A cancelled issue with no comment that states why, and no duplicate mark, waits: leave it unarchived, and ask in step 14 with the options "park" and "archive". If two reports in a row asked and got no answer, archive it as is. Recommend "park" if its description holds scope that no other ticket covers.
-   - A cancelled issue that blocks an open issue: propose to drop that link, or to move it to the ticket that replaced the cancelled one.
+   - A cancelled issue that blocks an open issue in "Scope": propose to drop that link, or to move it to the ticket that replaced the cancelled one. If the blocked issue is outside "Scope", list the link in the index and propose nothing.
 5. For each matching issue that holds a Linear document: move the document to the issue's project with `documentUpdate` (`projectId` set, `issueId` null). Files attached to an issue stay on it. An issue with no project keeps its document: leave that issue unarchived and list it in the report.
 6. Archive the matching issues with `issueArchive`, one at a time. Archive one first and check that it worked before you archive the rest. Count successes and failures. Then compute the projected total again from the real total after the archive. If this projection is 230 or more, write the hand-off note of the critical zone.
 7. Write one document "Archived Issues Index (Temporary, <YYYY-MM-DD>)" on Frontend Maintenance. At the top: nothing was deleted, links still work, how to unarchive, and which documents moved to which project. Then a table of the issues with an open relation, files, or a moved document, and a plain list of the rest, each with link, title, and project.
