@@ -8,8 +8,8 @@ description: >
   long-term trade-offs for the system or the team. Also use for one that a later engineer will
   question. Also use when you remove history or a past decision from a document, to check whether
   the decision needs an ADR first.
-version: 0.1.0
-allowed-tools: [AskUserQuestion]
+version: 0.1.1
+allowed-tools: [Read, Write, Edit, Bash, AskUserQuestion, mcp__Linear__get_issue, mcp__Linear__save_comment]
 ---
 
 # ADR Skill
@@ -19,9 +19,8 @@ allowed-tools: [AskUserQuestion]
 An Architecture Decision Record (ADR) keeps one decision, the options, and the facts behind it in
 the repository. It records the best way forward known at its date. A later reader learns why one
 option won without the ticket or the chat. The current documents say what the code does, and the
-ADRs say why. This skill
-holds the template and the procedure. `AGENTS.md`, "Architecture Decision Records", holds the test
-for when a decision needs an ADR.
+ADRs say why. This skill holds the template and the procedure. `AGENTS.md`, "Architecture Decision
+Records", holds the test for when a decision needs an ADR.
 
 ## Procedure
 
@@ -45,8 +44,10 @@ To write an ADR:
 3. **Collect the facts before you write.** Measure each option that you can measure. Write down
    the command or the source, the date, and the result. A reason without a number, a source, or a
    mechanism is an opinion. Leave it out or mark it as open.
-4. **Pick the number.** Find the highest number in `docs/adr/` on `dev`. Check each open PR that
-   adds a file to `docs/adr/` for a higher number, because `dev` does not show it yet. Add 1,
+4. **Pick the number.** Find the highest number in `docs/adr/` on `dev`. Check each open PR into
+   `dev` that adds a file to `docs/adr/` for a higher number, because `dev` does not show it yet:
+   list the open PRs with `list_pull_requests` and read each one's files with `pull_request_read`
+   (`get_files`). Add 1,
    and use four digits. If `docs/adr/` does not exist yet, create it and start at `0001`. Name
    the file `NNNN-<short-description>.md`, with a few kebab-case words that name the subject.
 5. **Write the ADR** from the template. Follow the `plain-english` skill.
@@ -54,8 +55,8 @@ To write an ADR:
    adds a rule for all code, add the rule to `AGENTS.md` with a link to the ADR.
 7. **Ship it** in the PR into `dev` that first acts on the decision. A decision from a ticket
    without a PR, such as a SPIKE, ships in the first PR that changes the code. A past decision
-   that leaves a document ships in the PR that removes it. Name the ADR in the PR description, and say who
-   confirms it.
+   that leaves a document ships in the PR that removes it. Name the ADR in the PR description,
+   and say who confirms it.
 8. **Ask the decider.** As soon as the ADR is written, ask the decider whether they accept it now.
    Do not wait for a review or a merge.
    - If the person in the chat is not the decider in the `Deciders` row, keep "Proposed".

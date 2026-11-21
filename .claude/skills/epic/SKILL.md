@@ -7,7 +7,7 @@ description: >
   Project. This skill works at the project level (the `linear` skill works at the ticket level).
   It defines and refines the project — destination, milestones, a living fog log, and a decisions
   ledger that links to in-repo artifacts.
-version: 0.1.0
+version: 0.1.1
 argument-hint: "[project name] [define|refine]"
 allowed-tools: [Read, Write, Bash, AskUserQuestion, mcp__Linear__get_project, mcp__Linear__save_project, mcp__Linear__list_milestones, mcp__Linear__save_milestone, mcp__Linear__list_issues, mcp__Linear__save_issue, mcp__Linear__list_documents, mcp__Linear__save_document]
 ---
@@ -30,7 +30,8 @@ The `plain-english` skill applies to all of this text.
 - **Linear (the Project)** holds the plan: the description, the milestones, the fog log, and the
   decisions ledger. The ledger holds one-line entries that **link** to artifacts.
 - **The repository** holds the living design of the code: design docs and mermaid diagrams (a
-  `DESIGN.md` section, an in-repo design note, or a Storybook story), following `DOCUMENTATION.md`.
+  `DESIGN.md` section, an in-repo design note, or a Storybook story), following `DOCUMENTATION.md`,
+  and the ADRs in `docs/adr/`.
   These are version-controlled and live close to the code. Never use an external drawing tool (no
   Excalidraw, no Google Docs) for a living design.
 - **Linear can hold research.** A SPIKE finding or an exploratory research note can live as a Linear
@@ -213,10 +214,11 @@ Use this mode to advance an existing epic as work proceeds.
 1. **Load the Project** — its description, milestones, issues, fog log, and ledger.
 2. **Take one frontier ticket.** The open, unblocked, and unassigned issues are takeable. Assign it
    to yourself. Then work it.
-3. **When a decision resolves:** record its artifact. A design decision becomes a mermaid design
-   doc or a `DESIGN.md` section committed to the repo. A research finding becomes a repo doc or a
-   Linear document. Then add a one-line entry to the decisions ledger, linking the artifact and the
-   ticket. Remove the matching item from the fog log. Check its Definition-of-Done item or milestone.
+3. **When a decision resolves:** record its artifact. Run the test in `AGENTS.md`, "Architecture
+   Decision Records". If it says ADR, write the ADR with the `adr` skill and link it from the design
+   doc. A design doc or a `DESIGN.md` section describes the code. A research finding becomes a repo
+   doc or a Linear document. Then add a one-line entry to the decisions ledger, linking the artifact
+   (the ADR when one exists) and the ticket. Remove the matching item from the fog log. Check its Definition-of-Done item or milestone.
 4. **When fog sharpens:** create the SPIKE or DESIGN ticket. Wire its blocking edge.
 5. **When a milestone is next:** break it into its build tickets (FEATURE, FRONTEND, or
    IMPLEMENTATION). Wire their blocking edges.
