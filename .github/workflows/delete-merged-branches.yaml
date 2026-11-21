@@ -34,22 +34,24 @@ jobs:
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || false }}
         run: |
           set -euo pipefail
-          gh api --paginate "repos/$REPO/branches?per_page=100" \
-            --jq '.[] | [.name, .commit.sha, (.protected | tostring)] | @tsv' |
+          failed=0
+          branches=$(gh api --paginate "repos/$REPO/branches?per_page=100" \
+            --jq '.[] | [.name, .commit.sha, (.protected | tostring)] | @tsv')
           while IFS=$'\t' read -r branch sha protected; do
+            [ -n "$branch" ] || continue
             case "$branch" in
               main|dev) continue ;;
             esac
             if [ "$protected" = "true" ]; then
               continue
             fi
-            open=$(gh pr list --repo "$REPO" --head "$branch" --state open --json number --jq 'length') || continue
-            based=$(gh pr list --repo "$REPO" --base "$branch" --state open --json number --jq 'length') || continue
+            open=$(gh pr list --repo "$REPO" --head "$branch" --state open --json number --jq 'length') || { echo "::warning::Could not read the PRs of $branch"; failed=1; continue; }
+            based=$(gh pr list --repo "$REPO" --base "$branch" --state open --json number --jq 'length') || { echo "::warning::Could not read the PRs of $branch"; failed=1; continue; }
             if [ "$open" != "0" ] || [ "$based" != "0" ]; then
               continue
             fi
             merged=$(gh pr list --repo "$REPO" --head "$branch" --state merged --limit 1 \
-              --json number,headRefOid --jq '.[0] | select(. != null) | "\(.number) \(.headRefOid)"') || continue
+              --json number,headRefOid --jq '.[0] | select(. != null) | "\(.number) \(.headRefOid)"') || { echo "::warning::Could not read the PRs of $branch"; failed=1; continue; }
             if [ -z "$merged" ]; then
               continue
             fi
@@ -65,5 +67,7 @@ jobs:
               echo "Deleted $branch (#$number)"
             else
               echo "::warning::Could not delete $branch (#$number)"
+              failed=1
             fi
-          done
+          done <<< "$branches"
+          exit "$failed"
