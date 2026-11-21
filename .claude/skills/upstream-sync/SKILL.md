@@ -6,7 +6,7 @@ description: >
   last-synced marker in .claude/upstream-sync.json is older than 7 days at the start
   of a session. It reviews what changed in the arkad repo (the gold-standard repo for
   cross-cutting conventions) and adapts relevant changes into this repository.
-version: 0.1.0
+version: 0.2.0
 argument-hint: "[check|sync]"
 ---
 
@@ -35,11 +35,10 @@ upstreaming, flag it to the human — never edit the arkad repo from here.
 | Category | Files in arkad | Sync mode |
 | --- | --- | --- |
 | Claude CI workflows | `.github/workflows/claude.yaml` | **Adapt** — carry over fixes (action config, triggers, job conditions), keep frontend specifics (two-branch dev/main flow) |
-| Shared skills | `.claude/skills/linear/`, `.claude/skills/pr-iterate/` | **Adapt** — carry over structural/process improvements, keep frontend-specific content (FRONTEND template, dev-branch targeting, propagation rules, AGENTS.md guideline links, frontend few-shot examples) |
-| Routine skill | `.claude/skills/routine/` | **Adapt** — carry over the file format, the prompt sections, and the invariants. Keep frontend examples. Never sync `.claude/routines/`: each repository holds its own routine prompts |
-| Repo-specific skills | `.claude/skills/state-*`, `xbrl-accounting`, `domain-concept`, etc. | **Skip** — Rust/backend-specific. But note *patterns* worth imitating (e.g., if arkad grows a scaffold skill pattern that would fit React components) |
+| Process skills | Every skill in `.claude/skills/` that says how agents or people work, whatever the language: today `linear`, `pr-iterate`, `steward`, `handoff`, `epic`, `plain-english`, `adr`, `routine`, `testing`, `documentation` | **Adapt** — carry over each change, and port a new process skill that arkad adds. Keep frontend-specific content (see Step 3). Never sync `.claude/routines/`: each repository holds its own routine prompts |
+| Domain skills | Skills about Rust, the state machine, or the data domain: `state-*`, `transition-*`, `domain-concept`, `xbrl-standardization`, `accounting`, `performance` | **Skip** — Rust/backend-specific. But note *patterns* worth imitating (e.g., if arkad grows a scaffold skill pattern that would fit React components) |
 | Permission settings | `.claude/settings.json` | **Adapt** — mirror the *shape* (read-only allowlist philosophy), swap cargo commands for this repo's equivalents (`npm run test:ci`, `npm run lint:check`, `npm run typing:check`, `npm run format:check`) |
-| AGENTS.md | `AGENTS.md` | **Adapt selectively** — general sections (General Rules, Error Naming, Commit Guidelines, PR Creation, PR Review Guidelines, Deviations) tend to evolve in parallel; diff them for improvements. Rust-specific sections: skip, but consider whether the *idea* has a TypeScript analog worth proposing |
+| AGENTS.md | `AGENTS.md` | **Adapt selectively** — general sections (General Rules, Architecture Decision Records, Writing Style, Error Naming, Commit Guidelines, Branching & PR Size, PR Creation, PR Review Guidelines, Skills, Routines, Deviations) tend to evolve in parallel; diff them for improvements, and port a new general section. Rust-specific sections: skip, but consider whether the *idea* has a TypeScript analog worth proposing |
 | PR template | `.github/pull_request_template.md` | **Adapt** — keep structure aligned |
 
 ## Procedure
@@ -63,6 +62,9 @@ If nothing relevant changed, update the marker's `lastSyncedAt` and stop — rep
 For each commit touching the synced categories, read the diff and classify:
 
 - **Cross-cutting fix/improvement** → adapt it here (translate repo specifics)
+- **New process skill or general `AGENTS.md` section** → port it here. To tell a process skill
+  from a domain skill, ask: does it still apply if the code were TypeScript? If yes, it is a
+  process skill
 - **Backend-specific** → skip, but record it in the sync report
 - **Ambiguous** → ask the human with a one-line summary of what it does upstream
 
@@ -76,6 +78,10 @@ never blind-copy a file that has frontend adaptations. Known deliberate divergen
   (arkad links to Notion), frontend few-shot title examples
 - pr-iterate skill: dev/main two-branch flow, Proactive Propagation section, PR target dev
 - claude.yaml: any frontend-specific jobs
+- testing and documentation skills: the frontend versions cover React, stories, and
+  TypeScript docs. Carry over only changes to the process, such as review passes or test naming
+- routine skill: the example header names the frontend repository and the `Default`
+  environment
 
 ### Step 4: Update the marker and report
 
