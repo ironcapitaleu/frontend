@@ -35,7 +35,7 @@ upstreaming, flag it to the human — never edit the arkad repo from here.
 | Category | Files in arkad | Sync mode |
 | --- | --- | --- |
 | Claude CI workflows | `.github/workflows/claude.yaml` | **Adapt** — carry over fixes (action config, triggers, job conditions), keep frontend specifics (two-branch dev/main flow) |
-| Process skills | Every skill in `.claude/skills/` that says how agents or people work, whatever the language: today `linear`, `pr-iterate`, `steward`, `handoff`, `epic`, `plain-english`, `adr`, `routine`, `testing`, `documentation` | **Adapt** — carry over each change. Port a new process skill that arkad adds in its own PR, which waits for the owner (Step 2). Keep frontend-specific content (see Step 3). Never sync `.claude/routines/`: each repository holds its own routine prompts |
+| Process skills | Every skill in `.claude/skills/` that says how agents or people work, whatever the language: today `linear`, `pr-iterate`, `steward`, `handoff`, `epic`, `plain-english`, `adr`, `routine`, `testing`, `documentation` | **Adapt** — carry over each change, new rules included. Port a new process skill that arkad adds in its own PR, which waits for the owner (Step 2). Keep frontend-specific content (see Step 3). Never sync `.claude/routines/`: each repository holds its own routine prompts |
 | Domain skills | Skills about Rust, the state machine, or the data domain: `state-*`, `transition-*`, `domain-concept`, `xbrl-standardization`, `accounting`, `performance` | **Skip** — Rust/backend-specific. But note *patterns* worth imitating (e.g., if arkad grows a scaffold skill pattern that would fit React components) |
 | Permission settings | `.claude/settings.json` | **Adapt** — mirror the *shape* (read-only allowlist philosophy), swap cargo commands for this repo's equivalents (`npm run test:ci`, `npm run lint:check`, `npm run typing:check`, `npm run format:check`) |
 | AGENTS.md | `AGENTS.md` | **Adapt selectively** — general sections (General Rules, Architecture Decision Records, Writing Style, Error Naming, Commit Guidelines, Branching & PR Size, PR Creation, PR Review Guidelines, Skills, Routines, Deviations) tend to evolve in parallel; diff them for improvements, and port a new general section. Rust-specific sections: skip, but consider whether the *idea* has a TypeScript analog worth proposing |
@@ -60,11 +60,10 @@ Then compare the process skills in arkad's `.claude/skills/` and the general sec
 commit since the marker touched it. A section counts as present when this repository covers its
 rules under any heading. A section this repository covers in part is a missing item too.
 
-If an open `chore/upstream-port-*` PR already ports an item, do not open a second one. Push each
-new arkad commit for that item to the port PR branch, and name the commit in the sync report. If
-a closed, unmerged port PR ported an item, the owner declined the rules in that PR. Skip those
-rules. A rule that arkad adds after the close is a new item. The owner reopens the PR to ask for
-the declined rules again.
+A port PR matches an item by its branch prefix `chore/upstream-port-<name>-`. If a closed,
+unmerged port PR ported an item, the owner declined the rules in that PR. Skip those rules. A
+rule that arkad adds after the close is a new item. The owner reopens the PR to ask for the
+declined rules again.
 
 If nothing relevant changed and nothing is missing, update the marker's `lastSyncedAt` and
 stop — report "already in sync".
@@ -74,16 +73,24 @@ stop — report "already in sync".
 For each relevant commit, and each missing item from Step 1, read the diff and classify:
 
 - **Cross-cutting fix/improvement to existing text** → adapt it here (translate repo specifics)
-- **New process skill, new general `AGENTS.md` section, or new rule** → port it in its own PR
-  into `dev`, on a branch `chore/upstream-port-<name>`, where `<name>` is the skill folder name
-  or the section heading in kebab case (`branching-pr-size`). Add the `needs-human` label,
-  and hand it off. The owner approves by removing the label. Never merge a port PR that carries `needs-human`, and never
-  remove the label from a port PR yourself. For a section this repository covers in part, port
-  only the missing rules, into the section that holds the topic, in the same kind of port PR. A
-  new skill or rule can change how agents merge or release, so a person reads it first. The sync
-  PR carries the other items and merges as usual, so a new item never holds back a clear one. A new
-  rule in a section this repository has is a new rule too. A change to the text of a rule or
-  skill this repository already has needs no approval
+- **New process skill, new general `AGENTS.md` section, or new `AGENTS.md` rule** → port it in
+  its own port PR. A new skill or `AGENTS.md` rule can change how agents merge or release, so a
+  person reads it first:
+  - Branch: `chore/upstream-port-<name>-<YYYY-MM-DD>`, created from `origin/dev`. `<name>` is the
+    skill folder name or the section heading in kebab case (`branching-pr-size`).
+  - Add the `needs-human` label, and hand it off. The owner approves by removing the label.
+  - Never merge a port PR that carries `needs-human`. Never remove the label from a port PR.
+  - If an open port PR already ports the item, push the commit to that branch. Add
+    `needs-human` again if the owner removed it. Name the commit in the sync report and in a
+    comment on the port PR.
+  - For a section this repository covers in part, port only the missing rules, into the section
+    that holds the topic.
+  - A new rule in an `AGENTS.md` section this repository has is a new rule too.
+  - The sync PR carries the other items and merges as usual, so a new item never holds back a
+    clear one.
+- **Change to an existing skill** → adapt it in the sync PR with no approval, a new rule in the
+  skill included (owner decision, 2026-11-21). The same holds for a change to the text of an
+  existing `AGENTS.md` rule
 - **Unnamed skill** → the skills the table names keep their row. For a skill the table does not
   name, ask: does it still apply if the code were TypeScript? If yes, it is a process skill
 - **Backend-specific** → skip, but record it in the sync report
