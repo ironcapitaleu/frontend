@@ -1,6 +1,6 @@
 ---
 name: "[FRONTEND] Backlog grooming: archive, cut fog tickets & park old ideas"
-trigger_id: ""                  # set when the scheduled task exists
+trigger_id: trig_01J5nvrhmGnzg2aqXUjKCHEN
 schedule: "CRON_TZ=Europe/Zurich 7 11 1,15 * *"
 environment: arkad
 session: new session on each run
