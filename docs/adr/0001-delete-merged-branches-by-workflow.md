@@ -53,8 +53,9 @@ Checked on 2026-11-21 against `dev` at `030c7bb`.
 
 - No branch cleanup note reaches the owner.
 - The workflow file changes only through a reviewed PR. The routines never edit workflows.
-- If every delete fails, for example because the token is read-only, the run ends red, so the
-  failure shows in the Actions tab.
+- If any call fails, for example because the token is read-only, the run ends red, so the
+  failure shows in the Actions tab. A branch that fails every day keeps every run red until
+  someone fixes the cause.
 - A branch merged into a stacked parent counts as merged. Its content lives in the parent.
 
 ## Open Questions
@@ -68,5 +69,6 @@ Checked on 2026-11-21 against `dev` at `030c7bb`.
   must start clean.
 - `.claude/skills/release/SKILL.md`, Step 9, on `dev` before this change: the HTTP 403 on branch
   deletion from a cloud session.
+- `list_branches` on 2026-11-21: `main` and `dev` are protected branches.
 - [ironcapitaleu/frontend#381](https://github.com/ironcapitaleu/frontend/pull/381): the list of
   five merged branches.
