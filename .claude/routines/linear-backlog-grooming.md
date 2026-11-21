@@ -129,7 +129,7 @@ Open issues, In Progress, In Review, Backlog, and Todo are never archived. An op
 
 # Parking rule
 
-1. **Ask.** An open issue in Backlog or Todo with no update for 90 days or more (fewer under high backlog pressure, see "Capacity rule") gets a question in the report: "keep, park, or cancel?". The report gives its age, its epic, and one line on what it would build.
+1. **Ask.** An open issue in "Scope" in Backlog or Todo with no update for 90 days or more (fewer under high backlog pressure, see "Capacity rule") gets a question in the report: "keep, park, or cancel?". The report gives its age, its epic, and one line on what it would build.
 2. **Answer.** "keep" posts `[routine] kept until <date + 90 days>` on the issue. Do not ask about it again before that date. Count its age from its last update or that comment, whichever is later. "cancel" cancels it. "park" parks it.
 3. **Silence.** If two reports in a row asked about the issue and the owner answered neither, park it.
 4. **Park.** Append the issue to the "Parked Ideas" document of its project: link, title, date parked, the reason, and its full description. Then set the issue to Canceled with a comment that links the entry. A later run archives it by "Archive rule".
@@ -163,13 +163,13 @@ An open issue (Backlog, Todo, In Progress, or In Review) in a project with miles
 8. Fog tickets. For each entry of "Tickets to create later" whose trigger is a checkable fact that holds: check that no open or recent issue covers it already, then create the ticket with the template, label, project, milestone, and blocking links of the `linear` skill. Replace the fog entry with a link to the new ticket. An entry whose trigger needs judgement becomes a proposal.
 9. Duplicates and milestones. For each pair that meets the duplicate condition of "Autonomy", mark the newer issue as a duplicate of the older one, and comment on both with the reason. Then apply "Milestone rule" to the issues that are still open, and skip each issue that this step marked as a duplicate: set the milestones that a fact decides, and add its proposals to the list of step 13.
 10. Parking. Apply "Parking rule": park the issues whose two questions went unanswered, and list the new questions.
-11. Dwell. Apply "Dwell rule" to every issue in In Progress or In Review. Add its questions and proposals to the list of step 13, and its hand-offs to "Hand off to the human".
-12. Proposals. Never act on these in this run:
+11. Dwell. Apply "Dwell rule" to every issue in "Scope" in In Progress or In Review. Add its questions and proposals to the list of step 13, and its hand-offs to "Hand off to the human".
+12. Proposals, for issues, projects, and documents in "Scope" only. Never act on these in this run:
     - **Replaced by a decision:** an open ticket that an ADR, a ledger entry, or a merged PR made unnecessary, or that conflicts with the current design. Quote the source.
     - **Already landed:** an open ticket whose work is on `main`. Check the code and merged PRs of `frontend` on `dev` and `main`, not the title alone. Name the PR or commit.
     - **Fog tickets with a judgement trigger:** the title and a one-line scope.
     - **Epics to close or split:** Frontend Maintenance or MVP Integration, if all its milestones are at 100%, or if a finished milestone holds more than 30 Done issues. Propose a close, or a split into a follow-up project.
-    - **Stale points:** an open ticket whose description names a ticket, file, or decision that changed since. Quote the stale sentence and name the source.
+    - **Stale points:** an open ticket whose description names a ticket, file, or decision that changed since. Quote the stale sentence, name the source, and give the new sentence. `approve` replaces the quoted sentence with it.
     - **Old index documents:** a temporary index document on Frontend Maintenance older than 60 days, with no comment that asks to keep it. Propose to delete it.
 13. Write the report: one document "Backlog Grooming Report <YYYY-MM-DD>" on Frontend Maintenance. It holds the issue count before and after, the open issues without a milestone per project before and after, the archive result with a link to the index, the actions of steps 2 and 8 to 11 with links, and the proposals and parking questions as one numbered list. Each item starts with its key in backticks, then the evidence and your recommendation. Keep it short.
 14. Ask the owner. If the list of step 13 is empty, skip this step. Otherwise ask with `AskUserQuestion`, one question per item, four questions per call, and more calls until every item is asked:
@@ -198,8 +198,8 @@ For each item that needs the human (an API error, a failed archive, a document t
 - Never delete, cancel, close, reopen, or edit an issue, comment, document, or file, except as an action "Autonomy" marks as Do, an item the owner approved, a park under "Parking rule", point 3, or the archive of a cancelled issue after silence in step 4.
 - Never archive an open issue, or a closed issue that is the parent or ancestor of an open issue.
 - Never archive an issue before its documents moved to its project.
-- Never create a ticket outside step 8, or one that an open or recent issue already covers.
-- Never change team, workflow, label, or project settings. Never change a project's status.
+- Never create a ticket outside step 8 or an approved `fog` item, or one that an open or recent issue already covers. Before you create an approved `fog` ticket, check the 230 limit of "Capacity rule".
+- Never change team, workflow, label, or project settings. Never change a project's status, except for an approved `epic` item.
 - Never push, open a branch, or open a PR in the repository.
 - Never change, archive, or propose anything for an issue, project, or document outside "Scope". The frontend projects are Frontend Maintenance and MVP Integration.
 - Never put a model name in Linear.
