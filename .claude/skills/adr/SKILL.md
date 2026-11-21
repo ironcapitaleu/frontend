@@ -9,7 +9,7 @@ description: >
   question. Also use when you remove history or a past decision from a document, to check whether
   the decision needs an ADR first.
 version: 0.1.1
-allowed-tools: [Read, Write, Edit, Bash, AskUserQuestion, mcp__Linear__get_issue, mcp__Linear__save_comment]
+allowed-tools: [Read, Write, Edit, Bash, AskUserQuestion, mcp__Linear__get_issue, mcp__Linear__save_comment, mcp__github__list_pull_requests, mcp__github__pull_request_read]
 ---
 
 # ADR Skill
@@ -45,10 +45,10 @@ To write an ADR:
    the command or the source, the date, and the result. A reason without a number, a source, or a
    mechanism is an opinion. Leave it out or mark it as open.
 4. **Pick the number.** Find the highest number in `docs/adr/` on `dev`. Check each open PR into
-   `dev` that adds a file to `docs/adr/` for a higher number, because `dev` does not show it yet:
-   list the open PRs with `list_pull_requests` and read each one's files with `pull_request_read`
-   (`get_files`). Add 1,
-   and use four digits. If `docs/adr/` does not exist yet, create it and start at `0001`. Name
+   `dev` that adds a file to `docs/adr/` for a higher number, because `dev` does not show it yet.
+   Run `gh pr list --base dev --json number,files` in a local session, or
+   `mcp__github__list_pull_requests` and `mcp__github__pull_request_read` (`get_files`) in a remote
+   one. Add 1, and use four digits. If `docs/adr/` does not exist yet, create it and start at `0001`. Name
    the file `NNNN-<short-description>.md`, with a few kebab-case words that name the subject.
 5. **Write the ADR** from the template. Follow the `plain-english` skill.
 6. **Link it.** Each design doc that describes the affected code links to the ADR. If the decision
