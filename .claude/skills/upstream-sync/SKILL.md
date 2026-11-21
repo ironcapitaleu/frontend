@@ -108,6 +108,8 @@ never blind-copy a file that has frontend adaptations. Known deliberate divergen
   (arkad links to Notion), frontend few-shot title examples
 - pr-iterate skill: dev/main two-branch flow, Proactive Propagation section, PR target dev
 - claude.yaml: any frontend-specific jobs
+- adr skill: ADR numbering from `dev`, pages, components, public URLs, and the props of a shared
+  component in place of crates, and no links to arkad's example ADRs
 - testing and documentation skills: the frontend versions cover React, stories, and
   TypeScript docs. Carry over only changes to the process, such as review passes or test naming
 - routine skill: the example header names the frontend repository and the `Default`

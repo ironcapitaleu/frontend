@@ -46,6 +46,44 @@ migrating an endpoint, fixing a convention), proactively **apply it everywhere i
 one file and leave identical occurrences in other files for a follow-up PR. Search the entire
 codebase for all instances before considering the change complete.
 
+### Architecture Decision Records
+
+An ADR records one decision that later work must follow, with the facts behind it. ADRs live in
+`docs/adr/` as `NNNN-<short-description>.md`.
+
+**Check for an ADR when you make a decision, not when a person asks.** When a task makes you choose
+between options, run this test before you write the code. If a person questions a choice, run the
+test again:
+
+| Write an ADR if one of these holds | Keep it in the design doc, the ticket, or the PR |
+| ---------------------------------- | ------------------------------------------------ |
+| Another ticket, page, or component must follow the choice | The choice stays inside one component or module |
+| A reversal costs a migration, stored data, a public URL, or the props of a shared component | A reversal is one PR |
+| The choice rests on a measurement that can go out of date | The choice follows from the code or from a rule of this file |
+| The code does not show why one option won, and the options were close or a person questioned the choice (a review agent does not count) | The code shows why one option won, for example in a comment |
+
+If a row of the left column holds, write the ADR, even if a row of the right column also holds.
+The test covers decisions about the code and the systems it runs on. A guideline edit needs no
+ADR if it sets how agents or people work, or how code is written, such as names or import order.
+This file or the skill that holds the rule is its record.
+
+- If the test says ADR, write the ADR in the PR that first acts on the decision. A decision from a
+  ticket without a PR, such as a SPIKE, gets its ADR in the first PR that changes the code. If the
+  choice is already merged, write the ADR in the PR where a person questions it.
+- Set the status of a new ADR to "Proposed" and say who confirms it. If the decider is in the
+  chat, ask with a form whether they accept it now, and recommend an option. Do the same for an
+  amendment. If they accept, record it in the same PR, as the `adr` skill says. An agent never
+  accepts an ADR on its own.
+- If the test is unclear, name the decision and both options in the PR description, and ask the
+  owner.
+- A design doc explains how the code works. An ADR explains why one option won. Link from the
+  design doc to the ADR. Do not copy the decision into the design doc.
+- Never change the decision of an accepted ADR. Add an amendment to it, or write a new ADR that
+  supersedes it.
+
+The **[`adr` skill](.claude/skills/adr/SKILL.md)** holds the template and the procedure. Read it
+before you write or amend an ADR.
+
 ### Documentation
 
 - Public items in libraries **must include JSDoc comments** (`/** */`), following the
@@ -58,7 +96,9 @@ codebase for all instances before considering the change complete.
 - **Describe the current state.** Every kind of documentation, such as JSDoc, comments, Storybook
   descriptions, design documents, READMEs, and skills, says what an item is and does now. It never
   says what the item or a cited standard replaced, or what changed from an earlier version. Commits
-  and PRs hold that history.
+  and PRs hold that history. If a decision behind the change passes the test in "Architecture
+  Decision Records", record it in an ADR, and link the ADR from the document. To learn why the code
+  is as it is, read the current docs and the ADRs.
 - **All English text must follow the [`plain-english`](.claude/skills/plain-english/SKILL.md)
   skill.** This covers JSDoc, inline comments, Storybook descriptions, commit messages, PR titles
   and bodies, and error and toast strings. **Never** ship AI-slop wording. That means: an em dash
