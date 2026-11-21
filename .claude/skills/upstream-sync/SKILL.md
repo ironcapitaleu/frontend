@@ -58,9 +58,13 @@ If the local clone is missing, use `gh api repos/ironcapitaleu/arkad/commits` in
 Then compare the process skills in arkad's `.claude/skills/` and the general sections of its
 `AGENTS.md` with this repository. Each one missing here is a new item for Step 2, even if no
 commit since the marker touched it. A section counts as present when this repository covers its
-rules under any heading. A section this repository covers in part is a missing item too. Skip
-an item that an open `chore/upstream-port-*` PR already ports, or that a closed, unmerged one
-ported: the owner declined it. The owner reopens that PR to ask for the item again.
+rules under any heading. A section this repository covers in part is a missing item too.
+
+If an open `chore/upstream-port-*` PR already ports an item, do not open a second one. Push each
+new arkad commit for that item to the port PR branch, and name the commit in the sync report. If
+a closed, unmerged port PR ported an item, the owner declined the rules in that PR. Skip those
+rules. A rule that arkad adds after the close is a new item. The owner reopens the PR to ask for
+the declined rules again.
 
 If nothing relevant changed and nothing is missing, update the marker's `lastSyncedAt` and
 stop — report "already in sync".
@@ -69,15 +73,17 @@ stop — report "already in sync".
 
 For each relevant commit, and each missing item from Step 1, read the diff and classify:
 
-- **Cross-cutting fix/improvement** → adapt it here (translate repo specifics)
-- **New process skill or general `AGENTS.md` section** → port it in its own PR into `dev`, on a
-  branch `chore/upstream-port-<name>`, with the `needs-human` label, and hand it off. The owner
-  approves by removing the label. Never merge a port PR that carries `needs-human`, and never
+- **Cross-cutting fix/improvement to existing text** → adapt it here (translate repo specifics)
+- **New process skill, new general `AGENTS.md` section, or new rule** → port it in its own PR
+  into `dev`, on a branch `chore/upstream-port-<name>`, where `<name>` is the skill folder name
+  or the section heading in kebab case (`branching-pr-size`). Add the `needs-human` label,
+  and hand it off. The owner approves by removing the label. Never merge a port PR that carries `needs-human`, and never
   remove the label from a port PR yourself. For a section this repository covers in part, port
   only the missing rules, into the section that holds the topic, in the same kind of port PR. A
   new skill or rule can change how agents merge or release, so a person reads it first. The sync
-  PR carries the other items and merges as usual, so a new item never holds back a clear one. A
-  change to a skill or section this repository already has needs no approval
+  PR carries the other items and merges as usual, so a new item never holds back a clear one. A new
+  rule in a section this repository has is a new rule too. A change to the text of a rule or
+  skill this repository already has needs no approval
 - **Unnamed skill** → the skills the table names keep their row. For a skill the table does not
   name, ask: does it still apply if the code were TypeScript? If yes, it is a process skill
 - **Backend-specific** → skip, but record it in the sync report
