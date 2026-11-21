@@ -18,8 +18,9 @@ the shape of the prompt, and the rules that keep an unattended run safe.
 
 ## The File
 
-One routine is one file in `.claude/routines/<kebab-name>.md` of the repository it works on. A
-routine that spans repositories lives in `ironcapitaleu/arkad` (`AGENTS.md`, "Routines").
+One routine is one file in `.claude/routines/<kebab-name>.md` of the repository it writes to. A
+routine that writes to several repositories lives in `ironcapitaleu/arkad` (`AGENTS.md`,
+"Routines").
 
 ```markdown
 ---

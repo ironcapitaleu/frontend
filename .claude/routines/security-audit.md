@@ -1,7 +1,7 @@
 ---
 name: "[FRONTEND] Security audit: fix & merge vulnerable deps"
 trigger_id: trig_01S5ZGt46Vibdg81U5LgP1Ku
-schedule: "CRON_TZ=Europe/Zurich 30 9 * * *"
+schedule: "CRON_TZ=Europe/Zurich 23 9 * * *"
 environment: Default
 session: new session on each run
 notifications: push
@@ -13,6 +13,11 @@ repositories:
 # Mission
 
 Make `ironcapitaleu/frontend` as secure as possible without breaking the site. Find npm security advisories that affect it, fix every one that has a fix in a lockfile-only PR into `dev`, merge it, then release `dev` to `main` with the repo's own `release` skill. A fix counts as done only when the Cloudflare Pages deploy passes: on the fix PR, on the release PR, and on `main` after the release. Hand the advisories that cannot be fixed to the human in a short note. Unfixable advisories never hold back the fixable ones. Do the work yourself. Do not wait for permission.
+
+**Done means all of these hold:**
+1. Every advisory on `dev` that has a fix is fixed in a merged `chore/security-*` PR, or held by a named cause, and the human has a note for each held one.
+2. Every advisory that has no fix is in the report, and the human has a note for each one that is new or changed.
+3. The release PR is merged, `main` has every `dev` commit (`git rev-list --count origin/main..origin/dev` is `0`), and the `Cloudflare Pages` check on the merge commit passed. Or the release is held by a named cause and the human has a note.
 
 # Context
 
@@ -29,16 +34,29 @@ Make `ironcapitaleu/frontend` as secure as possible without breaking the site. F
 - `ci` runs only on pull requests and a weekly schedule, not on pushes to `dev`. The `ci` result on the PR head proves `dev` after a squash merge, because the tree is the same.
 - Claude review (`claude-auto-review` job in the `Claude` workflow) is advisory. It runs once, when a PR is opened. If it posts findings, fix the real defects before merging. If the job fails, times out, or never runs, that does not block the merge. Note it in the report and go on.
 - `Security Check` exists to show which dependencies currently fail the audit. It stays red while any unfixable high or critical advisory remains. That is expected. Never change it to make CI green.
-- Known unfixable advisories (as of 2026-11-02). Re-check each run, and fix any that became fixable like any other advisory:
+- This list is the one list of known unfixable advisories. The other routines point here. Update it in this file when an advisory changes. Known unfixable advisories (as of 2026-11-02). Re-check each run, and fix any that became fixable like any other advisory:
   - GHSA-3g3m-2fjr-6pw4 (`glob`, moderate). The fix is glob 14.0.2+, but `@joshwooding/vite-plugin-react-docgen-typescript` (via `@storybook/react-vite`) pins `glob@^13`. Check: `npm view @joshwooding/vite-plugin-react-docgen-typescript dependencies`.
   - GHSA-g3hv-75wg-m249 (`minimatch`, moderate). The fix is minimatch 11.0.1+, but `glob@13` and `@ts-morph/common` (via `shadcn`) pin `minimatch@^10`. Check: `npm view shadcn dependencies`, `npm view @ts-morph/common dependencies`.
   - GHSA-gcqx-w48m-w2h4 (`deepmerge`, low). No patched release (4.3.1 is the latest). Check: `npm view deepmerge version`.
   - shadcn cannot be removed: `src/index.css` imports `shadcn/tailwind.css`.
+- Run order: this runs daily at 09:23 Zurich, after the Dependabot routine (daily 02:47). The upstream sync runs Mondays at 11:13. If a Dependabot PR or a `chore/upstream-*` PR is open, do not touch it.
 - Required reviews: the account this routine runs as has a ruleset bypass. The fix PR and the release PR are your own PRs, so you cannot approve them. Merge them through the bypass once the merge conditions hold. If a merge is still refused, leave the PR open, do not try any other workaround, and hand off (see Hand off to the human).
+
+# Autonomy
+
+| Action | Level | Condition |
+| ------ | ----- | --------- |
+| Open or update a lockfile-only `chore/security-*` PR into `dev` | Do | An advisory has a fix inside the current semver range |
+| Merge that PR into `dev`, through the bypass if needed | Do | Step 12 holds. The PR is this routine's own |
+| Open the `dev` → `main` release PR and merge it with a merge commit | Do | Step 13 holds |
+| Hand off an unfixable advisory or a failed deploy | Do | Steps 5, 11, and 14 say so |
+| Release a UI change or past a tripped diverged-config guard | Ask | Hand it off. The owner signs off |
+| A major bump, a `package.json` change, or a source change | Never | Hand it off as unfixable |
+| Change lockfile install flags, workflows, scripts, or the Cloudflare configuration | Never | |
 
 # Red `Security Check` rule
 
-A PR may merge through the bypass while `Security Check` is red, but only when all of these hold:
+A PR can merge through the bypass while `Security Check` is red only when all of these hold:
 
 1. Every advisory that fails the audit on the PR head also fails on the base branch. The PR adds no new advisory. Confirm by comparing `npm audit --json` on the head and on the base.
 2. Each of those remaining advisories has no fix this PR could apply: no patched version, or the fix needs a semver-major bump, a `package.json` change, or source changes.
@@ -128,7 +146,7 @@ Any other failing step or required check, any new advisory, or any pending requi
 When something needs the human (an unfixable advisory, a refused merge, a failing check this routine cannot fix, a failed Cloudflare deploy, or a release question), write one short note:
 
 ```
-@DeCa09 **What:** <one line: the PR or advisory, package, severity>
+[routine] @DeCa09 **What:** <one line: the PR or advisory, package, severity>
 **Why it needs you:** <one or two lines: no patch / needs a major bump of X / needs code changes in Y / Cloudflare Pages fails on commit Z and the build log is only in the dashboard>
 **To proceed:** <concrete next step: e.g. "bump shadcn to 4.x and fix the imports in src/...", "wait for braces 3.0.4; nothing to do now", "open <dashboard link> and read the build error", "approve the visual change in PR #N">
 ```
@@ -142,13 +160,13 @@ When something needs the human (an unfixable advisory, a refused merge, a failin
 GitHub does not delete merged branches in this repo, and this routine cannot delete them. A branch is safe to delete once its changes have landed on `main`. Send this note once per run, right after the release PR merges into `main` and its production deploy passed. If no release merged in this run, or the deploy failed, send nothing. The branches get listed after the next good release.
 
 1. List all branches with `list_branches`. Skip `main`, `dev`, and any other long-lived or protected branch.
-2. For each remaining branch, find its PR with `list_pull_requests` (`state: closed`, `head: ironcapitaleu:<branch>`). A branch is safe to delete when all hold: its PR merged into `dev`, the merge commit is now on `main` (it is in the release), and the branch head SHA still equals that PR's head SHA (nothing was pushed after the merge). Skip branches with an open PR or no PR.
+2. For each remaining branch, find its PR with `search_pull_requests` (`is:merged head:<branch>`) or `pull_request_read`. `list_pull_requests` can report `merged: false` for squash-merged PRs. A branch is safe to delete when all hold: its PR merged into `dev`, the merge commit is now on `main` (it is in the release), and the branch head SHA still equals that PR's head SHA (nothing was pushed after the merge). Skip branches with an open PR or no PR.
 3. Post one comment on the release PR you just merged:
 
 ```
-@DeCa09 **Branches safe to delete:** `branch-a` (#12), `branch-b` (#15)
+[routine] @DeCa09 **Branches safe to delete:** `branch-a` (#12), `branch-b` (#15)
 **Why:** their changes are on `main` now and nothing was pushed to them after the merge.
-**To proceed:** delete them on GitHub (Code → Branches), or ignore this; nothing depends on them.
+**To proceed:** delete them on GitHub (Code → Branches), or ignore this. Nothing depends on them.
 ```
 
    End it with a blank line, `---`, and `_Generated by [Claude Code](https://claude.ai/code)_`. If the list is empty, post nothing.
@@ -170,6 +188,7 @@ How to set them:
 
 # Guardrails
 
+- Start every comment and review body you write with `[routine]`, so a later run never takes it for the owner's own words. The one exception is `@dependabot rebase`, which Dependabot reads only as the whole comment.
 - Merge only this routine's own PRs: the `chore/security-*` PR into `dev` and the `dev` -> `main` release PR. Never merge Dependabot PRs or any other PR. A separate routine handles Dependabot.
 - Never approve a PR. Use the bypass only for those two kinds of PR.
 - Never merge a PR whose head commit has a red, pending, or missing `Cloudflare Pages` check.

@@ -1,7 +1,7 @@
 ---
 name: "[FRONTEND] Upstream sync with arkad & release"
 trigger_id: trig_01Kaz2w7YVZuoM8rWwTsgV64
-schedule: "CRON_TZ=Europe/Zurich 30 11 * * 1"
+schedule: "CRON_TZ=Europe/Zurich 13 11 * * 1"
 environment: Default
 session: new session on each run
 notifications: push
@@ -23,18 +23,31 @@ Keep `ironcapitaleu/frontend` in line with `ironcapitaleu/arkad`, the gold-stand
 
 - Repositories: `ironcapitaleu/frontend` (the target, needs push access) and `ironcapitaleu/arkad` (read only). If the session lacks either, attach it with `add_repo` and clone it. The skill expects arkad at `~/Projects/gold/arkad`. Clone it there, or use your clone path wherever the skill says that.
 - Human owner: `@DeCa09`. This routine acts as that account, so GitHub does not notify them of its comments. A push notification is what reaches them.
-- Run order: this runs after the Monday Dependabot routine (03:00) and the weekly security routines (Monday 09:30). If an open `chore/security-*` PR or a Dependabot PR is still open, do not touch it. If a `dev` → `main` release PR from another routine is still open, work it as the release section says.
+- Run order: this runs Mondays at 11:13 Zurich, after the daily Dependabot routine (02:47) and the daily security routine (09:23). If an open `chore/security-*` PR or a Dependabot PR is still open, do not touch it. If a `dev` → `main` release PR from another routine is still open, work it as the release section says.
 - Branch flow: feature PRs go into `dev`, then `dev` is released to `main`. The `Enforce Merge Policy` check rejects any PR into `main` whose head is not `dev`.
 - GitHub access: `mcp__github__*` tools only. No `gh` CLI. Load tools with ToolSearch. Where a skill shows a `gh` command, use the matching MCP tool.
 - npm: CI uses Node from `.nvmrc` (24.x, npm 11). If `npm --version` is below 11, run every npm command as `npx -y npm@11 ...`.
 - Required checks: `ci` and `Enforce Merge Policy`. Confirm the names on the PR head. If branch protection lists others, those win.
 - Claude review (`claude-auto-review`) is advisory. It runs once, when a PR is opened. This PR changes process files (skills, settings, AGENTS.md, the Claude workflow), so read any findings carefully. Fix real defects before merging. If the job fails, times out, or never runs, note it in the report and go on.
-- Known red `Security Check`: `ci` runs `npm audit` early and stops at the first failing step. It stays red while any advisory exists on `dev` (today: braces, GHSA-vfj7-8cjw-p6xm, no patch). A red `ci` hides every later step, so verify those steps locally.
+- Known red `Security Check`: `ci` runs `npm audit` early and stops at the first failing step. It stays red while any high or critical advisory exists on `dev`. The security routine's file lists the known ones. Compare the audits by GHSA ID as the red rule says. A red `ci` hides every later step, so verify those steps locally.
 - Required reviews: this account has a ruleset bypass. The sync PR and the release PR are your own, so you cannot approve them. Merge them through the bypass once the merge conditions hold. If a merge is still refused, leave the PR open and hand off.
+
+# Autonomy
+
+| Action | Level | Condition |
+| ------ | ----- | --------- |
+| Adapt a change to text this repository has, in the sync PR | Do | The skill's Step 2 classifies it as Adapt |
+| Merge the sync PR into `dev`, through the bypass if needed | Do | Part 1 step 11 holds |
+| Open a `chore/upstream-port-*` PR with `needs-human` | Do | Part 1 step 5 classifies the item as Port |
+| Merge a port PR, or remove `needs-human` from one | Never | The owner approves by removing the label, and merges (owner decision, 2026-11-21) |
+| Open the `dev` → `main` release PR and merge it with a merge commit | Do | Part 2 holds |
+| Hand off an ambiguous change or a forbidden file | Do | Part 1 steps 5 and 6 say so |
+| Release a UI change or past a tripped diverged-config guard | Ask | Hand it off. The owner signs off |
+| Edit `ci.yaml`, `package.json`, the lockfile, or `src/` | Never | |
 
 # Red `Security Check` rule
 
-A PR may merge through the bypass while `Security Check` is red only when all of these hold:
+A PR can merge through the bypass while `Security Check` is red only when all of these hold:
 1. The PR adds no new advisory. Compare `npm audit --json` on the head and on the base by GHSA ID.
 2. In the `ci` log, `Security Check` is the failing step and no step before it failed.
 3. Every step after the audit passes locally on the exact PR head: `npm ci`, then `npm run format:check`, `lint:check`, `typing:check`, `build`, `check:stories`, `check:coverage-doc`, `test:ci`.
@@ -90,9 +103,9 @@ Start right after Part 1. Do not wait for another run. Run it even if Part 1 mer
 For each item that needs the human (an ambiguous upstream change, a change that touches a forbidden file, a refused push or merge, a failing check you cannot fix, or a release question), write one short note:
 
 ```
-@DeCa09 **What:** <arkad commit short-sha + subject, or the PR>
+[routine] @DeCa09 **What:** <arkad commit short-sha + subject, or the PR>
 **Why it needs you:** <one or two lines: ambiguous because ... / needs a change to ci.yaml / check Z fails because ...>
-**To proceed:** <concrete next step: e.g. "decide whether X applies to the frontend; if yes, port it into .claude/skills/...", "approve the visual change in PR #N">
+**To proceed:** <concrete next step: e.g. "decide whether X applies to the frontend. If yes, port it into .claude/skills/...", "approve the visual change in PR #N">
 ```
 
 - Put all of a run's sync items into one comment on the sync PR, except port items: their note goes on the port PR (Part 1, step 5). Release items go on the release PR. End each comment with a blank line, `---`, and `_Generated by [Claude Code](https://claude.ai/code)_`.
@@ -104,7 +117,7 @@ For each item that needs the human (an ambiguous upstream change, a change that 
 Send it once, right after the release PR merges. List branches with `list_branches`. Skip `main`, `dev`, and protected branches. A branch is safe to delete when its PR merged into `dev`, the merge commit is now on `main`, and the branch head still equals the PR head SHA. Check "merged" with `pull_request_read` or `search_pull_requests` and `is:merged`, because `list_pull_requests` can report `merged: false` for squash-merged PRs. Post one comment on the release PR:
 
 ```
-@DeCa09 **Branches safe to delete:** `branch-a` (#12), `branch-b` (#15)
+[routine] @DeCa09 **Branches safe to delete:** `branch-a` (#12), `branch-b` (#15)
 **Why:** their changes are on `main` now and nothing was pushed to them after the merge.
 **To proceed:** delete them on GitHub (Code → Branches), or ignore this. Nothing depends on them.
 ```
@@ -121,6 +134,7 @@ Set labels with `issue_write` (`method: update`, `labels`). `labels` replaces th
 
 # Guardrails
 
+- Start every comment and review body you write with `[routine]`, so a later run never takes it for the owner's own words. The one exception is `@dependabot rebase`, which Dependabot reads only as the whole comment.
 - One-way sync: never push to, comment on, or open PRs in `ironcapitaleu/arkad`.
 - Merge only this routine's `chore/upstream-sync-*` PR and the `dev` → `main` release PR. Never merge a `chore/upstream-port-*` PR, security, Dependabot, or any other PR.
 - Never approve a PR. Use the bypass only for those two PRs.
