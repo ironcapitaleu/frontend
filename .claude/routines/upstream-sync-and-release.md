@@ -16,7 +16,7 @@ repositories:
 Keep `ironcapitaleu/frontend` in line with `ironcapitaleu/arkad`, the gold-standard repo for shared conventions. Run the repo's `upstream-sync` skill. Adapt the cross-cutting arkad changes since the last sync in one PR into `dev`, and merge it. Then release `dev` to `main` with the repo's `release` skill. Hand anything ambiguous to the human in a short note. Ambiguous items never hold back the clear ones. Do the work yourself. Do not wait for permission.
 
 **Done means both of these hold:**
-1. Every relevant arkad commit since the last marker has been adapted, skipped with a reason, or handed off. The sync PR (adaptations plus the updated `.claude/upstream-sync.json`) is merged into `dev`. If nothing relevant changed, a marker-only PR is merged instead.
+1. Every relevant arkad commit since the last marker, and every missing item from the skill's Step 1, has been adapted, skipped with a reason, ported in a `needs-human` port PR, or handed off. The sync PR (adaptations plus the updated `.claude/upstream-sync.json`) is merged into `dev`. If nothing relevant changed, a marker-only PR is merged instead.
 2. The release PR is merged and `main` has every `dev` commit (`git rev-list --count origin/main..origin/dev` is `0`), or the release is held by a named blocker and the human has a note.
 
 # Context
@@ -46,10 +46,11 @@ Any other failure, any new advisory, or any pending required check blocks the me
 
 1. Read `AGENTS.md`, `.github/pull_request_template.md`, `.claude/skills/upstream-sync/SKILL.md`, and `.claude/skills/release/SKILL.md` from `origin/dev`. They win over this prompt on conventions. Load the `plain-english` skill before you write any commit, PR, or comment text.
 2. Look for an open PR into `dev` whose head branch starts with `chore/upstream-sync-`. If one exists, work that branch: merge `origin/dev` into it (never rebase or force-push), and extend it with any new arkad commits. Do not open a second sync PR.
-3. Follow the skill's Step 1. Read `lastSyncedCommit` from `.claude/upstream-sync.json` on `origin/dev`. Run `git -C <arkad> log <lastSyncedCommit>..origin/main --oneline -- .github/workflows/ .claude/ AGENTS.md .github/pull_request_template.md`. Record arkad's `origin/main` SHA now. That SHA becomes the new marker.
-4. If nothing relevant changed: create `chore/upstream-sync-<YYYY-MM-DD>` from `origin/dev`, update only `lastSyncedAt` and `lastSyncedCommit` in the marker, and go to step 8. (The skill says to update the marker. All changes go through a PR into `dev`, so even a marker-only change needs one.)
-5. Follow the skill's Step 2 for each commit. Read its full diff and classify it using the skill's "What Syncs" table:
+3. Follow the skill's Step 1. Read `lastSyncedCommit` from `.claude/upstream-sync.json` on `origin/dev`. Run `git -C <arkad> log <lastSyncedCommit>..origin/main --oneline -- .github/workflows/ .claude/ AGENTS.md .github/pull_request_template.md`. Record arkad's `origin/main` SHA now. That SHA becomes the new marker. Then run the rest of the skill's Step 1: compare the process skills and the general `AGENTS.md` sections, match each missing item against open and closed `chore/upstream-port-*` PRs, and list the missing items that are still new. Skip the rules of an item in a closed, unmerged port PR: the owner declined them.
+4. If no commit since the marker is relevant and step 3 lists no missing item: create `chore/upstream-sync-<YYYY-MM-DD>` from `origin/dev`, update only `lastSyncedAt` and `lastSyncedCommit` in the marker, and go to step 8. If step 3 lists missing items but no commit is relevant, handle the items in step 5, and the sync PR is a marker-only PR. (The skill says to update the marker. All changes go through a PR into `dev`, so even a marker-only change needs one.)
+5. Follow the skill's Step 2 for each commit and each missing item. Read its full diff, or for a missing item the arkad file or section, and classify it using the skill's "What Syncs" table:
    - **Adapt:** a cross-cutting fix or improvement. Translate it to this repo: the dev/main flow, npm commands instead of cargo, React/TypeScript instead of Rust.
+   - **Port:** a new process skill, a new general `AGENTS.md` section, a new `AGENTS.md` rule, or a commit to a process skill (see the skill's table) that this repository does not have. A domain skill stays **Skip**. If a closed, unmerged port PR holds the skill, port only the rules arkad added after the close, and skip a commit that changes only declined rules. Open its own PR into `dev` on `chore/upstream-port-<name>-<YYYY-MM-DD>`, created from `origin/dev`, add `needs-human`, and hand it off. Run step 7's checks on its diff, commit as `chore(sync): port <name> from arkad <short-sha>` with the `Co-Authored-By` trailer of step 8, and use the PR template with the footer of step 9. For a missing item with no commit in range, `<short-sha>` is the arkad SHA from step 3. Post its hand-off note on the port PR itself, with "**To proceed:** read it, remove `needs-human`, and merge it" or "close it to decline". List it in the sync PR's Handed off list. If an open port PR already ports the item, push the commit to that branch, add `needs-human` again, and name the commit in a comment on the port PR. Never put a port item in the sync PR.
    - **Skip:** backend-specific. Record a one-line reason.
    - **Ambiguous:** the run is unattended, so do not ask and do not guess. Leave it out of the PR. List it in the hand-off note with a one-line summary of what it does upstream and what adapting it would mean here.
    - **Worth imitating:** an arkad pattern (for example a new scaffold skill) that has a frontend analog but no direct port. List it in the report. Do not build it.
@@ -94,7 +95,7 @@ For each item that needs the human (an ambiguous upstream change, a change that 
 **To proceed:** <concrete next step: e.g. "decide whether X applies to the frontend; if yes, port it into .claude/skills/...", "approve the visual change in PR #N">
 ```
 
-- Put all of a run's sync items into one comment on the sync PR. Release items go on the release PR. End each comment with a blank line, `---`, and `_Generated by [Claude Code](https://claude.ai/code)_`.
+- Put all of a run's sync items into one comment on the sync PR, except port items: their note goes on the port PR (Part 1, step 5). Release items go on the release PR. End each comment with a blank line, `---`, and `_Generated by [Claude Code](https://claude.ai/code)_`.
 - Always also send the same note as a push notification, starting with `<routine_summary>` tags and a one-sentence lead.
 - Send a note only when something is new since the last run. An item handed off before is already behind the marker. Do not raise it again.
 
@@ -114,14 +115,14 @@ If the list is empty, post nothing. Include the list in the report.
 
 - `routine-merged`: add it right before you merge the sync PR or the release PR.
 - `bypass-merge`: add it right before you merge a PR that does not meet branch protection on its own. Your sync PR and the release PR always get it.
-- `needs-human`: add it when you hand off a PR and leave it open. If a later run merges that PR, remove it right before the merge.
+- `needs-human`: add it when you hand off a PR and leave it open. If a later run merges the sync PR or the release PR, remove it right before the merge. Never remove it from a `chore/upstream-port-*` PR: only the owner removes it there.
 
 Set labels with `issue_write` (`method: update`, `labels`). `labels` replaces the whole set, so read the current labels first and send them plus the new one. Never remove any other label. If a label call fails, note it in the report and go on.
 
 # Guardrails
 
 - One-way sync: never push to, comment on, or open PRs in `ironcapitaleu/arkad`.
-- Merge only this routine's `chore/upstream-sync-*` PR and the `dev` → `main` release PR. Never merge security, Dependabot, or any other PR.
+- Merge only this routine's `chore/upstream-sync-*` PR and the `dev` → `main` release PR. Never merge a `chore/upstream-port-*` PR, security, Dependabot, or any other PR.
 - Never approve a PR. Use the bypass only for those two PRs.
 - Never edit `ci.yaml` or any workflow besides `claude.yaml`. Never edit `package.json`, the lockfile, or `src/`.
 - Never weaken, skip, or disable a check or test. Never widen permissions in `.claude/settings.json` beyond read-only commands.
