@@ -1,9 +1,11 @@
 name: Delete merged branches
 
 # Deletes a branch once its pull request has merged and nothing was pushed
-# to it after the merge. `main`, `dev`, every protected branch, and every
-# branch that is the head or the base of an open PR are never touched. GitHub's "Automatically delete head branches" setting is not used,
-# because it would also delete `dev` as the head of each release PR.
+# to it after the merge. Keeps `main`, `dev`, every protected branch, and
+# every branch that is the head or the base of an open PR. GitHub's
+# "Automatically delete head branches" setting stays off, because it would
+# delete `dev` as the head of each release PR. See
+# docs/adr/0001-delete-merged-branches-by-workflow.md.
 
 on:
   schedule:

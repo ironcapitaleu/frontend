@@ -91,7 +91,7 @@ Start right after Part 1. Do not wait for another run. Run it even if Part 1 mer
 2. Follow `.claude/skills/release/SKILL.md` step by step: `dev` CI green (or red only under the red rule), diverged-config guard clean, a release PR with base `main` and head `dev` and a changelog, required checks green (same exception), and a merge with a MERGE COMMIT (`merge_method: merge`). Never squash or rebase. Do not approve the release PR. It merges through the bypass.
 3. The run is unattended. Where the skill says to ask the user, do not ask and do not guess. Hand off the question, leave the release PR open, and stop. This covers a tripped diverged-config guard and user-facing UI changes on `dev` (any `src/` change beyond tests and stories) that need the visual sign-off.
 4. Verify: `git fetch origin`, then `git rev-list --count origin/main..origin/dev` must be `0`. Report the merge SHA.
-5. The `Delete merged branches` workflow deletes merged branches daily. List none, and send no cleanup note.
+5. The `Delete merged branches` workflow deletes merged branches daily. Do not list them.
 
 # Waiting
 

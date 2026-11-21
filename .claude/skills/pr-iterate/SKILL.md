@@ -249,7 +249,7 @@ Do not wait to be asked — the goal is to get changes from feature branch → d
 
 **Branch hygiene:** Always verify you are on the correct branch before making changes or pushing. Run `git branch --show-current` if uncertain. When iterating on a PR, check out the branch that the PR is on — not an unrelated branch.
 
-**Branch cleanup:** the workflow `.github/workflows/delete-merged-branches.yaml` deletes a merged branch the next morning. Ask no one to delete it.
+**Branch cleanup:** the workflow `.github/workflows/delete-merged-branches.yaml` deletes a merged branch at the next daily run (04:17 UTC). Ask no one to delete it.
 
 ## Integration with CI
 

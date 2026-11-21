@@ -221,11 +221,9 @@ status, and anything flagged (guard pauses, back-merge needed).
 
 ### Step 9 — Branch cleanup
 
-The workflow `.github/workflows/delete-merged-branches.yaml` deletes merged branches every day at
-04:17 UTC. It skips `main`, `dev`, protected branches, and every branch that is the head or the
-base of an open PR, or that got commits after its PR merged. So a release lists no branches and
-asks no one to delete them. GitHub's "Automatically delete head branches" setting stays off,
-because it would delete `dev` as the head of each release PR.
+The workflow `.github/workflows/delete-merged-branches.yaml` deletes merged branches daily. Its
+header states which branches it keeps. A release lists no branches and asks no one to delete them
+([ADR 0001](../../../docs/adr/0001-delete-merged-branches-by-workflow.md)).
 
 ## Guardrails
 

@@ -98,7 +98,7 @@ Start Part 2 right after Part 1 ends. Do not wait for another run. Run it even w
 5. Wait for the required checks on the release PR. A red `ci` is allowed only under the red `Security Check` rule. `dev`'s local verification from Part 1 step 10 counts for rule 3 when the release head equals that `dev` commit.
 6. Merge with `merge_method: merge` (merge commit). Never squash or rebase. Do not approve the release PR. It merges through the bypass. If the merge is still refused, leave it open and hand it off.
 7. Verify: `git fetch origin`, then `git rev-list --count origin/main..origin/dev` must be `0`. Report the merge SHA.
-8. The `Delete merged branches` workflow deletes merged branches daily. List none, and send no cleanup note.
+8. The `Delete merged branches` workflow deletes merged branches daily. Do not list them.
 
 # Waiting
 
