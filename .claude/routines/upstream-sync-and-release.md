@@ -40,7 +40,7 @@ Keep `ironcapitaleu/frontend` in line with `ironcapitaleu/arkad`, the gold-stand
 | Merge the sync PR into `dev`, through the bypass if needed | Do | Part 1 step 11 holds |
 | Open a `chore/upstream-port-*` PR with `needs-human` | Do | Part 1 step 5 classifies the item as Port |
 | Merge a port PR, or remove `needs-human` from one | Never | The owner approves by removing the label, and merges (owner decision, 2026-11-21) |
-| Open the `dev` → `main` release PR, or work one that another routine opened, and merge it with a merge commit | Do | Part 2 holds. Owner exception of 2026-11-21: the run can merge a release PR that another routine opened |
+| Open the `dev` → `main` release PR, or work one that another routine opened, and merge it with a merge commit | Do | Part 2 holds. Owner exception of 2026-11-21: the owner approved in advance the merge of a release PR that another routine opened |
 | Hand off an ambiguous change or a forbidden file | Do | Part 1 steps 5 and 6 say so |
 | Release a UI change, or release when the diverged-config guard trips | Ask | Hand it off. The owner signs off |
 | Edit `ci.yaml`, `package.json`, the lockfile, or `src/` | Never | |

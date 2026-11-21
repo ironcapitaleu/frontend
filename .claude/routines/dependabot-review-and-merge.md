@@ -43,7 +43,7 @@ Never end the run on "waiting for CI", "waiting for a rebase", or "follow-up nee
 | ------ | ----- | --------- |
 | Update a Dependabot branch, or comment `@dependabot rebase` | Do | The branch is behind `dev` or has a conflict |
 | Approve and squash-merge a Dependabot PR into `dev`, through the bypass if needed | Do | Part 1 steps 3 to 8 hold and no blocker applies. Owner exception of 2026-11-21: the `routine` skill lets a run merge a PR it did not open only as an approved item, and the owner approved this merge in advance for every safe Dependabot PR |
-| Open the `dev` → `main` release PR, or work one that another routine opened, and merge it with a merge commit | Do | Part 2 holds. Owner exception of 2026-11-21: the run can merge a release PR that another routine opened |
+| Open the `dev` → `main` release PR, or work one that another routine opened, and merge it with a merge commit | Do | Part 2 holds. Owner exception of 2026-11-21: the owner approved in advance the merge of a release PR that another routine opened |
 | Hold a PR and hand it off | Do | A blocker applies |
 | Release a UI change, or release when the diverged-config guard trips | Ask | Hand it off. The owner signs off |
 | Merge a major bump, or a PR by anyone other than `dependabot[bot]` | Never | |
@@ -91,7 +91,7 @@ Work as a loop. Repeat until every open Dependabot PR is merged or held by a blo
 
 Start Part 2 right after Part 1 ends. Do not wait for another run. Run it even when Part 1 merged nothing, if `dev` has commits `main` lacks.
 
-1. If a release PR from an earlier run is open, work that PR. Do not open a second one.
+1. If a release PR is already open (from this routine or another one), work that PR. Do not open a second one.
 2. Diverged-config guard: `main` has its own earlier release merge commits. That is normal. Check the file difference instead: `git diff origin/main origin/dev -- .github/workflows`. A difference is allowed only when a commit on `dev` that `main` lacks brings it, for example a pin bump you just merged. Any other difference: hand it off and stop.
 3. Check `git diff --name-only origin/main origin/dev`. If it touches `src/` beyond tests and stories, it is a UI change. Hand it off for sign-off and stop. Dependency, lockfile, workflow-pin, and tooling changes are not UI changes.
 4. Follow the `release` skill step by step. The release PR is `base: main` ← `head: dev`, titled as the skill says, with a changelog (Dependencies, CI/tooling, Features/fixes). End the body with the attribution lines your session gives you.
