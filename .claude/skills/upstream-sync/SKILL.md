@@ -60,7 +60,9 @@ Then compare the process skills in arkad's `.claude/skills/` and the general sec
 commit since the marker touched it. A section counts as present when this repository covers its
 rules under any heading. A section this repository covers in part is a missing item too.
 
-A port PR matches an item by its branch prefix `chore/upstream-port-<name>-`. If a closed,
+A port PR matches an item by its branch prefix `chore/upstream-port-<name>-`. A missing item
+that an open port PR already ports is not a new item. Step 2 handles only the arkad commits for
+it since the marker. If a closed,
 unmerged port PR ported an item, the owner declined the rules in that PR. Skip those rules. A
 rule that arkad adds after the close is a new item. The owner reopens the PR to ask for the
 declined rules again.
@@ -88,9 +90,9 @@ For each relevant commit, and each missing item from Step 1, read the diff and c
   - A new rule in an `AGENTS.md` section this repository has is a new rule too.
   - The sync PR carries the other items and merges as usual, so a new item never holds back a
     clear one.
-- **Change to an existing skill** → adapt it in the sync PR with no approval, a new rule in the
-  skill included (owner decision, 2026-11-21). The same holds for a change to the text of an
-  existing `AGENTS.md` rule
+- **Change to a skill this repository has** → adapt it in the sync PR with no approval, a new
+  rule in the skill included (owner decision, 2026-11-21). The same holds for a change to the
+  text of an `AGENTS.md` rule this repository has
 - **Unnamed skill** → the skills the table names keep their row. For a skill the table does not
   name, ask: does it still apply if the code were TypeScript? If yes, it is a process skill
 - **Backend-specific** → skip, but record it in the sync report
