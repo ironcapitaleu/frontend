@@ -23,26 +23,26 @@ Keep `ironcapitaleu/frontend` in line with `ironcapitaleu/arkad`, the gold-stand
 
 - Repositories: `ironcapitaleu/frontend` (the target, needs push access) and `ironcapitaleu/arkad` (read only). If the session lacks either, attach it with `add_repo` and clone it. The skill expects arkad at `~/Projects/gold/arkad`. Clone it there, or use your clone path wherever the skill says that.
 - Human owner: `@DeCa09`. This routine acts as that account, so GitHub does not notify them of its comments. A push notification is what reaches them.
-- Run order: this runs Mondays at 11:13 Zurich, after the daily Dependabot routine (02:47) and the daily security routine (09:23). If an open `chore/security-*` PR or a Dependabot PR is still open, do not touch it. If a `dev` → `main` release PR from another routine is still open, work it as the release section says.
+- Run order: this runs Mondays at 11:13 Zurich, after the daily Dependabot routine (02:47) and the daily security routine (09:23). If a `chore/security-*` PR or a Dependabot PR is open, do not touch it. If a `dev` → `main` release PR from another routine is still open, work it as the release section says.
 - Branch flow: feature PRs go into `dev`, then `dev` is released to `main`. The `Enforce Merge Policy` check rejects any PR into `main` whose head is not `dev`.
 - GitHub access: `mcp__github__*` tools only. No `gh` CLI. Load tools with ToolSearch. Where a skill shows a `gh` command, use the matching MCP tool.
 - npm: CI uses Node from `.nvmrc` (24.x, npm 11). If `npm --version` is below 11, run every npm command as `npx -y npm@11 ...`.
 - Required checks: `ci` and `Enforce Merge Policy`. Confirm the names on the PR head. If branch protection lists others, those win.
 - Claude review (`claude-auto-review`) is advisory. It runs once, when a PR is opened. This PR changes process files (skills, settings, AGENTS.md, the Claude workflow), so read any findings carefully. Fix real defects before merging. If the job fails, times out, or never runs, note it in the report and go on.
-- Known red `Security Check`: `ci` runs `npm audit` early and stops at the first failing step. It stays red while any high or critical advisory exists on `dev`. The security routine's file lists the known ones. Compare the audits by GHSA ID as the red rule says. A red `ci` hides every later step, so verify those steps locally.
+- Known red `Security Check`: `ci` runs `npm audit` early and stops at the first failing step. It stays red while any high or critical advisory exists on `dev`. The list in "Context" of `.claude/routines/security-audit.md` names the known ones. Compare the audits by GHSA ID as the red rule says. A red `ci` hides every later step, so verify those steps locally.
 - Required reviews: this account has a ruleset bypass. The sync PR and the release PR are your own, so you cannot approve them. Merge them through the bypass once the merge conditions hold. If a merge is still refused, leave the PR open and hand off.
 
 # Autonomy
 
 | Action | Level | Condition |
 | ------ | ----- | --------- |
-| Adapt a change to text this repository has, in the sync PR | Do | The skill's Step 2 classifies it as Adapt |
+| Adapt a change to text this repository has, in the sync PR | Do | Part 1 step 5 classifies it as Adapt. Owner exception of 2026-11-21: the run judges the class (`upstream-sync` skill, Step 2) |
 | Merge the sync PR into `dev`, through the bypass if needed | Do | Part 1 step 11 holds |
 | Open a `chore/upstream-port-*` PR with `needs-human` | Do | Part 1 step 5 classifies the item as Port |
 | Merge a port PR, or remove `needs-human` from one | Never | The owner approves by removing the label, and merges (owner decision, 2026-11-21) |
-| Open the `dev` → `main` release PR and merge it with a merge commit | Do | Part 2 holds |
+| Open the `dev` → `main` release PR, or work one that another routine opened, and merge it with a merge commit | Do | Part 2 holds. Owner exception of 2026-11-21: the run can merge a release PR that another routine opened |
 | Hand off an ambiguous change or a forbidden file | Do | Part 1 steps 5 and 6 say so |
-| Release a UI change or past a tripped diverged-config guard | Ask | Hand it off. The owner signs off |
+| Release a UI change, or release when the diverged-config guard trips | Ask | Hand it off. The owner signs off |
 | Edit `ci.yaml`, `package.json`, the lockfile, or `src/` | Never | |
 
 # Red `Security Check` rule
@@ -134,7 +134,7 @@ Set labels with `issue_write` (`method: update`, `labels`). `labels` replaces th
 
 # Guardrails
 
-- Start every comment and review body you write with `[routine]`, so a later run never takes it for the owner's own words. The one exception is `@dependabot rebase`, which Dependabot reads only as the whole comment.
+- Start every comment and review body you write with `[routine]`, so a later run never takes it for the owner's own words.
 - One-way sync: never push to, comment on, or open PRs in `ironcapitaleu/arkad`.
 - Merge only this routine's `chore/upstream-sync-*` PR and the `dev` → `main` release PR. Never merge a `chore/upstream-port-*` PR, security, Dependabot, or any other PR.
 - Never approve a PR. Use the bypass only for those two PRs.

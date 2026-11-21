@@ -43,14 +43,14 @@ Never end the run on "waiting for CI", "waiting for a rebase", or "follow-up nee
 | ------ | ----- | --------- |
 | Update a Dependabot branch, or comment `@dependabot rebase` | Do | The branch is behind `dev` or has a conflict |
 | Approve and squash-merge a Dependabot PR into `dev`, through the bypass if needed | Do | Part 1 steps 3 to 8 hold and no blocker applies. Owner exception of 2026-11-21: the `routine` skill lets a run merge a PR it did not open only as an approved item, and the owner approved this merge in advance for every safe Dependabot PR |
-| Open the `dev` → `main` release PR and merge it with a merge commit | Do | Part 2 holds |
+| Open the `dev` → `main` release PR, or work one that another routine opened, and merge it with a merge commit | Do | Part 2 holds. Owner exception of 2026-11-21: the run can merge a release PR that another routine opened |
 | Hold a PR and hand it off | Do | A blocker applies |
-| Release a UI change or past a tripped diverged-config guard | Ask | Hand it off. The owner signs off |
+| Release a UI change, or release when the diverged-config guard trips | Ask | Hand it off. The owner signs off |
 | Merge a major bump, or a PR by anyone other than `dependabot[bot]` | Never | |
 
 # Known condition: the red `Security Check`
 
-`ci` runs `npm audit` early and stops at the first failing step. When the audit fails, lint, typecheck, build, stories, and tests never run in CI, so a red `ci` hides every step after it. This is expected while any high or critical advisory exists on `dev`. The security routine's last report lists the known ones. Never trust a list in a prompt: compare the audits by GHSA ID as rule 1 says.
+`ci` runs `npm audit` early and stops at the first failing step. When the audit fails, lint, typecheck, build, stories, and tests never run in CI, so a red `ci` hides every step after it. This is expected while any high or critical advisory exists on `dev`. The list in "Context" of `.claude/routines/security-audit.md` names the known ones. Never trust a list in a prompt: compare the audits by GHSA ID as rule 1 says.
 
 A PR can merge through the bypass while `Security Check` is red only when all of these hold:
 1. The PR adds no new advisory. Every advisory on the PR head also exists on `dev`. Compare `npm audit --json` on the head and on `origin/dev` by GHSA ID. An advisory that exists on `dev` never blocks a PR, whether it has a fix or not.

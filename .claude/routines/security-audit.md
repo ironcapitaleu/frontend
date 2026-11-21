@@ -17,7 +17,7 @@ Make `ironcapitaleu/frontend` as secure as possible without breaking the site. F
 **Done means all of these hold:**
 1. Every advisory on `dev` that has a fix is fixed in a merged `chore/security-*` PR, or held by a named cause, and the human has a note for each held one.
 2. Every advisory that has no fix is in the report, and the human has a note for each one that is new or changed.
-3. The release PR is merged, `main` has every `dev` commit (`git rev-list --count origin/main..origin/dev` is `0`), and the `Cloudflare Pages` check on the merge commit passed. Or the release is held by a named cause and the human has a note.
+3. `main` has every `dev` commit (`git rev-list --count origin/main..origin/dev` is `0`). If a release PR merged in this run, the `Cloudflare Pages` check on its merge commit passed. Or the release is held by a named cause and the human has a note.
 
 # Context
 
@@ -34,7 +34,8 @@ Make `ironcapitaleu/frontend` as secure as possible without breaking the site. F
 - `ci` runs only on pull requests and a weekly schedule, not on pushes to `dev`. The `ci` result on the PR head proves `dev` after a squash merge, because the tree is the same.
 - Claude review (`claude-auto-review` job in the `Claude` workflow) is advisory. It runs once, when a PR is opened. If it posts findings, fix the real defects before merging. If the job fails, times out, or never runs, that does not block the merge. Note it in the report and go on.
 - `Security Check` exists to show which dependencies currently fail the audit. It stays red while any unfixable high or critical advisory remains. That is expected. Never change it to make CI green.
-- This list is the one list of known unfixable advisories. The other routines point here. Update it in this file when an advisory changes. Known unfixable advisories (as of 2026-11-02). Re-check each run, and fix any that became fixable like any other advisory:
+- Known unfixable advisories, as of 2026-11-21. This is the one list: the other routines point here, so update it here when an advisory changes. Re-check each run, and fix any that became fixable like any other advisory:
+  - GHSA-vfj7-8cjw-p6xm (`braces`, high). No patched release. Check: `npm view braces version`. This advisory keeps `Security Check` red.
   - GHSA-3g3m-2fjr-6pw4 (`glob`, moderate). The fix is glob 14.0.2+, but `@joshwooding/vite-plugin-react-docgen-typescript` (via `@storybook/react-vite`) pins `glob@^13`. Check: `npm view @joshwooding/vite-plugin-react-docgen-typescript dependencies`.
   - GHSA-g3hv-75wg-m249 (`minimatch`, moderate). The fix is minimatch 11.0.1+, but `glob@13` and `@ts-morph/common` (via `shadcn`) pin `minimatch@^10`. Check: `npm view shadcn dependencies`, `npm view @ts-morph/common dependencies`.
   - GHSA-gcqx-w48m-w2h4 (`deepmerge`, low). No patched release (4.3.1 is the latest). Check: `npm view deepmerge version`.
@@ -48,9 +49,9 @@ Make `ironcapitaleu/frontend` as secure as possible without breaking the site. F
 | ------ | ----- | --------- |
 | Open or update a lockfile-only `chore/security-*` PR into `dev` | Do | An advisory has a fix inside the current semver range |
 | Merge that PR into `dev`, through the bypass if needed | Do | Step 12 holds. The PR is this routine's own |
-| Open the `dev` → `main` release PR and merge it with a merge commit | Do | Step 13 holds |
+| Open the `dev` → `main` release PR, or work one that another routine opened, and merge it with a merge commit | Do | Step 13 holds. Owner exception of 2026-11-21: the run can merge a release PR that another routine opened |
 | Hand off an unfixable advisory or a failed deploy | Do | Steps 5, 11, and 14 say so |
-| Release a UI change or past a tripped diverged-config guard | Ask | Hand it off. The owner signs off |
+| Release a UI change, or release when the diverged-config guard trips | Ask | Hand it off. The owner signs off |
 | A major bump, a `package.json` change, or a source change | Never | Hand it off as unfixable |
 | Change lockfile install flags, workflows, scripts, or the Cloudflare configuration | Never | |
 
@@ -135,7 +136,7 @@ Any other failing step or required check, any new advisory, or any pending requi
     - If Pages still fails with a diff that holds only the version bumps, drop the bumps one at a time to find the one that breaks the build. Treat that advisory as unfixable and keep the others.
     - If Pages fails even with no bump left, or the check never appears within about 20 minutes, leave the PR open, add `needs-human`, and hand off with the dashboard link from the Cloudflare bot comment.
 12. Merge the fix PR into `dev` when all hold: diff is `package-lock.json` only, the flag diff is empty, PR is mergeable with no conflicts, `Cloudflare Pages` passed on the head commit, and every other required check is green, or `Security Check` is red only under the Red `Security Check` rule. Method: squash. Commit title: `<PR title> (#<number>)`. Commit message: a short summary of the final change. Do not paste the bodies of earlier commits that later commits reverted. If unfixable advisories that are new or changed remain, post the hand-off comment on the fix PR before merging.
-13. Release to `main` by following `.claude/skills/release/SKILL.md`: `dev` green (the `ci` and `Cloudflare Pages` results on the merged fix PR head count, or red only under the Red `Security Check` rule), diverged-config guard clean, release PR `dev` -> `main`, required checks green including `Cloudflare Pages` on the release PR head (same exception for `Security Check`; Claude review is advisory here too), merge with a MERGE COMMIT (never squash). The release PR also merges through the bypass. If a release PR from an earlier run is still open, work that PR. Do not open a second one.
+13. Release to `main` by following `.claude/skills/release/SKILL.md`: `dev` green (the `ci` and `Cloudflare Pages` results on the merged fix PR head count, or red only under the Red `Security Check` rule), diverged-config guard clean, release PR `dev` -> `main`, required checks green including `Cloudflare Pages` on the release PR head (same exception for `Security Check`). Claude review is advisory here too, merge with a MERGE COMMIT (never squash). The release PR also merges through the bypass. If a release PR from an earlier run is still open, work that PR. Do not open a second one.
 14. Verify the production deploy. After the release merges, read the `Cloudflare Pages` check run on the merge commit on `main` (see Context for the `gh api` call). Re-check every few minutes, at most about 20 minutes.
     - If it passes, the run is done. Send the Branch cleanup note in place of the skill's Step 9.
     - If it fails or never appears, hand off at once. Post the note on the release PR, with the dashboard link. Production keeps serving the previous deploy, so do not try to revert or push a fix to `main`. Skip the Branch cleanup note in this run.
@@ -188,7 +189,7 @@ How to set them:
 
 # Guardrails
 
-- Start every comment and review body you write with `[routine]`, so a later run never takes it for the owner's own words. The one exception is `@dependabot rebase`, which Dependabot reads only as the whole comment.
+- Start every comment and review body you write with `[routine]`, so a later run never takes it for the owner's own words.
 - Merge only this routine's own PRs: the `chore/security-*` PR into `dev` and the `dev` -> `main` release PR. Never merge Dependabot PRs or any other PR. A separate routine handles Dependabot.
 - Never approve a PR. Use the bypass only for those two kinds of PR.
 - Never merge a PR whose head commit has a red, pending, or missing `Cloudflare Pages` check.
