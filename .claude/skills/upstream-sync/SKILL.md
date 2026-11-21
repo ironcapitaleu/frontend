@@ -70,11 +70,11 @@ declined rules again.
 If nothing relevant changed and nothing is missing, update the marker's `lastSyncedAt` and
 stop — report "already in sync".
 
-### Step 2: Review each relevant commit
+### Step 2: Review each relevant commit and missing item
 
 For each relevant commit, and each missing item from Step 1, read the diff and classify:
 
-- **Cross-cutting fix/improvement to existing text** → adapt it here (translate repo specifics)
+- **Cross-cutting fix/improvement to text this repository has** → adapt it here (translate repo specifics)
 - **New process skill, new general `AGENTS.md` section, or new `AGENTS.md` rule** → port it in
   its own port PR. A new skill or `AGENTS.md` rule can change how agents merge or release, so a
   person reads it first:
