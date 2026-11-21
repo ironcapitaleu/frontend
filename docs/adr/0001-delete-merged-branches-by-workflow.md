@@ -2,7 +2,7 @@
 
 | Field | Value |
 | ----- | ----- |
-| Status | Proposed. The owner (`@DeCa09`) confirms |
+| Status | Accepted by `@DeCa09` on 2026-11-21 ([ironcapitaleu/frontend#387](https://github.com/ironcapitaleu/frontend/pull/387)) |
 | Date | 2026-11-21 |
 | Deciders | `@DeCa09` |
 | Ticket | None |
