@@ -863,8 +863,9 @@ Dependabot review. Each routine of this repository has one file in `.claude/rout
   released PR changes the prompt. The header fields still live in the scheduler too.
 - **Change a routine through a PR.** If the PR changes a header field, also change the scheduled
   task to match after the release. The header is the record of what the scheduler holds.
-- **One repository, its own routines.** A routine that works on this repository lives here. A
-  routine that spans repositories lives in `ironcapitaleu/arkad`.
+- **One repository, its own routines.** A routine lives in the repository it writes to. A routine
+  that only reads another repository, such as the upstream sync, still lives here. A routine that
+  writes to several repositories lives in `ironcapitaleu/arkad`.
 - **Recreate a lost routine from its file.** Create a scheduled task with the fields of the header
   and the pointer prompt.
 
