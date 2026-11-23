@@ -853,6 +853,90 @@ Refs: #123
 
 ---
 
+## Skills
+
+### What Is a Skill
+
+A skill is a domain-specific knowledge bundle that loads into the agent's context only when relevant work is triggered. Skills live in `.claude/skills/{name}/SKILL.md` within the project's plugin structure.
+
+### What Belongs in a Skill vs. Elsewhere
+
+| Content | Location | Loaded |
+| ------- | -------- | ------ |
+| Universal dev rules (all code) | AGENTS.md | Always |
+| Domain knowledge for work on one area, such as components or pages | .claude/skills/{name}/SKILL.md | On trigger |
+| Large reference data (lookup tables) | .claude/skills/{name}/references/*.md | On demand |
+| Live external data queries | MCP tools / WebFetch | Runtime |
+| Project decisions, status, strategy | .claude/memory/ | Session |
+| Prompts of scheduled, unattended sessions | .claude/routines/*.md | At run time |
+
+### When to Create a Skill
+
+Create a skill when:
+
+- The knowledge is needed only for a specific subset of project work
+- The content is substantial enough to waste context budget if always loaded
+- The domain has procedures, invariants, or reference data that reduce hallucination
+- The domain knowledge is expected to create meaningfully higher quality outputs
+
+Do NOT create a skill when:
+
+- The rule applies to all code universally → put it in AGENTS.md
+- The content is a one-off decision → use memory
+- You need to execute actions or query live systems → use a tool (MCP)
+- The guidance is trivial or obvious from the code → neither
+
+### Adding a New Skill
+
+1. Create `.claude/skills/{name}/SKILL.md` with frontmatter (name, description, version)
+2. Write procedures and decision rules in the body
+3. Put lookup/reference data in `.claude/skills/{name}/references/` as separate markdown files
+4. Add staleness headers to reference files. The minimum is `last-verified` and `update-frequency`; add `source` to say where the data comes from. Only add domain-specific fields when they apply. Do not carry them into skills that do not need them.
+5. If reference content derives from source code, note the source file in the header
+6. Consider adding a **Self-Improvement** section if the skill covers a domain that evolves through usage (templates, conventions, examples). This section instructs the agent to propose updates to the skill when the user corrects or refines a pattern during use.
+
+**Minimal SKILL.md example:**
+
+```markdown
+---
+name: my-skill-name
+description: >
+  Use when [trigger conditions — what the user is working on or asking about].
+version: 0.1.0
+---
+
+# Skill Title
+
+## Purpose
+
+[One paragraph: what domain knowledge this provides and why it matters.]
+
+## Procedures
+
+[Step-by-step rules and decision procedures for the domain.]
+
+## Critical Invariants
+
+[What must never be violated.]
+
+## Authoritative Sources
+
+- [Source name and URL or file path for live lookup]
+```
+
+### Best Practices
+
+- Skills are auto-discovered — avoid cataloging other skills inside a skill (references to prerequisite or next-step skills are fine)
+- SKILL.md is for procedures and decision rules, not raw data dumps
+- Reference files are for lookup data the agent consults during specific tasks
+- Keep SKILL.md focused on procedures and decision rules; move large reference/lookup data into references/
+- Include "Authoritative Sources" section with URLs for live lookup when references are insufficient
+- Include staleness instructions so the agent knows when to prompt for updates
+- **Keep authoritative data as-is in terms of content.** When including external reference data (e.g., taxonomy files, standards documents), store it in its original form or a lossless format conversion. Do not rewrite, summarize, or reinterpret authoritative content — this avoids translation drift and ensures the skill always reflects the source of truth exactly
+- **Self-improvement sections** — for skills that encode conventions, templates, or workflows that evolve through team usage, add a "Self-Improvement" section at the end. This instructs the agent to ask the user whether corrections or refinements should be captured back into the skill. Good candidates: naming patterns, few-shot examples, new variants, checklist items discovered during use. Not every skill needs this — static reference data or fixed procedures do not benefit from it.
+
+---
+
 ## Routines
 
 A routine is a scheduled task that starts a fresh cloud session on a fixed schedule, such as the
