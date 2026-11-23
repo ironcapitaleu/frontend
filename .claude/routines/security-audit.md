@@ -16,8 +16,9 @@ Make `ironcapitaleu/frontend` as secure as possible without breaking the site. F
 
 **Done means all of these hold:**
 1. Every advisory on `dev` that has a fix is fixed in a merged `chore/security-*` PR, or held by a named cause, and the human has a note for each held one.
-2. Every advisory that has no fix is in the report, and the human has a note for each one that is new or changed.
-3. `main` has every `dev` commit (`git rev-list --count origin/main..origin/dev` is `0`). If a release PR merged in this run, the `Cloudflare Pages` check on its merge commit passed, or the human has a note on the failed deploy. Or the release is held by a named cause and the human has a note.
+2. No open `chore/security-*` PR lists GHSA IDs as step 10 writes them, with none of those IDs on `dev`.
+3. Every advisory that has no fix is in the report, and the human has a note for each one that is new or changed.
+4. `main` has every `dev` commit (`git rev-list --count origin/main..origin/dev` is `0`). If a release PR merged in this run, the `Cloudflare Pages` check on its merge commit passed, or the human has a note on the failed deploy. Or the release is held by a named cause and the human has a note.
 
 # Context
 
@@ -48,6 +49,7 @@ Make `ironcapitaleu/frontend` as secure as possible without breaking the site. F
 | Action | Level | Condition |
 | ------ | ----- | --------- |
 | Open or update a lockfile-only `chore/security-*` PR into `dev` | Do | An advisory has a fix inside the current semver range |
+| Close a `chore/security-*` PR | Do | Its Description lists GHSA IDs as step 10 writes them, and none of them appears on `dev` any longer (step 6). Owner decision of 2026-11-23 |
 | Merge that PR into `dev`, through the bypass if needed | Do | Step 12 holds. The PR is this routine's own |
 | Open the `dev` → `main` release PR, or work one that another routine opened, and merge it with a merge commit | Do | Step 13 holds. Owner exception of 2026-11-21: the owner approved in advance the merge of a release PR that another routine opened |
 | Hand off an unfixable advisory or a failed deploy | Do | Steps 5, 11, and 14 say so |
@@ -70,9 +72,9 @@ Any other failing step or required check, any new advisory, or any pending requi
 1. Read `AGENTS.md`, `.github/pull_request_template.md`, `.github/workflows/*.yaml`, and `.claude/skills/release/SKILL.md`. They win over this prompt on conventions. Load the `plain-english` skill before you write any commit, PR, or comment text.
 2. `git fetch origin main dev`. Run `npm audit --json` on a clean checkout of `origin/main` and of `origin/dev` (`npm ci --ignore-scripts` first). Record total and per-severity counts and every advisory (GHSA ID, package, severity, patched range).
 3. Check the production deploy. Find the latest commit on `main` and read its `Cloudflare Pages` check run. If it failed, hand that off first (see Hand off to the human), because production is not serving the latest `main`. Then go on with the run.
-4. If both audits are clean: skip to step 13 (release `dev` if it has commits `main` lacks), then report. Send no hand-off.
-5. Sort the advisories into fixable (a patched version inside the current semver range, reachable with a lockfile-only change) and unfixable. An advisory is unfixable when it has no patched version, the fix needs a semver-major bump or a `package.json` change, the fix needs source changes, or the bump breaks a check that passes on `origin/dev`, `Cloudflare Pages` included. If nothing is fixable, hand off the unfixable ones that are new or changed, and skip to step 13.
-6. Look for an open PR into `dev` whose head branch starts with `chore/security-`. If one exists, update that branch (merge `origin/dev` into it, never rebase or force-push) instead of opening a new one. Otherwise create branch `chore/security-<short-pkg-list>-bump` from `origin/dev`. Never push to `main`, `dev`, or a `claude/*` branch.
+4. If both audits are clean: run the close rule of step 6, then skip to step 13 (release `dev` if it has commits `main` lacks), then report. Send no hand-off.
+5. Sort the advisories into fixable (a patched version inside the current semver range, reachable with a lockfile-only change) and unfixable. An advisory is unfixable when it has no patched version, the fix needs a semver-major bump or a `package.json` change, the fix needs source changes, or the bump breaks a check that passes on `origin/dev`, `Cloudflare Pages` included. If nothing is fixable, hand off the unfixable ones that are new or changed, run the close rule of step 6, and skip to step 13.
+6. Look for an open PR into `dev` whose head branch starts with `chore/security-`. Close rule: if its Description lists GHSA IDs as step 10 writes them, and none of them appears on `dev` any longer, add `routine-closed`, post a short comment that says why, and close it. If an open PR is left, update that branch (merge `origin/dev` into it, never rebase or force-push) instead of opening a new one. If no open `chore/security-*` PR is left, create branch `chore/security-<short-pkg-list>-bump` from `origin/dev`. Never push to `main`, `dev`, or a `claude/*` branch.
 7. Bump the packages and keep the base lockfile flags:
    1. Save the base lockfile: `git show origin/dev:package-lock.json > <scratch>/base-lock.json`.
    2. Run `npm update <pkg...> --package-lock-only --legacy-peer-deps --ignore-scripts`. Name only the vulnerable packages. Transitive moves they force (for example rolldown/postcss under vite) are fine.
@@ -129,7 +131,7 @@ Any other failing step or required check, any new advisory, or any pending requi
    - A local `build` does not prove the Cloudflare build. Only the `Cloudflare Pages` check on the PR proves it (step 11).
 9. Commit: `build(deps): bump <pkg> to <version> for <GHSA-id>` (list several in the body if the PR covers several). State in the body that the lockfile install flags are unchanged. End the commit with:
    Co-Authored-By: Claude <noreply@anthropic.com>
-10. Push with `git push -u origin <branch>`. Open a PR into `dev`. Body follows `.github/pull_request_template.md` exactly (Description, Related, Type of change: Chore, Test Plan with before/after audit counts, the advisories that remain, the empty flag diff from step 7.4, and the `Cloudflare Pages` result). End the body with:
+10. Push with `git push -u origin <branch>`. Open a PR into `dev`. Body follows `.github/pull_request_template.md` exactly (Description with a line `Advisories: <GHSA-id>, ...` that lists each advisory the PR fixes, Related, Type of change: Chore, Test Plan with before/after audit counts, the advisories that remain, the empty flag diff from step 7.4, and the `Cloudflare Pages` result). End the body with:
     🤖 Generated with [Claude Code](https://claude.com/claude-code)
 11. Wait for the required checks on the PR head, `Cloudflare Pages` included. Never act on a pending required check. Re-check every few minutes, at most about 60 minutes. If Claude review posted findings, fix the real defects in the PR. Do not wait on the Claude review job itself.
     - If `Cloudflare Pages` fails, compare the PR against `origin/dev`. Run the flag check from step 7.4 again, and look for any lockfile hunk that is not a version bump. Fix what you find, push, and wait for a new Pages result.
@@ -163,6 +165,7 @@ This routine acts as `@DeCa09`, so its merges look like the human's. Labels mark
 
 - `routine-merged`: add it right before you merge the fix PR or the release PR.
 - `bypass-merge`: add it right before you merge a PR that does not meet branch protection on its own: a red required check (for example `Security Check` under the red rule), or no approval that counts. Your own fix PR and release PR always get it.
+- `routine-closed`: add it right before you close a stale `chore/security-*` PR (step 6).
 - `needs-human`: add it when you hand off a PR and leave it open. If a later run merges that PR, remove it right before the merge.
 
 How to set them:
