@@ -254,7 +254,8 @@ If Linear fails after a change, list the changes already made in the chat reply.
    secret's location instead, never its value.
 6. **Choose the destination** — a fresh agent session, a Linear note, or both (see Destinations).
    For a Linear note or both, ask whether the user or another person resumes it. If the ticket
-   has no assignee and the user resumes the work, assign it to the user now.
+   has no assignee and the user resumes the work, assign it to the user now. An agent session alone
+   always counts as resumed by the user.
 7. **Deliver:**
    - **Comment first** — leave the comment by the rule in "Update the Ticket", through the
      `linear` skill, in status voice. For a Linear note or both, that is the state-of-play
