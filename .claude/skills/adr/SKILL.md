@@ -8,7 +8,7 @@ description: >
   long-term trade-offs for the system or the team. Also use for one that a later engineer will
   question. Also use when you remove history or a past decision from a document, to check whether
   the decision needs an ADR first.
-version: 0.1.1
+version: 0.2.0
 allowed-tools: [Read, Write, Edit, Bash, AskUserQuestion, mcp__Linear__get_issue, mcp__Linear__save_comment, mcp__github__list_pull_requests, mcp__github__pull_request_read]
 ---
 
@@ -29,7 +29,8 @@ Records", holds the test for when a decision needs an ADR.
   PR that `git log` shows for the change. Write no ADR unless the user asks for one.
 - **Before you remove a past decision from a document**, run the test below on that decision. If
   it passes and no ADR holds it, write the ADR in the same PR. Set `Date` to the date of the
-  decision, and name the source of that date.
+  decision, and name the source of that date. The source is a command, such as
+  `git log -S '<text>' -- <file>`, or a ticket comment, never the document itself.
 - **If a later engineer will question an architecture decision** and the test does not say ADR,
   ask the owner. Name the decision and the options in the PR description.
 
@@ -125,7 +126,10 @@ decision.>
 
 ## Sources
 
-<Each source of a fact above: a file, a URL, a ticket comment, or a command, with its date.>
+<Each source of a fact above, with its date: a code or data file at a fixed commit, an accepted or
+a superseded ADR, a URL to a page that does not change, a ticket comment, or a command. Never a
+design document, a guideline, a skill, or a Proposed ADR, even at a fixed commit. Never a link to a
+file on a branch.>
 ```
 
 Keep the order of the six sections. Leave out a section only if it has no content. A long ADR can
@@ -137,8 +141,9 @@ add sections.
   `## Amendment N: <Title>` after "Decision", with its own date, reason, decision, and
   consequences. Add the amendment and its status to the `Status` row. Leave the original text as
   it is.
-- **Supersede** when the decision changes as a whole. Write a new ADR. Set the `Status` row of the
-  old ADR to "Superseded by ADR NNNN", and change nothing else in it.
+- **Supersede** when the decision changes as a whole. Write a new ADR, and name the old ADR in its
+  "Context". Set the `Status` row of the old ADR to "Superseded by ADR NNNN", and change nothing
+  else in it.
 
 ## Critical Invariants
 
@@ -152,6 +157,10 @@ add sections.
   the text still names the item.
 - A link never replaces a fact. Copy each fact the decision rests on into the ADR, because a person
   can delete a ticket or a document.
+- An ADR links no design document, guideline, or skill, and no ADR with the status "Proposed".
+  These can change or be deleted. An ADR stays as written, so such a link makes it say something
+  else later. Copy the fact instead. An ADR can link an accepted or a superseded ADR, because
+  neither changes its existing text. An amendment only adds a section and a status.
 - State what the decision does not cover. A reader must not take a gap for a covered case.
 - The reasons and the options live in the ADR only. `AGENTS.md` can state the rule that the
   decision adds, with a link to the ADR. A design doc links to the ADR and does not repeat the
