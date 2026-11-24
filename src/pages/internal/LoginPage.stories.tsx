@@ -65,7 +65,9 @@ export const CheckEmail: Story = {
 		await userEvent.click(
 			canvas.getByRole("button", { name: "Continue with email" }),
 		);
-		const result = await canvas.findByRole("heading", { level: 1 });
+		const result = await canvas.findByRole("heading", {
+			name: expectedResult,
+		});
 
 		await expect(result).toHaveTextContent(expectedResult);
 	},
