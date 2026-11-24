@@ -373,8 +373,10 @@ another. `FakeInnerClient` conforms to `InnerClient` — it never has to imitate
    export interface AuthGateway {
      getCurrentUser(): Promise<AuthUser | null>;
      onUserChange(listener: (user: AuthUser | null) => void): () => void;
-     signInWithEmail(email: string, password: string): Promise<AuthOutcome>;
-     signUpWithEmail(email: string, password: string): Promise<AuthOutcome>;
+     sendSignInCode(email: Email): Promise<AuthOutcome>;
+     verifySignInCode(email: Email, code: string): Promise<AuthOutcome>;
+     verifySignInLink(tokenHash: string): Promise<AuthOutcome>;
+     signInWithProvider(provider: OAuthProvider, returnTo: string): Promise<AuthOutcome>;
      signOut(): Promise<AuthOutcome>;
    }
    ```
@@ -399,8 +401,14 @@ another. `FakeInnerClient` conforms to `InnerClient` — it never has to imitate
      return {
        getCurrentUser: async () => null,
        onUserChange: () => () => {},
-       signInWithEmail: async () => ({ error: new InvalidCredentials() }),
-       signUpWithEmail: async () => ({ error: new InvalidCredentials() }),
+       sendSignInCode: async () => ({ error: null }),
+       verifySignInCode: async () => ({
+         error: new InvalidSignInCode("Token has expired or is invalid"),
+       }),
+       verifySignInLink: async () => ({
+         error: new InvalidSignInCode("Email link is invalid or has expired"),
+       }),
+       signInWithProvider: async () => ({ error: null }),
        signOut: async () => ({ error: null }),
      };
    }

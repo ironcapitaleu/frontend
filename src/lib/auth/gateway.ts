@@ -1,3 +1,4 @@
+import type { Email } from "../domain/email";
 import type { AuthFailure } from "./errors";
 
 /**
@@ -18,6 +19,9 @@ export interface AuthOutcome {
 	error: AuthFailure | null;
 }
 
+/** An OAuth provider that a visitor can sign in with. */
+export type OAuthProvider = "google" | "github";
+
 /**
  * The app's port for authentication: what the app needs from an auth backend,
  * in the app's own vocabulary, with the vendor concealed. Neither Supabase nor
@@ -28,6 +32,10 @@ export interface AuthOutcome {
  * implement this same interface with fixed behaviour. Both are injected through
  * `AuthProvider`'s `gateway` prop, so nothing that consumes auth depends on the
  * vendor directly.
+ *
+ * Sign-in has no password. The visitor gets a mail with a 6-digit code and a
+ * link, or signs in with an OAuth provider. The same calls sign in a known email
+ * and create the account for a new email.
  */
 export interface AuthGateway {
 	/** Resolves the current user, or `null` when nobody is signed in. */
@@ -37,10 +45,23 @@ export interface AuthGateway {
 	 * to run on teardown.
 	 */
 	onUserChange(listener: (user: AuthUser | null) => void): () => void;
-	/** Signs in an existing user with email and password. */
-	signInWithEmail(email: string, password: string): Promise<AuthOutcome>;
-	/** Registers a new user with email and password. */
-	signUpWithEmail(email: string, password: string): Promise<AuthOutcome>;
+	/**
+	 * Sends the sign-in mail to `email`, and creates the account if the email is
+	 * new. The outcome is the same for a known and a new email.
+	 */
+	sendSignInCode(email: Email): Promise<AuthOutcome>;
+	/** Signs in with the 6-digit `code` from the mail sent to `email`. */
+	verifySignInCode(email: Email, code: string): Promise<AuthOutcome>;
+	/** Signs in with the token hash from the link in the sign-in mail. */
+	verifySignInLink(tokenHash: string): Promise<AuthOutcome>;
+	/**
+	 * Sends the browser to `provider` to sign in. The provider returns the
+	 * visitor to the URL `returnTo`.
+	 */
+	signInWithProvider(
+		provider: OAuthProvider,
+		returnTo: string,
+	): Promise<AuthOutcome>;
 	/** Signs the current user out. */
 	signOut(): Promise<AuthOutcome>;
 }

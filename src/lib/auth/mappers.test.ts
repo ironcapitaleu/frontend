@@ -1,7 +1,7 @@
 import { AuthError, type User } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
 
-import { FailedAuthRequest, InvalidCredentials } from "./errors";
+import { FailedAuthRequest, InvalidSignInCode } from "./errors";
 import { toAuthFailure, toAuthUser } from "./mappers";
 
 /** A vendor `User` carrying only the fields {@link toAuthUser} reads. */
@@ -44,19 +44,19 @@ describe("toAuthUser", () => {
 });
 
 describe("toAuthFailure", () => {
-	it("should map to InvalidCredentials when the error code is invalid_credentials", () => {
+	it("should map to InvalidSignInCode when the error code is otp_expired", () => {
 		const error = new AuthError(
-			"Invalid login credentials",
-			400,
-			"invalid_credentials",
+			"Token has expired or is invalid",
+			403,
+			"otp_expired",
 		);
 
 		const failure = toAuthFailure(error);
 
-		expect(failure).toBeInstanceOf(InvalidCredentials);
+		expect(failure).toBeInstanceOf(InvalidSignInCode);
 	});
 
-	it("should map to FailedAuthRequest when the error code is not invalid_credentials", () => {
+	it("should map to FailedAuthRequest when the error code is not otp_expired", () => {
 		const error = new AuthError("Service down", 503, "over_request_rate_limit");
 
 		const failure = toAuthFailure(error);
@@ -66,13 +66,13 @@ describe("toAuthFailure", () => {
 
 	it("should carry the vendor message through as the reason when mapping an error", () => {
 		const error = new AuthError(
-			"Invalid login credentials",
-			400,
-			"invalid_credentials",
+			"Token has expired or is invalid",
+			403,
+			"otp_expired",
 		);
 
 		const expectedResult =
-			"[InvalidCredentials] The email or password was not accepted, Reason: 'Invalid login credentials'";
+			"[InvalidSignInCode] The sign-in code or link was not accepted, Reason: 'Token has expired or is invalid'";
 
 		const result = toAuthFailure(error).message;
 

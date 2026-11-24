@@ -3,7 +3,7 @@ import type { AuthError, User } from "@supabase/supabase-js";
 import {
 	type AuthFailure,
 	FailedAuthRequest,
-	InvalidCredentials,
+	InvalidSignInCode,
 } from "./errors";
 import type { AuthUser } from "./gateway";
 
@@ -23,12 +23,15 @@ export function toAuthUser(user: User | null): AuthUser | null {
 
 /**
  * Maps a Supabase `AuthError` onto an app-owned {@link AuthFailure}: the
- * `invalid_credentials` code becomes {@link InvalidCredentials}, anything else
+ * `otp_expired` code becomes {@link InvalidSignInCode}, anything else
  * {@link FailedAuthRequest}. The vendor message is carried through as the reason.
+ *
+ * Supabase answers `otp_expired` for a wrong code and for a used or expired
+ * code or link alike.
  */
 export function toAuthFailure(error: AuthError): AuthFailure {
-	if (error.code === "invalid_credentials") {
-		return new InvalidCredentials(error.message);
+	if (error.code === "otp_expired") {
+		return new InvalidSignInCode(error.message);
 	}
 	return new FailedAuthRequest(error.message);
 }
