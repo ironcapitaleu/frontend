@@ -24,7 +24,8 @@ export interface AuthState extends AuthActions {
  *
  * Why a gateway argument? The hook depends on the app-owned port, not on Supabase
  * directly, so tests inject a fake instead of mocking a vendor module. Pass a
- * stable gateway instance — a fresh one on every render re-runs the subscription.
+ * stable gateway instance. A fresh one on every render runs the subscription
+ * again.
  */
 export function useAuth(gateway: AuthGateway): AuthState {
 	const [user, setUser] = useState<AuthUser | null>(null);

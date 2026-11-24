@@ -36,6 +36,9 @@ export type OAuthProvider = "google" | "github";
  * Sign-in has no password. The visitor gets a mail with a 6-digit code and a
  * link, or signs in with an OAuth provider. The same calls sign in a known email
  * and create the account for a new email.
+ *
+ * A method must not depend on `this`, because `useAuth` passes the methods on
+ * without their object.
  */
 export interface AuthGateway {
 	/** Resolves the current user, or `null` when nobody is signed in. */

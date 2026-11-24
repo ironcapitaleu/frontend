@@ -23,15 +23,16 @@ const PROVIDERS: { id: OAuthProvider; label: string }[] = [
  *
  * A known email signs in and a new email creates the account, through the same
  * form. After the email step, the page asks for the 6-digit code from the mail.
- * A signed-in visitor sees the email and a sign-out button.
+ * A signed-in visitor sees the email and a sign-out button. While the first
+ * lookup of the user runs, the page shows no step.
  */
 export default function LoginPage() {
-	const { user } = useAuthContext();
+	const { user, loading } = useAuthContext();
 	const [sentTo, setSentTo] = useState<Email | null>(null);
 
 	return (
 		<AuthPanel>
-			{user ? (
+			{loading ? null : user ? (
 				<SignedInStep email={user.email} />
 			) : sentTo ? (
 				<CodeStep email={sentTo} onExit={() => setSentTo(null)} />
@@ -113,13 +114,18 @@ function EmailStep({ onSent }: { onSent: (email: Email) => void }) {
 /** Asks for the code. Calls `onExit` after the sign-in or to change the email. */
 function CodeStep({ email, onExit }: { email: Email; onExit: () => void }) {
 	const { verifySignInCode } = useAuthContext();
-	const { pending, error, run } = useAuthAction();
+	const { pending, error, run, showError } = useAuthAction();
 	const [code, setCode] = useState("");
 	const inputId = useId();
 
 	const submit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
-		if (await run(() => verifySignInCode(email, code.trim()))) {
+		const digits = code.replace(/\s/g, "");
+		if (!/^\d{6}$/.test(digits)) {
+			showError("Enter the 6-digit code from the mail.");
+			return;
+		}
+		if (await run(() => verifySignInCode(email, digits))) {
 			onExit();
 		}
 	};
@@ -133,14 +139,13 @@ function CodeStep({ email, onExit }: { email: Email; onExit: () => void }) {
 				We sent a 6-digit code and a sign-in link to {email.value}. Enter the
 				code, or open the link on this device.
 			</Text>
-			<form className="flex flex-col gap-4" onSubmit={submit}>
+			<form className="flex flex-col gap-4" onSubmit={submit} noValidate>
 				<Field>
 					<FieldLabel htmlFor={inputId}>Code</FieldLabel>
 					<Input
 						id={inputId}
 						inputMode="numeric"
 						autoComplete="one-time-code"
-						maxLength={6}
 						value={code}
 						onChange={(event) => setCode(event.target.value)}
 					/>

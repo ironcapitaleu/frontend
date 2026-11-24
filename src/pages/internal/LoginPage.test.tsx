@@ -10,7 +10,7 @@ import { render, screen } from "../../test/render";
 import LoginPage from "./LoginPage";
 
 describe("LoginPage", () => {
-	it("should offer a continue button for each provider and for email when the visitor is signed out", () => {
+	it("should offer a continue button for each provider and for email when the visitor is signed out", async () => {
 		render(<LoginPage />);
 
 		const expectedResult = [
@@ -19,19 +19,19 @@ describe("LoginPage", () => {
 			"Continue with email",
 		];
 
-		const result = screen
-			.getAllByRole("button", { name: /^Continue with/ })
-			.map((button) => button.textContent);
+		const result = (
+			await screen.findAllByRole("button", { name: /^Continue with/ })
+		).map((button) => button.textContent);
 
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should show the consent line with a link to the privacy policy when the visitor is signed out", () => {
+	it("should show the consent line with a link to the privacy policy when the visitor is signed out", async () => {
 		render(<LoginPage />);
 
 		const expectedResult = "/privacy";
 
-		const result = screen.getByRole("link", { name: "privacy policy" });
+		const result = await screen.findByRole("link", { name: "privacy policy" });
 
 		expect(result).toHaveAttribute("href", expectedResult);
 	});
@@ -43,7 +43,7 @@ describe("LoginPage", () => {
 		const expectedResult =
 			"We sent a 6-digit code and a sign-in link to you@example.com. Enter the code, or open the link on this device.";
 
-		await user.type(screen.getByLabelText("Email"), "You@Example.com");
+		await user.type(await screen.findByLabelText("Email"), "You@Example.com");
 		await user.click(
 			screen.getByRole("button", { name: "Continue with email" }),
 		);
@@ -62,7 +62,7 @@ describe("LoginPage", () => {
 			heading: "Sign in or create an account",
 		};
 
-		await user.type(screen.getByLabelText("Email"), "not-an-email");
+		await user.type(await screen.findByLabelText("Email"), "not-an-email");
 		await user.click(
 			screen.getByRole("button", { name: "Continue with email" }),
 		);
@@ -80,7 +80,7 @@ describe("LoginPage", () => {
 
 		const expectedResult = "Auth service unavailable";
 
-		await user.type(screen.getByLabelText("Email"), "you@example.com");
+		await user.type(await screen.findByLabelText("Email"), "you@example.com");
 		await user.click(
 			screen.getByRole("button", { name: "Continue with email" }),
 		);
@@ -96,7 +96,7 @@ describe("LoginPage", () => {
 		const expectedResult = "Auth service unavailable";
 
 		await user.click(
-			screen.getByRole("button", { name: "Continue with GitHub" }),
+			await screen.findByRole("button", { name: "Continue with GitHub" }),
 		);
 		const result = await screen.findByRole("alert");
 
@@ -109,7 +109,7 @@ describe("LoginPage", () => {
 
 		const expectedResult = "Token has expired or is invalid";
 
-		await user.type(screen.getByLabelText("Email"), "you@example.com");
+		await user.type(await screen.findByLabelText("Email"), "you@example.com");
 		await user.click(
 			screen.getByRole("button", { name: "Continue with email" }),
 		);
@@ -138,7 +138,7 @@ describe("LoginPage", () => {
 
 		const expectedResult = "You are signed in";
 
-		await user.type(screen.getByLabelText("Email"), "you@example.com");
+		await user.type(await screen.findByLabelText("Email"), "you@example.com");
 		await user.click(
 			screen.getByRole("button", { name: "Continue with email" }),
 		);
@@ -157,7 +157,7 @@ describe("LoginPage", () => {
 
 		const expectedResult = "Sign in or create an account";
 
-		await user.type(screen.getByLabelText("Email"), "you@example.com");
+		await user.type(await screen.findByLabelText("Email"), "you@example.com");
 		await user.click(
 			screen.getByRole("button", { name: "Continue with email" }),
 		);
@@ -199,5 +199,61 @@ describe("LoginPage", () => {
 		const result = await screen.findByRole("alert");
 
 		expect(result).toHaveTextContent(expectedResult);
+	});
+
+	it("should show no step while the first lookup of the user runs", () => {
+		const gateway: AuthGateway = {
+			...alwaysUnauthenticatedAuth(),
+			getCurrentUser: () => new Promise(() => {}),
+		};
+		render(<LoginPage />, { gateway });
+
+		const expectedResult = null;
+
+		const result = screen.queryByRole("heading", { level: 1 });
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should ask for the 6-digit code when the code is empty", async () => {
+		render(<LoginPage />);
+		const user = userEvent.setup();
+
+		const expectedResult = "Enter the 6-digit code from the mail.";
+
+		await user.type(await screen.findByLabelText("Email"), "you@example.com");
+		await user.click(
+			screen.getByRole("button", { name: "Continue with email" }),
+		);
+		await user.click(await screen.findByRole("button", { name: "Sign in" }));
+		const result = await screen.findByRole("alert");
+
+		expect(result).toHaveTextContent(expectedResult);
+	});
+
+	it("should send the code without spaces when the visitor pastes a code with a space", async () => {
+		let sentCode: string | null = null;
+		const gateway: AuthGateway = {
+			...alwaysUnauthenticatedAuth(),
+			verifySignInCode: async (_email, code) => {
+				sentCode = code;
+				return { error: null };
+			},
+		};
+		render(<LoginPage />, { gateway });
+		const user = userEvent.setup();
+
+		const expectedResult = "123456";
+
+		await user.type(await screen.findByLabelText("Email"), "you@example.com");
+		await user.click(
+			screen.getByRole("button", { name: "Continue with email" }),
+		);
+		await user.click(await screen.findByLabelText("Code"));
+		await user.paste("123 456");
+		await user.click(screen.getByRole("button", { name: "Sign in" }));
+		const result = sentCode;
+
+		expect(result).toBe(expectedResult);
 	});
 });

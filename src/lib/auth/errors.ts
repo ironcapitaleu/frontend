@@ -27,7 +27,7 @@ export abstract class AuthFailure extends Error {
 	}
 }
 
-/** Error indicating that the sign-in code or link is wrong, used, or expired. */
+/** The sign-in code or link is wrong, used, or expired. */
 export class InvalidSignInCode extends AuthFailure {
 	constructor(reason?: string) {
 		super(

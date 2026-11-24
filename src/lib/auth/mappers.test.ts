@@ -1,4 +1,8 @@
-import { AuthError, type User } from "@supabase/supabase-js";
+import {
+	AuthError,
+	AuthRetryableFetchError,
+	type User,
+} from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
 
 import { FailedAuthRequest, InvalidSignInCode } from "./errors";
@@ -75,6 +79,16 @@ describe("toAuthFailure", () => {
 			"[InvalidSignInCode] The sign-in code or link was not accepted, Reason: 'Token has expired or is invalid'";
 
 		const result = toAuthFailure(error).message;
+
+		expect(result).toBe(expectedResult);
+	});
+
+	it("should map to FailedAuthRequest with no reason when the fetch fails", () => {
+		const error = new AuthRetryableFetchError("Failed to fetch", 0);
+
+		const expectedResult = null;
+
+		const result = toAuthFailure(error).reason;
 
 		expect(result).toBe(expectedResult);
 	});

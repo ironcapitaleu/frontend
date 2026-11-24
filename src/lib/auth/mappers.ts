@@ -1,4 +1,8 @@
-import type { AuthError, User } from "@supabase/supabase-js";
+import {
+	type AuthError,
+	isAuthRetryableFetchError,
+	type User,
+} from "@supabase/supabase-js";
 
 import {
 	type AuthFailure,
@@ -28,8 +32,15 @@ export function toAuthUser(user: User | null): AuthUser | null {
  *
  * Supabase answers `otp_expired` for a wrong code and for a used or expired
  * code or link alike.
+ *
+ * A failed fetch or a `5xx` answer becomes a {@link FailedAuthRequest} with no
+ * reason, because its vendor message, such as "Failed to fetch", tells the
+ * visitor nothing.
  */
 export function toAuthFailure(error: AuthError): AuthFailure {
+	if (isAuthRetryableFetchError(error)) {
+		return new FailedAuthRequest();
+	}
 	if (error.code === "otp_expired") {
 		return new InvalidSignInCode(error.message);
 	}
