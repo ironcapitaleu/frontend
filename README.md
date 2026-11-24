@@ -69,6 +69,34 @@ testing doctrine. In short:
 - Hairline borders for separation; shadows reserved for floating surfaces
 - Small, tactile interactions and content-aware height animations
 
+### Sign-In Against the Local Supabase Stack
+
+The sign-in page at `/login` has no password. A visitor continues with Google,
+with GitHub, or with an email. The email gets one mail with a 6-digit code and a
+link to `/auth/confirm`. The same form signs in a known email and creates the
+account for a new email.
+
+The backend repository `arkad` runs Supabase locally, with a mail viewer. Its
+README section "Local Supabase Stack" starts the stack. Then:
+
+1. Copy `.env.example` to `.env.local`. Git ignores `.env.local`.
+2. Set `VITE_SUPABASE_ANON_KEY` to the publishable key that `supabase status`
+   prints in the `arkad` repository.
+3. Start the app with `npm run dev -- --host 127.0.0.1 --port 3000`. The link in
+   the mail points to this address.
+4. Open <http://127.0.0.1:3000/login>. Read the mail at <http://127.0.0.1:54324>.
+
+Google and GitHub need OAuth apps in the Supabase config. Without them, only
+their buttons fail.
+
+`scripts/check-sign-in.mjs` checks the sign-up and the sign-in in a headless
+browser. It reads each mail through the JSON API of the mail viewer. CI starts
+no Supabase, so run the check by hand while the app runs:
+
+```bash
+node scripts/check-sign-in.mjs
+```
+
 ### Deployment
 
 This application is configured for Cloudflare Pages deployment:
