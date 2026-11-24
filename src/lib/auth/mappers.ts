@@ -33,9 +33,10 @@ export function toAuthUser(user: User | null): AuthUser | null {
  * Supabase answers `otp_expired` for a wrong code and for a used or expired
  * code or link alike.
  *
- * A failed fetch or a `5xx` answer becomes a {@link FailedAuthRequest} with no
- * reason, because its vendor message, such as "Failed to fetch", tells the
- * visitor nothing.
+ * A failed fetch, or an answer with a status from `500` to `504` or from `520`
+ * to `530`, becomes a {@link FailedAuthRequest} with no reason. Supabase marks
+ * these errors as retryable, and their vendor message, such as "Failed to
+ * fetch", tells the visitor nothing.
  */
 export function toAuthFailure(error: AuthError): AuthFailure {
 	if (isAuthRetryableFetchError(error)) {

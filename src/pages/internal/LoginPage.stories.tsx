@@ -58,7 +58,10 @@ export const CheckEmail: Story = {
 
 		const expectedResult = "Check your email";
 
-		await userEvent.type(canvas.getByLabelText("Email"), "you@example.com");
+		await userEvent.type(
+			await canvas.findByLabelText("Email"),
+			"you@example.com",
+		);
 		await userEvent.click(
 			canvas.getByRole("button", { name: "Continue with email" }),
 		);
@@ -75,7 +78,10 @@ export const WrongCode: Story = {
 
 		const expectedResult = "Token has expired or is invalid";
 
-		await userEvent.type(canvas.getByLabelText("Email"), "you@example.com");
+		await userEvent.type(
+			await canvas.findByLabelText("Email"),
+			"you@example.com",
+		);
 		await userEvent.click(
 			canvas.getByRole("button", { name: "Continue with email" }),
 		);

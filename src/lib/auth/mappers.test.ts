@@ -86,9 +86,10 @@ describe("toAuthFailure", () => {
 	it("should map to FailedAuthRequest with no reason when the fetch fails", () => {
 		const error = new AuthRetryableFetchError("Failed to fetch", 0);
 
-		const expectedResult = null;
+		const expectedResult =
+			"[FailedAuthRequest] The auth request could not be completed";
 
-		const result = toAuthFailure(error).reason;
+		const result = toAuthFailure(error).message;
 
 		expect(result).toBe(expectedResult);
 	});
