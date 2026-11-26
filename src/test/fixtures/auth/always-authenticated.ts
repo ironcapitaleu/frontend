@@ -9,8 +9,10 @@ export function alwaysAuthenticatedAuth(): AuthGateway {
 	return {
 		getCurrentUser: async () => fakeUser,
 		onUserChange: () => () => {},
-		signInWithEmail: async () => ({ error: null }),
-		signUpWithEmail: async () => ({ error: null }),
+		sendSignInCode: async () => ({ error: null }),
+		verifySignInCode: async () => ({ error: null }),
+		verifySignInLink: async () => ({ error: null }),
+		signInWithProvider: async () => ({ error: null }),
 		signOut: async () => ({ error: null }),
 	};
 }

@@ -1,7 +1,8 @@
 import { AuthError, type Session } from "@supabase/supabase-js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { FailedAuthRequest, InvalidCredentials } from "./errors";
+import { Email } from "../domain/email";
+import { FailedAuthRequest, InvalidSignInCode } from "./errors";
 import type { AuthUser } from "./gateway";
 import { supabaseAuthGateway } from "./supabaseAuthGateway";
 
@@ -11,9 +12,10 @@ import { supabaseAuthGateway } from "./supabaseAuthGateway";
 const auth = vi.hoisted(() => ({
 	getUser: vi.fn(),
 	onAuthStateChange: vi.fn(),
-	signInWithPassword: vi.fn(),
-	signUp: vi.fn(),
+	signInWithOAuth: vi.fn(),
+	signInWithOtp: vi.fn(),
 	signOut: vi.fn(),
+	verifyOtp: vi.fn(),
 }));
 
 vi.mock("../supabase", () => ({ supabase: { auth } }));
@@ -50,79 +52,109 @@ describe("supabaseAuthGateway", () => {
 		});
 	});
 
-	describe("signInWithEmail", () => {
-		it("should resolve a null error when sign-in succeeds", async () => {
-			auth.signInWithPassword.mockResolvedValue({ error: null });
+	describe("sendSignInCode", () => {
+		it("should ask the vendor to create the user when sending the sign-in code", async () => {
+			auth.signInWithOtp.mockResolvedValue({ error: null });
+			const email = Email.parse("you@example.com");
 
-			const expectedResult = null;
+			const expectedArgs = {
+				email: "you@example.com",
+				options: { shouldCreateUser: true },
+			};
 
-			const result = (
-				await supabaseAuthGateway().signInWithEmail("a@b.test", "pw")
-			).error;
+			await supabaseAuthGateway().sendSignInCode(email);
 
-			expect(result).toBe(expectedResult);
+			expect(auth.signInWithOtp).toHaveBeenCalledWith(expectedArgs);
 		});
 
-		it("should map the vendor error to InvalidCredentials when sign-in is rejected", async () => {
-			auth.signInWithPassword.mockResolvedValue({
+		it("should map the vendor error to FailedAuthRequest when the vendor rejects the request", async () => {
+			auth.signInWithOtp.mockResolvedValue({
 				error: new AuthError(
-					"Invalid login credentials",
-					400,
-					"invalid_credentials",
+					"For security purposes, you can only request this after 59 seconds.",
+					429,
+					"over_email_send_rate_limit",
 				),
 			});
+			const email = Email.parse("you@example.com");
 
-			const result = (
-				await supabaseAuthGateway().signInWithEmail("a@b.test", "pw")
-			).error;
-
-			expect(result).toBeInstanceOf(InvalidCredentials);
-		});
-
-		it("should forward the submitted credentials to the vendor when signing in", async () => {
-			auth.signInWithPassword.mockResolvedValue({ error: null });
-
-			const expectedArgs = { email: "a@b.test", password: "pw" };
-
-			await supabaseAuthGateway().signInWithEmail("a@b.test", "pw");
-
-			expect(auth.signInWithPassword).toHaveBeenCalledWith(expectedArgs);
-		});
-	});
-
-	describe("signUpWithEmail", () => {
-		it("should resolve a null error when sign-up succeeds", async () => {
-			auth.signUp.mockResolvedValue({ error: null });
-
-			const expectedResult = null;
-
-			const result = (
-				await supabaseAuthGateway().signUpWithEmail("a@b.test", "pw")
-			).error;
-
-			expect(result).toBe(expectedResult);
-		});
-
-		it("should map the vendor error to FailedAuthRequest when sign-up is rejected", async () => {
-			auth.signUp.mockResolvedValue({
-				error: new AuthError("Service down", 503, "over_request_rate_limit"),
-			});
-
-			const result = (
-				await supabaseAuthGateway().signUpWithEmail("a@b.test", "pw")
-			).error;
+			const result = (await supabaseAuthGateway().sendSignInCode(email)).error;
 
 			expect(result).toBeInstanceOf(FailedAuthRequest);
 		});
+	});
 
-		it("should forward the submitted credentials to the vendor when signing up", async () => {
-			auth.signUp.mockResolvedValue({ error: null });
+	describe("verifySignInCode", () => {
+		it("should forward the email and the code with the email type when verifying a code", async () => {
+			auth.verifyOtp.mockResolvedValue({ error: null });
+			const email = Email.parse("you@example.com");
 
-			const expectedArgs = { email: "a@b.test", password: "pw" };
+			const expectedArgs = {
+				email: "you@example.com",
+				token: "123456",
+				type: "email",
+			};
 
-			await supabaseAuthGateway().signUpWithEmail("a@b.test", "pw");
+			await supabaseAuthGateway().verifySignInCode(email, "123456");
 
-			expect(auth.signUp).toHaveBeenCalledWith(expectedArgs);
+			expect(auth.verifyOtp).toHaveBeenCalledWith(expectedArgs);
+		});
+
+		it("should map the vendor error to InvalidSignInCode when the code is rejected", async () => {
+			auth.verifyOtp.mockResolvedValue({
+				error: new AuthError(
+					"Token has expired or is invalid",
+					403,
+					"otp_expired",
+				),
+			});
+			const email = Email.parse("you@example.com");
+
+			const result = (
+				await supabaseAuthGateway().verifySignInCode(email, "000000")
+			).error;
+
+			expect(result).toBeInstanceOf(InvalidSignInCode);
+		});
+	});
+
+	describe("verifySignInLink", () => {
+		it("should forward the token hash with the email type when verifying a link", async () => {
+			auth.verifyOtp.mockResolvedValue({ error: null });
+
+			const expectedArgs = { token_hash: "abc123", type: "email" };
+
+			await supabaseAuthGateway().verifySignInLink("abc123");
+
+			expect(auth.verifyOtp).toHaveBeenCalledWith(expectedArgs);
+		});
+
+		it("should resolve a null error when the link is accepted", async () => {
+			auth.verifyOtp.mockResolvedValue({ error: null });
+
+			const expectedResult = null;
+
+			const result = (await supabaseAuthGateway().verifySignInLink("abc123"))
+				.error;
+
+			expect(result).toBe(expectedResult);
+		});
+	});
+
+	describe("signInWithProvider", () => {
+		it("should forward the provider and the return URL when signing in with a provider", async () => {
+			auth.signInWithOAuth.mockResolvedValue({ error: null });
+
+			const expectedArgs = {
+				provider: "github",
+				options: { redirectTo: "http://127.0.0.1:3000/login" },
+			};
+
+			await supabaseAuthGateway().signInWithProvider(
+				"github",
+				"http://127.0.0.1:3000/login",
+			);
+
+			expect(auth.signInWithOAuth).toHaveBeenCalledWith(expectedArgs);
 		});
 	});
 
