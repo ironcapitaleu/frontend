@@ -1,18 +1,10 @@
 import { createContext, useContext, type ReactNode } from "react";
 
-import { useAuth } from "../hooks/useAuth";
-import type { AuthGateway, AuthOutcome, AuthUser } from "../lib/auth/gateway";
+import { type AuthState, useAuth } from "../hooks/useAuth";
+import type { AuthGateway } from "../lib/auth/gateway";
 import { supabaseAuthGateway } from "../lib/auth/supabaseAuthGateway";
 
-interface AuthContextType {
-	user: AuthUser | null;
-	loading: boolean;
-	signInWithEmail: (email: string, password: string) => Promise<AuthOutcome>;
-	signUpWithEmail: (email: string, password: string) => Promise<AuthOutcome>;
-	signOut: () => Promise<AuthOutcome>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthState | undefined>(undefined);
 
 /**
  * The production auth gateway, created once so the `useAuth` subscription stays

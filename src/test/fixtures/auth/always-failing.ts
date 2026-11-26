@@ -6,11 +6,16 @@ import type { AuthGateway } from "../../../lib/auth/gateway";
  * unreachable. Use it to arrange the error path.
  */
 export function alwaysFailingAuth(): AuthGateway {
+	const failure = async () => ({
+		error: new FailedAuthRequest("Auth service unavailable"),
+	});
 	return {
 		getCurrentUser: async () => null,
 		onUserChange: () => () => {},
-		signInWithEmail: async () => ({ error: new FailedAuthRequest() }),
-		signUpWithEmail: async () => ({ error: new FailedAuthRequest() }),
-		signOut: async () => ({ error: new FailedAuthRequest() }),
+		sendSignInCode: failure,
+		verifySignInCode: failure,
+		verifySignInLink: failure,
+		signInWithProvider: failure,
+		signOut: failure,
 	};
 }

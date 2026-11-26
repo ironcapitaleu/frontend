@@ -1,9 +1,13 @@
-import type { AuthError, User } from "@supabase/supabase-js";
+import {
+	type AuthError,
+	isAuthRetryableFetchError,
+	type User,
+} from "@supabase/supabase-js";
 
 import {
 	type AuthFailure,
 	FailedAuthRequest,
-	InvalidCredentials,
+	InvalidSignInCode,
 } from "./errors";
 import type { AuthUser } from "./gateway";
 
@@ -23,12 +27,23 @@ export function toAuthUser(user: User | null): AuthUser | null {
 
 /**
  * Maps a Supabase `AuthError` onto an app-owned {@link AuthFailure}: the
- * `invalid_credentials` code becomes {@link InvalidCredentials}, anything else
+ * `otp_expired` code becomes {@link InvalidSignInCode}, anything else
  * {@link FailedAuthRequest}. The vendor message is carried through as the reason.
+ *
+ * Supabase answers `otp_expired` for a wrong code and for a used or expired
+ * code or link alike.
+ *
+ * A failed fetch, or an answer with a status from `500` to `504` or from `520`
+ * to `530`, becomes a {@link FailedAuthRequest} with no reason. Supabase marks
+ * these errors as retryable, and their vendor message, such as "Failed to
+ * fetch", tells the visitor nothing.
  */
 export function toAuthFailure(error: AuthError): AuthFailure {
-	if (error.code === "invalid_credentials") {
-		return new InvalidCredentials(error.message);
+	if (isAuthRetryableFetchError(error)) {
+		return new FailedAuthRequest();
+	}
+	if (error.code === "otp_expired") {
+		return new InvalidSignInCode(error.message);
 	}
 	return new FailedAuthRequest(error.message);
 }

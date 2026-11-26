@@ -1,5 +1,7 @@
+import type { AuthError } from "@supabase/supabase-js";
+
 import { supabase } from "../supabase";
-import type { AuthGateway } from "./gateway";
+import type { AuthGateway, AuthOutcome } from "./gateway";
 import { toAuthFailure, toAuthUser } from "./mappers";
 
 /**
@@ -26,20 +28,42 @@ export function supabaseAuthGateway(): AuthGateway {
 			});
 			return () => subscription.unsubscribe();
 		},
-		signInWithEmail: async (email, password) => {
-			const { error } = await supabase.auth.signInWithPassword({
-				email,
-				password,
+		sendSignInCode: async (email) => {
+			const { error } = await supabase.auth.signInWithOtp({
+				email: email.value,
+				options: { shouldCreateUser: true },
 			});
-			return { error: error ? toAuthFailure(error) : null };
+			return toAuthOutcome(error);
 		},
-		signUpWithEmail: async (email, password) => {
-			const { error } = await supabase.auth.signUp({ email, password });
-			return { error: error ? toAuthFailure(error) : null };
+		verifySignInCode: async (email, code) => {
+			const { error } = await supabase.auth.verifyOtp({
+				email: email.value,
+				token: code,
+				type: "email",
+			});
+			return toAuthOutcome(error);
+		},
+		verifySignInLink: async (tokenHash) => {
+			const { error } = await supabase.auth.verifyOtp({
+				token_hash: tokenHash,
+				type: "email",
+			});
+			return toAuthOutcome(error);
+		},
+		signInWithProvider: async (provider, returnTo) => {
+			const { error } = await supabase.auth.signInWithOAuth({
+				provider,
+				options: { redirectTo: returnTo },
+			});
+			return toAuthOutcome(error);
 		},
 		signOut: async () => {
 			const { error } = await supabase.auth.signOut();
-			return { error: error ? toAuthFailure(error) : null };
+			return toAuthOutcome(error);
 		},
 	};
+}
+
+function toAuthOutcome(error: AuthError | null): AuthOutcome {
+	return { error: error ? toAuthFailure(error) : null };
 }

@@ -1,8 +1,9 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { InvalidCredentials } from "../lib/auth/errors";
+import { InvalidSignInCode } from "../lib/auth/errors";
 import type { AuthGateway, AuthUser } from "../lib/auth/gateway";
+import { Email } from "../lib/domain/email";
 import { alwaysAuthenticatedAuth } from "../test/fixtures/auth/always-authenticated";
 import { alwaysUnauthenticatedAuth } from "../test/fixtures/auth/always-unauthenticated";
 import { fakeUser } from "../test/fixtures/auth/user";
@@ -102,31 +103,27 @@ describe("useAuth", () => {
 		expect(result).toEqual(expectedResult);
 	});
 
-	it("should return the gateway's failure when signing in with rejected credentials", async () => {
+	it("should return the gateway's failure when the sign-in code is rejected", async () => {
 		const gateway = alwaysUnauthenticatedAuth();
 		const { result: hook } = renderHook(() => useAuth(gateway));
+		const email = Email.parse("you@example.com");
 
-		const expectedError = InvalidCredentials;
+		const expectedError = InvalidSignInCode;
 
-		const outcome = await hook.current.signInWithEmail(
-			"investor@ironcapital.test",
-			"wrong-password",
-		);
+		const outcome = await hook.current.verifySignInCode(email, "000000");
 		const result = outcome.error;
 
 		expect(result).toBeInstanceOf(expectedError);
 	});
 
-	it("should report success when signing up through the gateway", async () => {
-		const gateway = alwaysAuthenticatedAuth();
+	it("should report success when the gateway sends the sign-in code", async () => {
+		const gateway = alwaysUnauthenticatedAuth();
 		const { result: hook } = renderHook(() => useAuth(gateway));
+		const email = Email.parse("you@example.com");
 
 		const expectedResult = { error: null };
 
-		const result = await hook.current.signUpWithEmail(
-			"investor@ironcapital.test",
-			"a-strong-password",
-		);
+		const result = await hook.current.sendSignInCode(email);
 
 		expect(result).toEqual(expectedResult);
 	});

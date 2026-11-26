@@ -3,6 +3,7 @@ import { Route, Routes } from "react-router";
 import Layout from "./components/Layout";
 import CompanyPage from "./pages/company/CompanyPage";
 import AboutPage from "./pages/public/AboutPage";
+import AuthConfirmPage from "./pages/internal/AuthConfirmPage";
 import CompanySearch from "./pages/public/CompanySearch";
 import ContactPage from "./pages/public/ContactPage";
 import HomePage from "./pages/public/HomePage";
@@ -28,6 +29,7 @@ function App() {
 				<Route path="/search" element={<CompanySearch />} />
 				<Route path="/contact" element={<ContactPage />} />
 				<Route path="/login" element={<LoginPage />} />
+				<Route path="/auth/confirm" element={<AuthConfirmPage />} />
 				<Route path="/about" element={<AboutPage />} />
 				<Route path="/privacy" element={<PrivacyPage />} />
 				<Route path="/sitemap" element={<SitemapPage />} />
